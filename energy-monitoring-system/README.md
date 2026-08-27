@@ -107,6 +107,11 @@ src/
 npm run start:dev
 ```
 
+**Seed initial admin account:**
+```bash
+npm run seed
+```
+
 **Production mode:**
 ```bash
 npm run build
@@ -116,6 +121,7 @@ npm run start:prod
 **Access the application:**
 - API: http://localhost:3000/api
 - Swagger Documentation: http://localhost:3000/api/docs
+- Health Check: http://localhost:3000/api/health
 
 ---
 
@@ -125,6 +131,28 @@ Once the server is running, visit:
 - **Swagger UI**: `http://localhost:3000/api/docs`
 
 Interactive API documentation with all endpoints, request/response schemas, and the ability to test endpoints directly from the browser.
+
+---
+
+## API Standards
+
+This project follows strict REST API standards for consistency and maintainability.
+
+**📚 Full Documentation:** [API-STANDARDS.md](./API-STANDARDS.md)  
+**⚡ Quick Reference:** [API-STANDARDS-QUICK-REFERENCE.md](./API-STANDARDS-QUICK-REFERENCE.md)
+
+### Key Standards
+
+- **URLs:** Plural nouns, kebab-case (`/api/users`, `/api/energy-readings`)
+- **Methods:** GET (retrieve), POST (create), PATCH (update), DELETE (remove)
+- **Response Format:** Standardized with `success`, `message`, `data` fields
+- **Status Codes:** Appropriate HTTP status codes for each scenario
+- **Timestamps:** ISO 8601 UTC format
+- **Naming:** camelCase for fields, PascalCase for classes
+- **Pagination:** limit-offset with meta information
+- **Authentication:** JWT Bearer tokens
+
+**All developers must follow these standards when implementing new features.**
 
 ---
 
@@ -139,32 +167,53 @@ Interactive API documentation with all endpoints, request/response schemas, and 
 - [x] Global validation
 - [x] Error handling
 - [x] Folder structure
+- [x] Health check endpoints
 
-### 🔄 Phase 2: Authentication Module (NEXT)
-- [ ] User registration
-- [ ] User login
-- [ ] JWT token generation
-- [ ] JWT authentication guard
-- [ ] Password hashing
+### ✅ Phase 2: Authentication Module (COMPLETED)
+- [x] User schema with bcrypt
+- [x] Authentication DTOs
+- [x] Users service (database operations)
+- [x] Auth service (login logic, JWT generation)
+- [x] JWT strategy and guard
+- [x] CurrentUser decorator
+- [x] Login endpoint (POST /api/auth/login)
+- [x] Profile endpoint (GET /api/users/profile)
+- [x] Admin seed script
+- [x] Comprehensive testing
+- [x] Swagger documentation
 
-### 📋 Phase 3: Users Module
-- [ ] User CRUD operations
-- [ ] User profile management
-- [ ] Role-based access control
+**📄 See:** [PHASE-2-SUMMARY.md](./PHASE-2-SUMMARY.md) for complete details
 
-### 📋 Phase 4: Sensors Module
-- [ ] Sensor registration
-- [ ] Sensor management
-- [ ] Sensor status tracking
+### ✅ Phase 3: Sensor Management Module (COMPLETED)
+- [x] Sensor schema with MongoDB
+- [x] API key generation for ESP32
+- [x] Create sensor endpoint
+- [x] List sensors endpoint
+- [x] Get sensor details endpoint
+- [x] Update sensor endpoint
+- [x] Delete sensor endpoint (soft delete)
+- [x] Regenerate API key endpoint
+- [x] JWT authentication (admin only)
+- [x] Swagger documentation
+- [x] Comprehensive testing
 
-### 📋 Phase 5: IoT Ingestion Module
-- [ ] ESP32 authentication
-- [ ] Data validation
-- [ ] Data storage
-- [ ] Real-time event triggering
+**📄 See:** [PHASE-3-SENSORS-SUMMARY.md](./PHASE-3-SENSORS-SUMMARY.md) for complete details
+
+### ✅ Phase 5: IoT Data Ingestion Module (COMPLETED)
+- [x] Energy Reading schema with MongoDB
+- [x] API key authentication guard
+- [x] ESP32 data validation (DTO + Service)
+- [x] Reading storage in database
+- [x] Sensor lastSeenAt updates
+- [x] Lightweight ESP32 responses
+- [x] Comprehensive testing
+- [x] ESP32 integration guide
+- [x] Swagger documentation
+
+**📄 See:** [PHASE-5-IOT-SUMMARY.md](./PHASE-5-IOT-SUMMARY.md) for complete details
 
 ### 📋 Phase 6: Energy Monitoring Module
-- [ ] Energy data storage
+- [ ] Energy data aggregation
 - [ ] Real-time metrics calculation
 - [ ] Historical data retrieval
 
@@ -219,6 +268,9 @@ Interactive API documentation with all endpoints, request/response schemas, and 
 | `MONGODB_URI` | MongoDB connection string | `mongodb+srv://...` |
 | `JWT_SECRET` | JWT signing secret | `your-secret-key` |
 | `JWT_EXPIRATION` | JWT token expiration | `7d` |
+| `ADMIN_NAME` | Initial admin name | `System Administrator` |
+| `ADMIN_EMAIL` | Initial admin email | `admin@example.com` |
+| `ADMIN_PASSWORD` | Initial admin password | `SecurePass123!` |
 | `MESSENGER_PAGE_ACCESS_TOKEN` | Facebook page token | `EAAxxxxx...` |
 | `IOT_API_KEY` | ESP32 authentication key | `your-iot-key` |
 | `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:3001` |
@@ -278,13 +330,20 @@ Undergraduate Capstone Project - Smart Footstep Energy Harvesting System
 
 ## Next Steps
 
-**Ready to proceed to Phase 2: Authentication Module**
+**Ready to proceed to Phase 7: Dashboard Module (Real-time Socket.IO)**
 
-The authentication module will implement:
-1. User registration with validation
-2. User login with JWT tokens
-3. Password hashing with bcrypt
-4. JWT authentication guard
-5. Protected routes
+Phase 5 (IoT Data Ingestion) has been completed successfully! The system can now:
+- ✅ Receive energy readings from ESP32 devices
+- ✅ Authenticate using API keys
+- ✅ Validate sensor data (ranges, timestamps)
+- ✅ Store readings in MongoDB
+- ✅ Update sensor health (lastSeenAt)
+- ✅ Return lightweight responses to ESP32
 
-Run `npm run start:dev` to start the development server and verify Phase 1 is working correctly.
+The complete ESP32 → MongoDB data pipeline is working!
+
+**To test IoT module:**
+1. Start server: `npm run start:dev`
+2. Test complete flow: `node test-iot.js`
+3. Explore API: http://localhost:3000/api/docs
+4. Check IoT endpoint: POST /api/iot/readings

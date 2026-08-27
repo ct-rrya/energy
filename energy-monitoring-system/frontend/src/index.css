@@ -1,0 +1,908 @@
+@import "tailwindcss";
+
+/* Google Fonts - Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@layer theme {
+  :root {
+    /* EcoStep Brand Color System */
+    /* Primary: #1A312C Deep forest green */
+    /* Secondary: #428475 Teal green */
+    /* Accent: #89D7B7 Soft mint green */
+    /* Background: #FFF4E1 Warm cream */
+
+    /* EcoStep Design Tokens */
+    --eco-forest: #1A312C;
+    --eco-teal: #428475;
+    --eco-mint: #89D7B7;
+    --eco-cream: #FFF4E1;
+    
+    /* Spacing */
+    --space-sm: 12px;
+    --space-md: 20px;
+    --space-lg: 32px;
+    --space-xl: 40px;
+    
+    /* Radius */
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    
+    /* Shadows */
+    --shadow-soft: 0 8px 30px rgba(26, 49, 44, 0.05);
+    --shadow-medium: 0 12px 40px rgba(26, 49, 44, 0.08);
+    
+    /* Primary Colors - Deep Forest Green */
+    --color-primary-50: 245 248 247;
+    --color-primary-100: 230 237 235;
+    --color-primary-200: 200 215 210;
+    --color-primary-300: 145 175 165;
+    --color-primary-400: 90 135 120;
+    --color-primary-500: 26 49 44; /* #1A312C */
+    --color-primary-600: 21 39 35;
+    --color-primary-700: 16 29 26;
+    --color-primary-800: 10 20 18;
+    --color-primary-900: 5 10 9;
+
+    /* Secondary Colors - Teal Green */
+    --color-secondary-50: 240 248 246;
+    --color-secondary-100: 220 240 236;
+    --color-secondary-200: 180 220 212;
+    --color-secondary-300: 120 180 165;
+    --color-secondary-400: 66 132 117; /* #428475 */
+    --color-secondary-500: 53 106 94;
+    --color-secondary-600: 40 79 70;
+    --color-secondary-700: 30 59 53;
+    --color-secondary-800: 20 40 35;
+    --color-secondary-900: 10 20 18;
+
+    /* Accent Colors - Soft Mint Green */
+    --color-accent-50: 248 253 251;
+    --color-accent-100: 236 249 244;
+    --color-accent-200: 215 243 233;
+    --color-accent-300: 175 231 211;
+    --color-accent-400: 137 215 183; /* #89D7B7 */
+    --color-accent-500: 110 200 165;
+    --color-accent-600: 88 165 135;
+    --color-accent-700: 66 125 100;
+    --color-accent-800: 44 83 67;
+    --color-accent-900: 22 42 33;
+
+    /* Background - Warm Cream */
+    --color-background: 255 244 225; /* #FFF4E1 */
+    --color-background-subtle: 255 248 235;
+    --color-background-muted: 250 240 220;
+
+    /* Surface Colors - For glassmorphic cards */
+    --color-surface: 255 255 255;
+    --color-surface-elevated: 255 250 240;
+    --color-surface-overlay: 255 248 235;
+
+    /* Neutral Colors - For text and borders */
+    --color-neutral-50: 250 250 250;
+    --color-neutral-100: 243 243 243;
+    --color-neutral-200: 229 229 229;
+    --color-neutral-300: 212 212 212;
+    --color-neutral-400: 163 163 163;
+    --color-neutral-500: 115 115 115;
+    --color-neutral-600: 82 82 82;
+    --color-neutral-700: 64 64 64;
+    --color-neutral-800: 38 38 38;
+    --color-neutral-900: 23 23 23;
+
+    /* Semantic Colors */
+    --color-success-50: 240 253 244;
+    --color-success-100: 220 252 231;
+    --color-success-500: 34 197 94;
+    --color-success-600: 22 163 74;
+    --color-success-700: 21 128 61;
+
+    --color-warning-50: 255 251 235;
+    --color-warning-100: 254 243 199;
+    --color-warning-500: 234 179 8;
+    --color-warning-600: 202 138 4;
+    --color-warning-700: 161 98 7;
+
+    --color-error-50: 254 242 242;
+    --color-error-100: 254 226 226;
+    --color-error-500: 239 68 68;
+    --color-error-600: 220 38 38;
+    --color-error-700: 185 28 28;
+
+    --color-info-50: 240 249 255;
+    --color-info-100: 224 242 254;
+    --color-info-500: 59 130 246;
+    --color-info-600: 37 99 235;
+    --color-info-700: 29 78 216;
+  }
+
+  /* Dark Mode Theme */
+  .dark {
+    /* Primary - Lighter for dark mode */
+    --color-primary-500: 137 215 183; /* Mint becomes primary text */
+    --color-primary-600: 110 200 165;
+    
+    /* Background - Dark forest green derivatives */
+    --color-background: 15 27 24; /* Darker version of #1A312C */
+    --color-background-subtle: 18 32 28;
+    --color-background-muted: 21 37 33;
+
+    /* Surface - Slightly lighter dark green */
+    --color-surface: 26 49 44; /* Original #1A312C becomes surface */
+    --color-surface-elevated: 31 59 52;
+    --color-surface-overlay: 36 69 60;
+
+    /* Neutral - Adjusted for dark mode */
+    --color-neutral-50: 38 38 38;
+    --color-neutral-100: 64 64 64;
+    --color-neutral-200: 82 82 82;
+    --color-neutral-300: 115 115 115;
+    --color-neutral-400: 163 163 163;
+    --color-neutral-500: 200 200 200;
+    --color-neutral-600: 215 215 215;
+    --color-neutral-700: 229 229 229;
+    --color-neutral-800: 243 243 243;
+    --color-neutral-900: 250 250 250;
+
+    /* Secondary and Accent remain the same for brand consistency */
+  }
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--color-neutral-200) / 0.3);
+  }
+
+  body {
+    /* Subtle atmospheric background - soft ambient lighting, NOT obvious colorful blobs */
+    background: radial-gradient(
+        circle at 10% 10%,
+        rgba(137, 215, 183, 0.20),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(66, 132, 117, 0.10),
+        transparent 30%
+      ),
+      rgb(var(--color-background));
+    color: rgb(var(--color-primary-500));
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  /* Dark mode background adjustments */
+  .dark body {
+    background: radial-gradient(
+        circle at 10% 10%,
+        rgba(137, 215, 183, 0.08),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(66, 132, 117, 0.05),
+        transparent 30%
+      ),
+      rgb(var(--color-background));
+  }
+
+  /* Custom Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 9999px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background-color: rgba(26, 49, 44, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(66, 132, 117, 0.4);
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(66, 132, 117, 0.6);
+  }
+
+  /* Typography Hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: rgb(var(--color-primary-500));
+    letter-spacing: -0.025em;
+    transition: color 200ms ease;
+  }
+
+  h1 {
+    font-size: 2rem;
+    line-height: 2.5rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+  }
+
+  @media (min-width: 1024px) {
+    h1 {
+      font-size: 2.5rem;
+      line-height: 3rem;
+    }
+
+    h2 {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+  }
+}
+
+@layer utilities {
+  /* Animations */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes lift {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-2px);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-slide-in {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Premium Glassmorphic Card - Selective glass effects */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    padding: 1.5rem;
+    transition: all 0.25s ease;
+  }
+
+  .glass-card-hover:hover {
+    box-shadow: 0 12px 40px rgba(26, 49, 44, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .dark .glass-card {
+    background: rgba(26, 49, 44, 0.6);
+    border: 1px solid rgba(137, 215, 183, 0.12);
+  }
+
+  /* Application Shell - Reduced glassmorphism for structured layout */
+  .app-shell {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+  }
+
+  .dark .app-shell {
+    background: rgba(26, 49, 44, 0.85);
+    border: 1px solid rgba(137, 215, 183, 0.15);
+  }
+
+  /* Metric Card - Subtle depth without excessive glass */
+  .metric-card {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+  }
+
+  .metric-card:hover {
+    box-shadow: 0 10px 35px rgba(26, 49, 44, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .dark .metric-card {
+    background: rgba(26, 49, 44, 0.6);
+    border: 1px solid rgba(137, 215, 183, 0.12);
+  }
+
+  /* Chart Container */
+  .chart-container {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    padding: 1.5rem;
+  }
+
+  .dark .chart-container {
+    background: rgba(26, 49, 44, 0.6);
+    border: 1px solid rgba(137, 215, 183, 0.12);
+  }
+
+  /* Typography - Data Values */
+  .metric-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: rgb(var(--color-primary-500));
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-value-large {
+    font-size: 2rem;
+    font-weight: 600;
+    color: rgb(var(--color-primary-500));
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .metric-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgb(var(--color-neutral-600));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Button Variants - Rounded, Soft */
+  .btn-primary {
+    background-color: rgb(var(--color-primary-500));
+    color: rgb(var(--color-background));
+    font-weight: 500;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26, 49, 44, 0.15);
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: rgb(var(--color-primary-600));
+    box-shadow: 0 6px 16px rgba(26, 49, 44, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    color: rgb(var(--color-primary-500));
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    font-weight: 500;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(26, 49, 44, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    color: rgb(var(--color-primary-500));
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Badge Styles - Rounded Pills */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    border-radius: 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .badge-success {
+    background: rgba(137, 215, 183, 0.15);
+    color: rgb(var(--color-accent-700));
+    border: 1px solid rgba(137, 215, 183, 0.3);
+  }
+
+  .badge-warning {
+    background: rgba(234, 179, 8, 0.1);
+    color: rgb(var(--color-warning-700));
+    border: 1px solid rgba(234, 179, 8, 0.2);
+  }
+
+  .badge-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(var(--color-error-700));
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  .badge-info {
+    background: rgba(66, 132, 117, 0.1);
+    color: rgb(var(--color-secondary-700));
+    border: 1px solid rgba(66, 132, 117, 0.2);
+  }
+
+  /* Navigation Active Pill */
+  .nav-pill-active {
+    background: rgb(var(--color-secondary-400));
+    color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(66, 132, 117, 0.2);
+  }
+
+  /* Subtle Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Login Split Screen Responsive */
+  @media (max-width: 1023px) {
+    .login-brand-panel {
+      display: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════ */
+  /* ECOSTEP SHARED PAGE SYSTEM */
+  /* ═══════════════════════════════════════════════════════════ */
+
+  /* Page Container - Efficient use of viewport */
+  .eco-page-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  @media (max-width: 1280px) {
+    .eco-page-container {
+      padding: 24px 28px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .eco-page-container {
+      padding: 20px 16px;
+    }
+  }
+
+  /* Page Header - Consistent across all pages */
+  .eco-page-header {
+    margin-bottom: 32px;
+  }
+
+  .eco-page-title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    color: #1A312C;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .dark .eco-page-title {
+    color: #89D7B7;
+  }
+
+  .eco-page-subtitle {
+    font-size: 0.9375rem;
+    color: rgba(26, 49, 44, 0.65);
+    line-height: 1.5;
+    max-width: 600px;
+  }
+
+  .dark .eco-page-subtitle {
+    color: rgba(137, 215, 183, 0.65);
+  }
+
+  /* EcoStep Card System - ONE unified style */
+  .eco-card {
+    background: rgba(255, 255, 255, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 24px;
+    transition: all 0.2s ease;
+  }
+
+  .eco-card:hover {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .dark .eco-card {
+    background: rgba(255, 244, 225, 0.055);
+    border: 1px solid rgba(255, 244, 225, 0.10);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Compact card variant */
+  .eco-card-compact {
+    background: rgba(255, 255, 255, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    padding: 16px;
+    transition: all 0.2s ease;
+  }
+
+  .dark .eco-card-compact {
+    background: rgba(255, 244, 225, 0.055);
+    border: 1px solid rgba(255, 244, 225, 0.10);
+  }
+
+  /* Card header */
+  .eco-card-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(26, 49, 44, 0.08);
+  }
+
+  .dark .eco-card-header {
+    border-bottom: 1px solid rgba(137, 215, 183, 0.08);
+  }
+
+  .eco-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1A312C;
+    letter-spacing: -0.01em;
+  }
+
+  .dark .eco-card-title {
+    color: #89D7B7;
+  }
+
+  /* Icon Container */
+  .eco-icon-container {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: rgba(137, 215, 183, 0.10);
+    color: #428475;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .eco-icon-container-lg {
+    width: 48px;
+    height: 48px;
+  }
+
+  /* EcoStep Table */
+  .eco-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .eco-table thead {
+    background: rgba(137, 215, 183, 0.08);
+  }
+
+  .eco-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #428475;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .dark .eco-table th {
+    color: #89D7B7;
+  }
+
+  .eco-table td {
+    padding: 14px 16px;
+    font-size: 0.9375rem;
+    color: #1A312C;
+    border-top: 1px solid rgba(26, 49, 44, 0.06);
+  }
+
+  .dark .eco-table td {
+    color: #FFF4E1;
+    border-top: 1px solid rgba(137, 215, 183, 0.06);
+  }
+
+  .eco-table tbody tr {
+    transition: background-color 0.15s ease;
+  }
+
+  .eco-table tbody tr:hover {
+    background: rgba(137, 215, 183, 0.05);
+  }
+
+  /* EcoStep Buttons */
+  .eco-btn-primary {
+    background: #1A312C;
+    color: #FFF4E1;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(26, 49, 44, 0.15);
+  }
+
+  .eco-btn-primary:hover {
+    background: #428475;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(26, 49, 44, 0.2);
+  }
+
+  .eco-btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .eco-btn-secondary {
+    background: rgba(255, 255, 255, 0.6);
+    color: #1A312C;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border: 1px solid rgba(26, 49, 44, 0.12);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .eco-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(26, 49, 44, 0.2);
+  }
+
+  .dark .eco-btn-secondary {
+    background: rgba(255, 244, 225, 0.08);
+    color: #89D7B7;
+    border-color: rgba(137, 215, 183, 0.15);
+  }
+
+  .dark .eco-btn-secondary:hover {
+    background: rgba(255, 244, 225, 0.12);
+  }
+
+  /* EcoStep Input */
+  .eco-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid rgba(66, 132, 117, 0.20);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.45);
+    font-size: 0.9375rem;
+    color: #1A312C;
+    transition: all 0.2s ease;
+  }
+
+  .eco-input:focus {
+    outline: none;
+    border-color: #428475;
+    background: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 0 3px rgba(66, 132, 117, 0.1);
+  }
+
+  .eco-input::placeholder {
+    color: rgba(26, 49, 44, 0.4);
+  }
+
+  .dark .eco-input {
+    background: rgba(255, 244, 225, 0.055);
+    color: #FFF4E1;
+    border-color: rgba(137, 215, 183, 0.15);
+  }
+
+  .dark .eco-input:focus {
+    background: rgba(255, 244, 225, 0.08);
+    border-color: #89D7B7;
+  }
+
+  /* EcoStep Status Badges */
+  .eco-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .eco-badge-success {
+    background: rgba(137, 215, 183, 0.15);
+    color: #428475;
+    border: 1px solid rgba(137, 215, 183, 0.3);
+  }
+
+  .eco-badge-warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: rgb(146, 104, 0);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .eco-badge-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: rgb(153, 27, 27);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .eco-badge-neutral {
+    background: rgba(26, 49, 44, 0.08);
+    color: #1A312C;
+    border: 1px solid rgba(26, 49, 44, 0.12);
+  }
+
+  .dark .eco-badge-neutral {
+    background: rgba(137, 215, 183, 0.08);
+    color: #89D7B7;
+    border-color: rgba(137, 215, 183, 0.15);
+  }
+
+  /* EcoStep Empty State */
+  .eco-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .eco-empty-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(137, 215, 183, 0.10);
+    color: rgba(66, 132, 117, 0.5);
+    margin-bottom: 24px;
+  }
+
+  .eco-empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1A312C;
+    margin-bottom: 12px;
+  }
+
+  .dark .eco-empty-title {
+    color: #89D7B7;
+  }
+
+  .eco-empty-description {
+    font-size: 0.9375rem;
+    color: rgba(26, 49, 44, 0.6);
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .dark .eco-empty-description {
+    color: rgba(137, 215, 183, 0.6);
+  }
+
+  /* Grid layouts */
+  .eco-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .eco-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .eco-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .eco-grid-2,
+    .eco-grid-3,
+    .eco-grid-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+}

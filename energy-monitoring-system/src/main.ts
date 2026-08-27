@@ -31,11 +31,11 @@ async function bootstrap() {
   const apiPrefix = configService.get<string>('app.apiPrefix') || 'api';
   app.setGlobalPrefix(apiPrefix);
 
-  // Enable API versioning (optional, for future use)
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
+  // API versioning disabled for now (can enable later if needed)
+  // app.enableVersioning({
+  //   type: VersioningType.URI,
+  //   defaultVersion: '1',
+  // });
 
   // Global validation pipe
   // Automatically validates all incoming requests against DTOs
@@ -78,6 +78,9 @@ async function bootstrap() {
 
   console.log(`🚀 Application is running on: http://localhost:${port}`);
   console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
+  console.log(`❤️  Health check: http://localhost:${port}/${apiPrefix}/health`);
+  console.log(`🔍 Liveness: http://localhost:${port}/${apiPrefix}/health/live`);
+  console.log(`✅ Readiness: http://localhost:${port}/${apiPrefix}/health/ready`);
   console.log(`🌍 Environment: ${configService.get<string>('app.nodeEnv')}`);
 }
 
