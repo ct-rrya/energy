@@ -4,6 +4,7 @@ import axios from 'axios';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
+import { GeminiAIService } from './gemini-ai.service';
 
 /**
  * Messenger Service
@@ -44,6 +45,7 @@ export class MessengerService implements OnModuleInit {
     private analyticsService: AnalyticsService,
     private energyService: EnergyService,
     private subscribersService: SubscribersService,
+    private geminiAIService: GeminiAIService,
   ) {
     this.pageAccessToken = this.configService.get<string>(
       'messenger.pageAccessToken',
@@ -88,19 +90,33 @@ export class MessengerService implements OnModuleInit {
    * @param messageText - Message text or payload from user
    */
   async handleMessage(senderId: string, messageText: string): Promise<void> {
-    this.logger.log(`Message from ${senderId}: ${messageText}`);
+    this.logger.log('═══════════════════════════════════════════════════════');
+    this.logger.log(`[MESSENGER SERVICE] handleMessage() called`);
+    this.logger.log(`[MESSENGER SERVICE]    Sender ID: ${senderId}`);
+    this.logger.log(`[MESSENGER SERVICE]    Message text: "${messageText}"`);
+    this.logger.log(`[MESSENGER SERVICE]    Message length: ${messageText.length} characters`);
 
     // Update last interaction
     await this.subscribersService.updateLastInteraction(senderId);
 
     // Parse command (normalize to lowercase for matching)
     const command = messageText.toLowerCase().trim();
+    const originalText = messageText; // Preserve original for AI
+
+    this.logger.log(`[MESSENGER SERVICE]    Normalized command: "${command}"`);
+    this.logger.log(`[MESSENGER SERVICE]    Original text preserved for AI routing`);
 
     try {
       // Route to appropriate handler
-      await this.routeCommand(senderId, command);
+      this.logger.log(`[MESSENGER SERVICE] Calling routeCommand()...`);
+      await this.routeCommand(senderId, command, originalText);
+      this.logger.log(`[MESSENGER SERVICE] ✅ routeCommand() completed successfully`);
     } catch (error) {
-      this.logger.error(`Error handling message: ${error.message}`, error.stack);
+      this.logger.error('[MESSENGER SERVICE] ❌ Error in handleMessage:');
+      this.logger.error(`[MESSENGER SERVICE]    Error name: ${error.name}`);
+      this.logger.error(`[MESSENGER SERVICE]    Error message: ${error.message}`);
+      this.logger.error(`[MESSENGER SERVICE]    Stack trace: ${error.stack}`);
+      
       await this.sendMessage(
         senderId,
         '❌ Sorry, something went wrong. Please try again later.',
@@ -117,9 +133,13 @@ export class MessengerService implements OnModuleInit {
    * @param senderId - Facebook User ID
    * @param command - Command or payload string
    */
-  private async routeCommand(senderId: string, command: string): Promise<void> {
+  private async routeCommand(senderId: string, command: string, originalText?: string): Promise<void> {
     // Log the command for debugging
-    this.logger.debug(`Routing command: "${command}"`);
+    this.logger.log('───────────────────────────────────────────────────────');
+    this.logger.log(`[ROUTE COMMAND] Command received: "${command}"`);
+    this.logger.log(`[ROUTE COMMAND] Original text: "${originalText || 'N/A'}"`);
+    this.logger.log(`[ROUTE COMMAND] Has originalText: ${!!originalText}`);
+    this.logger.log(`[ROUTE COMMAND] AI enabled: ${this.geminiAIService.isAIEnabled()}`);
     
     switch (command) {
       // Welcome/Start commands
@@ -210,7 +230,26 @@ export class MessengerService implements OnModuleInit {
 
       // Unknown command
       default:
-        await this.handleUnknownCommand(senderId, command);
+        this.logger.log('[ROUTE COMMAND] ═══════════════════════════════════════');
+        this.logger.log('[ROUTE COMMAND] DEFAULT CASE - No predefined command matched');
+        this.logger.log('[ROUTE COMMAND] Checking AI routing conditions...');
+        this.logger.log(`[ROUTE COMMAND]    ✓ originalText exists: ${!!originalText}`);
+        this.logger.log(`[ROUTE COMMAND]    ✓ originalText value: "${originalText || 'undefined'}"`);
+        this.logger.log(`[ROUTE COMMAND]    ✓ AI service enabled: ${this.geminiAIService.isAIEnabled()}`);
+        
+        if (originalText && this.geminiAIService.isAIEnabled()) {
+          this.logger.log('[ROUTE COMMAND] ✅ CONDITIONS MET - Routing to AI natural language handler');
+          await this.handleNaturalLanguageQuery(senderId, originalText);
+        } else {
+          this.logger.warn('[ROUTE COMMAND] ❌ CONDITIONS NOT MET - Showing unknown command message');
+          if (!originalText) {
+            this.logger.warn('[ROUTE COMMAND]    Reason: originalText is missing/falsy');
+          }
+          if (!this.geminiAIService.isAIEnabled()) {
+            this.logger.warn('[ROUTE COMMAND]    Reason: AI service is not enabled');
+          }
+          await this.handleUnknownCommand(senderId, command);
+        }
         break;
     }
   }
@@ -916,6 +955,15 @@ Try typing one of these:
     messageText: string,
     quickReplies?: Array<{ title: string; payload: string }>,
   ): Promise<void> {
+    // [TRACE 7: SENDING TO META]
+    this.logger.log('═══════════════════════════════════════════════════════');
+    this.logger.log('[TRACE 7: SENDING TO META] Preparing to send message');
+    this.logger.log(`[TRACE 7: SENDING TO META]    Recipient ID: ${recipientId}`);
+    this.logger.log(`[TRACE 7: SENDING TO META]    Message length: ${messageText.length} characters`);
+    this.logger.log(`[TRACE 7: SENDING TO META]    Message preview: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
+    this.logger.log(`[TRACE 7: SENDING TO META]    Has quick replies: ${!!quickReplies}`);
+    this.logger.log(`[TRACE 7: SENDING TO META]    Quick replies count: ${quickReplies ? quickReplies.length : 0}`);
+    
     try {
       const url = `${this.graphApiUrl}/me/messages`;
 
@@ -928,25 +976,51 @@ Try typing one of these:
           title: qr.title,
           payload: qr.payload,
         }));
+        this.logger.log(`[TRACE 7: SENDING TO META]    Quick reply titles: ${quickReplies.map(qr => qr.title).join(', ')}`);
       }
 
-      await axios.post(
+      const payload = {
+        recipient: { id: recipientId },
+        message,
+      };
+
+      this.logger.log('[TRACE 7: SENDING TO META] Full payload to Meta:');
+      this.logger.log(JSON.stringify(payload, null, 2));
+      this.logger.log(`[TRACE 7: SENDING TO META] Sending POST to: ${url}`);
+
+      const response = await axios.post(
         url,
-        {
-          recipient: { id: recipientId },
-          message,
-        },
+        payload,
         {
           params: { access_token: this.pageAccessToken },
         },
       );
 
-      this.logger.log(`Message sent to ${recipientId}`);
+      // [TRACE 8: META RESPONSE]
+      this.logger.log('[TRACE 8: META RESPONSE] ═══════════════════════════════════');
+      this.logger.log('[TRACE 8: META RESPONSE] ✅ Message sent successfully');
+      this.logger.log(`[TRACE 8: META RESPONSE]    HTTP Status: ${response.status} ${response.statusText}`);
+      this.logger.log(`[TRACE 8: META RESPONSE]    Recipient ID: ${recipientId}`);
+      this.logger.log(`[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(response.data)}`);
+      
     } catch (error) {
-      this.logger.error(
-        `Failed to send message to ${recipientId}: ${error.message}`,
-        error.stack,
-      );
+      // [TRACE 8: META RESPONSE] - Error case
+      this.logger.error('[TRACE 8: META RESPONSE] ═══════════════════════════════════');
+      this.logger.error('[TRACE 8: META RESPONSE] ❌ Failed to send message to Meta');
+      this.logger.error(`[TRACE 8: META RESPONSE]    Error name: ${error.name}`);
+      this.logger.error(`[TRACE 8: META RESPONSE]    Error message: ${error.message}`);
+      this.logger.error(`[TRACE 8: META RESPONSE]    Stack trace: ${error.stack}`);
+      
+      if (error.response) {
+        this.logger.error(`[TRACE 8: META RESPONSE]    HTTP Status: ${error.response.status} ${error.response.statusText}`);
+        this.logger.error(`[TRACE 8: META RESPONSE]    Response headers: ${JSON.stringify(error.response.headers)}`);
+        this.logger.error(`[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(error.response.data)}`);
+      }
+      
+      if (error.request) {
+        this.logger.error('[TRACE 8: META RESPONSE]    Request was made but no response received');
+      }
+      
       throw error;
     }
   }
@@ -1131,6 +1205,48 @@ Try typing one of these:
         error.stack,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Handle Natural Language Query
+   * 
+   * Routes user's natural language message to Gemini AI for processing.
+   */
+  private async handleNaturalLanguageQuery(senderId: string, userMessage: string): Promise<void> {
+    this.logger.log('═══════════════════════════════════════════════════════');
+    this.logger.log('[AI HANDLER] handleNaturalLanguageQuery() called');
+    this.logger.log(`[AI HANDLER]    Sender ID: ${senderId}`);
+    this.logger.log(`[AI HANDLER]    User message: "${userMessage}"`);
+    this.logger.log(`[AI HANDLER]    Message length: ${userMessage.length} characters`);
+    
+    try {
+      this.logger.log('[AI HANDLER] Calling GeminiAIService.processQuery()...');
+      const aiResponse = await this.geminiAIService.processQuery(userMessage);
+      
+      this.logger.log('[AI HANDLER] ✅ Received AI response');
+      this.logger.log(`[AI HANDLER]    Response length: ${aiResponse.length} characters`);
+      this.logger.log(`[AI HANDLER]    Response preview: "${aiResponse.substring(0, 100)}..."`);
+      
+      const quickReplies = [
+        { title: 'System Status', payload: 'status' },
+        { title: 'Help', payload: 'help' },
+        { title: '🏠 Main Menu', payload: 'menu' },
+      ];
+      
+      this.logger.log('[AI HANDLER] Sending AI response to user via sendMessage()...');
+      await this.sendMessage(senderId, aiResponse, quickReplies);
+      this.logger.log('[AI HANDLER] ✅ AI response sent successfully');
+      
+    } catch (error) {
+      this.logger.error('[AI HANDLER] ═══════════════════════════════════════');
+      this.logger.error('[AI HANDLER] ❌ Error in handleNaturalLanguageQuery:');
+      this.logger.error(`[AI HANDLER]    Error name: ${error.name}`);
+      this.logger.error(`[AI HANDLER]    Error message: ${error.message}`);
+      this.logger.error(`[AI HANDLER]    Stack trace: ${error.stack}`);
+      this.logger.error('[AI HANDLER] Falling back to handleUnknownCommand()');
+      
+      await this.handleUnknownCommand(senderId, userMessage);
     }
   }
 

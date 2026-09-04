@@ -186,62 +186,109 @@ export class MessengerController {
   private async processMessagingEvent(event: any): Promise<void> {
     const senderId = event.sender.id;
 
+    // [TRACE 1: INCOMING PAYLOAD]
+    this.logger.log('═══════════════════════════════════════════════════════');
+    this.logger.log('[TRACE 1: INCOMING PAYLOAD] Full event object:');
+    this.logger.log(JSON.stringify(event, null, 2));
+    this.logger.log(`[TRACE 1: INCOMING PAYLOAD] Sender ID: ${senderId}`);
+    this.logger.log('═══════════════════════════════════════════════════════');
+
     try {
+      // [TRACE 2: EVENT FILTER] - Check for events that should be dropped
+      this.logger.log('[TRACE 2: EVENT FILTER] Checking event type...');
+
+      // Check for echo (message sent by the bot itself)
+      if (event.message && event.message.is_echo) {
+        this.logger.warn('[TRACE 2: EVENT FILTER] ⏭️  DROPPED: is_echo = true (bot sent this)');
+        return;
+      }
+
+      // Check for delivery receipt
+      if (event.delivery) {
+        this.logger.warn('[TRACE 2: EVENT FILTER] ⏭️  DROPPED: delivery receipt event');
+        return;
+      }
+
+      // Check for read receipt
+      if (event.read) {
+        this.logger.warn('[TRACE 2: EVENT FILTER] ⏭️  DROPPED: read receipt event');
+        return;
+      }
+
+      // Check if message.text is missing
+      if (event.message && !event.message.text && !event.message.quick_reply) {
+        this.logger.warn('[TRACE 2: EVENT FILTER] ⏭️  DROPPED: message.text missing and no quick_reply');
+        this.logger.warn(`[TRACE 2: EVENT FILTER] Message object: ${JSON.stringify(event.message)}`);
+        return;
+      }
+
+      this.logger.log('[TRACE 2: EVENT FILTER] ✅ Event passed all filter checks');
+
       // IMPORTANT: Check Quick Reply FIRST before text message
       // Quick Replies include both text and quick_reply payload
       // We must prioritize the payload over the text
       if (event.message && event.message.quick_reply) {
         const payload = event.message.quick_reply.payload;
         const text = event.message.text || '';
-        this.logger.log(`⚡ Quick reply from ${senderId}: payload="${payload}", text="${text}"`);
+        this.logger.log('[TRACE 2: EVENT FILTER] Event type: QUICK_REPLY');
+        this.logger.log(`[TRACE 2: EVENT FILTER] ⚡ Quick reply from ${senderId}`);
+        this.logger.log(`[TRACE 2: EVENT FILTER]    Payload: "${payload}"`);
+        this.logger.log(`[TRACE 2: EVENT FILTER]    Text: "${text}"`);
 
         // Process quick reply payload as command (NOT the text)
         this.messengerService
           .handleMessage(senderId, payload)
           .catch((error) => {
-            this.logger.error(
-              `Error handling quick reply from ${senderId}: ${error.message}`,
-              error.stack,
-            );
+            this.logger.error('[TRACE 2: EVENT FILTER] ❌ Error in quick reply handler:');
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error name: ${error.name}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error message: ${error.message}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Stack trace: ${error.stack}`);
           });
       }
 
       // Handle postback (button click from Persistent Menu or Button Template)
       else if (event.postback && event.postback.payload) {
         const payload = event.postback.payload;
-        this.logger.log(`🔘 Postback from ${senderId}: "${payload}"`);
+        this.logger.log('[TRACE 2: EVENT FILTER] Event type: POSTBACK');
+        this.logger.log(`[TRACE 2: EVENT FILTER] 🔘 Postback from ${senderId}: "${payload}"`);
 
         // Process postback as command
         this.messengerService
           .handleMessage(senderId, payload)
           .catch((error) => {
-            this.logger.error(
-              `Error handling postback from ${senderId}: ${error.message}`,
-              error.stack,
-            );
+            this.logger.error('[TRACE 2: EVENT FILTER] ❌ Error in postback handler:');
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error name: ${error.name}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error message: ${error.message}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Stack trace: ${error.stack}`);
           });
       }
 
       // Handle regular text message (typed by user)
       else if (event.message && event.message.text) {
         const messageText = event.message.text;
-        this.logger.log(`📩 Text message from ${senderId}: "${messageText}"`);
+        this.logger.log('[TRACE 2: EVENT FILTER] Event type: TEXT_MESSAGE');
+        this.logger.log(`[TRACE 2: EVENT FILTER] 📩 Text message from ${senderId}: "${messageText}"`);
+        this.logger.log(`[TRACE 2: EVENT FILTER]    Message length: ${messageText.length} characters`);
+        this.logger.log('[TRACE 2: EVENT FILTER] ✅ Passing to MessengerService.handleMessage()...');
 
         // Process message asynchronously (don't block webhook response)
         this.messengerService
           .handleMessage(senderId, messageText)
           .catch((error) => {
-            this.logger.error(
-              `Error handling message from ${senderId}: ${error.message}`,
-              error.stack,
-            );
+            this.logger.error('[TRACE 2: EVENT FILTER] ❌ Error in text message handler:');
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error name: ${error.name}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Error message: ${error.message}`);
+            this.logger.error(`[TRACE 2: EVENT FILTER]    Stack trace: ${error.stack}`);
           });
+      } else {
+        this.logger.warn('[TRACE 2: EVENT FILTER] ⏭️  DROPPED: Unknown event type');
+        this.logger.warn(`[TRACE 2: EVENT FILTER] Event structure: ${JSON.stringify(event, null, 2)}`);
       }
     } catch (error) {
-      this.logger.error(
-        `Error processing event from ${senderId}: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error('[TRACE 2: EVENT FILTER] ❌ EXCEPTION in processMessagingEvent:');
+      this.logger.error(`[TRACE 2: EVENT FILTER]    Error name: ${error.name}`);
+      this.logger.error(`[TRACE 2: EVENT FILTER]    Error message: ${error.message}`);
+      this.logger.error(`[TRACE 2: EVENT FILTER]    Stack trace: ${error.stack}`);
     }
   }
 }
