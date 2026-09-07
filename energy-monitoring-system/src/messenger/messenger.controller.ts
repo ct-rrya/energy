@@ -30,6 +30,28 @@ import type { WebhookVerificationDto, WebhookBodyDto } from './dto';
 export class MessengerController {
   private readonly logger = new Logger(MessengerController.name);
   private readonly verifyToken: string;
+  
+  /**
+   * Message ID deduplication cache
+   * 
+   * Tracks processed message IDs to prevent duplicate processing when Meta retries webhooks.
+   * Meta may retry webhook requests if the response takes >20 seconds or network issues occur.
+   * 
+   * Implementation:
+   * - Store message IDs in a Set for O(1) lookup
+   * - Check message ID before processing
+   * - Skip processing if message ID already exists
+   * 
+   * Memory Management:
+   * - Set grows unbounded in current implementation
+   * - For production, consider: TTL cache, LRU cache, or periodic cleanup
+   * - Message IDs are short strings (~50-100 chars), memory impact is minimal for typical usage
+   * 
+   * Defense in Depth:
+   * - Primary protection: Fire-and-forget pattern (fast webhook response prevents retries)
+   * - Secondary protection: Message ID deduplication (handles retries if they occur)
+   */
+  private readonly processedMessageIds = new Set<string>();
 
   constructor(
     private messengerService: MessengerService,
@@ -38,6 +60,7 @@ export class MessengerController {
     this.verifyToken = this.configService.get<string>('messenger.verifyToken') || 'my-custom-verify-token';
     this.logger.log('Messenger Controller initialized');
     this.logger.log(`Verify token loaded: ${this.verifyToken.substring(0, 5)}...`);
+    this.logger.log('Message ID deduplication enabled');
   }
 
   /**
@@ -114,13 +137,28 @@ export class MessengerController {
    * 4. Server returns 200 OK immediately
    * 5. Server sends response to user asynchronously
    * 
+   * Fire-and-Forget Pattern:
+   * This method implements a fire-and-forget pattern to meet Meta's webhook timeout requirements.
+   * Meta requires webhook endpoints to respond within 20 seconds, or the webhook will be marked as failed.
+   * 
+   * To ensure fast responses:
+   * - We return 200 OK immediately after basic validation (< 100ms)
+   * - Message processing happens asynchronously via processMessagingEvent()
+   * - Errors during processing are logged but don't affect the webhook response
+   * - This prevents slow AI responses or database queries from timing out the webhook
+   * 
+   * Error Handling:
+   * - Webhook validation errors throw exceptions (return 4xx/5xx)
+   * - Processing errors are caught and logged asynchronously
+   * - Users receive error messages via Messenger if processing fails
+   * 
    * @param body - Webhook event payload
-   * @returns 200 OK with 'EVENT_RECEIVED'
+   * @returns 200 OK with 'EVENT_RECEIVED' - returned immediately before processing completes
    * 
    * Note:
-   * - Must respond quickly (< 20 seconds)
-   * - Process events asynchronously
-   * - Return 200 OK even if processing fails
+   * - Must respond quickly (< 20 seconds per Meta's requirements)
+   * - Process events asynchronously to avoid blocking webhook response
+   * - Return 200 OK even if processing fails (errors logged separately)
    * 
    * Payload Structure:
    * {
@@ -162,8 +200,13 @@ export class MessengerController {
     // Process each entry
     for (const entry of body.entry) {
       // Process each messaging event
+      // FIRE-AND-FORGET: processMessagingEvent() is called WITHOUT await
+      // This allows the webhook to return 200 OK immediately (< 100ms)
+      // while message processing (AI, database, API calls) happens asynchronously.
+      // Any errors during processing are caught and logged inside processMessagingEvent().
+      // This pattern ensures Meta's 20-second webhook timeout is never exceeded.
       for (const event of entry.messaging) {
-        await this.processMessagingEvent(event);
+        this.processMessagingEvent(event);
       }
     }
 
@@ -194,6 +237,25 @@ export class MessengerController {
     this.logger.log('═══════════════════════════════════════════════════════');
 
     try {
+      // [TRACE 1.5: DEDUPLICATION CHECK] - Check for duplicate message IDs
+      // Meta may retry webhooks when response time exceeds 20 seconds
+      // Check message ID first to avoid processing duplicates
+      if (event.message && event.message.mid) {
+        const messageId = event.message.mid;
+        this.logger.log(`[TRACE 1.5: DEDUPLICATION] Checking message ID: ${messageId}`);
+        
+        if (this.processedMessageIds.has(messageId)) {
+          this.logger.warn(`[TRACE 1.5: DEDUPLICATION] ⏭️  DROPPED: Duplicate message ID detected (webhook retry)`);
+          this.logger.warn(`[TRACE 1.5: DEDUPLICATION]    Message ID: ${messageId}`);
+          this.logger.warn(`[TRACE 1.5: DEDUPLICATION]    This message was already processed, skipping to prevent duplicate responses`);
+          return;
+        }
+        
+        // Mark message as processed
+        this.processedMessageIds.add(messageId);
+        this.logger.log(`[TRACE 1.5: DEDUPLICATION] ✅ New message ID, added to processed set (total: ${this.processedMessageIds.size})`);
+      }
+
       // [TRACE 2: EVENT FILTER] - Check for events that should be dropped
       this.logger.log('[TRACE 2: EVENT FILTER] Checking event type...');
 
@@ -235,6 +297,14 @@ export class MessengerController {
         this.logger.log(`[TRACE 2: EVENT FILTER]    Payload: "${payload}"`);
         this.logger.log(`[TRACE 2: EVENT FILTER]    Text: "${text}"`);
 
+        // Skip whitespace-only payloads
+        if (!payload || payload.trim().length === 0) {
+          this.logger.warn('[TRACE 2: EVENT FILTER] ??  DROPPED: quick_reply payload is empty or whitespace-only');
+          return;
+        }
+
+
+
         // Process quick reply payload as command (NOT the text)
         this.messengerService
           .handleMessage(senderId, payload)
@@ -251,6 +321,12 @@ export class MessengerController {
         const payload = event.postback.payload;
         this.logger.log('[TRACE 2: EVENT FILTER] Event type: POSTBACK');
         this.logger.log(`[TRACE 2: EVENT FILTER] 🔘 Postback from ${senderId}: "${payload}"`);
+
+        // Skip whitespace-only payloads
+        if (!payload || payload.trim().length === 0) {
+          this.logger.warn('[TRACE 2: EVENT FILTER] ??  DROPPED: postback payload is empty or whitespace-only');
+          return;
+        }
 
         // Process postback as command
         this.messengerService
@@ -270,6 +346,12 @@ export class MessengerController {
         this.logger.log(`[TRACE 2: EVENT FILTER] 📩 Text message from ${senderId}: "${messageText}"`);
         this.logger.log(`[TRACE 2: EVENT FILTER]    Message length: ${messageText.length} characters`);
         this.logger.log('[TRACE 2: EVENT FILTER] ✅ Passing to MessengerService.handleMessage()...');
+
+        // Skip whitespace-only text
+        if (messageText.trim().length === 0) {
+          this.logger.warn('[TRACE 2: EVENT FILTER] ??  DROPPED: message text is whitespace-only');
+          return;
+        }
 
         // Process message asynchronously (don't block webhook response)
         this.messengerService
