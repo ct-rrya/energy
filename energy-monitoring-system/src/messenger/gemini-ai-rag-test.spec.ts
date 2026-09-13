@@ -299,7 +299,7 @@ describe('Task 2.6: RAG Data Injection Preservation', () => {
     expect(capturedPrompt).toContain(testQuery);
     console.log('[RAG Format Test] ✅ Contains user query text');
     
-    expect(capturedPrompt).toContain('**INSTRUCTIONS:**');
+    expect(capturedPrompt).toContain('**CRITICAL REMINDER:**');
     console.log('[RAG Format Test] ✅ Contains instructions section');
     
     // Check for data fields in JSON

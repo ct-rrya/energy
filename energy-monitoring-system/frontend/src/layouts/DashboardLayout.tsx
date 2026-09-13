@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from 'react';
+﻿import { type ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -13,6 +13,7 @@ import {
   Settings,
   User
 } from 'lucide-react';
+import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
@@ -75,9 +76,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [showAccountMenu]);
 
   const handleLogout = () => {
+    console.log('[LOGOUT] Starting logout process...');
+    
+    // Clear auth state first
     logout();
+    
+    console.log('[LOGOUT] After logout() - clearing auth state');
+    
+    // Show success message
     showToast('Logged out successfully', 'info');
-    navigate(ROUTES.LOGIN);
+    
+    console.log('[LOGOUT] Redirecting to landing page...');
+    
+    // Use window.location to force full page reload and bypass ProtectedRoute race condition
+    window.location.href = '/';
   };
 
   const isActivePath = (path: string) => location.pathname === path;
@@ -118,13 +130,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {isExpanded ? (
             <div className="flex items-center gap-3">
               <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0"
+                className="w-10 h-10 rounded-xl flex items-center justify-center p-2 flex-shrink-0"
                 style={{
                   background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
                   color: '#FFFFFF'
                 }}
               >
-                E
+                <Logo className="h-full w-full" />
               </div>
               <span className="text-sm font-semibold" style={{ color: '#EDEEF0' }}>
                 EcoStep
@@ -132,13 +144,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           ) : (
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base mx-auto"
+              className="w-10 h-10 rounded-xl flex items-center justify-center p-2 mx-auto"
               style={{
                 background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
                 color: '#FFFFFF'
               }}
             >
-              E
+              <Logo className="h-full w-full" />
             </div>
           )}
           

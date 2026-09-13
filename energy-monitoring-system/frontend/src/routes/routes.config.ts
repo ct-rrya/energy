@@ -1,8 +1,9 @@
-/**
+﻿/**
  * Route path constants
  */
 export const ROUTES = {
   // Public routes
+  HOME: '/',
   LOGIN: '/login',
 
   // Protected routes

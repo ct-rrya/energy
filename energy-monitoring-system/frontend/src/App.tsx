@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { router } from '@/routes';
+import FloatingChatButton from '@/components/FloatingChatButton';
 
 /**
  * TanStack Query Client Configuration
@@ -27,6 +28,10 @@ const queryClient = new QueryClient({
 /**
  * Root App Component
  * Wraps application with all providers
+ * 
+ * FloatingChatButton is rendered globally here to be accessible
+ * on all routes (Home and Dashboard).
+ * Requirements: 4.1
  */
 function App() {
   return (
@@ -37,6 +42,13 @@ function App() {
             <SocketProvider>
               <RouterProvider router={router} />
               <ToastContainer />
+              {/* 
+                FloatingChatButton rendered outside routing container
+                to appear globally across all routes.
+                z-index: 9999+ ensures it stays above other content.
+                Requirements: 4.1
+              */}
+              <FloatingChatButton />
             </SocketProvider>
           </AuthProvider>
         </ThemeProvider>

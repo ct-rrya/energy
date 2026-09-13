@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MessengerController } from './messenger.controller';
 import { MessengerService } from './messenger.service';
 import { GeminiAIService } from './gemini-ai.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { EnergyModule } from '../energy/energy.module';
 import { SubscribersModule } from '../subscribers/subscribers.module';
+import { ChatbotModule } from '../chatbot/chatbot.module';
 
 /**
  * Messenger Module
@@ -57,9 +58,10 @@ import { SubscribersModule } from '../subscribers/subscribers.module';
     AnalyticsModule, // For calculations
     EnergyModule, // For data queries
     SubscribersModule, // For subscriptions
+    forwardRef(() => ChatbotModule), // Circular dependency with ChatbotModule
   ],
   controllers: [MessengerController],
   providers: [MessengerService, GeminiAIService], // Added GeminiAIService
-  exports: [MessengerService], // Export for Notifications Module (future)
+  exports: [MessengerService, GeminiAIService], // Export GeminiAIService for ChatbotCoreService
 })
 export class MessengerModule {}

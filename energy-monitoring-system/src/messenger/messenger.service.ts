@@ -5,6 +5,11 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { GeminiAIService } from './gemini-ai.service';
+import {
+  ChatbotCoreService,
+  ChatbotResponse,
+  MessageContext,
+} from '../chatbot/chatbot-core.service';
 
 /**
  * Messenger Service
@@ -46,6 +51,7 @@ export class MessengerService implements OnModuleInit {
     private energyService: EnergyService,
     private subscribersService: SubscribersService,
     private geminiAIService: GeminiAIService,
+    private chatbotCoreService: ChatbotCoreService,
   ) {
     this.pageAccessToken = this.configService.get<string>(
       'messenger.pageAccessToken',
@@ -84,10 +90,12 @@ export class MessengerService implements OnModuleInit {
    * Handle Message
    * 
    * Main entry point for processing user messages.
-   * Handles both text commands and interactive payloads.
+   * Delegates to ChatbotCoreService for processing, then formats for Messenger.
    * 
    * @param senderId - Facebook User ID (PSID)
    * @param messageText - Message text or payload from user
+   * 
+   * Requirements: 1.5, 2.2, 2.3, 2.7
    */
   async handleMessage(senderId: string, messageText: string): Promise<void> {
     this.logger.log('═══════════════════════════════════════════════════════');
@@ -96,21 +104,38 @@ export class MessengerService implements OnModuleInit {
     this.logger.log(`[MESSENGER SERVICE]    Message text: "${messageText}"`);
     this.logger.log(`[MESSENGER SERVICE]    Message length: ${messageText.length} characters`);
 
-    // Update last interaction
-    await this.subscribersService.updateLastInteraction(senderId);
-
-    // Parse command (normalize to lowercase for matching)
-    const command = messageText.toLowerCase().trim();
-    const originalText = messageText; // Preserve original for AI
-
-    this.logger.log(`[MESSENGER SERVICE]    Normalized command: "${command}"`);
-    this.logger.log(`[MESSENGER SERVICE]    Original text preserved for AI routing`);
-
     try {
-      // Route to appropriate handler
-      this.logger.log(`[MESSENGER SERVICE] Calling routeCommand()...`);
-      await this.routeCommand(senderId, command, originalText);
-      this.logger.log(`[MESSENGER SERVICE] ✅ routeCommand() completed successfully`);
+      // Create message context for ChatbotCoreService
+      const context: MessageContext = {
+        userId: senderId,
+        channel: 'messenger',
+        originalText: messageText,
+      };
+
+      this.logger.log(`[MESSENGER SERVICE] Calling ChatbotCoreService.processMessage()...`);
+      
+      // Delegate to ChatbotCoreService for processing
+      const response = await this.chatbotCoreService.processMessage(
+        messageText,
+        context,
+      );
+
+      this.logger.log(`[MESSENGER SERVICE] ✅ Received response from ChatbotCoreService`);
+      this.logger.log(`[MESSENGER SERVICE]    Response text length: ${response.text.length} characters`);
+      this.logger.log(`[MESSENGER SERVICE]    Has suggestions: ${!!response.suggestions}`);
+
+      // Format response for Messenger with Quick Replies
+      const quickReplies = this.formatSuggestionsAsQuickReplies(
+        response.suggestions || [],
+        messageText.toLowerCase().trim(),
+      );
+
+      this.logger.log(`[MESSENGER SERVICE] Sending formatted response to user...`);
+      
+      // Send via Meta API
+      await this.sendMessage(senderId, response.text, quickReplies);
+      
+      this.logger.log(`[MESSENGER SERVICE] ✅ handleMessage() completed successfully`);
     } catch (error) {
       this.logger.error('[MESSENGER SERVICE] ❌ Error in handleMessage:');
       this.logger.error(`[MESSENGER SERVICE]    Error name: ${error.name}`);
@@ -125,13 +150,57 @@ export class MessengerService implements OnModuleInit {
   }
 
   /**
-   * Route Command
+   * Format Suggestions as Quick Replies
    * 
-   * Central command dispatcher for all message types.
-   * Handles text commands, quick replies, and postback payloads.
+   * Converts suggestion strings to Messenger Quick Reply format.
+   * Maps suggestion commands to user-friendly titles with emojis.
    * 
-   * @param senderId - Facebook User ID
-   * @param command - Command or payload string
+   * @param suggestions - Array of suggestion command strings
+   * @param currentCommand - The current command (for context-aware suggestions)
+   * @returns Array of Quick Reply objects
+   * 
+   * Requirements: 1.8, 6.6
+   */
+  private formatSuggestionsAsQuickReplies(
+    suggestions: string[],
+    currentCommand: string,
+  ): Array<{ title: string; payload: string }> {
+    // Mapping of commands to user-friendly titles
+    const titleMap: Record<string, string> = {
+      status: '📊 System Status',
+      today: "📅 Today's Energy",
+      week: '📅 This Week',
+      month: '📆 This Month',
+      peak: '⚡ Peak Power',
+      impact: '🌱 Impact',
+      savings: '💰 Savings',
+      energy: '⚡ Energy',
+      battery: '🔋 Battery',
+      analytics: '📈 Analytics',
+      analytics_menu: '📈 Analytics',
+      help: 'ℹ️ Help',
+      menu: '🏠 Main Menu',
+      about: 'ℹ️ About',
+      subscribe: '🔔 Subscribe',
+      unsubscribe: '🔕 Unsubscribe',
+    };
+
+    return suggestions
+      .filter((suggestion) => suggestion) // Remove empty suggestions
+      .map((suggestion) => ({
+        title: titleMap[suggestion.toLowerCase()] || suggestion,
+        payload: suggestion.toLowerCase(),
+      }))
+      .slice(0, 13); // Messenger limit is 13 quick replies
+  }
+
+  /**
+   * Route Command (DEPRECATED - kept for compatibility)
+   * 
+   * This method is now deprecated as routing is handled by ChatbotCoreService.
+   * Keeping it for any legacy code that might still reference it.
+   * 
+   * @deprecated Use ChatbotCoreService.processMessage() instead
    */
   private async routeCommand(senderId: string, command: string, originalText?: string): Promise<void> {
     // Log the command for debugging

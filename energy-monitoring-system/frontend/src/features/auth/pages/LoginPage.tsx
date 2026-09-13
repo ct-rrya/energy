@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -170,7 +170,7 @@ export function LoginPage() {
       </div>
 
       {/* RIGHT SIDE - AUTHENTICATION FORM (45%) */}
-      <div className="w-full lg:w-[45%] flex items-center justify-center px-6 py-12 lg:px-12">
+      <div className="w-full lg:w-[45%] flex items-center justify-center px-6 py-12 lg:px-12 bg-white dark:bg-[#0B0D12]">
         <div className="w-full max-w-md">
           {/* Mobile Logo - Show only on small screens */}
           <div className="lg:hidden mb-8 text-center">
@@ -178,7 +178,7 @@ export function LoginPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1A312C] to-[#428475] shadow-lg p-2">
                 <EcoStepLogo className="h-full w-full" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1A312C]">
+              <h1 className="text-2xl font-bold text-[#1A312C] dark:text-[#FFF4E1]">
                 {APP_NAME}
               </h1>
             </div>
@@ -186,13 +186,13 @@ export function LoginPage() {
 
           {/* Form Header */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-[#1A312C] mb-2">
+            <h2 className="text-3xl font-bold text-[#1A312C] dark:text-[#FFF4E1] mb-2">
               Welcome back
             </h2>
-            <h3 className="text-xl font-semibold text-[#428475] mb-3">
+            <h3 className="text-xl font-semibold text-[#428475] dark:text-[#89D7B7] mb-3">
               Sign in to EcoStep
             </h3>
-            <p className="text-sm text-[rgb(var(--color-neutral-600))]">
+            <p className="text-sm text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
               Monitor your energy. Make every step count.
             </p>
           </div>
@@ -203,7 +203,7 @@ export function LoginPage() {
             <div>
               <label 
                 htmlFor="email" 
-                className="block text-sm font-medium text-[#1A312C] mb-2"
+                className="block text-sm font-medium text-[#1A312C] dark:text-[#FFF4E1] mb-2"
               >
                 Email
               </label>
@@ -213,7 +213,7 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 bg-white/80 text-[#1A312C] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 dark:border-[#89D7B7]/30 bg-white/80 dark:bg-[#1A312C]/50 text-[#1A312C] dark:text-[#FFF4E1] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all"
                 required
               />
             </div>
@@ -222,7 +222,7 @@ export function LoginPage() {
             <div>
               <label 
                 htmlFor="password" 
-                className="block text-sm font-medium text-[#1A312C] mb-2"
+                className="block text-sm font-medium text-[#1A312C] dark:text-[#FFF4E1] mb-2"
               >
                 Password
               </label>
@@ -233,7 +233,7 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 bg-white/80 text-[#1A312C] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 dark:border-[#89D7B7]/30 bg-white/80 dark:bg-[#1A312C]/50 text-[#1A312C] dark:text-[#FFF4E1] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all pr-12"
                   required
                 />
                 <button
@@ -252,14 +252,35 @@ export function LoginPage() {
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#1A312C]/30 text-[#428475] focus:ring-[#428475]"
-                />
-                <span className="text-sm text-[rgb(var(--color-neutral-600))]">Remember me</span>
+              <label className="group flex items-center gap-3 cursor-pointer select-none">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  {/* Custom Checkbox */}
+                  <div className="w-5 h-5 rounded-md border-2 border-[#1A312C]/20 dark:border-[#89D7B7]/30 bg-white dark:bg-[#1A312C]/50 transition-all duration-200 peer-checked:border-[#428475] peer-checked:bg-[#428475] peer-focus:ring-2 peer-focus:ring-[#428475]/30 peer-focus:ring-offset-2 group-hover:border-[#428475]/50 flex items-center justify-center">
+                    {/* Checkmark */}
+                    <svg 
+                      className={`w-3 h-3 text-white transition-all duration-200 ${rememberMe ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}
+                      viewBox="0 0 12 10" 
+                      fill="none"
+                    >
+                      <path 
+                        d="M1 5L4.5 8.5L11 1.5" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-[#1A312C]/70 dark:text-[#FFF4E1]/70 group-hover:text-[#1A312C] dark:group-hover:text-[#FFF4E1] transition-colors">
+                  Remember me
+                </span>
               </label>
               <Link
                 to="/forgot-password"
@@ -280,22 +301,22 @@ export function LoginPage() {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 rounded-xl bg-[#89D7B7]/10 border border-[#89D7B7]/30">
-            <p className="text-xs font-semibold text-[#1A312C] uppercase tracking-wide mb-2">
+          <div className="mt-6 p-4 rounded-xl bg-[#89D7B7]/10 dark:bg-[#428475]/20 border border-[#89D7B7]/30 dark:border-[#89D7B7]/20">
+            <p className="text-xs font-semibold text-[#1A312C] dark:text-[#FFF4E1] uppercase tracking-wide mb-2">
               Demo Credentials
             </p>
             <div className="space-y-1 text-sm">
-              <p className="text-[rgb(var(--color-neutral-600))]">
+              <p className="text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
                 <span className="font-medium">Email:</span> admin@energymonitor.com
               </p>
-              <p className="text-[rgb(var(--color-neutral-600))]">
+              <p className="text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
                 <span className="font-medium">Password:</span> Admin@2024!
               </p>
             </div>
           </div>
 
           {/* Register Link */}
-          <p className="mt-6 text-center text-sm text-[rgb(var(--color-neutral-600))]">
+          <p className="mt-6 text-center text-sm text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
             Don't have an account?{' '}
             <Link
               to="/register"

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+﻿import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { ROUTES } from './routes.config';
 
@@ -7,6 +7,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 // Pages
+import { LandingPage } from '@/features/landing/pages/LandingPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
@@ -21,10 +22,10 @@ import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
  * Application Router Configuration
  */
 export const router = createBrowserRouter([
-  // Root redirect
+  // Landing Page (Root)
   {
-    path: '/',
-    element: <Navigate to={ROUTES.DASHBOARD} replace />,
+    path: ROUTES.HOME,
+    element: <LandingPage />,
   },
 
   // Health check (temporary, for testing backend connection)
@@ -153,3 +154,4 @@ export const router = createBrowserRouter([
     element: <NotFoundPage />,
   },
 ]);
+

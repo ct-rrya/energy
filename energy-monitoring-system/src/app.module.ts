@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -24,6 +28,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MessengerModule } from './messenger/messenger.module';
 import { ReportsModule } from './reports/reports.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
+import { ChatModule } from './chat/chat.module';
+import { PublicModule } from './public/public.module';
 
 /**
  * Root Application Module
@@ -32,7 +39,8 @@ import { AlertsModule } from './alerts/alerts.module';
  * 1. Loads environment variables via ConfigModule
  * 2. Establishes MongoDB connection via MongooseModule
  * 3. Registers all configuration files
- * 4. Will import feature modules (auth, users, sensors, etc.)
+ * 4. Configures caching and rate limiting for public APIs
+ * 5. Imports feature modules (auth, users, sensors, chat, etc.)
  */
 @Module({
   imports: [
@@ -62,10 +70,33 @@ import { AlertsModule } from './alerts/alerts.module';
     // Enable event emitter for event-driven notifications (Phase 7)
     EventEmitterModule.forRoot(),
 
+    // Enable scheduling for session cleanup and other cron jobs
+    ScheduleModule.forRoot(),
+
+    // Configure caching for public API (telemetry)
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 5, // 5 seconds default
+      max: 100, // Max 100 cached items
+    }),
+
+    // Configure rate limiting for public APIs
+    ThrottlerModule.forRoot([
+      {
+        name: 'chat',
+        ttl: 60000, // 1 minute
+        limit: 10, // 10 requests per minute
+      },
+      {
+        name: 'telemetry',
+        ttl: 60000, // 1 minute
+        limit: 120, // 120 requests per minute (every 0.5s)
+      },
+    ]),
+
     HealthModule,
 
-    // Feature modules will be imported here as we build them
-    // Example: AuthModule, UsersModule, SensorsModule, etc.
+    // Feature modules
     UsersModule,
     AuthModule,
     SensorsModule,
@@ -78,8 +109,20 @@ import { AlertsModule } from './alerts/alerts.module';
     NotificationsModule, // Phase 7: Notification Platform
     ReportsModule,
     AlertsModule, // Phase 8: Alert Management System
+    
+    // Chat feature modules
+    ChatbotModule, // Shared chatbot core logic
+    ChatModule, // Public chat API
+    PublicModule, // Public telemetry API
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

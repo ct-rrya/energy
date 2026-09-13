@@ -924,6 +924,9 @@ describe('MessengerController - Preservation Property Tests', () => {
             // Verify webhook returns 200 OK
             expect(result).toBe('EVENT_RECEIVED');
 
+            // Wait for async processing to complete (fire-and-forget pattern)
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             // KEY ASSERTION: handleMessage should be called with correct routing
             expect(mockHandleMessage).toHaveBeenCalledTimes(1);
             expect(mockHandleMessage).toHaveBeenCalledWith(senderId, expectedCommand);
@@ -960,6 +963,7 @@ describe('MessengerController - Preservation Property Tests', () => {
      * 
      * The system must route to the payload, not the text.
      */
+    let testRunCounter = 0; // Counter to ensure unique message IDs across property test runs
     it('should route quick_reply payload over message text when both are present', async () => {
       await fc.assert(
         fc.asyncProperty(
@@ -987,7 +991,7 @@ describe('MessengerController - Preservation Property Tests', () => {
                       recipient: { id: 'page-123' },
                       timestamp,
                       message: {
-                        mid: `mid-${timestamp}`,
+                        mid: `mid-${timestamp}-${testRunCounter++}`, // Unique ID to prevent deduplication collision
                         text: buttonText, // Button label (should be IGNORED)
                         quick_reply: {
                           payload, // Command payload (should be PROCESSED)
@@ -1001,6 +1005,9 @@ describe('MessengerController - Preservation Property Tests', () => {
 
             const result = await controller.receiveWebhook(webhookPayload);
             expect(result).toBe('EVENT_RECEIVED');
+
+            // Wait for async processing to complete (fire-and-forget pattern)
+            await new Promise(resolve => setTimeout(resolve, 50));
 
             // KEY ASSERTION: handleMessage should be called with PAYLOAD, not text
             expect(mockHandleMessage).toHaveBeenCalledTimes(1);
