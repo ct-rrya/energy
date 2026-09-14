@@ -47,3 +47,6 @@ lerna-debug.log*
 *.swp
 *.swo
 *~
+
+# Deployment secrets (generated)
+.deployment-secrets.txt
