@@ -6,15 +6,15 @@ import { Subscriber, SubscriberSchema } from './schemas/subscriber.schema';
 
 /**
  * Subscribers Module
- * 
+ *
  * Manages Facebook Messenger subscribers.
- * 
+ *
  * Features:
  * - Subscribe/unsubscribe users
  * - Track last interaction
  * - Notification preferences
  * - Active subscriber queries
- * 
+ *
  * Exported For:
  * - Messenger Module (commands)
  * - Notifications Module (targeting)

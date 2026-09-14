@@ -18,24 +18,24 @@ interface JwtPayload {
 
 /**
  * JWT Strategy
- * 
+ *
  * Passport strategy for validating JWT tokens.
- * 
+ *
  * Flow:
  * 1. Extract token from Authorization header
  * 2. Verify token signature using secret
  * 3. Check token expiration
  * 4. Call validate() method with decoded payload
  * 5. Attach returned user to request.user
- * 
+ *
  * Configuration:
  * - jwtFromRequest: Extract token from "Authorization: Bearer <token>" header
  * - ignoreExpiration: false (reject expired tokens)
  * - secretOrKey: JWT secret from environment
- * 
+ *
  * Usage:
  * This strategy is automatically used when @UseGuards(JwtAuthGuard) is applied
- * 
+ *
  * Security:
  * - Validates token signature (prevents tampering)
  * - Checks expiration (prevents replay attacks)
@@ -63,25 +63,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   /**
    * Validate JWT payload
-   * 
+   *
    * This method is called AFTER token signature and expiration are verified.
-   * 
+   *
    * @param payload - Decoded JWT payload { sub, email, role }
    * @returns User object (attached to request.user)
    * @throws UnauthorizedException if user not found or inactive
-   * 
+   *
    * Process:
    * 1. Extract user ID from payload.sub
    * 2. Query database for user
    * 3. Verify user exists
    * 4. Verify user is active
    * 5. Return user object
-   * 
+   *
    * Why query database?
    * - User might be deleted after token was issued
    * - User might be deactivated
    * - Database is source of truth, not token
-   * 
+   *
    * Returned object becomes request.user in route handlers:
    * @Get('profile')
    * getProfile(@Req() req) {

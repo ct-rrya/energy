@@ -1,6 +1,6 @@
 /**
  * Energy DTOs Export
- * 
+ *
  * Centralized export for all Energy module DTOs.
  */
 

@@ -76,7 +76,6 @@ export class WeekMetricsDto {
   daysActive: number;
 }
 
-
 /**
  * Month Metrics DTO
  */
@@ -131,9 +130,9 @@ export class SystemHealthDto {
 
 /**
  * Dashboard Analytics DTO
- * 
+ *
  * Single endpoint response with all dashboard summary data.
- * 
+ *
  * Usage:
  * - Dashboard page initial load
  * - Minimizes API requests
@@ -141,7 +140,7 @@ export class SystemHealthDto {
  */
 export class DashboardAnalyticsDto {
   @ApiProperty({
-    description: 'Today\'s metrics',
+    description: "Today's metrics",
     type: TodayMetricsDto,
   })
   today: TodayMetricsDto;

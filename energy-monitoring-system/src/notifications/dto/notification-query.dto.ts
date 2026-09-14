@@ -1,11 +1,14 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationType, NotificationStatus } from '../schemas/notification-log.schema';
+import {
+  NotificationType,
+  NotificationStatus,
+} from '../schemas/notification-log.schema';
 
 /**
  * Notification Query DTO
- * 
+ *
  * Query parameters for filtering notification logs.
  */
 export class NotificationQueryDto {

@@ -5,16 +5,16 @@ import { Subscriber, SubscriberDocument } from './schemas/subscriber.schema';
 
 /**
  * Subscribers Service
- * 
+ *
  * Manages Facebook Messenger subscribers.
- * 
+ *
  * Responsibilities:
  * - Subscribe/unsubscribe users
  * - Update user profiles
  * - Track last interaction
  * - Get active subscribers
  * - Manage notification preferences
- * 
+ *
  * Used By:
  * - Messenger Module (subscribe/unsubscribe commands)
  * - Notifications Module (get active subscribers)
@@ -30,9 +30,9 @@ export class SubscribersService {
 
   /**
    * Subscribe User
-   * 
+   *
    * Creates or updates subscriber record.
-   * 
+   *
    * @param facebookUserId - Facebook User ID (PSID)
    * @param firstName - User first name (optional)
    * @param lastName - User last name (optional)
@@ -72,13 +72,15 @@ export class SubscribersService {
 
   /**
    * Unsubscribe User
-   * 
+   *
    * Marks user as unsubscribed (soft delete).
-   * 
+   *
    * @param facebookUserId - Facebook User ID (PSID)
    * @returns Subscriber document or null if not found
    */
-  async unsubscribe(facebookUserId: string): Promise<SubscriberDocument | null> {
+  async unsubscribe(
+    facebookUserId: string,
+  ): Promise<SubscriberDocument | null> {
     this.logger.log(`Unsubscribing user: ${facebookUserId}`);
 
     const subscriber = await this.subscriberModel.findOne({ facebookUserId });
@@ -96,9 +98,9 @@ export class SubscribersService {
 
   /**
    * Update Last Interaction
-   * 
+   *
    * Updates last interaction timestamp.
-   * 
+   *
    * @param facebookUserId - Facebook User ID (PSID)
    */
   async updateLastInteraction(facebookUserId: string): Promise<void> {
@@ -110,21 +112,23 @@ export class SubscribersService {
 
   /**
    * Get Subscriber
-   * 
+   *
    * Retrieves subscriber by Facebook User ID.
-   * 
+   *
    * @param facebookUserId - Facebook User ID (PSID)
    * @returns Subscriber document or null
    */
-  async getSubscriber(facebookUserId: string): Promise<SubscriberDocument | null> {
+  async getSubscriber(
+    facebookUserId: string,
+  ): Promise<SubscriberDocument | null> {
     return this.subscriberModel.findOne({ facebookUserId });
   }
 
   /**
    * Get All Active Subscribers
-   * 
+   *
    * Retrieves all subscribed users.
-   * 
+   *
    * @returns Array of subscriber documents
    */
   async getActiveSubscribers(): Promise<SubscriberDocument[]> {
@@ -133,9 +137,9 @@ export class SubscribersService {
 
   /**
    * Get Subscriber Count
-   * 
+   *
    * Returns number of active subscribers.
-   * 
+   *
    * @returns Count of active subscribers
    */
   async getSubscriberCount(): Promise<number> {
@@ -144,9 +148,9 @@ export class SubscribersService {
 
   /**
    * Update Preferences
-   * 
+   *
    * Updates notification preferences for a user.
-   * 
+   *
    * @param facebookUserId - Facebook User ID (PSID)
    * @param preferences - Notification preferences
    * @returns Updated subscriber or null
@@ -176,9 +180,9 @@ export class SubscribersService {
 
   /**
    * List Subscribers (Admin)
-   * 
+   *
    * Returns paginated list of subscribers with filters.
-   * 
+   *
    * @param query - Query parameters (pagination, filters)
    * @returns Paginated subscribers list
    */
@@ -192,7 +196,8 @@ export class SubscribersService {
     const filter: any = {};
 
     if (query.status) filter.status = query.status;
-    if (query.isSubscribed !== undefined) filter.isSubscribed = query.isSubscribed;
+    if (query.isSubscribed !== undefined)
+      filter.isSubscribed = query.isSubscribed;
     if (query.tag) filter.tags = query.tag;
     if (query.search) {
       filter.$or = [
@@ -227,26 +232,28 @@ export class SubscribersService {
 
   /**
    * Get Subscriber Details (Admin)
-   * 
+   *
    * Returns detailed information about a subscriber.
-   * 
+   *
    * @param id - Subscriber ID (MongoDB ObjectId or Facebook PSID)
    * @returns Subscriber document
    */
   async getSubscriberDetails(id: string): Promise<SubscriberDocument | null> {
     // Try to find by MongoDB ID first, then by Facebook PSID
-    const subscriber = await this.subscriberModel.findById(id).catch(() => null);
-    
+    const subscriber = await this.subscriberModel
+      .findById(id)
+      .catch(() => null);
+
     if (subscriber) return subscriber;
-    
+
     return this.subscriberModel.findOne({ facebookUserId: id });
   }
 
   /**
    * Update Subscriber Details (Admin)
-   * 
+   *
    * Updates subscriber information.
-   * 
+   *
    * @param id - Subscriber ID (MongoDB ObjectId or Facebook PSID)
    * @param updateData - Data to update
    * @returns Updated subscriber document
@@ -257,7 +264,7 @@ export class SubscribersService {
   ): Promise<SubscriberDocument | null> {
     // Find subscriber
     let subscriber = await this.subscriberModel.findById(id).catch(() => null);
-    
+
     if (!subscriber) {
       subscriber = await this.subscriberModel.findOne({ facebookUserId: id });
     }
@@ -282,9 +289,9 @@ export class SubscribersService {
 
   /**
    * Block Subscriber (Admin)
-   * 
+   *
    * Blocks subscriber from receiving notifications.
-   * 
+   *
    * @param id - Subscriber ID
    * @param reason - Reason for blocking
    * @returns Updated subscriber document
@@ -295,7 +302,7 @@ export class SubscribersService {
   ): Promise<SubscriberDocument | null> {
     // Find subscriber
     let subscriber = await this.subscriberModel.findById(id).catch(() => null);
-    
+
     if (!subscriber) {
       subscriber = await this.subscriberModel.findOne({ facebookUserId: id });
     }
@@ -314,16 +321,16 @@ export class SubscribersService {
 
   /**
    * Unblock Subscriber (Admin)
-   * 
+   *
    * Unblocks previously blocked subscriber.
-   * 
+   *
    * @param id - Subscriber ID
    * @returns Updated subscriber document
    */
   async unblockSubscriber(id: string): Promise<SubscriberDocument | null> {
     // Find subscriber
     let subscriber = await this.subscriberModel.findById(id).catch(() => null);
-    
+
     if (!subscriber) {
       subscriber = await this.subscriberModel.findOne({ facebookUserId: id });
     }
@@ -342,16 +349,16 @@ export class SubscribersService {
 
   /**
    * Delete Subscriber (Admin)
-   * 
+   *
    * Soft delete - unsubscribes and marks as inactive.
-   * 
+   *
    * @param id - Subscriber ID
    * @returns Updated subscriber document
    */
   async deleteSubscriber(id: string): Promise<SubscriberDocument | null> {
     // Find subscriber
     let subscriber = await this.subscriberModel.findById(id).catch(() => null);
-    
+
     if (!subscriber) {
       subscriber = await this.subscriberModel.findOne({ facebookUserId: id });
     }
@@ -369,9 +376,9 @@ export class SubscribersService {
 
   /**
    * Get Subscriber Statistics (Admin)
-   * 
+   *
    * Returns aggregated statistics about subscribers.
-   * 
+   *
    * @returns Subscriber statistics
    */
   async getSubscriberStatistics(): Promise<{
@@ -406,8 +413,12 @@ export class SubscribersService {
       this.subscriberModel.countDocuments({ status: 'blocked' }).exec(),
       this.subscriberModel.countDocuments({ isSubscribed: true }).exec(),
       this.subscriberModel.countDocuments({ isSubscribed: false }).exec(),
-      this.subscriberModel.countDocuments({ subscribedAt: { $gte: weekAgo } }).exec(),
-      this.subscriberModel.countDocuments({ subscribedAt: { $gte: monthAgo } }).exec(),
+      this.subscriberModel
+        .countDocuments({ subscribedAt: { $gte: weekAgo } })
+        .exec(),
+      this.subscriberModel
+        .countDocuments({ subscribedAt: { $gte: monthAgo } })
+        .exec(),
       this.subscriberModel.aggregate([
         { $unwind: '$tags' },
         { $group: { _id: '$tags', count: { $sum: 1 } } },

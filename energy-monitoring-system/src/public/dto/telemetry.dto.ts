@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * DTO for public telemetry data
- * 
+ *
  * Requirements: 11.3, 11.4, 11.5
  */
 export class TelemetryDto {

@@ -2,15 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * Energy Statistics Response DTO
- * 
+ *
  * Used for energy aggregation responses (today, date range).
- * 
+ *
  * Contains:
  * - Total power across all readings
  * - Reading count
  * - Average, max, min power
  * - Estimated energy in kWh
- * 
+ *
  * Used by:
  * - GET /api/energy/today
  * - GET /api/energy/range
@@ -61,9 +61,9 @@ export class EnergyStatisticsDto {
 
 /**
  * Today Energy Response DTO
- * 
+ *
  * Energy statistics for current day.
- * 
+ *
  * Used by:
  * - GET /api/energy/today
  */
@@ -78,9 +78,9 @@ export class TodayEnergyResponseDto extends EnergyStatisticsDto {
 
 /**
  * Today Energy by Sensor Response DTO
- * 
+ *
  * Energy statistics for specific sensor today.
- * 
+ *
  * Used by:
  * - GET /api/energy/sensor/:sensorId/today
  */
@@ -102,9 +102,9 @@ export class TodayEnergySensorResponseDto extends EnergyStatisticsDto {
 
 /**
  * Energy Range Response DTO
- * 
+ *
  * Energy statistics for date range.
- * 
+ *
  * Used by:
  * - GET /api/energy/range
  */
@@ -126,9 +126,9 @@ export class EnergyRangeResponseDto extends EnergyStatisticsDto {
 
 /**
  * Energy Range by Sensor Response DTO
- * 
+ *
  * Energy statistics for specific sensor in date range.
- * 
+ *
  * Used by:
  * - GET /api/energy/sensor/:sensorId/range
  */
@@ -157,14 +157,14 @@ export class EnergyRangeSensorResponseDto extends EnergyStatisticsDto {
 
 /**
  * Energy Reading Response DTO
- * 
+ *
  * Individual energy reading for API responses.
- * 
+ *
  * Used by:
  * - GET /api/energy/recent
  * - GET /api/energy/sensor/:sensorId/recent
  * - GET /api/energy/readings
- * 
+ *
  * Note:
  * - Simplified version (not full schema)
  * - Only includes essential fields for API
@@ -229,9 +229,9 @@ export class EnergyReadingResponseDto {
 
 /**
  * Sensor Energy DTO
- * 
+ *
  * Energy statistics grouped by sensor.
- * 
+ *
  * Used by:
  * - GET /api/energy/by-sensors
  */
@@ -274,9 +274,9 @@ export class SensorEnergyDto {
 
 /**
  * Total Statistics Response DTO
- * 
+ *
  * System-wide energy statistics.
- * 
+ *
  * Used by:
  * - GET /api/energy/statistics
  */

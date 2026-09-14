@@ -8,20 +8,20 @@ import { UserDocument } from '../users/schemas/user.schema';
 
 /**
  * Authentication Service
- * 
+ *
  * Handles authentication business logic including:
  * - Credential validation
  * - JWT token generation
  * - Password hashing
  * - Login orchestration
- * 
+ *
  * Security Features:
  * - Uses bcrypt for password hashing and comparison
  * - Generates JWT tokens with expiration
  * - Validates account status before login
  * - Generic error messages (prevents user enumeration)
  * - Constant-time password comparison
- * 
+ *
  * Dependencies:
  * - JwtService: Generates and validates JWT tokens
  * - UsersService: Accesses user data from database
@@ -37,24 +37,24 @@ export class AuthService {
 
   /**
    * Validate user credentials
-   * 
+   *
    * @param email - User email address
    * @param password - Plain text password
    * @returns User document (without password) or null if invalid
-   * 
+   *
    * Process:
    * 1. Find user by email (including password field)
    * 2. Check if user exists
    * 3. Check if account is active
    * 4. Compare password with bcrypt (constant-time)
    * 5. Return user without password
-   * 
+   *
    * Security:
    * - Returns null for all failure cases (generic response)
    * - Uses bcrypt.compare for constant-time comparison
    * - Checks account status (isActive)
    * - Never exposes why validation failed
-   * 
+   *
    * Usage:
    *   const user = await authService.validateUser(email, password);
    *   if (!user) {
@@ -93,22 +93,22 @@ export class AuthService {
 
   /**
    * Handle user login
-   * 
+   *
    * @param loginDto - Login credentials (email, password)
    * @returns Authentication response with JWT token and user data
    * @throws UnauthorizedException if credentials are invalid
-   * 
+   *
    * Process:
    * 1. Validate credentials
    * 2. Generate JWT access token
    * 3. Update last login timestamp
    * 4. Return standardized response with token and user data
-   * 
+   *
    * Security:
    * - Generic error message (doesn't reveal why login failed)
    * - JWT token has expiration (configured in .env)
    * - User password never included in response
-   * 
+   *
    * Usage:
    *   const response = await authService.login({ email, password });
    *   // Response: { success: true, data: { token, user } }
@@ -163,25 +163,25 @@ export class AuthService {
 
   /**
    * Hash password with bcrypt
-   * 
+   *
    * @param password - Plain text password
    * @returns Hashed password
-   * 
+   *
    * Process:
    * 1. Generate salt with configured rounds
    * 2. Hash password with salt
    * 3. Return bcrypt hash
-   * 
+   *
    * Configuration:
    * - SALT_ROUNDS = 10 (industry standard)
    * - Takes ~100ms to hash (prevents brute force)
    * - Higher rounds = more secure but slower
-   * 
+   *
    * Usage:
    *   // In seed script
    *   const hashedPassword = await authService.hashPassword('password123');
    *   await usersService.create({ ..., password: hashedPassword });
-   * 
+   *
    * Security:
    * - Salt is automatically included in hash
    * - Each hash is unique even for same password

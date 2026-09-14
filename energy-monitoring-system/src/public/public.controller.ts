@@ -6,11 +6,7 @@ import {
   UseInterceptors,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { Throttle } from '@nestjs/throttler';
 import { TelemetryDto } from './dto/telemetry.dto';
@@ -18,9 +14,9 @@ import { EnergyService } from '../energy/energy.service';
 
 /**
  * PublicController
- * 
+ *
  * Serves public telemetry data for the landing page
- * 
+ *
  * Requirements: 11.1, 11.2, 11.3, 11.5, 11.9, 11.10
  */
 @ApiTags('Public API')
@@ -28,21 +24,19 @@ import { EnergyService } from '../energy/energy.service';
 export class PublicController {
   private readonly logger = new Logger(PublicController.name);
 
-  constructor(
-    private readonly energyService: EnergyService,
-  ) {}
+  constructor(private readonly energyService: EnergyService) {}
 
   /**
    * GET /api/public/telemetry
    * Get current system telemetry data
-   * 
+   *
    * This endpoint:
    * - Does NOT require authentication (public access)
    * - Uses 5-second cache to reduce database load
    * - Rate limited to 120 requests per minute (every 0.5s)
    * - Returns 200 with data when available
    * - Returns 503 when data is unavailable
-   * 
+   *
    * Requirements: 11.1, 11.2, 11.3, 11.5, 11.6, 11.7, 11.8, 11.10
    */
   @Get('telemetry')
@@ -71,7 +65,7 @@ export class PublicController {
       'Use the `/api/chat` endpoint to query the system interactively:\n' +
       '- `status` - Get comprehensive system status\n' +
       '- `energy` - Current energy generation\n' +
-      '- `today` - Today\'s energy summary\n' +
+      "- `today` - Today's energy summary\n" +
       '- `help` - List all available commands\n\n' +
       '### Related Endpoints\n' +
       '- `POST /api/chat` - Interactive chat interface for detailed queries\n' +
@@ -79,11 +73,13 @@ export class PublicController {
   })
   @ApiResponse({
     status: 200,
-    description: '**Telemetry data retrieved successfully** - Returns current system readings and status',
+    description:
+      '**Telemetry data retrieved successfully** - Returns current system readings and status',
     type: TelemetryDto,
     examples: {
       onlineNormal: {
-        summary: 'Online - Normal Operation - System is online with typical power generation levels',
+        summary:
+          'Online - Normal Operation - System is online with typical power generation levels',
         value: {
           voltage: 12.5,
           current: 2.3,
@@ -94,7 +90,8 @@ export class PublicController {
         },
       },
       onlineHighPower: {
-        summary: 'Online - High Power Generation - System is online with elevated power output (peak usage period)',
+        summary:
+          'Online - High Power Generation - System is online with elevated power output (peak usage period)',
         value: {
           voltage: 13.2,
           current: 3.1,
@@ -105,7 +102,8 @@ export class PublicController {
         },
       },
       onlineLowPower: {
-        summary: 'Online - Low Power Generation - System is online but with minimal activity (off-peak hours)',
+        summary:
+          'Online - Low Power Generation - System is online but with minimal activity (off-peak hours)',
         value: {
           voltage: 11.8,
           current: 0.5,
@@ -116,7 +114,8 @@ export class PublicController {
         },
       },
       onlineStartOfDay: {
-        summary: 'Online - Start of Day - System readings shortly after midnight (energy counter reset)',
+        summary:
+          'Online - Start of Day - System readings shortly after midnight (energy counter reset)',
         value: {
           voltage: 12.1,
           current: 1.2,
@@ -130,19 +129,28 @@ export class PublicController {
   })
   @ApiResponse({
     status: 429,
-    description: '**Too Many Requests** - Rate limit exceeded (max 120 requests per minute)',
+    description:
+      '**Too Many Requests** - Rate limit exceeded (max 120 requests per minute)',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 429 },
-        message: { type: 'string', example: 'Too many requests. Please try again later.' },
+        message: {
+          type: 'string',
+          example: 'Too many requests. Please try again later.',
+        },
         error: { type: 'string', example: 'Too Many Requests' },
-        retryAfter: { type: 'number', example: 60, description: 'Seconds until rate limit resets' },
+        retryAfter: {
+          type: 'number',
+          example: 60,
+          description: 'Seconds until rate limit resets',
+        },
       },
     },
     examples: {
       rateLimitExceeded: {
-        summary: 'Rate Limit Exceeded - Exceeded 120 requests per minute limit. Poll every 10 seconds instead of more frequently.',
+        summary:
+          'Rate Limit Exceeded - Exceeded 120 requests per minute limit. Poll every 10 seconds instead of more frequently.',
         value: {
           statusCode: 429,
           message: 'Too many requests. Please try again later.',
@@ -154,10 +162,12 @@ export class PublicController {
   })
   @ApiResponse({
     status: 503,
-    description: '**Service Unavailable** - Telemetry data unavailable (system offline or no recent sensor data)',
+    description:
+      '**Service Unavailable** - Telemetry data unavailable (system offline or no recent sensor data)',
     examples: {
       noRecentData: {
-        summary: 'No Recent Sensor Data - No sensor readings received in the last polling interval (sensors may be offline)',
+        summary:
+          'No Recent Sensor Data - No sensor readings received in the last polling interval (sensors may be offline)',
         value: {
           statusCode: 503,
           message: 'No recent sensor data available',
@@ -165,18 +175,22 @@ export class PublicController {
         },
       },
       systemOffline: {
-        summary: 'System Offline - IoT devices are offline or not transmitting data',
+        summary:
+          'System Offline - IoT devices are offline or not transmitting data',
         value: {
           statusCode: 503,
-          message: 'Telemetry data temporarily unavailable. Please try again later.',
+          message:
+            'Telemetry data temporarily unavailable. Please try again later.',
           error: 'Service Unavailable',
         },
       },
       databaseError: {
-        summary: 'Database Connection Error - Unable to retrieve data from database (temporary connectivity issue)',
+        summary:
+          'Database Connection Error - Unable to retrieve data from database (temporary connectivity issue)',
         value: {
           statusCode: 503,
-          message: 'Telemetry data temporarily unavailable. Please try again later.',
+          message:
+            'Telemetry data temporarily unavailable. Please try again later.',
           error: 'Service Unavailable',
         },
       },
@@ -188,18 +202,20 @@ export class PublicController {
     try {
       // Get today's energy total (Requirement 3.6)
       const todayData = await this.energyService.getTodayEnergyTotal();
-      
+
       // Get the most recent reading for current voltage, current, and power
       const recentReadings = await this.energyService.getRecentReadings(1);
-      
+
       // Check if we have data (Requirement 3.8, 11.6, 11.8)
       if (!recentReadings || recentReadings.length === 0) {
         this.logger.warn('No recent sensor data available');
-        throw new ServiceUnavailableException('No recent sensor data available');
+        throw new ServiceUnavailableException(
+          'No recent sensor data available',
+        );
       }
 
       const latestReading = recentReadings[0];
-      
+
       // Map to TelemetryDto format (Requirement 11.5)
       const telemetryData: TelemetryDto = {
         voltage: Math.round(latestReading.voltage * 100) / 100, // 2 decimal places
@@ -212,15 +228,14 @@ export class PublicController {
 
       this.logger.log('Telemetry data retrieved successfully');
       return telemetryData; // Return HTTP 200 with JSON data (Requirement 11.5)
-      
     } catch (error) {
       this.logger.error('Error fetching telemetry data', error.stack);
-      
+
       // If it's already a ServiceUnavailableException, rethrow it as-is
       if (error instanceof ServiceUnavailableException) {
         throw error;
       }
-      
+
       // Return HTTP 503 when data unavailable (Requirement 3.8, 11.6, 11.8)
       throw new ServiceUnavailableException(
         'Telemetry data temporarily unavailable. Please try again later.',
@@ -249,16 +264,22 @@ export class PublicController {
   })
   @ApiResponse({
     status: 200,
-    description: '**Service is healthy** - Public API is running and responsive',
+    description:
+      '**Service is healthy** - Public API is running and responsive',
     schema: {
       type: 'object',
       properties: {
-        status: { type: 'string', example: 'ok', description: 'Service health status' },
+        status: {
+          type: 'string',
+          example: 'ok',
+          description: 'Service health status',
+        },
       },
     },
     examples: {
       healthy: {
-        summary: 'Service Healthy - Public API is operational and accepting requests',
+        summary:
+          'Service Healthy - Public API is operational and accepting requests',
         value: {
           status: 'ok',
         },

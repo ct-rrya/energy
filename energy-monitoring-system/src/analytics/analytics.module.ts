@@ -12,9 +12,9 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
 
 /**
  * Analytics Module
- * 
+ *
  * Centralized service for energy analytics calculations.
- * 
+ *
  * Features:
  * - Daily/Weekly/Monthly energy summaries
  * - Peak generation detection
@@ -22,26 +22,26 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
  * - Cost savings estimation
  * - Trend analysis
  * - Comprehensive analytics (all in one)
- * 
+ *
  * Architecture:
  * - Uses EnergyService for database queries (don't duplicate)
  * - Adds business logic on top of raw data
  * - Single source of truth for calculations
- * 
+ *
  * Consumed By:
  * - Dashboard Module (real-time charts)
  * - Messenger Bot Module (chat responses)
  * - Analytics Controller (REST API)
  * - Reports Module (PDF generation - future)
- * 
+ *
  * Dependencies:
  * - EnergyModule (for database queries)
  * - EnergyReading schema (for peak detection)
  * - Sensor schema (for sensor details)
- * 
+ *
  * Exports:
  * - AnalyticsService (for Dashboard and Messenger Bot)
- * 
+ *
  * REST Endpoints:
  * - GET /api/analytics/comprehensive
  * - GET /api/analytics/daily

@@ -1,9 +1,15 @@
-import { IsOptional, IsArray, IsString, IsEnum, IsObject } from 'class-validator';
+import {
+  IsOptional,
+  IsArray,
+  IsString,
+  IsEnum,
+  IsObject,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Update Subscriber DTO
- * 
+ *
  * Request body for updating subscriber information.
  */
 export class UpdateSubscriberDto {

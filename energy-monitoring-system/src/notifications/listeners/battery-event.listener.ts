@@ -5,17 +5,17 @@ import { BatteryAlertEvent } from '../dto/notification-event.dto';
 
 /**
  * Battery Event Listener
- * 
+ *
  * Listens to battery-related events and triggers notifications.
- * 
+ *
  * Events:
  * - battery.alert - Battery threshold alert
- * 
+ *
  * Alert Types:
  * - low: Battery below 20%
  * - critical: Battery below 10%
  * - full: Battery at 100%
- * 
+ *
  * Throttling:
  * - Max 1 alert per threshold per 30 minutes (implemented in IoT Service)
  */
@@ -27,9 +27,9 @@ export class BatteryEventListener {
 
   /**
    * Handle Battery Alert
-   * 
+   *
    * Triggered when battery crosses threshold.
-   * 
+   *
    * @param payload - Battery alert event data
    */
   @OnEvent('battery.alert')

@@ -219,7 +219,10 @@ describe('ChatbotCoreService', () => {
         suggestions: ['today', 'week'],
       };
 
-      const messengerFormatted = service.formatForChannel(response, 'messenger');
+      const messengerFormatted = service.formatForChannel(
+        response,
+        'messenger',
+      );
       const webFormatted = service.formatForChannel(response, 'web');
 
       // Core content should be identical
@@ -276,19 +279,45 @@ describe('ChatbotCoreService', () => {
     it('should format all suggestion types correctly for messenger', () => {
       const response = {
         text: 'Test all suggestions',
-        suggestions: ['status', 'today', 'week', 'month', 'peak', 'energy', 'battery', 'impact', 'savings', 'help', 'about', 'subscribe', 'hello'],
+        suggestions: [
+          'status',
+          'today',
+          'week',
+          'month',
+          'peak',
+          'energy',
+          'battery',
+          'impact',
+          'savings',
+          'help',
+          'about',
+          'subscribe',
+          'hello',
+        ],
       };
 
       const formatted = service.formatForChannel(response, 'messenger');
 
       expect(formatted.quickReplies).toBeDefined();
       expect(formatted.quickReplies?.length).toBe(13);
-      
+
       // Verify specific titles and payloads
-      expect(formatted.quickReplies?.[0]).toEqual({ title: '📊 Status', payload: 'status' });
-      expect(formatted.quickReplies?.[1]).toEqual({ title: '📅 Today', payload: 'today' });
-      expect(formatted.quickReplies?.[7]).toEqual({ title: '🌱 Impact', payload: 'impact' });
-      expect(formatted.quickReplies?.[8]).toEqual({ title: '💰 Savings', payload: 'savings' });
+      expect(formatted.quickReplies?.[0]).toEqual({
+        title: '📊 Status',
+        payload: 'status',
+      });
+      expect(formatted.quickReplies?.[1]).toEqual({
+        title: '📅 Today',
+        payload: 'today',
+      });
+      expect(formatted.quickReplies?.[7]).toEqual({
+        title: '🌱 Impact',
+        payload: 'impact',
+      });
+      expect(formatted.quickReplies?.[8]).toEqual({
+        title: '💰 Savings',
+        payload: 'savings',
+      });
     });
 
     it('should handle custom suggestions with fallback titles for messenger', () => {
@@ -301,7 +330,10 @@ describe('ChatbotCoreService', () => {
 
       expect(formatted.quickReplies).toBeDefined();
       expect(formatted.quickReplies?.length).toBe(3);
-      expect(formatted.quickReplies?.[1]).toEqual({ title: 'custom_command', payload: 'custom_command' });
+      expect(formatted.quickReplies?.[1]).toEqual({
+        title: 'custom_command',
+        payload: 'custom_command',
+      });
     });
 
     it('should maintain suggestion order for both channels', () => {
@@ -310,7 +342,10 @@ describe('ChatbotCoreService', () => {
         suggestions: ['help', 'status', 'energy', 'battery'],
       };
 
-      const messengerFormatted = service.formatForChannel(response, 'messenger');
+      const messengerFormatted = service.formatForChannel(
+        response,
+        'messenger',
+      );
       const webFormatted = service.formatForChannel(response, 'web');
 
       // Verify order is maintained

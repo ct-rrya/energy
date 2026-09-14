@@ -34,7 +34,7 @@ import { PublicModule } from './public/public.module';
 
 /**
  * Root Application Module
- * 
+ *
  * This module:
  * 1. Loads environment variables via ConfigModule
  * 2. Establishes MongoDB connection via MongooseModule
@@ -109,7 +109,7 @@ import { PublicModule } from './public/public.module';
     NotificationsModule, // Phase 7: Notification Platform
     ReportsModule,
     AlertsModule, // Phase 8: Alert Management System
-    
+
     // Chat feature modules
     ChatbotModule, // Shared chatbot core logic
     ChatModule, // Public chat API

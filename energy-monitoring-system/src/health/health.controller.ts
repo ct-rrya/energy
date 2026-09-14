@@ -5,7 +5,7 @@ import { HealthCheckResponseDto } from './dto';
 
 /**
  * Health Controller
- * 
+ *
  * Provides health check endpoints for monitoring and diagnostics.
  * These endpoints are typically used by:
  * - Load balancers (AWS ELB, Nginx)
@@ -20,13 +20,13 @@ export class HealthController {
 
   /**
    * Comprehensive health check
-   * 
+   *
    * Returns detailed health status including:
    * - Database connectivity
    * - Memory usage
    * - System information
    * - Overall health status
-   * 
+   *
    * @returns {HealthCheckResponseDto} Detailed health status
    */
   @Get()
@@ -42,7 +42,8 @@ export class HealthController {
   })
   @ApiResponse({
     status: 503,
-    description: 'Service unavailable - one or more critical components are unhealthy',
+    description:
+      'Service unavailable - one or more critical components are unhealthy',
   })
   async check(): Promise<HealthCheckResponseDto> {
     return this.healthService.check();
@@ -50,10 +51,10 @@ export class HealthController {
 
   /**
    * Quick liveness check
-   * 
+   *
    * Fast endpoint to verify the service is alive.
    * Used by Kubernetes liveness probes.
-   * 
+   *
    * @returns Simple OK response
    */
   @Get('live')
@@ -71,17 +72,18 @@ export class HealthController {
 
   /**
    * Readiness check
-   * 
+   *
    * Verifies the service is ready to accept traffic.
    * Checks critical dependencies like database.
    * Used by Kubernetes readiness probes.
-   * 
+   *
    * @returns Readiness status
    */
   @Get('ready')
   @ApiOperation({
     summary: 'Readiness probe',
-    description: 'Checks if service is ready to accept traffic (dependencies are healthy)',
+    description:
+      'Checks if service is ready to accept traffic (dependencies are healthy)',
   })
   @ApiResponse({
     status: 200,

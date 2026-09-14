@@ -31,9 +31,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
  * Sensors Controller
- * 
+ *
  * Handles HTTP requests for sensor management.
- * 
+ *
  * Endpoints:
  * - POST   /api/sensors              Create sensor
  * - GET    /api/sensors              List all sensors
@@ -41,11 +41,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  * - PATCH  /api/sensors/:id          Update sensor
  * - DELETE /api/sensors/:id          Delete sensor
  * - POST   /api/sensors/:id/regenerate-key   Regenerate API key
- * 
+ *
  * Authentication:
  * - All endpoints require JWT authentication (admin only)
  * - Protected by JwtAuthGuard
- * 
+ *
  * Authorization:
  * - Only administrators can manage sensors
  * - ESP32 devices cannot access these endpoints
@@ -60,25 +60,25 @@ export class SensorsController {
 
   /**
    * Create New Sensor
-   * 
+   *
    * Registers a new sensor device and generates API key.
-   * 
+   *
    * @param createSensorDto - Sensor creation data
    * @returns Created sensor with API key
-   * 
+   *
    * Important:
    * - API key is ONLY returned in this response
    * - Administrator must save API key immediately
    * - API key cannot be retrieved later (security)
    * - Configure ESP32 with the returned API key
-   * 
+   *
    * Process:
    * 1. Admin submits sensor details
    * 2. System generates unique API key
    * 3. Sensor is saved in database
    * 4. API key is returned (one-time only)
    * 5. Admin configures ESP32 with API key
-   * 
+   *
    * Example Request:
    * POST /api/sensors
    * {
@@ -90,7 +90,7 @@ export class SensorsController {
    *     "firmwareVersion": "v2.1.0"
    *   }
    * }
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -130,23 +130,23 @@ export class SensorsController {
 
   /**
    * List All Sensors
-   * 
+   *
    * Retrieves all active sensors.
-   * 
+   *
    * @returns Array of sensors (excludes API keys)
-   * 
+   *
    * Security:
    * - API keys are excluded from response
    * - Only active sensors returned (isActive = true)
-   * 
+   *
    * Sorting:
    * - Newest sensors first (by createdAt)
-   * 
+   *
    * Future Enhancement:
    * - Add pagination
    * - Add filtering by status
    * - Add search by name/location
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -184,16 +184,16 @@ export class SensorsController {
 
   /**
    * Get Sensor Details
-   * 
+   *
    * Retrieves detailed information about a specific sensor.
-   * 
+   *
    * @param id - Sensor ID (MongoDB ObjectId)
    * @returns Sensor details (excludes API key)
-   * 
+   *
    * Security:
    * - API key is excluded from response
    * - Only returns active sensors
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -243,17 +243,17 @@ export class SensorsController {
 
   /**
    * Update Sensor
-   * 
+   *
    * Updates sensor information (name, location, status, metadata).
-   * 
+   *
    * @param id - Sensor ID
    * @param updateSensorDto - Fields to update
    * @returns Updated sensor (excludes API key)
-   * 
+   *
    * Restrictions:
    * - Cannot update API key (use regenerate-key endpoint)
    * - All fields are optional (partial update)
-   * 
+   *
    * Example Request:
    * PATCH /api/sensors/:id
    * {
@@ -262,7 +262,7 @@ export class SensorsController {
    *     "notes": "Under maintenance - firmware update"
    *   }
    * }
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -310,18 +310,18 @@ export class SensorsController {
 
   /**
    * Delete Sensor
-   * 
+   *
    * Soft deletes a sensor (marks as inactive).
-   * 
+   *
    * @param id - Sensor ID
    * @returns Deleted sensor
-   * 
+   *
    * Implementation:
    * - Soft delete: Sets isActive = false
    * - Sensor remains in database
    * - Historical readings preserved
    * - Cannot send new data (API key invalid)
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -367,28 +367,28 @@ export class SensorsController {
 
   /**
    * Regenerate API Key
-   * 
+   *
    * Generates a new API key for a sensor.
    * Used when API key is compromised or lost.
-   * 
+   *
    * @param id - Sensor ID
    * @returns Sensor with new API key
-   * 
+   *
    * Important:
    * - Old API key becomes invalid immediately
    * - ESP32 must be reconfigured with new key
    * - New key is ONLY shown in this response
    * - Cannot retrieve key later
-   * 
+   *
    * Use Cases:
    * - API key compromised or exposed
    * - API key lost (not documented)
    * - ESP32 replacement
    * - Security rotation
-   * 
+   *
    * Example Request:
    * POST /api/sensors/:id/regenerate-key
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,

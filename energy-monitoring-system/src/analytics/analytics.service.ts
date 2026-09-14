@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EnergyService } from '../energy/energy.service';
 import { SensorsService } from '../sensors/sensors.service';
-import { EnergyReading, EnergyReadingDocument } from '../iot/schemas/energy-reading.schema';
+import {
+  EnergyReading,
+  EnergyReadingDocument,
+} from '../iot/schemas/energy-reading.schema';
 import { Sensor, SensorDocument } from '../sensors/schemas/sensor.schema';
 import {
   DailyEnergySummaryDto,
@@ -35,22 +38,22 @@ import {
 
 /**
  * Analytics Service
- * 
+ *
  * Centralized service for energy analytics calculations.
  * Provides reusable methods for Dashboard and Messenger Bot.
- * 
+ *
  * Responsibilities:
  * - Daily/Weekly/Monthly energy summaries
  * - Peak generation detection
  * - Environmental impact calculation
  * - Cost savings estimation
  * - Trend analysis (compare periods)
- * 
+ *
  * Principle: Don't Duplicate, Delegate
  * - Uses EnergyService for database queries
  * - Adds business logic on top of raw data
  * - Single source of truth for calculations
- * 
+ *
  * Consumed By:
  * - Dashboard (real-time charts)
  * - Messenger Bot (chat responses)
@@ -82,12 +85,12 @@ export class AnalyticsService {
 
   /**
    * Get Daily Energy Summary
-   * 
+   *
    * Calculates energy summary for a specific date.
-   * 
+   *
    * @param date - Date string (YYYY-MM-DD) or Date object
    * @returns Daily energy summary
-   * 
+   *
    * Usage:
    * - Today's summary: getDailySummary(new Date())
    * - Specific date: getDailySummary('2026-07-15')
@@ -102,7 +105,15 @@ export class AnalyticsService {
     const energy = await this.energyService.getEnergyRange(dateStr, dateStr);
 
     // Get day of week
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const dayOfWeek = dayNames[targetDate.getDay()];
 
     // Check if today
@@ -124,12 +135,12 @@ export class AnalyticsService {
 
   /**
    * Get Weekly Energy Summary
-   * 
+   *
    * Calculates energy summary for a week (Monday-Sunday).
-   * 
+   *
    * @param weekStartDate - Week start date (Monday)
    * @returns Weekly energy summary with daily breakdown
-   * 
+   *
    * Usage:
    * - This week: getWeeklySummary(getMondayOfCurrentWeek())
    * - Specific week: getWeeklySummary('2026-07-13')
@@ -191,13 +202,13 @@ export class AnalyticsService {
 
   /**
    * Get Monthly Energy Summary
-   * 
+   *
    * Calculates energy summary for a month.
-   * 
+   *
    * @param year - Year
    * @param month - Month (1-12)
    * @returns Monthly energy summary
-   * 
+   *
    * Usage:
    * - This month: getMonthlySummary(2026, 7)
    * - Specific month: getMonthlySummary(2026, 6)
@@ -272,13 +283,13 @@ export class AnalyticsService {
 
   /**
    * Get Peak Generation
-   * 
+   *
    * Finds the reading with highest power in a date range.
-   * 
+   *
    * @param startDate - Start date
    * @param endDate - End date (optional, defaults to today)
    * @returns Peak generation details
-   * 
+   *
    * Usage:
    * - This month: getPeakGeneration('2026-07-01', '2026-07-31')
    * - All time: getPeakGeneration('2020-01-01')
@@ -323,12 +334,12 @@ export class AnalyticsService {
 
   /**
    * Calculate Environmental Impact
-   * 
+   *
    * Calculates CO2 avoided, trees equivalent, etc.
-   * 
+   *
    * @param energyKWh - Energy generated in kWh
    * @returns Environmental impact metrics
-   * 
+   *
    * Conversion Factors (US EPA):
    * - CO2: 0.5 kg per kWh
    * - Tree: Absorbs 21 kg CO2 per year
@@ -336,9 +347,7 @@ export class AnalyticsService {
    * - Home: Uses 30 kWh per day
    * - Phone: 0.012 kWh per charge
    */
-  calculateEnvironmentalImpact(
-    energyKWh: number,
-  ): EnvironmentalImpactDto {
+  calculateEnvironmentalImpact(energyKWh: number): EnvironmentalImpactDto {
     const co2AvoidedKg = energyKWh * this.CO2_PER_KWH;
     const treesEquivalent = co2AvoidedKg / this.CO2_PER_TREE_YEAR;
     const coalNotBurnedKg = energyKWh * this.COAL_PER_KWH;
@@ -361,14 +370,14 @@ export class AnalyticsService {
 
   /**
    * Calculate Cost Savings
-   * 
+   *
    * Estimates cost savings from generated energy.
-   * 
+   *
    * @param energyKWh - Energy generated in kWh
    * @param periodDays - Number of days in period
    * @param electricityRate - Rate per kWh (optional, defaults to 0.12)
    * @returns Cost savings metrics
-   * 
+   *
    * Formula:
    * - Savings = Energy (kWh) × Rate ($/kWh)
    * - Daily Average = Total Savings / Days
@@ -392,8 +401,7 @@ export class AnalyticsService {
       electricityRatePerKWh: rate,
       totalSavings: Math.round(totalSavings * 100) / 100,
       dailyAverageSavings: Math.round(dailyAverageSavings * 100) / 100,
-      monthlyProjectedSavings:
-        Math.round(monthlyProjectedSavings * 100) / 100,
+      monthlyProjectedSavings: Math.round(monthlyProjectedSavings * 100) / 100,
       yearlyProjectedSavings: Math.round(yearlyProjectedSavings * 100) / 100,
       currency: 'USD',
       periodDays,
@@ -402,14 +410,14 @@ export class AnalyticsService {
 
   /**
    * Analyze Trend
-   * 
+   *
    * Compares current and previous period values.
-   * 
+   *
    * @param currentValue - Current period value
    * @param previousValue - Previous period value
    * @param periodDescription - Description (e.g., "This week vs last week")
    * @returns Trend analysis
-   * 
+   *
    * Trend Direction:
    * - up: current > previous (by > 5%)
    * - down: current < previous (by > 5%)
@@ -445,12 +453,12 @@ export class AnalyticsService {
 
   /**
    * Get Comprehensive Analytics
-   * 
+   *
    * Returns all analytics in one response.
    * Perfect for dashboard and bot.
-   * 
+   *
    * @returns Comprehensive analytics
-   * 
+   *
    * Includes:
    * - Today's summary
    * - This week's summary
@@ -477,9 +485,7 @@ export class AnalyticsService {
     const thisMonth = await this.getMonthlySummary(year, month);
 
     // Peak generation (this month)
-    const monthStart = new Date(year, month - 1, 1)
-      .toISOString()
-      .split('T')[0];
+    const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
     const peakGeneration = await this.getPeakGeneration(monthStart);
 
     // Environmental impact (this month)
@@ -518,7 +524,7 @@ export class AnalyticsService {
 
   /**
    * Helper: Get Monday of Week
-   * 
+   *
    * Returns Monday of the week for a given date.
    */
   private getMondayOfWeek(date: Date): Date {
@@ -530,7 +536,7 @@ export class AnalyticsService {
 
   /**
    * Helper: Get Week Number
-   * 
+   *
    * Returns ISO week number (1-53).
    */
   private getWeekNumber(date: Date): number {
@@ -550,10 +556,10 @@ export class AnalyticsService {
 
   /**
    * Get Dashboard Analytics (Phase 6)
-   * 
+   *
    * Single endpoint for all dashboard summary data.
    * Minimizes API requests, provides comprehensive overview.
-   * 
+   *
    * @returns Dashboard analytics with today, yesterday, week, month, system health
    */
   async getDashboardAnalytics(): Promise<DashboardAnalyticsDto> {
@@ -564,14 +570,19 @@ export class AnalyticsService {
     const yesterday = this.getDateString(this.subtractDays(now, 1));
 
     // Fetch all metrics in parallel
-    const [todayMetrics, yesterdayMetrics, weekMetrics, monthMetrics, systemHealth] =
-      await Promise.all([
-        this.getTodayMetrics(today),
-        this.getTodayMetrics(yesterday),
-        this.getWeekMetrics(),
-        this.getMonthMetrics(),
-        this.getSystemHealth(),
-      ]);
+    const [
+      todayMetrics,
+      yesterdayMetrics,
+      weekMetrics,
+      monthMetrics,
+      systemHealth,
+    ] = await Promise.all([
+      this.getTodayMetrics(today),
+      this.getTodayMetrics(yesterday),
+      this.getWeekMetrics(),
+      this.getMonthMetrics(),
+      this.getSystemHealth(),
+    ]);
 
     // Calculate yesterday comparison
     const yesterdayComparison = this.compareWithYesterday(
@@ -600,7 +611,10 @@ export class AnalyticsService {
     };
   }
 
-  private compareWithYesterday(today: number, yesterday: number): YesterdayComparisonDto {
+  private compareWithYesterday(
+    today: number,
+    yesterday: number,
+  ): YesterdayComparisonDto {
     const change = yesterday > 0 ? ((today - yesterday) / yesterday) * 100 : 0;
     let trend: 'up' | 'down' | 'stable' = 'stable';
     if (change > 5) trend = 'up';
@@ -636,10 +650,16 @@ export class AnalyticsService {
     const lastDay = new Date(year, month, 0);
     const monthStart = this.getDateString(firstDay);
     const monthEnd = this.getDateString(lastDay);
-    const energy = await this.energyService.getEnergyRange(monthStart, monthEnd);
+    const energy = await this.energyService.getEnergyRange(
+      monthStart,
+      monthEnd,
+    );
     const currentDay = now.getDate();
     const daysInMonth = lastDay.getDate();
-    const projectedKWh = currentDay > 0 ? (energy.estimatedEnergyKWh / currentDay) * daysInMonth : 0;
+    const projectedKWh =
+      currentDay > 0
+        ? (energy.estimatedEnergyKWh / currentDay) * daysInMonth
+        : 0;
     const costSavings = energy.estimatedEnergyKWh * 0.12;
     return {
       energyKWh: energy.estimatedEnergyKWh,
@@ -649,16 +669,24 @@ export class AnalyticsService {
   }
 
   private async getSystemHealth(): Promise<SystemHealthDto> {
-    const activeSensors = await this.sensorModel.countDocuments({ status: 'active' as any });
-    const totalReadings = await this.readingModel.countDocuments({ source: 'hardware' as any });
+    const activeSensors = await this.sensorModel.countDocuments({
+      status: 'active' as any,
+    });
+    const totalReadings = await this.readingModel.countDocuments({
+      source: 'hardware' as any,
+    });
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const recentReadings = await this.readingModel.countDocuments({
-      timestamp: { $gte: oneDayAgo } as any,
+      timestamp: { $gte: oneDayAgo },
       source: 'hardware' as any,
-    } as any);
-    const avgReportingInterval = recentReadings > 0 ? Math.round((1440 / recentReadings) * 10) / 10 : 0;
+    });
+    const avgReportingInterval =
+      recentReadings > 0 ? Math.round((1440 / recentReadings) * 10) / 10 : 0;
     const expectedReadings = activeSensors * 1440;
-    const systemUptime = expectedReadings > 0 ? Math.min((recentReadings / expectedReadings) * 100, 100) : 0;
+    const systemUptime =
+      expectedReadings > 0
+        ? Math.min((recentReadings / expectedReadings) * 100, 100)
+        : 0;
     return {
       activeSensors,
       totalReadings,
@@ -667,7 +695,10 @@ export class AnalyticsService {
     };
   }
 
-  private async countDaysWithData(startDate: string, endDate: string): Promise<number> {
+  private async countDaysWithData(
+    startDate: string,
+    endDate: string,
+  ): Promise<number> {
     const pipeline = [
       {
         $match: {

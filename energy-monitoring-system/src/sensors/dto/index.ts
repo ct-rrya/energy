@@ -1,6 +1,6 @@
 /**
  * Sensors Module DTOs
- * 
+ *
  * Centralized exports for all sensor-related Data Transfer Objects.
  */
 

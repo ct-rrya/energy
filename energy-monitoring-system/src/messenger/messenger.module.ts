@@ -9,16 +9,16 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
 
 /**
  * Messenger Module
- * 
+ *
  * Facebook Messenger Bot integration with Gemini AI.
- * 
+ *
  * Architecture:
  * - NEVER accesses database directly
  * - Consumes Analytics Service for calculations
  * - Consumes Energy Service for data queries
  * - Consumes Subscribers Service for subscriptions
  * - Uses Gemini AI Service for natural language processing
- * 
+ *
  * Features:
  * - Webhook verification
  * - Message handling
@@ -26,7 +26,7 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
  * - Natural language AI queries (via Gemini)
  * - Response formatting
  * - Facebook Graph API integration
- * 
+ *
  * Commands:
  * - help - Show available commands
  * - status - Comprehensive analytics
@@ -36,17 +36,17 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
  * - savings - Cost savings
  * - subscribe/unsubscribe - Notifications
  * - Natural language queries - Processed by Gemini AI
- * 
+ *
  * Dependencies:
  * - AnalyticsModule (for calculations)
  * - EnergyModule (for data queries)
  * - SubscribersModule (for subscriptions)
  * - GeminiAIService (for natural language AI)
- * 
+ *
  * Webhook:
  * - GET  /api/messenger/webhook - Verification
  * - POST /api/messenger/webhook - Receive events
- * 
+ *
  * Configuration:
  * - MESSENGER_PAGE_ACCESS_TOKEN (env)
  * - MESSENGER_VERIFY_TOKEN (env)

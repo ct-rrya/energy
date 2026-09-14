@@ -4,15 +4,15 @@ import type { ReportSummary } from '../schemas/report.schema';
 
 /**
  * Report Response DTO
- * 
+ *
  * Represents a report in API responses.
- * 
+ *
  * Used in:
  * - GET /api/reports (list reports)
  * - GET /api/reports/:id (get report details)
  * - POST /api/reports/generate (after generation)
  * - PATCH /api/reports/:id (after update)
- * 
+ *
  * Security:
  * - Only includes metadata (not file content)
  * - File content is downloaded via separate endpoint
@@ -21,7 +21,7 @@ import type { ReportSummary } from '../schemas/report.schema';
 export class ReportResponseDto {
   /**
    * Report ID
-   * 
+   *
    * MongoDB ObjectId as string.
    * Used for download, delete, and retrieval.
    */
@@ -33,7 +33,7 @@ export class ReportResponseDto {
 
   /**
    * Report Type
-   * 
+   *
    * daily | weekly | monthly | custom
    */
   @ApiProperty({
@@ -45,7 +45,7 @@ export class ReportResponseDto {
 
   /**
    * Report Format
-   * 
+   *
    * pdf | excel
    */
   @ApiProperty({
@@ -57,9 +57,9 @@ export class ReportResponseDto {
 
   /**
    * File Name
-   * 
+   *
    * Name of the generated file.
-   * 
+   *
    * Format: {type}-report-{period}-{timestamp}.{ext}
    * Example: monthly-report-2026-07-1721300400000.pdf
    */
@@ -71,11 +71,11 @@ export class ReportResponseDto {
 
   /**
    * File URL
-   * 
+   *
    * URL to download the report file.
-   * 
+   *
    * Format: /api/reports/{id}/download
-   * 
+   *
    * Client should:
    * 1. Call this URL with JWT token
    * 2. Receive file stream
@@ -89,9 +89,9 @@ export class ReportResponseDto {
 
   /**
    * File Size
-   * 
+   *
    * Size of the file in bytes.
-   * 
+   *
    * For display:
    * - < 1 KB: Show bytes
    * - < 1 MB: Show KB
@@ -105,9 +105,9 @@ export class ReportResponseDto {
 
   /**
    * Start Date
-   * 
+   *
    * Start date of the report period.
-   * 
+   *
    * Format: YYYY-MM-DD
    * Example: 2026-07-01
    */
@@ -119,9 +119,9 @@ export class ReportResponseDto {
 
   /**
    * End Date
-   * 
+   *
    * End date of the report period.
-   * 
+   *
    * Format: YYYY-MM-DD
    * Example: 2026-07-31
    */
@@ -133,9 +133,9 @@ export class ReportResponseDto {
 
   /**
    * Summary
-   * 
+   *
    * Key metrics from the report.
-   * 
+   *
    * Displayed in report list without opening file.
    */
   @ApiProperty({
@@ -153,7 +153,7 @@ export class ReportResponseDto {
 
   /**
    * Download Count
-   * 
+   *
    * Number of times this report has been downloaded.
    */
   @ApiProperty({
@@ -164,9 +164,9 @@ export class ReportResponseDto {
 
   /**
    * Created At
-   * 
+   *
    * When the report was generated.
-   * 
+   *
    * ISO 8601 format.
    */
   @ApiProperty({
@@ -177,11 +177,11 @@ export class ReportResponseDto {
 
   /**
    * Expires At
-   * 
+   *
    * When the report will be automatically deleted.
-   * 
+   *
    * Default: 30 days from creation.
-   * 
+   *
    * ISO 8601 format.
    */
   @ApiProperty({
@@ -193,9 +193,9 @@ export class ReportResponseDto {
 
 /**
  * Reports List Response DTO
- * 
+ *
  * Response for GET /api/reports (list endpoint).
- * 
+ *
  * Includes pagination metadata.
  */
 export class ReportsListResponseDto {

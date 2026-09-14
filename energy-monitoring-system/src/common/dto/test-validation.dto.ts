@@ -15,10 +15,10 @@ import {
 
 /**
  * Test Validation DTO
- * 
+ *
  * This DTO is used to verify that the global ValidationPipe is working correctly.
  * It tests various validation decorators and scenarios.
- * 
+ *
  * This endpoint should be removed before production deployment.
  */
 

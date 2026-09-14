@@ -1,12 +1,12 @@
 /**
  * Event DTOs for Notification Triggers
- * 
+ *
  * Used by EventEmitter to pass data between modules.
  */
 
 /**
  * Energy Milestone Event
- * 
+ *
  * Emitted when energy generation reaches a milestone.
  */
 export class EnergyMilestoneEvent {
@@ -17,7 +17,7 @@ export class EnergyMilestoneEvent {
 
 /**
  * Battery Alert Event
- * 
+ *
  * Emitted when battery level crosses threshold.
  */
 export class BatteryAlertEvent {
@@ -32,7 +32,7 @@ export class BatteryAlertEvent {
 
 /**
  * Sensor Online Event
- * 
+ *
  * Emitted when sensor comes online.
  */
 export class SensorOnlineEvent {
@@ -44,7 +44,7 @@ export class SensorOnlineEvent {
 
 /**
  * Sensor Offline Event
- * 
+ *
  * Emitted when sensor goes offline.
  */
 export class SensorOfflineEvent {
@@ -57,7 +57,7 @@ export class SensorOfflineEvent {
 
 /**
  * System Alert Event
- * 
+ *
  * Emitted for system-level notifications.
  */
 export class SystemAlertEvent {

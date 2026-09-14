@@ -27,9 +27,9 @@ import { NotificationQueryDto } from './dto/notification-query.dto';
 
 /**
  * Notifications Service
- * 
+ *
  * Core service for the notification platform.
- * 
+ *
  * Responsibilities:
  * - Process notification events
  * - Send notifications via MessengerService
@@ -37,7 +37,7 @@ import { NotificationQueryDto } from './dto/notification-query.dto';
  * - Handle scheduled summaries (cron jobs)
  * - Broadcast messages to multiple subscribers
  * - Query notification logs
- * 
+ *
  * Architecture:
  * - Consumes MessengerService for sending
  * - Consumes SubscribersService for targeting
@@ -57,10 +57,12 @@ export class NotificationsService {
     private analyticsService: AnalyticsService,
     private configService: ConfigService,
   ) {
-    this.timezone = this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
-    this.logger.log(`Notifications Service initialized (Timezone: ${this.timezone})`);
+    this.timezone =
+      this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
+    this.logger.log(
+      `Notifications Service initialized (Timezone: ${this.timezone})`,
+    );
   }
-
 
   // ============================================================
   // AUTOMATED NOTIFICATIONS
@@ -68,31 +70,37 @@ export class NotificationsService {
 
   /**
    * Send Energy Milestone Notification
-   * 
+   *
    * Triggered when energy generation reaches milestone.
-   * 
+   *
    * @param event - Energy milestone event data
    */
   async sendEnergyMilestone(event: EnergyMilestoneEvent): Promise<void> {
     this.logger.log(`Energy milestone reached: ${event.milestone}Wh`);
 
     // Get active subscribers with milestone preference
-    const subscribers = await this.getSubscribersForNotification('energyMilestones');
+    const subscribers =
+      await this.getSubscribersForNotification('energyMilestones');
 
     // Format message
     const message = this.formatEnergyMilestoneMessage(event);
 
     // Send to all subscribers
-    await this.sendToMultiple(subscribers, NotificationType.MILESTONE, message, {
-      milestone: event.milestone,
-    });
+    await this.sendToMultiple(
+      subscribers,
+      NotificationType.MILESTONE,
+      message,
+      {
+        milestone: event.milestone,
+      },
+    );
   }
 
   /**
    * Send Battery Alert Notification
-   * 
+   *
    * Triggered when battery crosses threshold.
-   * 
+   *
    * @param event - Battery alert event data
    */
   async sendBatteryAlert(event: BatteryAlertEvent): Promise<void> {
@@ -101,7 +109,8 @@ export class NotificationsService {
     );
 
     // Get active subscribers with battery alert preference
-    const subscribers = await this.getSubscribersForNotification('batteryAlerts');
+    const subscribers =
+      await this.getSubscribersForNotification('batteryAlerts');
 
     // Format message
     const message = this.formatBatteryAlertMessage(event);
@@ -116,16 +125,17 @@ export class NotificationsService {
 
   /**
    * Send Sensor Online Notification
-   * 
+   *
    * Triggered when sensor comes online.
-   * 
+   *
    * @param event - Sensor online event data
    */
   async sendSensorOnline(event: SensorOnlineEvent): Promise<void> {
     this.logger.log(`Sensor online: ${event.sensorName}`);
 
     // Get active subscribers with sensor events preference
-    const subscribers = await this.getSubscribersForNotification('sensorEvents');
+    const subscribers =
+      await this.getSubscribersForNotification('sensorEvents');
 
     // Format message
     const message = `✅ **Sensor Online**\n\n${event.sensorName} (${event.sensorLocation}) is now online and reporting data.\n\n📡 Status: Active\n⏰ Time: ${event.timestamp.toLocaleTimeString()}`;
@@ -139,16 +149,17 @@ export class NotificationsService {
 
   /**
    * Send Sensor Offline Notification
-   * 
+   *
    * Triggered when sensor goes offline.
-   * 
+   *
    * @param event - Sensor offline event data
    */
   async sendSensorOffline(event: SensorOfflineEvent): Promise<void> {
     this.logger.warn(`Sensor offline: ${event.sensorName}`);
 
     // Get active subscribers with sensor events preference
-    const subscribers = await this.getSubscribersForNotification('sensorEvents');
+    const subscribers =
+      await this.getSubscribersForNotification('sensorEvents');
 
     // Format message
     const message = `⚠️ **Sensor Offline**\n\n${event.sensorName} (${event.sensorLocation}) has gone offline.\n\n📡 Status: Inactive\n⏰ Last Seen: ${event.lastSeenAt.toLocaleTimeString()}\n\n💡 Check sensor connection.`;
@@ -162,19 +173,25 @@ export class NotificationsService {
 
   /**
    * Send System Alert Notification
-   * 
+   *
    * Triggered for system-level events.
-   * 
+   *
    * @param event - System alert event data
    */
   async sendSystemAlert(event: SystemAlertEvent): Promise<void> {
     this.logger.log(`System alert: ${event.alertType} - ${event.message}`);
 
     // Get active subscribers with system alerts preference
-    const subscribers = await this.getSubscribersForNotification('systemAlerts');
+    const subscribers =
+      await this.getSubscribersForNotification('systemAlerts');
 
     // Format message
-    const emoji = event.severity === 'critical' ? '🚨' : event.severity === 'warning' ? '⚠️' : 'ℹ️';
+    const emoji =
+      event.severity === 'critical'
+        ? '🚨'
+        : event.severity === 'warning'
+          ? '⚠️'
+          : 'ℹ️';
     const message = `${emoji} **System ${event.alertType.toUpperCase()}**\n\n${event.message}\n\n⏰ Time: ${event.timestamp.toLocaleTimeString()}`;
 
     // Send to all subscribers
@@ -185,16 +202,15 @@ export class NotificationsService {
     });
   }
 
-
   // ============================================================
   // SCHEDULED SUMMARIES (CRON JOBS)
   // ============================================================
 
   /**
    * Send Daily Summary
-   * 
+   *
    * Cron job: Every day at 8 PM (configurable via env)
-   * 
+   *
    * Sends daily energy report to all subscribed users.
    */
   @Cron('0 20 * * *', {
@@ -206,7 +222,8 @@ export class NotificationsService {
 
     try {
       // Get active subscribers with daily report preference
-      const subscribers = await this.getSubscribersForNotification('dailyReport');
+      const subscribers =
+        await this.getSubscribersForNotification('dailyReport');
 
       if (subscribers.length === 0) {
         this.logger.log('No subscribers for daily summary');
@@ -230,15 +247,18 @@ export class NotificationsService {
         `Daily summary sent to ${subscribers.length} subscribers`,
       );
     } catch (error) {
-      this.logger.error(`Failed to send daily summary: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send daily summary: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
   /**
    * Send Weekly Summary
-   * 
+   *
    * Cron job: Every Monday at 9 AM
-   * 
+   *
    * Sends weekly energy report to all subscribed users.
    */
   @Cron('0 9 * * 1', {
@@ -250,7 +270,8 @@ export class NotificationsService {
 
     try {
       // Get active subscribers with weekly report preference
-      const subscribers = await this.getSubscribersForNotification('weeklyReport');
+      const subscribers =
+        await this.getSubscribersForNotification('weeklyReport');
 
       if (subscribers.length === 0) {
         this.logger.log('No subscribers for weekly summary');
@@ -274,10 +295,12 @@ export class NotificationsService {
         `Weekly summary sent to ${subscribers.length} subscribers`,
       );
     } catch (error) {
-      this.logger.error(`Failed to send weekly summary: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send weekly summary: ${error.message}`,
+        error.stack,
+      );
     }
   }
-
 
   // ============================================================
   // BROADCAST SYSTEM
@@ -285,9 +308,9 @@ export class NotificationsService {
 
   /**
    * Broadcast Message
-   * 
+   *
    * Send message to multiple subscribers based on targeting.
-   * 
+   *
    * @param dto - Broadcast message DTO
    * @returns Broadcast result with delivery statistics
    */
@@ -304,7 +327,8 @@ export class NotificationsService {
       subscribers = await this.subscribersService.getActiveSubscribers();
     } else if (dto.targetTags && dto.targetTags.length > 0) {
       // Filter by tags
-      const allSubscribers = await this.subscribersService.getActiveSubscribers();
+      const allSubscribers =
+        await this.subscribersService.getActiveSubscribers();
       subscribers = allSubscribers.filter((sub) =>
         dto.targetTags!.some((tag) => sub.tags.includes(tag)),
       );
@@ -326,8 +350,10 @@ export class NotificationsService {
     let sentCount = 0;
     let failedCount = 0;
 
-    const batchSize = this.configService.get<number>('NOTIFICATION_RATE_LIMIT') || 50;
-    const batchDelay = this.configService.get<number>('NOTIFICATION_BATCH_DELAY') || 100;
+    const batchSize =
+      this.configService.get<number>('NOTIFICATION_RATE_LIMIT') || 50;
+    const batchDelay =
+      this.configService.get<number>('NOTIFICATION_BATCH_DELAY') || 100;
 
     for (let i = 0; i < subscribers.length; i += batchSize) {
       const batch = subscribers.slice(i, i + batchSize);
@@ -370,16 +396,15 @@ export class NotificationsService {
     };
   }
 
-
   // ============================================================
   // NOTIFICATION LOGGING & QUERIES
   // ============================================================
 
   /**
    * Get Notification Logs
-   * 
+   *
    * Query notification logs with filters and pagination.
-   * 
+   *
    * @param query - Query parameters
    * @returns Paginated notification logs
    */
@@ -428,9 +453,9 @@ export class NotificationsService {
 
   /**
    * Get Notification Statistics
-   * 
+   *
    * Returns aggregated statistics for notifications.
-   * 
+   *
    * @returns Notification statistics
    */
   async getNotificationStats(): Promise<{
@@ -474,16 +499,15 @@ export class NotificationsService {
     };
   }
 
-
   // ============================================================
   // HELPER METHODS
   // ============================================================
 
   /**
    * Get Subscribers for Notification
-   * 
+   *
    * Returns active subscribers with specific notification preference enabled.
-   * 
+   *
    * @param preferenceKey - Notification preference key
    * @returns Array of subscribers
    */
@@ -502,9 +526,9 @@ export class NotificationsService {
 
   /**
    * Send to Multiple Subscribers
-   * 
+   *
    * Sends notification to multiple subscribers with rate limiting.
-   * 
+   *
    * @param subscribers - Array of subscribers
    * @param type - Notification type
    * @param message - Message text
@@ -547,9 +571,9 @@ export class NotificationsService {
 
   /**
    * Send Notification
-   * 
+   *
    * Sends notification and logs it to database.
-   * 
+   *
    * @param subscriberId - Subscriber Facebook PSID
    * @param type - Notification type
    * @param message - Message text
@@ -593,15 +617,14 @@ export class NotificationsService {
 
   /**
    * Delay Helper
-   * 
+   *
    * Utility for adding delays between batches.
-   * 
+   *
    * @param ms - Milliseconds to delay
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-
 
   // ============================================================
   // MESSAGE FORMATTING
@@ -611,7 +634,8 @@ export class NotificationsService {
    * Format Energy Milestone Message
    */
   private formatEnergyMilestoneMessage(event: EnergyMilestoneEvent): string {
-    const emoji = event.milestone >= 5000 ? '🏆' : event.milestone >= 1000 ? '🎉' : '⚡';
+    const emoji =
+      event.milestone >= 5000 ? '🏆' : event.milestone >= 1000 ? '🎉' : '⚡';
     return `
 ${emoji} **Energy Milestone Reached!**
 
@@ -630,7 +654,12 @@ Keep up the great work! 🌞
    * Format Battery Alert Message
    */
   private formatBatteryAlertMessage(event: BatteryAlertEvent): string {
-    const emoji = event.alertType === 'critical' ? '🔴' : event.alertType === 'low' ? '🟡' : '🟢';
+    const emoji =
+      event.alertType === 'critical'
+        ? '🔴'
+        : event.alertType === 'low'
+          ? '🟡'
+          : '🟢';
     const title = event.alertType === 'full' ? 'Battery Full' : 'Battery Alert';
 
     return `

@@ -1,11 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
 
 /**
  * Time Series Data Point DTO
- * 
+ *
  * Represents a single data point in a time-series chart.
- * 
+ *
  * Usage:
  * - Chart data points
  * - Hourly/daily/weekly aggregations
@@ -51,7 +57,7 @@ export class TimeSeriesDataPointDto {
 
 /**
  * Time Series Summary DTO
- * 
+ *
  * Statistical summary of time-series data.
  */
 export class TimeSeriesSummaryDto {
@@ -92,10 +98,9 @@ export class TimeSeriesSummaryDto {
   totalReadings: number;
 }
 
-
 /**
  * Time Series Response DTO
- * 
+ *
  * Complete time-series data with metadata.
  */
 export class TimeSeriesDto {

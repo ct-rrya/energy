@@ -10,7 +10,7 @@ import { Transform } from 'class-transformer';
 
 /**
  * DTO for sending a chat message
- * 
+ *
  * Requirements: 5.2, 5.3, 5.4, 5.5
  */
 export class SendMessageDto {

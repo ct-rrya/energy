@@ -4,16 +4,16 @@ import * as bcrypt from 'bcrypt';
 
 /**
  * User Schema
- * 
+ *
  * Represents an administrator account in the system.
- * 
+ *
  * Security Features:
  * - Password is hashed with bcrypt before storage
  * - Password is never selected by default (select: false)
  * - Password is excluded from JSON responses (transform function)
  * - Email is unique and indexed for fast lookups
  * - Email is normalized (lowercase, trimmed)
- * 
+ *
  * Fields:
  * - email: Unique login identifier
  * - password: Hashed password (bcrypt)
@@ -112,10 +112,10 @@ export class User {
 
   /**
    * Compare plain password with hashed password
-   * 
+   *
    * @param plainPassword - The plain text password to check
    * @returns Promise<boolean> - true if password matches
-   * 
+   *
    * Usage:
    *   const isMatch = await user.comparePassword('password123');
    */

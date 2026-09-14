@@ -4,14 +4,14 @@ import type { SensorMetadata } from '../schemas/sensor.schema';
 
 /**
  * Sensor Response DTO
- * 
+ *
  * Defines the structure of sensor data returned in API responses.
- * 
+ *
  * Security:
  * - API key is included ONLY in create response
  * - API key is excluded from list/get responses (for security)
  * - Use SensorWithApiKeyResponseDto for create response
- * 
+ *
  * Usage:
  * - GET /api/sensors (list)
  * - GET /api/sensors/:id (details)
@@ -87,19 +87,19 @@ export class SensorResponseDto {
 
 /**
  * Sensor Response with API Key DTO
- * 
+ *
  * Extended response that includes the API key.
- * 
+ *
  * Security:
  * - ONLY returned when creating a new sensor
  * - NOT returned in list or get endpoints
  * - Client must save API key during creation
  * - API key cannot be retrieved later (security)
- * 
+ *
  * Usage:
  * - POST /api/sensors (create) - Returns this
  * - POST /api/sensors/:id/regenerate-key - Returns this
- * 
+ *
  * Important:
  * Administrator should copy API key and configure ESP32 immediately.
  * The API key will not be visible again after creation.

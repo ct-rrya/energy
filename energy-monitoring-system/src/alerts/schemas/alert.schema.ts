@@ -42,9 +42,9 @@ export enum AlertStatus {
 
 /**
  * Alert Schema
- * 
+ *
  * Represents system alerts for monitoring and notification.
- * 
+ *
  * Purpose:
  * - Track system alerts independently from notification delivery
  * - Provide alert management interface for administrators
@@ -58,7 +58,7 @@ export enum AlertStatus {
 export class Alert {
   /**
    * Alert Title
-   * 
+   *
    * Short, descriptive title for the alert.
    */
   @Prop({
@@ -70,7 +70,7 @@ export class Alert {
 
   /**
    * Alert Description
-   * 
+   *
    * Detailed description of the alert.
    */
   @Prop({
@@ -81,7 +81,7 @@ export class Alert {
 
   /**
    * Alert Type
-   * 
+   *
    * Category of the alert.
    */
   @Prop({
@@ -94,7 +94,7 @@ export class Alert {
 
   /**
    * Alert Severity
-   * 
+   *
    * Severity level of the alert.
    */
   @Prop({
@@ -107,7 +107,7 @@ export class Alert {
 
   /**
    * Alert Status
-   * 
+   *
    * Current status of the alert.
    */
   @Prop({
@@ -121,7 +121,7 @@ export class Alert {
 
   /**
    * Source Sensor ID
-   * 
+   *
    * Reference to the sensor that triggered the alert (if applicable).
    */
   @Prop({
@@ -133,7 +133,7 @@ export class Alert {
 
   /**
    * Source Sensor Name
-   * 
+   *
    * Denormalized sensor name for faster queries.
    */
   @Prop({
@@ -143,7 +143,7 @@ export class Alert {
 
   /**
    * Source Sensor Location
-   * 
+   *
    * Denormalized sensor location.
    */
   @Prop({
@@ -153,7 +153,7 @@ export class Alert {
 
   /**
    * Metadata
-   * 
+   *
    * Additional context about the alert.
    * Structure depends on alert type.
    */
@@ -173,7 +173,7 @@ export class Alert {
 
   /**
    * Acknowledged By
-   * 
+   *
    * Reference to the user who acknowledged the alert.
    */
   @Prop({
@@ -184,7 +184,7 @@ export class Alert {
 
   /**
    * Acknowledged At
-   * 
+   *
    * Timestamp when the alert was acknowledged.
    */
   @Prop({
@@ -194,7 +194,7 @@ export class Alert {
 
   /**
    * Resolved By
-   * 
+   *
    * Reference to the user who resolved the alert.
    */
   @Prop({
@@ -205,7 +205,7 @@ export class Alert {
 
   /**
    * Resolved At
-   * 
+   *
    * Timestamp when the alert was resolved.
    */
   @Prop({
@@ -215,7 +215,7 @@ export class Alert {
 
   /**
    * Timestamps
-   * 
+   *
    * Automatically managed by Mongoose.
    */
   createdAt?: Date;
@@ -226,7 +226,7 @@ export const AlertSchema = SchemaFactory.createForClass(Alert);
 
 /**
  * Schema Indexes
- * 
+ *
  * Optimized for common queries:
  * - Find active alerts
  * - Filter by severity

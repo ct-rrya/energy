@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * Resolve Alert DTO
- * 
+ *
  * Used to resolve an alert.
  * User ID is extracted from JWT token.
  */

@@ -3,7 +3,7 @@ import { ReadingSource, SignalQuality } from '../schemas/energy-reading.schema';
 
 /**
  * Create Reading Response DTO
- * 
+ *
  * Lightweight response for ESP32 after submitting a reading.
  */
 export class CreateReadingResponseDto {
@@ -28,7 +28,7 @@ export class CreateReadingResponseDto {
 
 /**
  * Reading Response DTO
- * 
+ *
  * Standard response for sensor reading with calculated fields.
  */
 export class ReadingResponseDto {
@@ -139,7 +139,7 @@ export class ReadingResponseDto {
 
 /**
  * Paginated Readings Response DTO
- * 
+ *
  * Response for paginated list of readings.
  */
 export class PaginatedReadingsResponseDto {
@@ -168,7 +168,7 @@ export class PaginatedReadingsResponseDto {
 
 /**
  * Reading Statistics Response DTO
- * 
+ *
  * Aggregated statistics for sensor readings.
  */
 export class ReadingStatisticsResponseDto {

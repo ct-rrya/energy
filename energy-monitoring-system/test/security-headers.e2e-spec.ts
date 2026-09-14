@@ -5,10 +5,10 @@ import { AppModule } from '../src/app.module';
 
 /**
  * E2E Tests for Helmet Security Headers
- * 
+ *
  * Task 8.2: Add Helmet.js security headers
  * Requirements: 8.11 - THE Chat_API SHALL sanitize user input to prevent XSS attacks
- * 
+ *
  * These tests verify that Helmet.js is properly configured and
  * security headers are present in HTTP responses.
  */
@@ -21,7 +21,7 @@ describe('Security Headers (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Configure app similar to main.ts to test Helmet integration
     app.useGlobalPipes(
       new ValidationPipe({
@@ -30,9 +30,9 @@ describe('Security Headers (e2e)', () => {
         transform: true,
       }),
     );
-    
+
     app.setGlobalPrefix('api');
-    
+
     await app.init();
   });
 
@@ -83,7 +83,9 @@ describe('Security Headers (e2e)', () => {
         .expect(200);
 
       expect(response.headers['content-security-policy']).toBeDefined();
-      expect(response.headers['content-security-policy']).toContain("default-src 'self'");
+      expect(response.headers['content-security-policy']).toContain(
+        "default-src 'self'",
+      );
     });
 
     it('should not include X-Powered-By header (removed by Helmet)', async () => {
@@ -117,7 +119,7 @@ describe('Security Headers (e2e)', () => {
         .expect(200);
 
       const csp = response.headers['content-security-policy'];
-      
+
       // Verify that unsafe-inline is allowed for styles (needed for Swagger UI)
       expect(csp).toContain("style-src 'self' 'unsafe-inline'");
     });
@@ -128,7 +130,7 @@ describe('Security Headers (e2e)', () => {
         .expect(200);
 
       const csp = response.headers['content-security-policy'];
-      
+
       // Verify image sources include data: and https: (for external images in docs)
       expect(csp).toContain('img-src');
       expect(csp).toContain('data:');
@@ -169,8 +171,9 @@ describe('Security Headers (e2e)', () => {
 
   describe('Security Headers on Different Endpoints', () => {
     it('should apply security headers to public telemetry endpoint', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/public/telemetry');
+      const response = await request(app.getHttpServer()).get(
+        '/api/public/telemetry',
+      );
 
       expect(response.headers['x-content-type-options']).toBe('nosniff');
       expect(response.headers['content-security-policy']).toBeDefined();
@@ -186,8 +189,7 @@ describe('Security Headers (e2e)', () => {
     });
 
     it('should apply security headers to Swagger docs endpoint', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/docs');
+      const response = await request(app.getHttpServer()).get('/api/docs');
 
       expect(response.headers['x-content-type-options']).toBe('nosniff');
       // CSP should still be present but configured to allow Swagger UI
@@ -198,7 +200,7 @@ describe('Security Headers (e2e)', () => {
   describe('Cross-Origin Resource Sharing (CORS)', () => {
     it('should allow CORS from configured frontend URL', async () => {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      
+
       const response = await request(app.getHttpServer())
         .get('/api/health')
         .set('Origin', frontendUrl);

@@ -31,13 +31,13 @@ import {
 
 /**
  * Subscribers Controller
- * 
+ *
  * Admin endpoints for subscriber management.
- * 
+ *
  * All endpoints require:
  * - JWT authentication
  * - Admin role
- * 
+ *
  * Features:
  * - List subscribers with pagination and filters
  * - View subscriber details
@@ -56,7 +56,7 @@ export class SubscribersController {
 
   /**
    * List All Subscribers
-   * 
+   *
    * Returns paginated list of subscribers with filters.
    * Admin only.
    */
@@ -99,14 +99,15 @@ export class SubscribersController {
 
   /**
    * Get Subscriber Details
-   * 
+   *
    * Returns detailed information about a specific subscriber.
    * Admin only.
    */
   @Get(':id')
   @ApiOperation({
     summary: 'Get subscriber details',
-    description: 'Returns detailed information about a specific subscriber. Admin only.',
+    description:
+      'Returns detailed information about a specific subscriber. Admin only.',
   })
   @ApiParam({
     name: 'id',
@@ -126,7 +127,7 @@ export class SubscribersController {
 
   /**
    * Update Subscriber
-   * 
+   *
    * Update subscriber information (tags, preferences, status).
    * Admin only.
    */
@@ -157,7 +158,7 @@ export class SubscribersController {
 
   /**
    * Block Subscriber
-   * 
+   *
    * Block subscriber from receiving notifications.
    * Admin only.
    */
@@ -165,8 +166,7 @@ export class SubscribersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Block subscriber',
-    description:
-      'Block subscriber from receiving notifications. Admin only.',
+    description: 'Block subscriber from receiving notifications. Admin only.',
   })
   @ApiParam({
     name: 'id',
@@ -189,7 +189,7 @@ export class SubscribersController {
 
   /**
    * Unblock Subscriber
-   * 
+   *
    * Unblock previously blocked subscriber.
    * Admin only.
    */
@@ -217,7 +217,7 @@ export class SubscribersController {
 
   /**
    * Delete Subscriber
-   * 
+   *
    * Soft delete subscriber (marks as deleted but keeps record).
    * Admin only.
    */
@@ -245,7 +245,7 @@ export class SubscribersController {
 
   /**
    * Get Subscriber Statistics
-   * 
+   *
    * Returns aggregated statistics about subscribers.
    * Admin only.
    */

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * Sensor Uptime DTO
- * 
+ *
  * Represents reliability metrics for a single sensor.
  */
 export class SensorUptimeDto {
@@ -70,7 +70,7 @@ export class SensorUptimeDto {
 
 /**
  * Sensor Uptime Response DTO
- * 
+ *
  * Complete sensor reliability report.
  */
 export class SensorUptimeResponseDto {

@@ -9,9 +9,9 @@ import {
 
 /**
  * Sensor Event Listener
- * 
+ *
  * Listens to sensor and system events and triggers notifications.
- * 
+ *
  * Events:
  * - sensor.online - Sensor came online
  * - sensor.offline - Sensor went offline
@@ -25,9 +25,9 @@ export class SensorEventListener {
 
   /**
    * Handle Sensor Online
-   * 
+   *
    * Triggered when sensor comes online.
-   * 
+   *
    * @param payload - Sensor online event data
    */
   @OnEvent('sensor.online')
@@ -47,9 +47,9 @@ export class SensorEventListener {
 
   /**
    * Handle Sensor Offline
-   * 
+   *
    * Triggered when sensor goes offline.
-   * 
+   *
    * @param payload - Sensor offline event data
    */
   @OnEvent('sensor.offline')
@@ -69,9 +69,9 @@ export class SensorEventListener {
 
   /**
    * Handle System Alert
-   * 
+   *
    * Triggered for system-level events.
-   * 
+   *
    * @param payload - System alert event data
    */
   @OnEvent('system.alert')

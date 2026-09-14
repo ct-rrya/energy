@@ -8,9 +8,9 @@ import { DashboardModule } from '../dashboard/dashboard.module';
 
 /**
  * Alerts Module
- * 
+ *
  * Provides alert management functionality for the Energy Monitoring System.
- * 
+ *
  * Features:
  * - Create alerts from system events
  * - Query alerts with filters and pagination
@@ -18,7 +18,7 @@ import { DashboardModule } from '../dashboard/dashboard.module';
  * - Resolve alerts
  * - Alert statistics
  * - WebSocket broadcasting (via EventEmitter)
- * 
+ *
  * Architecture:
  * - Independent from Messenger notifications
  * - Messenger acts as one delivery channel

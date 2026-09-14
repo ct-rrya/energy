@@ -10,7 +10,7 @@ import { AlertType, AlertSeverity } from '../schemas/alert.schema';
 
 /**
  * Create Alert DTO
- * 
+ *
  * Used internally by the system to create alerts.
  */
 export class CreateAlertDto {

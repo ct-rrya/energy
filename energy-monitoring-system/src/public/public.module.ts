@@ -4,9 +4,9 @@ import { EnergyModule } from '../energy/energy.module';
 
 /**
  * PublicModule
- * 
+ *
  * Provides public API endpoints (telemetry, etc.)
- * 
+ *
  * Requirements: 11.1, 11.2, 11.10
  */
 @Module({

@@ -9,15 +9,11 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  AlertStatus,
-  AlertSeverity,
-  AlertType,
-} from '../schemas/alert.schema';
+import { AlertStatus, AlertSeverity, AlertType } from '../schemas/alert.schema';
 
 /**
  * Alert Query DTO
- * 
+ *
  * Query parameters for filtering alerts.
  */
 export class AlertQueryDto {

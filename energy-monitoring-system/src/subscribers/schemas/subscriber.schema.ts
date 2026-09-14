@@ -8,14 +8,14 @@ export type SubscriberDocument = Subscriber & Document;
 
 /**
  * Subscriber Schema
- * 
+ *
  * Stores Facebook Messenger subscribers for notifications.
- * 
+ *
  * Purpose:
  * - Track who subscribed via Messenger Bot
  * - Store notification preferences
  * - Send targeted notifications
- * 
+ *
  * Usage:
  * - Subscribe: User sends "subscribe" command
  * - Unsubscribe: User sends "unsubscribe" command
@@ -28,7 +28,7 @@ export type SubscriberDocument = Subscriber & Document;
 export class Subscriber {
   /**
    * Facebook User ID (PSID)
-   * 
+   *
    * Page-Scoped ID from Facebook Messenger.
    * Unique identifier for the user.
    */
@@ -57,7 +57,7 @@ export class Subscriber {
 
   /**
    * Is Subscribed
-   * 
+   *
    * True if user is subscribed to notifications.
    * False if user unsubscribed.
    */
@@ -69,7 +69,7 @@ export class Subscriber {
 
   /**
    * Subscribed At
-   * 
+   *
    * When user subscribed.
    */
   @Prop({
@@ -80,7 +80,7 @@ export class Subscriber {
 
   /**
    * Unsubscribed At
-   * 
+   *
    * When user unsubscribed (null if never unsubscribed).
    */
   @Prop({
@@ -90,7 +90,7 @@ export class Subscriber {
 
   /**
    * Last Interaction At
-   * 
+   *
    * When user last sent a message.
    */
   @Prop({
@@ -100,7 +100,7 @@ export class Subscriber {
 
   /**
    * Notification Preferences (Legacy - kept for backward compatibility)
-   * 
+   *
    * What notifications user wants to receive.
    */
   @Prop({
@@ -123,7 +123,7 @@ export class Subscriber {
 
   /**
    * Subscriber Status
-   * 
+   *
    * - active: Normal subscriber, receives notifications
    * - inactive: Temporarily inactive (e.g., away)
    * - blocked: Blocked by admin, no notifications
@@ -138,7 +138,7 @@ export class Subscriber {
 
   /**
    * Tags for Segmentation
-   * 
+   *
    * Used for targeted broadcasts.
    * Examples: ['vip', 'tester', 'beta', 'developer']
    */
@@ -151,7 +151,7 @@ export class Subscriber {
 
   /**
    * Enhanced Notification Preferences
-   * 
+   *
    * Granular control over notification types.
    */
   @Prop({
@@ -178,7 +178,7 @@ export class Subscriber {
 
   /**
    * Total Notifications Received
-   * 
+   *
    * Counter for analytics.
    */
   @Prop({
@@ -189,7 +189,7 @@ export class Subscriber {
 
   /**
    * Last Notification Sent At
-   * 
+   *
    * Timestamp of last notification sent to this subscriber.
    */
   @Prop({
@@ -199,7 +199,7 @@ export class Subscriber {
 
   /**
    * Blocked Reason
-   * 
+   *
    * Why subscriber was blocked (if status is 'blocked').
    */
   @Prop({
@@ -209,7 +209,7 @@ export class Subscriber {
 
   /**
    * Blocked At
-   * 
+   *
    * When subscriber was blocked.
    */
   @Prop({

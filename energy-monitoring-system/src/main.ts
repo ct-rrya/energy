@@ -7,14 +7,14 @@ import { AppModule } from './app.module';
 
 /**
  * Bootstrap function
- * 
+ *
  * Initializes and configures the NestJS application with:
  * - Security headers via Helmet.js
  * - CORS for frontend communication
  * - Global validation pipe for DTO validation
  * - Swagger API documentation
  * - Global API prefix
- * 
+ *
  * Requirements: 5.11, 8.1, 8.10, 8.11, 11.10, 15.1, 16.1, 16.2, 16.3
  */
 async function bootstrap() {
@@ -54,23 +54,32 @@ async function bootstrap() {
   // TASK 8.1: Configure CORS for public chat and telemetry API
   // Requirements: 5.11, 8.10, 11.10, 15.1
   // ============================================================================
-  const frontendUrl = configService.get<string>('app.frontendUrl') || process.env.FRONTEND_URL || 'http://localhost:5173';
-  const productionUrl = configService.get<string>('app.productionUrl') || process.env.PRODUCTION_URL || 'https://ecostep.example.com';
-  
+  const frontendUrl =
+    configService.get<string>('app.frontendUrl') ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:5173';
+  const productionUrl =
+    configService.get<string>('app.productionUrl') ||
+    process.env.PRODUCTION_URL ||
+    'https://ecostep.example.com';
+
   // Build allowed origins array from FRONTEND_URL and PRODUCTION_URL env vars
   const allowedOrigins = [frontendUrl];
-  if (productionUrl && productionUrl.trim() !== '' && productionUrl !== 'https://ecostep.example.com') {
+  if (
+    productionUrl &&
+    productionUrl.trim() !== '' &&
+    productionUrl !== 'https://ecostep.example.com'
+  ) {
     allowedOrigins.push(productionUrl);
   }
 
   app.enableCors({
-  origin: allowedOrigins.filter(Boolean),
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ All HTTP methods
-  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'], // ✅ Include Authorization
-  credentials: true, // ✅ Enable credentials
-  maxAge: 3600,
+    origin: allowedOrigins.filter(Boolean),
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ All HTTP methods
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'], // ✅ Include Authorization
+    credentials: true, // ✅ Enable credentials
+    maxAge: 3600,
   });
-
 
   // Set global API prefix (e.g., /api/...)
   const apiPrefix = configService.get<string>('app.apiPrefix') || 'api';
@@ -99,14 +108,14 @@ async function bootstrap() {
     .setTitle('EcoStep Energy Monitoring System API')
     .setDescription(
       'REST API for Smart Footstep Energy Harvesting Monitoring System using Piezoelectric Sensors.\n\n' +
-      'This API provides:\n' +
-      '- Authentication and user management\n' +
-      '- IoT data ingestion from ESP32 sensors\n' +
-      '- Real-time energy monitoring and analytics\n' +
-      '- Public chat interface for system queries\n' +
-      '- Public telemetry data for landing page\n' +
-      '- Facebook Messenger bot integration\n' +
-      '- Real-time dashboard updates via WebSocket',
+        'This API provides:\n' +
+        '- Authentication and user management\n' +
+        '- IoT data ingestion from ESP32 sensors\n' +
+        '- Real-time energy monitoring and analytics\n' +
+        '- Public chat interface for system queries\n' +
+        '- Public telemetry data for landing page\n' +
+        '- Facebook Messenger bot integration\n' +
+        '- Real-time dashboard updates via WebSocket',
     )
     .setVersion('1.0')
     .setContact(
@@ -115,7 +124,7 @@ async function bootstrap() {
       'support@ecostep.com',
     )
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-    
+
     // API Tags with descriptions
     .addTag('Authentication', 'User authentication and authorization')
     .addTag('Users', 'User management and profile operations')
@@ -130,7 +139,7 @@ async function bootstrap() {
     .addTag('Public API', 'Public endpoints for telemetry and system status')
     .addTag('Reports', 'Report generation (PDF and Excel)')
     .addTag('Notifications', 'System notifications and alerts')
-    
+
     // Authentication schemes
     .addBearerAuth(
       {
@@ -174,12 +183,18 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
+  console.log(
+    `📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`,
+  );
   console.log(`💬 Public Chat API: http://localhost:${port}/${apiPrefix}/chat`);
-  console.log(`📊 Public Telemetry: http://localhost:${port}/${apiPrefix}/public/telemetry`);
+  console.log(
+    `📊 Public Telemetry: http://localhost:${port}/${apiPrefix}/public/telemetry`,
+  );
   console.log(`❤️  Health check: http://localhost:${port}/${apiPrefix}/health`);
   console.log(`🔍 Liveness: http://localhost:${port}/${apiPrefix}/health/live`);
-  console.log(`✅ Readiness: http://localhost:${port}/${apiPrefix}/health/ready`);
+  console.log(
+    `✅ Readiness: http://localhost:${port}/${apiPrefix}/health/ready`,
+  );
   console.log(`🌍 Environment: ${configService.get<string>('app.nodeEnv')}`);
   console.log(`🔒 CORS Origins: ${allowedOrigins.join(', ')}`);
 }

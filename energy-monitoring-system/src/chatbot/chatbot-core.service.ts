@@ -41,17 +41,17 @@ export interface QuickReply {
 
 /**
  * ChatbotCoreService
- * 
+ *
  * Provides channel-agnostic message processing and response generation.
  * This service is shared between Messenger and web chat channels.
- * 
+ *
  * Architecture:
  * - NEVER accesses database directly
  * - Consumes Analytics Service for calculations
  * - Consumes Energy Service for data queries
  * - Consumes Subscribers Service for subscriptions
  * - Consumes Gemini AI Service for natural language
- * 
+ *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 2.8, 6.8, 9.9
  */
 @Injectable()
@@ -69,7 +69,7 @@ export class ChatbotCoreService {
   /**
    * Main entry point for processing messages
    * Returns channel-agnostic response data
-   * 
+   *
    * @param message - The user's message text
    * @param context - Context information about the message
    * @returns Promise<ChatbotResponse> - Structured response
@@ -103,7 +103,7 @@ export class ChatbotCoreService {
   /**
    * Parse message to identify command type
    * Normalizes command to lowercase and maps variants
-   * 
+   *
    * @param message - The user's message
    * @returns The normalized command string
    */
@@ -136,7 +136,7 @@ export class ChatbotCoreService {
 
   /**
    * Route to appropriate handler based on command
-   * 
+   *
    * @param command - The normalized command
    * @param originalMessage - Original message text
    * @param context - Message context
@@ -189,9 +189,9 @@ export class ChatbotCoreService {
 
   /**
    * Handle subscription commands (channel-specific)
-   * 
+   *
    * Requirements: 6.2, 6.3, 6.4
-   * 
+   *
    * @param command - 'subscribe' or 'unsubscribe'
    * @param context - Message context
    * @returns Promise<ChatbotResponse>
@@ -234,9 +234,9 @@ export class ChatbotCoreService {
 
   /**
    * Handle informational commands
-   * 
+   *
    * Requirements: 2.6, 6.8
-   * 
+   *
    * @param command - The command to handle
    * @param context - Message context
    * @returns Promise<ChatbotResponse>
@@ -299,9 +299,9 @@ export class ChatbotCoreService {
 
   /**
    * Handle natural language queries via AI
-   * 
+   *
    * Requirements: 2.8, 9.9
-   * 
+   *
    * @param message - The user's message
    * @param context - Message context
    * @returns Promise<ChatbotResponse>
@@ -324,7 +324,10 @@ export class ChatbotCoreService {
         },
       };
     } catch (error) {
-      this.logger.warn('AI service failed, falling back to default response', error.message);
+      this.logger.warn(
+        'AI service failed, falling back to default response',
+        error.message,
+      );
 
       // Graceful fallback when AI fails
       return {
@@ -420,7 +423,7 @@ export class ChatbotCoreService {
     try {
       const week = await this.analyticsService.getWeeklySummary();
 
-      const text = `📅 Weekly Energy Report\nWeek ${week.weekNumber}: ${week.weekStart} to ${week.weekEnd}\n\n⚡ Power Generation\nTotal Energy: ${week.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${week.avgPowerW.toFixed(2)} W\nPeak Power: ${week.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${week.readingCount}\n\n📈 Daily Breakdown\n${week.dailyBreakdown.map(day => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} kWh`).join('\n')}\n\n💡 Try "month" for monthly summary`;
+      const text = `📅 Weekly Energy Report\nWeek ${week.weekNumber}: ${week.weekStart} to ${week.weekEnd}\n\n⚡ Power Generation\nTotal Energy: ${week.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${week.avgPowerW.toFixed(2)} W\nPeak Power: ${week.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${week.readingCount}\n\n📈 Daily Breakdown\n${week.dailyBreakdown.map((day) => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} kWh`).join('\n')}\n\n💡 Try "month" for monthly summary`;
 
       return {
         text,
@@ -631,14 +634,17 @@ export class ChatbotCoreService {
 
   /**
    * Format response for specific channel
-   * 
+   *
    * Requirements: 6.5, 6.6, 6.7, 10.1, 10.2, 10.3, 10.7
-   * 
+   *
    * @param response - Core chatbot response
    * @param channel - Target channel
    * @returns Formatted response for the channel
    */
-  formatForChannel(response: ChatbotResponse, channel: ChatChannel): {
+  formatForChannel(
+    response: ChatbotResponse,
+    channel: ChatChannel,
+  ): {
     text: string;
     quickReplies?: QuickReply[];
     suggestions?: string[];
@@ -671,7 +677,7 @@ export class ChatbotCoreService {
   private getSuggestionTitle(suggestion: string): string {
     const titleMap: Record<string, string> = {
       status: '📊 Status',
-      today: "📅 Today",
+      today: '📅 Today',
       week: '📅 This Week',
       month: '📆 This Month',
       peak: '⚡ Peak',

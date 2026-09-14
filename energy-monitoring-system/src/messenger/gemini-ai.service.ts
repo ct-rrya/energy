@@ -45,23 +45,42 @@ export class GeminiAIService {
 
     // Check if API key is configured (supports both AQ. and AIza formats)
     if (!apiKey || apiKey === 'your-gemini-api-key-here') {
-      this.logger.error('[TRACE 4: API KEY VERIFICATION] ❌ API key NOT configured');
-      this.logger.error('[TRACE 4: API KEY VERIFICATION]    API key value: ' + (apiKey ? 'placeholder/default' : 'undefined'));
-      this.logger.warn('[TRACE 4: API KEY VERIFICATION]    AI features will be DISABLED');
-      this.logger.warn('[TRACE 4: API KEY VERIFICATION]    Set GEMINI_API_KEY in .env file to enable AI chatbot');
+      this.logger.error(
+        '[TRACE 4: API KEY VERIFICATION] ❌ API key NOT configured',
+      );
+      this.logger.error(
+        '[TRACE 4: API KEY VERIFICATION]    API key value: ' +
+          (apiKey ? 'placeholder/default' : 'undefined'),
+      );
+      this.logger.warn(
+        '[TRACE 4: API KEY VERIFICATION]    AI features will be DISABLED',
+      );
+      this.logger.warn(
+        '[TRACE 4: API KEY VERIFICATION]    Set GEMINI_API_KEY in .env file to enable AI chatbot',
+      );
       return;
     }
 
     this.logger.log('[TRACE 4: API KEY VERIFICATION] ✅ API key detected');
-    this.logger.log(`[TRACE 4: API KEY VERIFICATION]    Key length: ${apiKey.length} characters`);
-    this.logger.log(`[TRACE 4: API KEY VERIFICATION]    Key prefix: "${apiKey.substring(0, 3)}..."`);
-    this.logger.log(`[TRACE 4: API KEY VERIFICATION]    Key format: ${apiKey.startsWith('AIza') ? 'Legacy (AIza)' : apiKey.startsWith('AQ.') ? 'New (AQ.)' : 'Unknown'}`);
+    this.logger.log(
+      `[TRACE 4: API KEY VERIFICATION]    Key length: ${apiKey.length} characters`,
+    );
+    this.logger.log(
+      `[TRACE 4: API KEY VERIFICATION]    Key prefix: "${apiKey.substring(0, 3)}..."`,
+    );
+    this.logger.log(
+      `[TRACE 4: API KEY VERIFICATION]    Key format: ${apiKey.startsWith('AIza') ? 'Legacy (AIza)' : apiKey.startsWith('AQ.') ? 'New (AQ.)' : 'Unknown'}`,
+    );
 
     try {
-      this.logger.log('[GEMINI CONSTRUCTOR] Creating GoogleGenerativeAI client...');
+      this.logger.log(
+        '[GEMINI CONSTRUCTOR] Creating GoogleGenerativeAI client...',
+      );
       // Initialize Google Generative AI client
       this.genAI = new GoogleGenerativeAI(apiKey);
-      this.logger.log('[GEMINI CONSTRUCTOR] ✅ GoogleGenerativeAI client created');
+      this.logger.log(
+        '[GEMINI CONSTRUCTOR] ✅ GoogleGenerativeAI client created',
+      );
 
       // KEEPING YOUR WORKING MODEL: gemini-3.6-flash
       const modelName = 'gemini-3.6-flash';
@@ -74,14 +93,22 @@ export class GeminiAIService {
       });
 
       this.isEnabled = true;
-      this.logger.log('[GEMINI CONSTRUCTOR] ✅ Gemini AI Service initialized successfully');
+      this.logger.log(
+        '[GEMINI CONSTRUCTOR] ✅ Gemini AI Service initialized successfully',
+      );
       this.logger.log(`[GEMINI CONSTRUCTOR]    Model: ${modelName}`);
-      this.logger.log('[GEMINI CONSTRUCTOR]    Token Config: Using API defaults (no limit)');
+      this.logger.log(
+        '[GEMINI CONSTRUCTOR]    Token Config: Using API defaults (no limit)',
+      );
       this.logger.log('[GEMINI CONSTRUCTOR]    Status: ENABLED');
     } catch (error) {
-      this.logger.error('[GEMINI CONSTRUCTOR] ❌ Failed to initialize Gemini AI');
+      this.logger.error(
+        '[GEMINI CONSTRUCTOR] ❌ Failed to initialize Gemini AI',
+      );
       this.logger.error(`[GEMINI CONSTRUCTOR]    Error name: ${error.name}`);
-      this.logger.error(`[GEMINI CONSTRUCTOR]    Error message: ${error.message}`);
+      this.logger.error(
+        `[GEMINI CONSTRUCTOR]    Error message: ${error.message}`,
+      );
       this.logger.error(`[GEMINI CONSTRUCTOR]    Stack trace: ${error.stack}`);
     }
   }
@@ -195,7 +222,9 @@ Always cite these actual values in your response.`;
     this.logger.log('═══════════════════════════════════════════════════════');
     this.logger.log('[GEMINI] processQuery() called');
     this.logger.log(`[GEMINI]    User message: "${userMessage}"`);
-    this.logger.log(`[GEMINI]    Message length: ${userMessage.length} characters`);
+    this.logger.log(
+      `[GEMINI]    Message length: ${userMessage.length} characters`,
+    );
 
     // Check if AI is enabled
     this.logger.log('[GEMINI] Checking AI initialization status...');
@@ -203,7 +232,9 @@ Always cite these actual values in your response.`;
     this.logger.log(`[GEMINI]    model exists: ${!!this.model}`);
 
     if (!this.isEnabled || !this.model) {
-      this.logger.warn('[GEMINI] ❌ AI not initialized - returning fallback message');
+      this.logger.warn(
+        '[GEMINI] ❌ AI not initialized - returning fallback message',
+      );
       return this.getFallbackMessage();
     }
 
@@ -212,38 +243,67 @@ Always cite these actual values in your response.`;
     try {
       // STEP 1: Fetch Real-Time Energy Data (RAG - Retrieval)
       // [TRACE 3: DB CONTEXT]
-      this.logger.log('[TRACE 3: DB CONTEXT] ═══════════════════════════════════');
-      this.logger.log('[TRACE 3: DB CONTEXT] Fetching energy data from MongoDB...');
+      this.logger.log(
+        '[TRACE 3: DB CONTEXT] ═══════════════════════════════════',
+      );
+      this.logger.log(
+        '[TRACE 3: DB CONTEXT] Fetching energy data from MongoDB...',
+      );
       const dbStartTime = Date.now();
 
       const energyData = await this.fetchEnergyData();
 
       const dbDuration = Date.now() - dbStartTime;
-      this.logger.log(`[TRACE 3: DB CONTEXT] ✅ Database queries completed in ${dbDuration}ms`);
-      this.logger.log(`[TRACE 3: DB CONTEXT]    Data status: ${energyData.status}`);
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] ✅ Database queries completed in ${dbDuration}ms`,
+      );
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT]    Data status: ${energyData.status}`,
+      );
       this.logger.log('[TRACE 3: DB CONTEXT] Data sample (first 200 chars):');
       this.logger.log(JSON.stringify(energyData).substring(0, 200) + '...');
 
       // STEP 2: Build Context-Enriched Prompt (RAG - Augmentation)
       const prompt = this.buildPrompt(userMessage, energyData);
-      this.logger.log(`[GEMINI] Prompt constructed (${prompt.length} characters)`);
+      this.logger.log(
+        `[GEMINI] Prompt constructed (${prompt.length} characters)`,
+      );
 
       // STEP 3: Query Gemini API (Generation)
       // [TRACE 5: CALLING GEMINI]
-      this.logger.log('[TRACE 5: CALLING GEMINI] ═══════════════════════════════');
-      this.logger.log('[TRACE 5: CALLING GEMINI] Sending request to Gemini API...');
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI] ═══════════════════════════════',
+      );
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI] Sending request to Gemini API...',
+      );
       this.logger.log('[TRACE 5: CALLING GEMINI]    Model: gemini-3.6-flash');
-      this.logger.log('[TRACE 5: CALLING GEMINI]    Prompt length: ' + prompt.length + ' characters');
-      this.logger.log('[TRACE 5: CALLING GEMINI]    Starting API call with 15s timeout...');
-      this.logger.log('[TRACE 5: CALLING GEMINI] Prompt preview (first 300 chars):');
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI]    Prompt length: ' +
+          prompt.length +
+          ' characters',
+      );
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI]    Starting API call with 15s timeout...',
+      );
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI] Prompt preview (first 300 chars):',
+      );
       this.logger.log(prompt.substring(0, 300) + '...');
-      this.logger.log('[TRACE 5: CALLING GEMINI] System instruction: ' + this.getSystemInstructions().substring(0, 100) + '...');
+      this.logger.log(
+        '[TRACE 5: CALLING GEMINI] System instruction: ' +
+          this.getSystemInstructions().substring(0, 100) +
+          '...',
+      );
 
       const apiStartTime = Date.now();
 
       // Create timeout promise (15 second timeout)
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Gemini API timeout after 15s')), 15000);
+        setTimeout(
+          () => reject(new Error('Gemini API timeout after 15s')),
+          15000,
+        );
       });
 
       // Race between API call and timeout
@@ -251,15 +311,19 @@ Always cite these actual values in your response.`;
       try {
         result = await Promise.race([
           this.model.generateContent(prompt),
-          timeoutPromise
+          timeoutPromise,
         ]);
       } catch (error) {
         const apiDuration = Date.now() - apiStartTime;
 
         // Check if this is a timeout error
         if (error.message === 'Gemini API timeout after 15s') {
-          this.logger.warn(`[TRACE 5: CALLING GEMINI] ⏱️  API call timed out after 15000ms, returning fallback`);
-          this.logger.warn(`[TRACE 5: CALLING GEMINI]    Actual duration: ${apiDuration}ms`);
+          this.logger.warn(
+            `[TRACE 5: CALLING GEMINI] ⏱️  API call timed out after 15000ms, returning fallback`,
+          );
+          this.logger.warn(
+            `[TRACE 5: CALLING GEMINI]    Actual duration: ${apiDuration}ms`,
+          );
           return this.getFallbackMessage();
         }
 
@@ -269,52 +333,82 @@ Always cite these actual values in your response.`;
 
       const apiDuration = Date.now() - apiStartTime;
 
-      this.logger.log(`[TRACE 5: CALLING GEMINI] ✅ API call completed in ${apiDuration}ms`);
+      this.logger.log(
+        `[TRACE 5: CALLING GEMINI] ✅ API call completed in ${apiDuration}ms`,
+      );
 
       // [TRACE 6: GEMINI RAW RESULT]
-      this.logger.log('[TRACE 6: GEMINI RAW RESULT] ═══════════════════════════');
+      this.logger.log(
+        '[TRACE 6: GEMINI RAW RESULT] ═══════════════════════════',
+      );
       const response = result.response;
 
       // Log raw response structure
-      this.logger.log('[TRACE 6: GEMINI RAW RESULT] Raw response object keys:', Object.keys(response));
+      this.logger.log(
+        '[TRACE 6: GEMINI RAW RESULT] Raw response object keys:',
+        Object.keys(response),
+      );
 
       // Check for candidates and safety
       const candidates = response.candidates;
       if (candidates && candidates.length > 0) {
-        this.logger.log(`[TRACE 6: GEMINI RAW RESULT]    Candidates count: ${candidates.length}`);
+        this.logger.log(
+          `[TRACE 6: GEMINI RAW RESULT]    Candidates count: ${candidates.length}`,
+        );
 
         const firstCandidate = candidates[0];
         const finishReason = firstCandidate.finishReason;
 
-        this.logger.log(`[TRACE 6: GEMINI RAW RESULT]    Finish reason: ${finishReason}`);
+        this.logger.log(
+          `[TRACE 6: GEMINI RAW RESULT]    Finish reason: ${finishReason}`,
+        );
 
         // Check if response was safety-blocked or incomplete
         if (finishReason !== 'STOP') {
-          this.logger.warn('[TRACE 6: GEMINI RAW RESULT] ⚠️  Response flagged or incomplete!');
-          this.logger.warn(`[TRACE 6: GEMINI RAW RESULT]    Finish reason: ${finishReason}`);
+          this.logger.warn(
+            '[TRACE 6: GEMINI RAW RESULT] ⚠️  Response flagged or incomplete!',
+          );
+          this.logger.warn(
+            `[TRACE 6: GEMINI RAW RESULT]    Finish reason: ${finishReason}`,
+          );
 
           if (firstCandidate.safetyRatings) {
             this.logger.warn('[TRACE 6: GEMINI RAW RESULT]    Safety ratings:');
-            this.logger.warn(JSON.stringify(firstCandidate.safetyRatings, null, 2));
+            this.logger.warn(
+              JSON.stringify(firstCandidate.safetyRatings, null, 2),
+            );
           }
 
           if (firstCandidate.content) {
-            this.logger.warn('[TRACE 6: GEMINI RAW RESULT]    Partial content:');
+            this.logger.warn(
+              '[TRACE 6: GEMINI RAW RESULT]    Partial content:',
+            );
             this.logger.warn(JSON.stringify(firstCandidate.content, null, 2));
           }
 
           // SAFETY FIX: If response was blocked/incomplete, return polite decline instead of error
-          this.logger.warn('[TRACE 6: GEMINI RAW RESULT] Returning polite decline due to blocked/incomplete response');
+          this.logger.warn(
+            '[TRACE 6: GEMINI RAW RESULT] Returning polite decline due to blocked/incomplete response',
+          );
           return "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?";
         } else {
-          this.logger.log('[TRACE 6: GEMINI RAW RESULT] ✅ Response completed normally (STOP)');
+          this.logger.log(
+            '[TRACE 6: GEMINI RAW RESULT] ✅ Response completed normally (STOP)',
+          );
         }
       } else {
-        this.logger.error('[TRACE 6: GEMINI RAW RESULT] ❌ No candidates in response!');
-        this.logger.error('[TRACE 6: GEMINI RAW RESULT] Full response:', JSON.stringify(response));
+        this.logger.error(
+          '[TRACE 6: GEMINI RAW RESULT] ❌ No candidates in response!',
+        );
+        this.logger.error(
+          '[TRACE 6: GEMINI RAW RESULT] Full response:',
+          JSON.stringify(response),
+        );
 
         // SAFETY FIX: If no candidates, return polite decline instead of fallback error
-        this.logger.warn('[TRACE 6: GEMINI RAW RESULT] Returning polite decline due to no candidates');
+        this.logger.warn(
+          '[TRACE 6: GEMINI RAW RESULT] Returning polite decline due to no candidates',
+        );
         return "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?";
       }
 
@@ -323,23 +417,36 @@ Always cite these actual values in your response.`;
       try {
         aiResponse = response.text();
       } catch (textError) {
-        this.logger.error('[TRACE 6: GEMINI RAW RESULT] ❌ Error extracting text from response');
-        this.logger.error(`[TRACE 6: GEMINI RAW RESULT]    Error: ${textError.message}`);
+        this.logger.error(
+          '[TRACE 6: GEMINI RAW RESULT] ❌ Error extracting text from response',
+        );
+        this.logger.error(
+          `[TRACE 6: GEMINI RAW RESULT]    Error: ${textError.message}`,
+        );
 
         // Return polite decline instead of error fallback
         return "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?";
       }
 
-      this.logger.log(`[TRACE 6: GEMINI RAW RESULT]    Response text length: ${aiResponse.length} characters`);
-      this.logger.log(`[TRACE 6: GEMINI RAW RESULT]    Response preview (first 200 chars):`);
-      this.logger.log(aiResponse.substring(0, 200) + (aiResponse.length > 200 ? '...' : ''));
+      this.logger.log(
+        `[TRACE 6: GEMINI RAW RESULT]    Response text length: ${aiResponse.length} characters`,
+      );
+      this.logger.log(
+        `[TRACE 6: GEMINI RAW RESULT]    Response preview (first 200 chars):`,
+      );
+      this.logger.log(
+        aiResponse.substring(0, 200) + (aiResponse.length > 200 ? '...' : ''),
+      );
 
-      this.logger.log('[GEMINI] ✅ Processing complete - returning AI response');
+      this.logger.log(
+        '[GEMINI] ✅ Processing complete - returning AI response',
+      );
       return aiResponse;
-
     } catch (error) {
       // Comprehensive error logging for debugging (ISO/IEC 25010 Reliability)
-      this.logger.error('[GEMINI] ═══════════════════════════════════════════════');
+      this.logger.error(
+        '[GEMINI] ═══════════════════════════════════════════════',
+      );
       this.logger.error('[GEMINI] ❌ EXCEPTION in processQuery');
       this.logger.error(`[GEMINI]    Error name: ${error.name}`);
       this.logger.error(`[GEMINI]    Error message: ${error.message}`);
@@ -347,8 +454,12 @@ Always cite these actual values in your response.`;
 
       // Log API-specific error details if available
       if (error.response) {
-        this.logger.error(`[GEMINI]    API HTTP Status: ${error.response.status}`);
-        this.logger.error(`[GEMINI]    API Response data: ${JSON.stringify(error.response.data)}`);
+        this.logger.error(
+          `[GEMINI]    API HTTP Status: ${error.response.status}`,
+        );
+        this.logger.error(
+          `[GEMINI]    API Response data: ${JSON.stringify(error.response.data)}`,
+        );
       }
 
       if (error.status) {
@@ -388,20 +499,34 @@ Always cite these actual values in your response.`;
 
     try {
       // Fetch today's energy total
-      this.logger.log('[TRACE 3: DB CONTEXT] [1/2] Querying EnergyService.getTodayEnergyTotal()...');
+      this.logger.log(
+        '[TRACE 3: DB CONTEXT] [1/2] Querying EnergyService.getTodayEnergyTotal()...',
+      );
       const query1Start = Date.now();
       const todayEnergy = await this.energyService.getTodayEnergyTotal();
       const query1Duration = Date.now() - query1Start;
-      this.logger.log(`[TRACE 3: DB CONTEXT] [1/2] ✅ Completed in ${query1Duration}ms`);
-      this.logger.log(`[TRACE 3: DB CONTEXT] [1/2] Result: ${JSON.stringify(todayEnergy).substring(0, 100)}...`);
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [1/2] ✅ Completed in ${query1Duration}ms`,
+      );
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [1/2] Result: ${JSON.stringify(todayEnergy).substring(0, 100)}...`,
+      );
 
       // Fetch daily analytics summary
-      this.logger.log('[TRACE 3: DB CONTEXT] [2/2] Querying AnalyticsService.getDailySummary()...');
+      this.logger.log(
+        '[TRACE 3: DB CONTEXT] [2/2] Querying AnalyticsService.getDailySummary()...',
+      );
       const query2Start = Date.now();
-      const todaySummary = await this.analyticsService.getDailySummary(new Date());
+      const todaySummary = await this.analyticsService.getDailySummary(
+        new Date(),
+      );
       const query2Duration = Date.now() - query2Start;
-      this.logger.log(`[TRACE 3: DB CONTEXT] [2/2] ✅ Completed in ${query2Duration}ms`);
-      this.logger.log(`[TRACE 3: DB CONTEXT] [2/2] Result: ${JSON.stringify(todaySummary).substring(0, 100)}...`);
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [2/2] ✅ Completed in ${query2Duration}ms`,
+      );
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [2/2] Result: ${JSON.stringify(todaySummary).substring(0, 100)}...`,
+      );
 
       // Combine data for AI context
       const combinedData = {
@@ -426,19 +551,29 @@ Always cite these actual values in your response.`;
       this.logger.log(JSON.stringify(combinedData, null, 2));
 
       return combinedData;
-
     } catch (error) {
       // Log database error details
-      this.logger.error('[TRACE 3: DB CONTEXT] ═══════════════════════════════');
-      this.logger.error('[TRACE 3: DB CONTEXT] ❌ Database error in fetchEnergyData');
+      this.logger.error(
+        '[TRACE 3: DB CONTEXT] ═══════════════════════════════',
+      );
+      this.logger.error(
+        '[TRACE 3: DB CONTEXT] ❌ Database error in fetchEnergyData',
+      );
       this.logger.error(`[TRACE 3: DB CONTEXT]    Error name: ${error.name}`);
-      this.logger.error(`[TRACE 3: DB CONTEXT]    Error message: ${error.message}`);
+      this.logger.error(
+        `[TRACE 3: DB CONTEXT]    Error message: ${error.message}`,
+      );
       this.logger.error(`[TRACE 3: DB CONTEXT]    Stack trace: ${error.stack}`);
 
       // Return empty data structure with error indicator
       const errorData = {
         timestamp: new Date().toISOString(),
-        today: { totalEnergyWh: 0, avgPowerW: 0, maxPowerW: 0, readingCount: 0 },
+        today: {
+          totalEnergyWh: 0,
+          avgPowerW: 0,
+          maxPowerW: 0,
+          readingCount: 0,
+        },
         analytics: { totalEnergyKWh: 0, peakPowerW: 0, avgPowerW: 0 },
         status: 'error',
         error: 'Data temporarily unavailable',

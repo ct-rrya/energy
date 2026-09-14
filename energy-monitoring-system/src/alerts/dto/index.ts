@@ -1,6 +1,6 @@
 /**
  * Alert DTOs Index
- * 
+ *
  * Central export point for all alert DTOs.
  */
 export * from './create-alert.dto';

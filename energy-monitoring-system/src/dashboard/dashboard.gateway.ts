@@ -20,15 +20,15 @@ import {
 
 /**
  * Dashboard Gateway
- * 
+ *
  * Handles WebSocket connections for real-time dashboard updates.
- * 
+ *
  * Features:
  * - JWT authentication on connection
  * - Real-time event broadcasting
  * - Room-based subscriptions
  * - Connection lifecycle management
- * 
+ *
  * Events Broadcasted:
  * - reading:new - New energy reading
  * - sensor:update - Sensor status update
@@ -36,14 +36,14 @@ import {
  * - alert:power - Power threshold alert
  * - sensor:online - Sensor online
  * - sensor:offline - Sensor offline
- * 
+ *
  * Connection Flow:
  * 1. Client connects with JWT token in auth header
  * 2. Server validates token
  * 3. Client joins 'dashboard' room
  * 4. Server sends connection:authenticated event
  * 5. Client receives real-time updates
- * 
+ *
  * Security:
  * - JWT authentication required
  * - CORS configured
@@ -71,24 +71,28 @@ export class DashboardGateway
 
   /**
    * Handle Client Connection
-   * 
+   *
    * Called when client connects to WebSocket.
-   * 
+   *
    * Authentication Flow:
    * 1. Extract JWT token from handshake auth
    * 2. Verify token using JwtService
    * 3. If valid: Join 'dashboard' room, send authenticated event
    * 4. If invalid: Disconnect client
-   * 
+   *
    * @param client - Socket.IO client
    */
   async handleConnection(client: Socket) {
     try {
       // Extract JWT token from handshake
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.split(' ')[1];
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.split(' ')[1];
 
       if (!token) {
-        this.logger.warn(`Connection rejected: No token provided - ${client.id}`);
+        this.logger.warn(
+          `Connection rejected: No token provided - ${client.id}`,
+        );
         client.disconnect();
         return;
       }
@@ -136,9 +140,9 @@ export class DashboardGateway
 
   /**
    * Handle Client Disconnection
-   * 
+   *
    * Called when client disconnects from WebSocket.
-   * 
+   *
    * @param client - Socket.IO client
    */
   handleDisconnect(client: Socket) {
@@ -154,12 +158,12 @@ export class DashboardGateway
 
   /**
    * Handle Statistics Request
-   * 
+   *
    * Client requests current statistics.
-   * 
+   *
    * Event: 'statistics:request'
    * Response: Send statistics to requesting client
-   * 
+   *
    * @param client - Socket.IO client
    */
   @SubscribeMessage('statistics:request')
@@ -174,11 +178,11 @@ export class DashboardGateway
 
   /**
    * Broadcast New Reading
-   * 
+   *
    * Broadcasts new energy reading to all connected dashboard clients.
-   * 
+   *
    * Called by: IoT Service after storing reading
-   * 
+   *
    * @param reading - New reading data
    */
   broadcastNewReading(reading: NewReadingEventDto) {
@@ -188,11 +192,11 @@ export class DashboardGateway
 
   /**
    * Broadcast Sensor Update
-   * 
+   *
    * Broadcasts sensor status update to all connected dashboard clients.
-   * 
+   *
    * Called by: IoT Service after updating sensor
-   * 
+   *
    * @param sensor - Sensor update data
    */
   broadcastSensorUpdate(sensor: SensorUpdateEventDto) {
@@ -202,11 +206,11 @@ export class DashboardGateway
 
   /**
    * Broadcast Statistics Update
-   * 
+   *
    * Broadcasts system statistics to all connected dashboard clients.
-   * 
+   *
    * Called by: Dashboard Service periodically
-   * 
+   *
    * @param statistics - Statistics data
    */
   broadcastStatistics(statistics: StatisticsUpdateEventDto) {
@@ -216,11 +220,11 @@ export class DashboardGateway
 
   /**
    * Broadcast Power Alert
-   * 
+   *
    * Broadcasts power threshold alert to all connected dashboard clients.
-   * 
+   *
    * Called by: IoT Service when power exceeds threshold
-   * 
+   *
    * @param alert - Alert data
    */
   broadcastPowerAlert(alert: PowerAlertEventDto) {
@@ -232,9 +236,9 @@ export class DashboardGateway
 
   /**
    * Broadcast Sensor Online
-   * 
+   *
    * Broadcasts sensor online notification.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param sensorName - Sensor name
    * @param sensorLocation - Sensor location
@@ -255,9 +259,9 @@ export class DashboardGateway
 
   /**
    * Broadcast Sensor Offline
-   * 
+   *
    * Broadcasts sensor offline notification.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param sensorName - Sensor name
    * @param sensorLocation - Sensor location
@@ -281,23 +285,25 @@ export class DashboardGateway
 
   /**
    * Broadcast Alert Created
-   * 
+   *
    * Broadcasts new alert to all connected dashboard clients.
-   * 
+   *
    * Called by: Alerts Service after creating alert
-   * 
+   *
    * @param alert - Alert data
    */
   broadcastAlertCreated(alert: any) {
-    this.logger.warn(`Broadcasting new alert: ${alert.type} - ${alert.severity}`);
+    this.logger.warn(
+      `Broadcasting new alert: ${alert.type} - ${alert.severity}`,
+    );
     this.server.to('dashboard').emit('alert:created', alert);
   }
 
   /**
    * Broadcast Alert Acknowledged
-   * 
+   *
    * Broadcasts alert acknowledgement to all connected dashboard clients.
-   * 
+   *
    * @param alert - Updated alert data
    */
   broadcastAlertAcknowledged(alert: any) {
@@ -307,9 +313,9 @@ export class DashboardGateway
 
   /**
    * Broadcast Alert Resolved
-   * 
+   *
    * Broadcasts alert resolution to all connected dashboard clients.
-   * 
+   *
    * @param alert - Updated alert data
    */
   broadcastAlertResolved(alert: any) {
@@ -319,19 +325,19 @@ export class DashboardGateway
 
   /**
    * Get Connected Clients Count
-   * 
+   *
    * Returns number of currently connected dashboard clients.
-   * 
+   *
    * Safety:
    * - Checks full Socket.IO initialization chain
    * - Returns 0 if server/namespace/sockets Map not ready
    * - Prevents "Cannot read properties of undefined" errors
-   * 
+   *
    * Socket.IO Structure:
    * - server: Server instance
    * - server.sockets: Namespace (e.g., '/dashboard')
    * - server.sockets.sockets: Map<string, Socket> of connected clients
-   * 
+   *
    * @returns Number of connected clients (0 if not initialized)
    */
   getConnectedClientsCount(): number {

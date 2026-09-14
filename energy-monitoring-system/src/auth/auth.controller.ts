@@ -11,21 +11,21 @@ import { LoginDto, AuthResponseDto } from './dto';
 
 /**
  * Authentication Controller
- * 
+ *
  * Handles authentication-related HTTP endpoints.
- * 
+ *
  * Endpoints:
  * - POST /api/auth/login - User login
- * 
+ *
  * Security:
  * - Login endpoint is public (no authentication required)
  * - Returns JWT token for subsequent requests
  * - Validates credentials before issuing token
- * 
+ *
  * Error Handling:
  * - 400: Validation errors (invalid email format, missing fields)
  * - 401: Invalid credentials (wrong email/password, inactive account)
- * 
+ *
  * Validation:
  * - Automatic via LoginDto and ValidationPipe
  * - Email format checked
@@ -39,39 +39,39 @@ export class AuthController {
 
   /**
    * User Login
-   * 
+   *
    * Authenticates user credentials and returns JWT access token.
-   * 
+   *
    * @param loginDto - Login credentials (email, password)
    * @returns JWT token and user information
    * @throws UnauthorizedException if credentials are invalid
-   * 
+   *
    * Process:
    * 1. Validate request body (automatic via LoginDto)
    * 2. Verify credentials (AuthService)
    * 3. Generate JWT token (AuthService)
    * 4. Update last login timestamp
    * 5. Return token + user data
-   * 
+   *
    * Frontend Usage:
    * 1. Send POST request with email and password
    * 2. Store returned token (localStorage or sessionStorage)
    * 3. Include token in Authorization header for protected routes:
    *    Authorization: Bearer <token>
-   * 
+   *
    * Security:
    * - Password is validated but never returned
    * - Generic error message (doesn't reveal if email exists)
    * - Account status checked (inactive accounts rejected)
    * - JWT token has expiration
-   * 
+   *
    * Example Request:
    * POST /api/auth/login
    * {
    *   "email": "admin@example.com",
    *   "password": "SecurePass123"
    * }
-   * 
+   *
    * Example Success Response (200):
    * {
    *   "success": true,
@@ -87,7 +87,7 @@ export class AuthController {
    *     }
    *   }
    * }
-   * 
+   *
    * Example Error Response (401):
    * {
    *   "success": false,
@@ -95,7 +95,7 @@ export class AuthController {
    *   "message": "Invalid email or password",
    *   "timestamp": "2026-07-17T10:30:00.000Z"
    * }
-   * 
+   *
    * Example Validation Error (400):
    * {
    *   "success": false,
@@ -122,7 +122,8 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiBadRequestResponse({
-    description: 'Validation error - invalid email format or missing required fields',
+    description:
+      'Validation error - invalid email format or missing required fields',
     schema: {
       example: {
         success: false,
@@ -137,7 +138,8 @@ export class AuthController {
     },
   })
   @ApiUnauthorizedResponse({
-    description: 'Invalid credentials - wrong email/password or inactive account',
+    description:
+      'Invalid credentials - wrong email/password or inactive account',
     schema: {
       example: {
         success: false,

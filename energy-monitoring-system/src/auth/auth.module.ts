@@ -9,24 +9,24 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
  * Authentication Module
- * 
+ *
  * Handles all authentication-related functionality:
  * - User login
  * - JWT token generation and validation
  * - Password verification
  * - Protected route guards
- * 
+ *
  * Dependencies:
  * - JwtModule: JWT token generation and validation
  * - UsersModule: Access to user data
  * - ConfigModule: Load JWT configuration from environment
- * 
+ *
  * Architecture:
  * - Service: Business logic (validation, login, token generation)
  * - Controller: HTTP endpoints (/login, /profile) - will add next
  * - Strategy: Passport JWT strategy - will add next
  * - Guards: Protect routes - will add next
- * 
+ *
  * Configuration:
  * - JWT secret from environment variable
  * - JWT expiration from environment variable

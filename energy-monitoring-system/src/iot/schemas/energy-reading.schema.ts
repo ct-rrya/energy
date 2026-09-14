@@ -3,9 +3,9 @@ import { Document, Types } from 'mongoose';
 
 /**
  * Reading Source Enum
- * 
+ *
  * Indicates whether the reading came from real hardware or mock data.
- * 
+ *
  * Values:
  * - hardware: Real ESP32/Arduino sensor data
  * - mock: Generated mock data for development/testing
@@ -17,9 +17,9 @@ export enum ReadingSource {
 
 /**
  * Signal Quality Enum
- * 
+ *
  * Indicates the quality of the sensor connection based on latency.
- * 
+ *
  * Values:
  * - excellent: < 1 second latency
  * - good: 1-3 seconds latency
@@ -35,33 +35,33 @@ export enum SignalQuality {
 
 /**
  * Energy Reading Document Type
- * 
+ *
  * Represents an energy reading document from MongoDB with Mongoose methods.
  */
 export type EnergyReadingDocument = EnergyReading & Document;
 
 /**
  * Energy Reading Schema
- * 
+ *
  * Stores energy readings received from ESP32 piezoelectric sensors.
- * 
+ *
  * Purpose:
  * - Store raw sensor data (voltage, current, power)
  * - Calculate energy consumption (kWh)
  * - Track both ESP32 timestamp and server timestamp
  * - Link readings to specific sensors
- * 
+ *
  * Relationships:
  * - Belongs to Sensor (via sensorId)
  * - Used by Analytics module for aggregations
  * - Used by Dashboard for real-time display
- * 
+ *
  * Data Flow:
  * 1. ESP32 sends reading with timestamp
  * 2. Server receives and stores with receivedAt
  * 3. Energy calculated from power and time delta
  * 4. Reading linked to sensor via sensorId
- * 
+ *
  * Indexes:
  * - Compound: { sensorId, timestamp } for sensor queries
  * - Single: timestamp for recent readings
@@ -74,17 +74,17 @@ export type EnergyReadingDocument = EnergyReading & Document;
 export class EnergyReading {
   /**
    * Sensor ID
-   * 
+   *
    * Reference to the sensor that generated this reading.
    * Links to the Sensors collection.
-   * 
+   *
    * Usage:
    * - Query all readings for a specific sensor
    * - Join sensor metadata with readings
    * - Filter readings by sensor location/name
-   * 
+   *
    * Type: MongoDB ObjectId
-   * 
+   *
    * Example:
    * - "6a5a35213fe6213bf029d104"
    */
@@ -98,23 +98,23 @@ export class EnergyReading {
 
   /**
    * Voltage (V)
-   * 
+   *
    * Voltage measurement from piezoelectric sensor in volts.
-   * 
+   *
    * Expected Range:
    * - Min: 0 V
    * - Max: 50 V (typical piezoelectric range)
    * - Common: 3-12 V
-   * 
+   *
    * Validation:
    * - Must be positive number
    * - Validated by DTO and service layer
-   * 
+   *
    * Usage:
    * - Calculate power (P = V × I)
    * - Monitor sensor health
    * - Detect anomalies
-   * 
+   *
    * Precision: Stored as double (64-bit float)
    */
   @Prop({
@@ -126,23 +126,23 @@ export class EnergyReading {
 
   /**
    * Current (A)
-   * 
+   *
    * Current measurement from sensor in amperes.
-   * 
+   *
    * Expected Range:
    * - Min: 0 A
    * - Max: 10 A (typical ESP32 ADC range)
    * - Common: 0.01-1 A
-   * 
+   *
    * Validation:
    * - Must be positive number
    * - Validated by DTO and service layer
-   * 
+   *
    * Usage:
    * - Calculate power (P = V × I)
    * - Estimate energy harvesting efficiency
    * - Detect sensor malfunction
-   * 
+   *
    * Precision: Stored as double (64-bit float)
    */
   @Prop({
@@ -154,23 +154,23 @@ export class EnergyReading {
 
   /**
    * Power (W)
-   * 
+   *
    * Instantaneous power in watts.
    * Can be calculated by ESP32 or server.
-   * 
+   *
    * Formula: P = V × I
-   * 
+   *
    * Expected Range:
    * - Min: 0 W
    * - Max: 500 W (theoretical max)
    * - Common: 0.1-50 W
-   * 
+   *
    * Usage:
    * - Real-time power monitoring
    * - Calculate energy over time
    * - Peak power detection
    * - Dashboard display
-   * 
+   *
    * Note:
    * - ESP32 can send pre-calculated power
    * - Server can recalculate for validation
@@ -185,29 +185,29 @@ export class EnergyReading {
 
   /**
    * Energy (kWh)
-   * 
+   *
    * Cumulative energy harvested in kilowatt-hours.
    * Calculated from power readings over time.
-   * 
+   *
    * Calculation:
    * - Energy = Power × Time
    * - E (kWh) = P (W) × t (hours) / 1000
-   * 
+   *
    * Example:
    * - 10W for 1 hour = 0.01 kWh
    * - 100W for 30 minutes = 0.05 kWh
-   * 
+   *
    * Usage:
    * - Total energy harvested per sensor
    * - Daily/weekly/monthly aggregations
    * - Environmental impact calculations
    * - Cost savings estimates
-   * 
+   *
    * Calculation Strategy:
    * - Option 1: Calculate during analytics aggregation
    * - Option 2: Calculate on insert using previous reading
    * - Current: Stored as 0, calculated by analytics module
-   * 
+   *
    * Future Enhancement:
    * - Calculate on insert using time delta
    * - Store incremental energy per reading
@@ -222,25 +222,25 @@ export class EnergyReading {
 
   /**
    * Timestamp (from ESP32)
-   * 
+   *
    * When the reading was taken on the ESP32 device.
    * This is the ACTUAL measurement time.
-   * 
+   *
    * Source: ESP32 RTC or NTP-synced time
    * Format: ISO 8601 UTC
-   * 
+   *
    * Example: "2026-07-17T14:30:00.000Z"
-   * 
+   *
    * Usage:
    * - Chronological ordering of readings
    * - Time-series analysis
    * - Detect clock drift
    * - Compare with receivedAt for latency
-   * 
+   *
    * Validation:
    * - Must not be in the future (vs server time)
    * - Should be within reasonable range (e.g., not too old)
-   * 
+   *
    * Note:
    * - May differ from receivedAt due to network latency
    * - ESP32 time may drift if no NTP
@@ -255,27 +255,27 @@ export class EnergyReading {
 
   /**
    * Received At (server time)
-   * 
+   *
    * When the server received and stored this reading.
    * This is the SERVER processing time.
-   * 
+   *
    * Source: Server clock (always accurate)
    * Format: ISO 8601 UTC
-   * 
+   *
    * Example: "2026-07-17T14:30:01.234Z"
-   * 
+   *
    * Usage:
    * - Calculate network/processing latency
    * - Server-side chronological ordering
    * - Detect delayed readings
    * - Database operations ordering
-   * 
+   *
    * Calculation:
    * - Latency = receivedAt - timestamp
    * - Normal: < 1 second
    * - Warning: > 5 seconds
    * - Critical: > 30 seconds
-   * 
+   *
    * Note:
    * - Always use server time (accurate)
    * - Set automatically on creation
@@ -290,22 +290,22 @@ export class EnergyReading {
 
   /**
    * Battery Percentage
-   * 
+   *
    * Battery charge level of the energy storage system.
-   * 
+   *
    * Range: 0-100%
-   * 
+   *
    * Usage:
    * - Monitor battery health
    * - Trigger low battery alerts
    * - Track charging efficiency
    * - Prevent over-discharge
-   * 
+   *
    * Alert Thresholds:
    * - Critical: < 10%
    * - Warning: < 20%
    * - Normal: >= 20%
-   * 
+   *
    * Default: 100 (fully charged)
    */
   @Prop({
@@ -319,18 +319,18 @@ export class EnergyReading {
 
   /**
    * Temperature (°C)
-   * 
+   *
    * Optional temperature reading from sensor environment.
    * Useful for detecting overheating or environmental conditions.
-   * 
+   *
    * Range: -40°C to 125°C (typical sensor range)
-   * 
+   *
    * Usage:
    * - Monitor sensor health
    * - Detect overheating
    * - Environmental analysis
    * - Calibration adjustments
-   * 
+   *
    * Optional: Not all sensors have temperature capability
    */
   @Prop({
@@ -343,19 +343,19 @@ export class EnergyReading {
 
   /**
    * Frequency (Hz)
-   * 
+   *
    * Optional frequency measurement for piezoelectric sensors.
    * Indicates the vibration/pressure frequency being harvested.
-   * 
+   *
    * Range: 0-1000 Hz (typical piezoelectric range)
    * Common: 50-60 Hz (footstep frequency)
-   * 
+   *
    * Usage:
    * - Analyze energy harvesting efficiency
    * - Detect frequency patterns
    * - Optimize sensor placement
    * - Research applications
-   * 
+   *
    * Optional: Advanced sensors only
    */
   @Prop({
@@ -368,19 +368,19 @@ export class EnergyReading {
 
   /**
    * Reading Source
-   * 
+   *
    * Indicates whether this reading came from real hardware or mock data.
-   * 
+   *
    * Values:
    * - hardware: Real ESP32/Arduino sensor
    * - mock: Generated for development/testing
-   * 
+   *
    * Usage:
    * - Filter out mock data in production analytics
    * - Debug data pipeline
    * - Development vs production separation
    * - Data quality assurance
-   * 
+   *
    * Default: hardware (production mode)
    */
   @Prop({
@@ -394,13 +394,13 @@ export class EnergyReading {
 
   /**
    * Timestamps
-   * 
+   *
    * Automatically managed by Mongoose timestamps option:
    * - createdAt: When document was inserted (same as receivedAt)
    * - updatedAt: When document was last modified (should never change)
-   * 
+   *
    * These fields are added automatically, no need to define them.
-   * 
+   *
    * Note:
    * - Readings are immutable (never updated after creation)
    * - updatedAt will equal createdAt
@@ -410,37 +410,36 @@ export class EnergyReading {
 
 /**
  * Energy Reading Schema Factory
- * 
+ *
  * Creates the Mongoose schema from the class definition.
  */
-export const EnergyReadingSchema =
-  SchemaFactory.createForClass(EnergyReading);
+export const EnergyReadingSchema = SchemaFactory.createForClass(EnergyReading);
 
 /**
  * Schema Indexes
- * 
+ *
  * Optimized indexes for common query patterns.
- * 
+ *
  * 1. Compound Index: { sensorId, timestamp }
  *    - Most common query: Get readings for sensor over time
  *    - Supports: "Find all readings for sensor X between dates Y and Z"
  *    - Order: timestamp descending (newest first)
- * 
+ *
  * 2. Single Index: { timestamp }
  *    - Already defined in @Prop decorator
  *    - Supports: "Get all recent readings across all sensors"
  *    - Used by dashboard for latest readings
- * 
+ *
  * 3. Single Index: { sensorId }
  *    - Already defined in @Prop decorator
  *    - Supports: "Get all readings for specific sensor"
  *    - Used by sensor detail page
- * 
+ *
  * 4. Single Index: { source }
  *    - Already defined in @Prop decorator
  *    - Supports: "Filter by mock vs hardware data"
  *    - Used for development vs production separation
- * 
+ *
  * Future Indexes:
  * 5. TTL Index: { createdAt: 1 }, expireAfterSeconds
  *    - Automatically delete old readings
@@ -452,14 +451,14 @@ EnergyReadingSchema.index({ source: 1, timestamp: -1 }); // New: Filter by sourc
 
 /**
  * Schema Transformation
- * 
+ *
  * Transform the document when converting to JSON (for API responses).
- * 
+ *
  * Changes:
  * - Rename _id to id
  * - Remove __v (version key)
  * - Keep all data fields
- * 
+ *
  * This ensures consistent API responses across all endpoints.
  */
 EnergyReadingSchema.set('toJSON', {
@@ -473,16 +472,16 @@ EnergyReadingSchema.set('toJSON', {
 
 /**
  * Virtual Fields
- * 
+ *
  * Computed properties not stored in database.
  * Available when documents are converted to JSON.
  */
 
 /**
  * Signal Quality Virtual
- * 
+ *
  * Calculates signal quality based on network latency.
- * 
+ *
  * Logic:
  * - Excellent: < 1 second
  * - Good: 1-3 seconds
@@ -502,9 +501,9 @@ EnergyReadingSchema.virtual('signalQuality').get(function (
 
 /**
  * Latency Virtual
- * 
+ *
  * Calculates network/processing latency in milliseconds.
- * 
+ *
  * Calculation: receivedAt - timestamp
  */
 EnergyReadingSchema.virtual('latency').get(function (
@@ -515,7 +514,7 @@ EnergyReadingSchema.virtual('latency').get(function (
 
 /**
  * Power in Kilowatts Virtual
- * 
+ *
  * Converts power from watts to kilowatts.
  */
 EnergyReadingSchema.virtual('powerKW').get(function (

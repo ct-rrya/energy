@@ -7,10 +7,10 @@ import { AppModule } from '../src/app.module';
 
 /**
  * CORS Configuration E2E Tests
- * 
+ *
  * Tests for Task 8.1: Configure CORS in main.ts
  * Requirements: 5.11, 8.10, 11.10, 15.1
- * 
+ *
  * Verifies that:
  * - CORS is enabled with correct origins from env vars
  * - Only GET and POST methods are allowed
@@ -31,11 +31,21 @@ describe('CORS Configuration (e2e)', () => {
     configService = app.get(ConfigService);
 
     // Apply same configuration as main.ts
-    const frontendUrl = configService.get<string>('app.frontendUrl') || process.env.FRONTEND_URL || 'http://localhost:5173';
-    const productionUrl = configService.get<string>('app.productionUrl') || process.env.PRODUCTION_URL || 'https://ecostep.example.com';
-    
+    const frontendUrl =
+      configService.get<string>('app.frontendUrl') ||
+      process.env.FRONTEND_URL ||
+      'http://localhost:5173';
+    const productionUrl =
+      configService.get<string>('app.productionUrl') ||
+      process.env.PRODUCTION_URL ||
+      'https://ecostep.example.com';
+
     const allowedOrigins = [frontendUrl];
-    if (productionUrl && productionUrl.trim() !== '' && productionUrl !== 'https://ecostep.example.com') {
+    if (
+      productionUrl &&
+      productionUrl.trim() !== '' &&
+      productionUrl !== 'https://ecostep.example.com'
+    ) {
       allowedOrigins.push(productionUrl);
     }
 
@@ -67,8 +77,9 @@ describe('CORS Configuration (e2e)', () => {
 
   describe('CORS Headers', () => {
     it('should allow requests from FRONTEND_URL origin', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .get('/api/health')
         .set('Origin', frontendUrl)
@@ -79,14 +90,20 @@ describe('CORS Configuration (e2e)', () => {
 
     it('should allow requests from PRODUCTION_URL origin if configured', async () => {
       const productionUrl = configService.get<string>('app.productionUrl');
-      
-      if (productionUrl && productionUrl.trim() !== '' && productionUrl !== 'https://ecostep.example.com') {
+
+      if (
+        productionUrl &&
+        productionUrl.trim() !== '' &&
+        productionUrl !== 'https://ecostep.example.com'
+      ) {
         const response = await request(app.getHttpServer())
           .get('/api/health')
           .set('Origin', productionUrl)
           .expect(200);
 
-        expect(response.headers['access-control-allow-origin']).toBe(productionUrl);
+        expect(response.headers['access-control-allow-origin']).toBe(
+          productionUrl,
+        );
       } else {
         // If production URL is not set, test should pass
         expect(true).toBe(true);
@@ -103,8 +120,9 @@ describe('CORS Configuration (e2e)', () => {
     });
 
     it('should support GET method in preflight request', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .options('/api/health')
         .set('Origin', frontendUrl)
@@ -116,8 +134,9 @@ describe('CORS Configuration (e2e)', () => {
     });
 
     it('should support POST method in preflight request', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .options('/api/chat')
         .set('Origin', frontendUrl)
@@ -129,8 +148,9 @@ describe('CORS Configuration (e2e)', () => {
     });
 
     it('should allow Content-Type and Accept headers', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .options('/api/chat')
         .set('Origin', frontendUrl)
@@ -144,21 +164,24 @@ describe('CORS Configuration (e2e)', () => {
     });
 
     it('should disable credentials for public API', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .get('/api/health')
         .set('Origin', frontendUrl)
         .expect(200);
 
       // Access-Control-Allow-Credentials should not be set (or be false)
-      const allowCredentials = response.headers['access-control-allow-credentials'];
+      const allowCredentials =
+        response.headers['access-control-allow-credentials'];
       expect(allowCredentials).toBeUndefined();
     });
 
     it('should cache preflight requests for 1 hour (3600 seconds)', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .options('/api/chat')
         .set('Origin', frontendUrl)
@@ -182,12 +205,17 @@ describe('CORS Configuration (e2e)', () => {
     it('should handle missing PRODUCTION_URL gracefully', () => {
       const productionUrl = configService.get<string>('app.productionUrl');
       // Production URL can be empty or undefined in development
-      expect(typeof productionUrl === 'string' || productionUrl === undefined).toBe(true);
+      expect(
+        typeof productionUrl === 'string' || productionUrl === undefined,
+      ).toBe(true);
     });
 
     it('should use default values if environment variables are not set', () => {
       // If FRONTEND_URL is not set, it should default to http://localhost:5173
-      const frontendUrl = configService.get<string>('app.frontendUrl') || process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') ||
+        process.env.FRONTEND_URL ||
+        'http://localhost:5173';
       expect(frontendUrl).toBeTruthy();
       expect(frontendUrl).toMatch(/^https?:\/\//);
     });
@@ -195,8 +223,9 @@ describe('CORS Configuration (e2e)', () => {
 
   describe('Public API Endpoints CORS', () => {
     it('should allow CORS for /api/public/telemetry endpoint', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .get('/api/public/telemetry')
         .set('Origin', frontendUrl);
@@ -207,8 +236,9 @@ describe('CORS Configuration (e2e)', () => {
     });
 
     it('should allow CORS for /api/chat endpoint', async () => {
-      const frontendUrl = configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
-      
+      const frontendUrl =
+        configService.get<string>('app.frontendUrl') || 'http://localhost:5173';
+
       const response = await request(app.getHttpServer())
         .post('/api/chat')
         .set('Origin', frontendUrl)

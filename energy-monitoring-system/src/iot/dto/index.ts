@@ -1,6 +1,6 @@
 /**
  * IoT Module DTOs
- * 
+ *
  * Centralized exports for all IoT-related Data Transfer Objects.
  */
 

@@ -2,17 +2,19 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Alert, AlertDocument, AlertStatus, AlertSeverity } from './schemas/alert.schema';
 import {
-  CreateAlertDto,
-  AlertQueryDto,
-} from './dto';
+  Alert,
+  AlertDocument,
+  AlertStatus,
+  AlertSeverity,
+} from './schemas/alert.schema';
+import { CreateAlertDto, AlertQueryDto } from './dto';
 
 /**
  * Alerts Service
- * 
+ *
  * Manages system alerts independently from notification delivery.
- * 
+ *
  * Responsibilities:
  * - Create alerts from system events
  * - Query alerts with filters and pagination
@@ -33,9 +35,9 @@ export class AlertsService {
 
   /**
    * Create Alert
-   * 
+   *
    * Creates a new alert and emits event for real-time broadcasting.
-   * 
+   *
    * @param createAlertDto - Alert creation data
    * @returns Created alert
    */
@@ -60,9 +62,9 @@ export class AlertsService {
 
   /**
    * Get Alerts
-   * 
+   *
    * Query alerts with filters, pagination, and sorting.
-   * 
+   *
    * @param query - Query parameters
    * @returns Paginated alerts
    */
@@ -163,7 +165,7 @@ export class AlertsService {
 
   /**
    * Get Alert by ID
-   * 
+   *
    * @param id - Alert ID
    * @returns Alert
    */
@@ -191,9 +193,9 @@ export class AlertsService {
 
   /**
    * Acknowledge Alert
-   * 
+   *
    * Marks an alert as acknowledged by a user.
-   * 
+   *
    * @param id - Alert ID
    * @param userId - User ID who acknowledged
    * @returns Updated alert
@@ -226,9 +228,9 @@ export class AlertsService {
 
   /**
    * Resolve Alert
-   * 
+   *
    * Marks an alert as resolved by a user.
-   * 
+   *
    * @param id - Alert ID
    * @param userId - User ID who resolved
    * @returns Updated alert
@@ -267,9 +269,9 @@ export class AlertsService {
 
   /**
    * Get Alert Statistics
-   * 
+   *
    * Returns aggregate statistics about alerts.
-   * 
+   *
    * @returns Alert statistics
    */
   async getAlertStats() {
@@ -338,9 +340,9 @@ export class AlertsService {
 
   /**
    * Delete Old Resolved Alerts
-   * 
+   *
    * Cleanup utility to delete resolved alerts older than specified days.
-   * 
+   *
    * @param days - Number of days to retain
    * @returns Number of deleted alerts
    */

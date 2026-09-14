@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { ChatbotCoreService } from '../chatbot/chatbot-core.service';
 import { SessionManager } from './session.manager';
@@ -8,13 +11,13 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 
 /**
  * Unit tests for ChatController
- * 
+ *
  * Tests:
  * - Successful message processing
  * - Validation error handling
  * - Session management
  * - Error handling
- * 
+ *
  * Requirements: 14.1, 14.2
  */
 describe('ChatController', () => {
@@ -186,7 +189,9 @@ describe('ChatController', () => {
       const ip = '127.0.0.1';
 
       sessionManager.getOrCreateSession.mockResolvedValue(mockSession);
-      chatbotCore.processMessage.mockRejectedValue(new Error('Something went wrong'));
+      chatbotCore.processMessage.mockRejectedValue(
+        new Error('Something went wrong'),
+      );
 
       // Act & Assert
       await expect(controller.sendMessage(dto, ip)).rejects.toThrow(
@@ -200,7 +205,8 @@ describe('ChatController', () => {
     it('should log IP address and message preview', async () => {
       // Arrange
       const dto: SendMessageDto = {
-        message: 'This is a very long message that should be truncated in the log to prevent log spam',
+        message:
+          'This is a very long message that should be truncated in the log to prevent log spam',
       };
       const ip = '192.168.1.100';
 
@@ -213,11 +219,11 @@ describe('ChatController', () => {
       await controller.sendMessage(dto, ip);
 
       // Assert
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining(ip));
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining(ip),
-      );
-      expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('This is a very long message that should be truncat'),
+        expect.stringContaining(
+          'This is a very long message that should be truncat',
+        ),
       );
     });
   });

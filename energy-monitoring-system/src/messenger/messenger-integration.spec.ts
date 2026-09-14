@@ -16,10 +16,10 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 /**
  * Messenger Integration Tests - Task 3.3
- * 
+ *
  * These tests verify that the Messenger integration still works correctly
  * after refactoring MessengerService to use ChatbotCoreService.
- * 
+ *
  * Test Coverage:
  * - Webhook verification (GET /messenger/webhook)
  * - Webhook event handling (POST /messenger/webhook)
@@ -76,7 +76,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
     }),
     calculateCostSavings: jest.fn().mockResolvedValue({
       monthlySavings: 12.45,
-      yearlySavings: 149.40,
+      yearlySavings: 149.4,
     }),
   };
 
@@ -121,7 +121,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
 
     // Clear all mocks
     jest.clearAllMocks();
-    
+
     // Mock axios for all tests
     mockedAxios.post.mockResolvedValue({
       status: 200,
@@ -187,10 +187,14 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
 
     it('should process message asynchronously (fire-and-forget)', async () => {
       // Mock slow message processing (5 seconds)
-      const mockHandleMessage = jest.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 5000))
-      );
-      jest.spyOn(service, 'handleMessage').mockImplementation(mockHandleMessage);
+      const mockHandleMessage = jest
+        .fn()
+        .mockImplementation(
+          () => new Promise((resolve) => setTimeout(resolve, 5000)),
+        );
+      jest
+        .spyOn(service, 'handleMessage')
+        .mockImplementation(mockHandleMessage);
 
       const webhookPayload: WebhookBodyDto = {
         object: 'page',
@@ -219,7 +223,9 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
 
       expect(result).toBe('EVENT_RECEIVED');
       expect(responseTime).toBeLessThan(100); // Should return immediately
-      console.log(`✅ Webhook returns within ${responseTime}ms (fire-and-forget pattern)`);
+      console.log(
+        `✅ Webhook returns within ${responseTime}ms (fire-and-forget pattern)`,
+      );
     });
   });
 
@@ -249,18 +255,20 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called (command was processed)
       expect(mockedAxios.post).toHaveBeenCalled();
       const callArgs = mockedAxios.post.mock.calls[0];
-      
+
       // Verify a response was sent (could be either success message or fallback)
       expect(callArgs[1].message.text).toBeTruthy();
       expect(callArgs[1].message.text.length).toBeGreaterThan(0);
-      
+
       console.log('✅ "status" command handled correctly');
-      console.log(`   Response: "${callArgs[1].message.text.substring(0, 50)}..."`);
+      console.log(
+        `   Response: "${callArgs[1].message.text.substring(0, 50)}..."`,
+      );
     });
 
     it('should handle "today" command', async () => {
@@ -288,16 +296,16 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called (command was processed)
       expect(mockedAxios.post).toHaveBeenCalled();
       const callArgs = mockedAxios.post.mock.calls[0];
-      
+
       // Verify a response was sent
       expect(callArgs[1].message.text).toBeTruthy();
       expect(callArgs[1].message.text.length).toBeGreaterThan(0);
-      
+
       console.log('✅ "today" command handled correctly');
     });
 
@@ -326,10 +334,12 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify subscribe service was called
-      expect(mockSubscribersService.subscribe).toHaveBeenCalledWith('test-user-subscribe');
+      expect(mockSubscribersService.subscribe).toHaveBeenCalledWith(
+        'test-user-subscribe',
+      );
       console.log('✅ "subscribe" command handled correctly');
     });
 
@@ -358,7 +368,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called with help message
       expect(mockedAxios.post).toHaveBeenCalled();
@@ -392,7 +402,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called
       expect(mockedAxios.post).toHaveBeenCalled();
@@ -424,7 +434,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called
       expect(mockedAxios.post).toHaveBeenCalled();
@@ -458,27 +468,31 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called with Quick Replies
       expect(mockedAxios.post).toHaveBeenCalled();
       const callArgs = mockedAxios.post.mock.calls[0];
-      
+
       // Check if quick_replies are present
       if (callArgs[1].message.quick_replies) {
         expect(callArgs[1].message.quick_replies).toBeInstanceOf(Array);
         expect(callArgs[1].message.quick_replies.length).toBeGreaterThan(0);
-        
+
         // Verify Quick Reply structure
         const firstQuickReply = callArgs[1].message.quick_replies[0];
         expect(firstQuickReply).toHaveProperty('content_type', 'text');
         expect(firstQuickReply).toHaveProperty('title');
         expect(firstQuickReply).toHaveProperty('payload');
-        
+
         console.log('✅ Quick Replies rendered correctly');
-        console.log(`   Found ${callArgs[1].message.quick_replies.length} Quick Replies`);
+        console.log(
+          `   Found ${callArgs[1].message.quick_replies.length} Quick Replies`,
+        );
       } else {
-        console.log('⚠️  No Quick Replies in response (may be OK for some commands)');
+        console.log(
+          '⚠️  No Quick Replies in response (may be OK for some commands)',
+        );
       }
     });
 
@@ -496,9 +510,9 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
                 timestamp: Date.now(),
                 message: {
                   mid: 'test-message-qr-click',
-                  text: 'Status',  // Button label
+                  text: 'Status', // Button label
                   quick_reply: {
-                    payload: 'status',  // Actual command
+                    payload: 'status', // Actual command
                   },
                 },
               },
@@ -510,16 +524,16 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify Meta API was called with a response (quick reply was processed)
       expect(mockedAxios.post).toHaveBeenCalled();
       const callArgs = mockedAxios.post.mock.calls[0];
-      
+
       // Verify a response was sent (the payload 'status' was used, not the text 'Status')
       expect(callArgs[1].message.text).toBeTruthy();
       expect(callArgs[1].message.text.length).toBeGreaterThan(0);
-      
+
       console.log('✅ Quick Reply click handled correctly (payload over text)');
     });
   });
@@ -552,7 +566,7 @@ describe('Messenger Integration Tests (Task 3.3)', () => {
       await controller.receiveWebhook(webhookPayload);
 
       // Allow async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify ChatbotCoreService was called with correct parameters
       expect(processMessageSpy).toHaveBeenCalledWith('status', {

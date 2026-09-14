@@ -1,16 +1,16 @@
 /**
  * Webhook DTOs for Facebook Messenger
- * 
+ *
  * These DTOs match the structure of incoming webhook events from Facebook.
- * 
+ *
  * Reference: https://developers.facebook.com/docs/messenger-platform/webhooks
  */
 
 /**
  * Webhook Verification Query DTO
- * 
+ *
  * Used when Facebook verifies the webhook endpoint.
- * 
+ *
  * Note: Using interface instead of class to avoid validation
  * issues with dot-notation property names.
  */
@@ -22,7 +22,7 @@ export interface WebhookVerificationDto {
 
 /**
  * Message Event DTO
- * 
+ *
  * Represents a message sent by a user.
  */
 export interface MessageEventDto {
@@ -35,7 +35,7 @@ export interface MessageEventDto {
 
 /**
  * Postback Event DTO
- * 
+ *
  * Represents a postback from button click.
  */
 export interface PostbackEventDto {
@@ -45,7 +45,7 @@ export interface PostbackEventDto {
 
 /**
  * Messaging Event DTO
- * 
+ *
  * Contains sender, recipient, and event details.
  */
 export interface MessagingEventDto {
@@ -62,7 +62,7 @@ export interface MessagingEventDto {
 
 /**
  * Webhook Entry DTO
- * 
+ *
  * Contains one or more messaging events.
  */
 export interface WebhookEntryDto {
@@ -73,7 +73,7 @@ export interface WebhookEntryDto {
 
 /**
  * Webhook Body DTO
- * 
+ *
  * Top-level webhook payload from Facebook.
  */
 export interface WebhookBodyDto {

@@ -55,7 +55,9 @@ export class AppService {
         nodeEnv: this.configService.get<string>('app.nodeEnv') || 'development',
         port: this.configService.get<number>('app.port') || 3000,
         apiPrefix: this.configService.get<string>('app.apiPrefix') || 'api',
-        corsOrigin: this.configService.get<string>('app.corsOrigin') || 'http://localhost:3001',
+        corsOrigin:
+          this.configService.get<string>('app.corsOrigin') ||
+          'http://localhost:3001',
       },
       database: {
         uri: maskUrl(this.configService.get<string>('database.uri')),
@@ -79,10 +81,11 @@ export class AppService {
         ),
       },
       notifications: {
-        enabled: this.configService.get<boolean>('app.enableNotifications') || false,
-        thresholdPower: this.configService.get<number>(
-          'app.notificationThresholdPower',
-        ) || 100,
+        enabled:
+          this.configService.get<boolean>('app.enableNotifications') || false,
+        thresholdPower:
+          this.configService.get<number>('app.notificationThresholdPower') ||
+          100,
       },
     };
   }

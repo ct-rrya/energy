@@ -31,15 +31,15 @@ export enum NotificationStatus {
 
 /**
  * NotificationLog Schema
- * 
+ *
  * Stores complete history of all notifications sent to subscribers.
- * 
+ *
  * Purpose:
  * - Audit trail for all notifications
  * - Delivery tracking and analytics
  * - Debugging failed notifications
  * - Broadcast campaign tracking
- * 
+ *
  * Retention: 90 days (configurable)
  */
 @Schema({
@@ -49,7 +49,7 @@ export enum NotificationStatus {
 export class NotificationLog {
   /**
    * Subscriber ID (Facebook PSID)
-   * 
+   *
    * Reference to Subscriber.facebookUserId
    */
   @Prop({
@@ -60,7 +60,7 @@ export class NotificationLog {
 
   /**
    * Notification Type
-   * 
+   *
    * Type of notification sent.
    */
   @Prop({
@@ -73,7 +73,7 @@ export class NotificationLog {
 
   /**
    * Message Content
-   * 
+   *
    * Full text of the message sent.
    */
   @Prop({
@@ -84,7 +84,7 @@ export class NotificationLog {
 
   /**
    * Delivery Status
-   * 
+   *
    * Current status of the notification.
    * - pending: Created but not yet sent
    * - sent: Sent to Facebook API
@@ -102,7 +102,7 @@ export class NotificationLog {
 
   /**
    * Sent At
-   * 
+   *
    * Timestamp when notification was successfully sent.
    */
   @Prop({
@@ -112,7 +112,7 @@ export class NotificationLog {
 
   /**
    * Error Message
-   * 
+   *
    * Error details if status is 'failed'.
    */
   @Prop({
@@ -122,7 +122,7 @@ export class NotificationLog {
 
   /**
    * Metadata
-   * 
+   *
    * Additional context about the notification.
    * Structure depends on notification type.
    */
@@ -145,7 +145,7 @@ export const NotificationLogSchema =
 
 /**
  * Schema Indexes
- * 
+ *
  * Optimized for common queries:
  * - Find logs by subscriber
  * - Filter by type

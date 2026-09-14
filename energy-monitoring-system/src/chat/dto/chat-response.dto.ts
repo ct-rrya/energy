@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * DTO for chat response
- * 
+ *
  * Requirements: 5.7
  */
 export class ChatResponseDto {
@@ -14,7 +14,8 @@ export class ChatResponseDto {
 
   @ApiProperty({
     description: 'The bot response text',
-    example: '📊 Current system status: Online. Energy generated today: 0.145 kWh',
+    example:
+      '📊 Current system status: Online. Energy generated today: 0.145 kWh',
   })
   response: string;
 

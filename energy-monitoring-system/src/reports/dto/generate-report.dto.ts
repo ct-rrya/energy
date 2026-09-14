@@ -1,12 +1,21 @@
-import { IsEnum, IsOptional, IsNumber, IsString, IsDateString, ValidateIf, Min, Max } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsDateString,
+  ValidateIf,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReportType, ReportFormat } from '../schemas/report.schema';
 
 /**
  * Generate Report DTO
- * 
+ *
  * Validates the request body for generating a new report.
- * 
+ *
  * Validation Rules:
  * - type: Required, must be 'daily' | 'weekly' | 'monthly' | 'custom'
  * - format: Required, must be 'pdf' | 'excel'
@@ -15,9 +24,9 @@ import { ReportType, ReportFormat } from '../schemas/report.schema';
  * - day: Required for daily only, 1-31
  * - startDate: Required for custom only, YYYY-MM-DD format
  * - endDate: Required for custom only, YYYY-MM-DD format
- * 
+ *
  * Examples:
- * 
+ *
  * Daily Report:
  * {
  *   "type": "daily",
@@ -26,7 +35,7 @@ import { ReportType, ReportFormat } from '../schemas/report.schema';
  *   "month": 7,
  *   "day": 18
  * }
- * 
+ *
  * Weekly Report:
  * {
  *   "type": "weekly",
@@ -35,7 +44,7 @@ import { ReportType, ReportFormat } from '../schemas/report.schema';
  *   "month": 7,
  *   "day": 14  // Any day in the week (Monday will be calculated)
  * }
- * 
+ *
  * Monthly Report:
  * {
  *   "type": "monthly",
@@ -43,7 +52,7 @@ import { ReportType, ReportFormat } from '../schemas/report.schema';
  *   "year": 2026,
  *   "month": 7
  * }
- * 
+ *
  * Custom Report:
  * {
  *   "type": "custom",
@@ -55,9 +64,9 @@ import { ReportType, ReportFormat } from '../schemas/report.schema';
 export class GenerateReportDto {
   /**
    * Report Type
-   * 
+   *
    * The type of report to generate.
-   * 
+   *
    * Values:
    * - daily: Single day report
    * - weekly: Monday to Sunday report
@@ -76,9 +85,9 @@ export class GenerateReportDto {
 
   /**
    * Report Format
-   * 
+   *
    * The file format for the generated report.
-   * 
+   *
    * Values:
    * - pdf: PDF document
    * - excel: Excel spreadsheet (.xlsx)
@@ -95,10 +104,10 @@ export class GenerateReportDto {
 
   /**
    * Year
-   * 
+   *
    * Required for: daily, weekly, monthly
    * Not used for: custom
-   * 
+   *
    * Range: 1900-2100
    */
   @ApiPropertyOptional({
@@ -115,20 +124,26 @@ export class GenerateReportDto {
 
   /**
    * Month
-   * 
+   *
    * Required for: daily, monthly
    * Optional for: weekly (used to determine which week)
    * Not used for: custom
-   * 
+   *
    * Range: 1-12
    */
   @ApiPropertyOptional({
-    description: 'Month (required for daily/monthly reports, optional for weekly)',
+    description:
+      'Month (required for daily/monthly reports, optional for weekly)',
     example: 7,
     minimum: 1,
     maximum: 12,
   })
-  @ValidateIf((o) => o.type === ReportType.DAILY || o.type === ReportType.MONTHLY || o.type === ReportType.WEEKLY)
+  @ValidateIf(
+    (o) =>
+      o.type === ReportType.DAILY ||
+      o.type === ReportType.MONTHLY ||
+      o.type === ReportType.WEEKLY,
+  )
   @IsNumber({}, { message: 'month must be a number' })
   @Min(1, { message: 'month must be between 1 and 12' })
   @Max(12, { message: 'month must be between 1 and 12' })
@@ -136,11 +151,11 @@ export class GenerateReportDto {
 
   /**
    * Day
-   * 
+   *
    * Required for: daily
    * Optional for: weekly (any day in the week)
    * Not used for: monthly, custom
-   * 
+   *
    * Range: 1-31
    */
   @ApiPropertyOptional({
@@ -149,7 +164,9 @@ export class GenerateReportDto {
     minimum: 1,
     maximum: 31,
   })
-  @ValidateIf((o) => o.type === ReportType.DAILY || o.type === ReportType.WEEKLY)
+  @ValidateIf(
+    (o) => o.type === ReportType.DAILY || o.type === ReportType.WEEKLY,
+  )
   @IsNumber({}, { message: 'day must be a number' })
   @Min(1, { message: 'day must be between 1 and 31' })
   @Max(31, { message: 'day must be between 1 and 31' })
@@ -157,10 +174,10 @@ export class GenerateReportDto {
 
   /**
    * Start Date
-   * 
+   *
    * Required for: custom
    * Not used for: daily, weekly, monthly
-   * 
+   *
    * Format: YYYY-MM-DD
    * Example: 2026-07-01
    */
@@ -174,13 +191,13 @@ export class GenerateReportDto {
 
   /**
    * End Date
-   * 
+   *
    * Required for: custom
    * Not used for: daily, weekly, monthly
-   * 
+   *
    * Format: YYYY-MM-DD
    * Example: 2026-07-31
-   * 
+   *
    * Must be after or equal to startDate.
    */
   @ApiPropertyOptional({
@@ -193,16 +210,17 @@ export class GenerateReportDto {
 
   /**
    * Electricity Rate (Optional)
-   * 
+   *
    * Custom electricity rate for cost savings calculation.
-   * 
+   *
    * Default: 0.12 (US average)
    * Unit: USD per kWh
-   * 
+   *
    * Example: 0.15 means $0.15 per kWh
    */
   @ApiPropertyOptional({
-    description: 'Custom electricity rate in USD per kWh (optional, defaults to 0.12)',
+    description:
+      'Custom electricity rate in USD per kWh (optional, defaults to 0.12)',
     example: 0.12,
     minimum: 0,
     maximum: 1,

@@ -10,11 +10,11 @@ export default registerAs('database', () => ({
     // Connection pool settings
     maxPoolSize: 10,
     minPoolSize: 2,
-    
+
     // Timeout settings
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
-    
+
     // Retry settings
     retryWrites: true,
     w: 'majority',

@@ -13,20 +13,20 @@ import type { SensorMetadata } from '../schemas/sensor.schema';
 
 /**
  * Create Sensor DTO
- * 
+ *
  * Validates the request body for creating a new sensor.
- * 
+ *
  * Validation Rules:
  * - name: Required, 3-100 characters
  * - location: Required, 3-200 characters
  * - status: Optional, defaults to 'active'
  * - metadata: Optional, flexible object
- * 
+ *
  * API Key Generation:
  * - API key is NOT provided by the client
  * - Generated server-side by the service
  * - Returned in the response
- * 
+ *
  * Usage:
  * POST /api/sensors
  * Body: CreateSensorDto

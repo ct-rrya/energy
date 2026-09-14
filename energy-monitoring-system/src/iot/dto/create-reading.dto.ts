@@ -12,9 +12,9 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
 
 /**
  * Create Reading DTO
- * 
+ *
  * Validates the request body from ESP32 devices when submitting readings.
- * 
+ *
  * Validation Rules:
  * - voltage: Required, 0-50V range
  * - current: Required, 0-10A range
@@ -24,10 +24,10 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  * - frequency: Optional, 0-1000Hz range
  * - timestamp: Required, valid ISO 8601 date string
  * - source: Optional, hardware or mock (default: hardware)
- * 
+ *
  * ESP32 Usage:
  * The ESP32 should send JSON in this exact format:
- * 
+ *
  * ```json
  * {
  *   "voltage": 5.2,
@@ -39,9 +39,9 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  *   "timestamp": "2026-07-17T14:30:00.000Z"
  * }
  * ```
- * 
+ *
  * Minimal Required Fields (for basic sensors):
- * 
+ *
  * ```json
  * {
  *   "voltage": 5.2,
@@ -50,7 +50,7 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  *   "timestamp": "2026-07-17T14:30:00.000Z"
  * }
  * ```
- * 
+ *
  * Why these ranges?
  * - Voltage: Piezoelectric sensors typically output 0-50V
  * - Current: ESP32 ADC can measure 0-10A safely
@@ -58,7 +58,7 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  * - Battery: Standard percentage 0-100%
  * - Temperature: Standard sensor range -40 to 125°C
  * - Frequency: Piezoelectric frequency range 0-1000Hz
- * 
+ *
  * Validation Layers:
  * 1. DTO (this class): Format and basic range validation
  * 2. Service: Business logic validation (timestamp not in future, etc.)
@@ -151,7 +151,10 @@ export class CreateReadingDto {
     type: String,
     format: 'date-time',
   })
-  @IsDateString({}, { message: 'Timestamp must be a valid ISO 8601 date string' })
+  @IsDateString(
+    {},
+    { message: 'Timestamp must be a valid ISO 8601 date string' },
+  )
   @IsNotEmpty({ message: 'Timestamp is required' })
   timestamp: string;
 
@@ -162,6 +165,8 @@ export class CreateReadingDto {
     default: ReadingSource.HARDWARE,
   })
   @IsOptional()
-  @IsEnum(ReadingSource, { message: 'Source must be either "hardware" or "mock"' })
+  @IsEnum(ReadingSource, {
+    message: 'Source must be either "hardware" or "mock"',
+  })
   source?: ReadingSource;
 }

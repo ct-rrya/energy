@@ -26,16 +26,20 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ReportsService } from './reports.service';
-import { GenerateReportDto, ReportResponseDto, ReportsListResponseDto } from './dto';
+import {
+  GenerateReportDto,
+  ReportResponseDto,
+  ReportsListResponseDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ReportType, ReportFormat } from './schemas/report.schema';
 
 /**
  * Reports Controller
- * 
+ *
  * Handles HTTP requests for report generation and management.
- * 
+ *
  * Endpoints:
  * - POST   /api/reports/generate          Generate new report
  * - GET    /api/reports                   List user's reports
@@ -43,12 +47,12 @@ import { ReportType, ReportFormat } from './schemas/report.schema';
  * - GET    /api/reports/:id/download      Download report file
  * - DELETE /api/reports/:id               Delete report
  * - GET    /api/reports/types/available   Get available report types
- * 
+ *
  * Authentication:
  * - All endpoints require JWT authentication
  * - Protected by JwtAuthGuard
  * - Users can only access their own reports
- * 
+ *
  * Security:
  * - Ownership validation on all operations
  * - File path validation on downloads
@@ -63,26 +67,26 @@ export class ReportsController {
 
   /**
    * Generate Report
-   * 
+   *
    * Generates a new energy report in PDF or Excel format.
-   * 
+   *
    * Process:
    * 1. Validate request parameters
    * 2. Fetch data from AnalyticsService
    * 3. Generate report file (PDF or Excel)
    * 4. Save file and metadata
    * 5. Return metadata with download URL
-   * 
+   *
    * Report Types:
    * - Daily: Single day report
    * - Weekly: Monday to Sunday report
    * - Monthly: Full month report
    * - Custom: User-specified date range
-   * 
+   *
    * Formats:
    * - PDF: Professional PDF document
    * - Excel: Excel spreadsheet (.xlsx)
-   * 
+   *
    * Example Request (Monthly PDF):
    * POST /api/reports/generate
    * {
@@ -91,7 +95,7 @@ export class ReportsController {
    *   "year": 2026,
    *   "month": 7
    * }
-   * 
+   *
    * Example Request (Custom Excel):
    * POST /api/reports/generate
    * {
@@ -125,7 +129,10 @@ export class ReportsController {
     @Body() generateReportDto: GenerateReportDto,
     @CurrentUser() user: any,
   ) {
-    const report = await this.reportsService.generate(generateReportDto, user.userId);
+    const report = await this.reportsService.generate(
+      generateReportDto,
+      user.userId,
+    );
 
     return {
       success: true,
@@ -139,21 +146,21 @@ export class ReportsController {
 
   /**
    * List Reports
-   * 
+   *
    * Retrieves all reports for the current user with pagination.
-   * 
+   *
    * Query Parameters:
    * - page: Page number (default: 1)
    * - limit: Items per page (default: 10, max: 100)
    * - type: Filter by report type (optional)
    * - format: Filter by file format (optional)
-   * 
+   *
    * Sorting:
    * - Newest reports first (by createdAt)
-   * 
+   *
    * Example Request:
    * GET /api/reports?page=1&limit=10&type=monthly&format=pdf
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -251,11 +258,11 @@ export class ReportsController {
 
   /**
    * Get Report Details
-   * 
+   *
    * Retrieves detailed metadata for a specific report.
-   * 
+   *
    * @param id - Report ID (MongoDB ObjectId)
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -320,24 +327,24 @@ export class ReportsController {
 
   /**
    * Download Report
-   * 
+   *
    * Downloads the report file.
-   * 
+   *
    * Returns a file stream with appropriate headers:
    * - Content-Type: application/pdf or application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
    * - Content-Disposition: attachment; filename="..."
-   * 
+   *
    * Increments download count each time file is downloaded.
-   * 
+   *
    * Security:
    * - User must own the report
    * - File path validated (no directory traversal)
    * - File must exist in uploads directory
-   * 
+   *
    * Example Request:
    * GET /api/reports/64f9a1b2c3d4e5f6g7h8i9j0/download
    * Authorization: Bearer <jwt>
-   * 
+   *
    * Example Response:
    * (Binary file stream with headers)
    */
@@ -365,7 +372,8 @@ export class ReportsController {
     description: 'Report or file not found',
   })
   @ApiForbiddenResponse({
-    description: 'Access denied - user does not own this report or invalid file path',
+    description:
+      'Access denied - user does not own this report or invalid file path',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - JWT token required',
@@ -375,7 +383,10 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const { stream, report } = await this.reportsService.download(id, user.userId);
+    const { stream, report } = await this.reportsService.download(
+      id,
+      user.userId,
+    );
 
     // Set response headers
     const contentType =
@@ -394,18 +405,18 @@ export class ReportsController {
 
   /**
    * Delete Report
-   * 
+   *
    * Deletes a report and its file.
-   * 
+   *
    * Process:
    * 1. Validate ownership
    * 2. Delete file from file system
    * 3. Delete metadata from database
-   * 
+   *
    * Example Request:
    * DELETE /api/reports/64f9a1b2c3d4e5f6g7h8i9j0
    * Authorization: Bearer <jwt>
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -457,14 +468,14 @@ export class ReportsController {
 
   /**
    * Get Available Report Types
-   * 
+   *
    * Returns information about available report types and formats.
-   * 
+   *
    * Useful for:
    * - Building report generation UI
    * - Showing available options
    * - Client-side validation
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,

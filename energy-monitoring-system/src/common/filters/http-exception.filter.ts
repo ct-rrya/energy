@@ -9,7 +9,7 @@ import { Response } from 'express';
 
 /**
  * HTTP Exception Filter
- * 
+ *
  * Catches all HTTP exceptions and formats them consistently:
  * {
  *   success: false,
@@ -18,7 +18,7 @@ import { Response } from 'express';
  *   errors: [...],
  *   timestamp: "2026-07-17T..."
  * }
- * 
+ *
  * This provides a consistent error response structure throughout the API
  */
 @Catch(HttpException)
@@ -52,7 +52,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 /**
  * All Exceptions Filter
- * 
+ *
  * Catches any unhandled errors (500 Internal Server Error)
  * This is a safety net for unexpected errors
  */

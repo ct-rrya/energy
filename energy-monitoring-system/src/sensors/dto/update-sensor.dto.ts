@@ -12,21 +12,21 @@ import type { SensorMetadata } from '../schemas/sensor.schema';
 
 /**
  * Update Sensor DTO
- * 
+ *
  * Validates the request body for updating an existing sensor.
- * 
+ *
  * Validation Rules:
  * - All fields are optional (partial update)
  * - name: 3-100 characters if provided
  * - location: 3-200 characters if provided
  * - status: Must be valid enum value
  * - metadata: Flexible object
- * 
+ *
  * Notes:
  * - API key cannot be updated directly (use regenerate endpoint)
  * - isActive cannot be updated directly (use delete endpoint)
  * - lastSeenAt cannot be updated (managed by IoT module)
- * 
+ *
  * Usage:
  * PATCH /api/sensors/:id
  * Body: UpdateSensorDto (any combination of fields)

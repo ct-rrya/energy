@@ -3,7 +3,7 @@ import { UserResponseDto } from '../../users/dto';
 
 /**
  * Auth Data DTO
- * 
+ *
  * Contains the authentication token and user information.
  * This is nested inside AuthResponseDto.
  */
@@ -24,10 +24,10 @@ export class AuthDataDto {
 
 /**
  * Auth Response DTO
- * 
+ *
  * Standard response format for successful login.
  * Follows the API standards defined for the project.
- * 
+ *
  * Structure:
  * {
  *   success: true,
@@ -37,13 +37,13 @@ export class AuthDataDto {
  *     user: { id, email, name, ... }
  *   }
  * }
- * 
+ *
  * Usage:
  * - POST /api/auth/login response
  * - Contains everything frontend needs after login:
  *   1. JWT token (store in localStorage)
  *   2. User information (display in UI)
- * 
+ *
  * Security:
  * - Token should be stored securely (not in cookies for CSRF protection)
  * - Token has expiration time (configured in .env)

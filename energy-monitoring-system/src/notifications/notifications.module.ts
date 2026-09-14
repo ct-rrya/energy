@@ -16,22 +16,22 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 
 /**
  * Notifications Module
- * 
+ *
  * Complete notification platform for the Energy Monitoring System.
- * 
+ *
  * Features:
  * - Automated event-driven notifications
  * - Scheduled daily/weekly summaries (cron jobs)
  * - Broadcast messaging system
  * - Complete notification logging
  * - Admin APIs for management
- * 
+ *
  * Architecture:
  * - Event-driven using @nestjs/event-emitter
  * - Scheduled jobs using @nestjs/schedule
  * - Consumes Messenger, Subscribers, Analytics modules
  * - Never accesses IoT/Sensors DB directly
- * 
+ *
  * Dependencies:
  * - @nestjs/schedule (cron jobs)
  * - @nestjs/event-emitter (event-driven)

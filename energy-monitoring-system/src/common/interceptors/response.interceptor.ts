@@ -21,7 +21,7 @@ export interface Response<T> {
 
 /**
  * Response Transform Interceptor
- * 
+ *
  * Wraps all successful responses in a consistent format:
  * {
  *   success: true,
@@ -33,7 +33,10 @@ export interface Response<T> {
  */
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<Response<T>> {
     return next.handle().pipe(
       map((data) => ({
         success: true,

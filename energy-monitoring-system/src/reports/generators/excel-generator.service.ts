@@ -4,16 +4,16 @@ import { ReportType } from '../schemas/report.schema';
 
 /**
  * Excel Generator Service
- * 
+ *
  * Generates professional Excel reports using ExcelJS.
- * 
+ *
  * Features:
  * - Multiple sheets (Summary, Details, Charts)
  * - Professional styling and formatting
  * - Conditional formatting
  * - Formulas for calculations
  * - Data tables with headers
- * 
+ *
  * Sheets:
  * 1. Summary - Key metrics and overview
  * 2. Energy Performance - Detailed statistics
@@ -39,9 +39,9 @@ export class ExcelGeneratorService {
 
   /**
    * Generate Excel Report
-   * 
+   *
    * Creates an Excel workbook with multiple sheets.
-   * 
+   *
    * @param filePath - Path where Excel file will be saved
    * @param reportType - Type of report
    * @param startDate - Report start date
@@ -69,7 +69,14 @@ export class ExcelGeneratorService {
       workbook.properties.date1904 = false;
 
       // Add sheets
-      this.addSummarySheet(workbook, reportType, startDate, endDate, reportData, user);
+      this.addSummarySheet(
+        workbook,
+        reportType,
+        startDate,
+        endDate,
+        reportData,
+        user,
+      );
       this.addEnergyPerformanceSheet(workbook, reportData);
       this.addEnvironmentalImpactSheet(workbook, reportData);
       this.addCostSavingsSheet(workbook, reportData);
@@ -89,7 +96,7 @@ export class ExcelGeneratorService {
 
   /**
    * Add Summary Sheet
-   * 
+   *
    * Overview sheet with key metrics.
    */
   private addSummarySheet(
@@ -105,17 +112,17 @@ export class ExcelGeneratorService {
     });
 
     // Set column widths
-    sheet.columns = [
-      { width: 30 },
-      { width: 20 },
-      { width: 15 },
-    ];
+    sheet.columns = [{ width: 30 }, { width: 20 }, { width: 15 }];
 
     // Title
     sheet.mergeCells('A1:C1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = `${this.getReportTitle(reportType)}`;
-    titleCell.font = { size: 16, bold: true, color: { argb: this.colors.primary } };
+    titleCell.font = {
+      size: 16,
+      bold: true,
+      color: { argb: this.colors.primary },
+    };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     titleCell.fill = {
       type: 'pattern',
@@ -143,7 +150,11 @@ export class ExcelGeneratorService {
     sheet.mergeCells('A6:C6');
     const metricsHeader = sheet.getCell('A6');
     metricsHeader.value = 'KEY METRICS';
-    metricsHeader.font = { size: 14, bold: true, color: { argb: this.colors.white } };
+    metricsHeader.font = {
+      size: 14,
+      bold: true,
+      color: { argb: this.colors.white },
+    };
     metricsHeader.alignment = { horizontal: 'center', vertical: 'middle' };
     metricsHeader.fill = {
       type: 'pattern',
@@ -198,18 +209,17 @@ export class ExcelGeneratorService {
 
   /**
    * Add Energy Performance Sheet
-   * 
+   *
    * Detailed energy statistics.
    */
-  private addEnergyPerformanceSheet(workbook: ExcelJS.Workbook, reportData: any): void {
+  private addEnergyPerformanceSheet(
+    workbook: ExcelJS.Workbook,
+    reportData: any,
+  ): void {
     const sheet = workbook.addWorksheet('Energy Performance');
 
     // Set column widths
-    sheet.columns = [
-      { width: 30 },
-      { width: 20 },
-      { width: 15 },
-    ];
+    sheet.columns = [{ width: 30 }, { width: 20 }, { width: 15 }];
 
     // Title
     sheet.mergeCells('A1:C1');
@@ -232,18 +242,17 @@ export class ExcelGeneratorService {
 
   /**
    * Add Environmental Impact Sheet
-   * 
+   *
    * Green metrics and environmental benefits.
    */
-  private addEnvironmentalImpactSheet(workbook: ExcelJS.Workbook, reportData: any): void {
+  private addEnvironmentalImpactSheet(
+    workbook: ExcelJS.Workbook,
+    reportData: any,
+  ): void {
     const sheet = workbook.addWorksheet('Environmental Impact');
 
     // Set column widths
-    sheet.columns = [
-      { width: 35 },
-      { width: 20 },
-      { width: 15 },
-    ];
+    sheet.columns = [{ width: 35 }, { width: 20 }, { width: 15 }];
 
     // Title
     sheet.mergeCells('A1:C1');
@@ -258,7 +267,11 @@ export class ExcelGeneratorService {
       ['Trees Equivalent (1 year)', impact.treesEquivalent.toFixed(1), 'trees'],
       ['Coal Not Burned', impact.coalNotBurnedKg.toFixed(2), 'kg'],
       ['Homes Powered', impact.homesPoweredDays.toFixed(1), 'home-days'],
-      ['Phone Charges Equivalent', impact.phoneChargesEquivalent.toLocaleString(), 'charges'],
+      [
+        'Phone Charges Equivalent',
+        impact.phoneChargesEquivalent.toLocaleString(),
+        'charges',
+      ],
     ];
 
     this.addDataTable(sheet, data, 3);
@@ -274,18 +287,17 @@ export class ExcelGeneratorService {
 
   /**
    * Add Cost Savings Sheet
-   * 
+   *
    * Financial analysis and projections.
    */
-  private addCostSavingsSheet(workbook: ExcelJS.Workbook, reportData: any): void {
+  private addCostSavingsSheet(
+    workbook: ExcelJS.Workbook,
+    reportData: any,
+  ): void {
     const sheet = workbook.addWorksheet('Cost Savings');
 
     // Set column widths
-    sheet.columns = [
-      { width: 30 },
-      { width: 20 },
-      { width: 15 },
-    ];
+    sheet.columns = [{ width: 30 }, { width: 20 }, { width: 15 }];
 
     // Title
     sheet.mergeCells('A1:C1');
@@ -295,32 +307,55 @@ export class ExcelGeneratorService {
     const cost = reportData.costSavings;
     const data = [
       ['Period', 'Savings', 'Energy'],
-      ['Electricity Rate', `$${cost.electricityRatePerKWh.toFixed(2)}/kWh`, '-'],
-      ['Report Period', `$${cost.totalSavings.toFixed(2)}`, `${cost.energyGeneratedKWh.toFixed(2)} kWh`],
-      ['Daily Average', `$${cost.dailyAverageSavings.toFixed(2)}`, `${(cost.energyGeneratedKWh / cost.periodDays).toFixed(2)} kWh`],
-      ['Monthly Projected', `$${cost.monthlyProjectedSavings.toFixed(2)}`, `${(cost.monthlyProjectedSavings / cost.electricityRatePerKWh).toFixed(2)} kWh`],
-      ['Yearly Projected', `$${cost.yearlyProjectedSavings.toFixed(2)}`, `${(cost.yearlyProjectedSavings / cost.electricityRatePerKWh).toFixed(2)} kWh`],
+      [
+        'Electricity Rate',
+        `$${cost.electricityRatePerKWh.toFixed(2)}/kWh`,
+        '-',
+      ],
+      [
+        'Report Period',
+        `$${cost.totalSavings.toFixed(2)}`,
+        `${cost.energyGeneratedKWh.toFixed(2)} kWh`,
+      ],
+      [
+        'Daily Average',
+        `$${cost.dailyAverageSavings.toFixed(2)}`,
+        `${(cost.energyGeneratedKWh / cost.periodDays).toFixed(2)} kWh`,
+      ],
+      [
+        'Monthly Projected',
+        `$${cost.monthlyProjectedSavings.toFixed(2)}`,
+        `${(cost.monthlyProjectedSavings / cost.electricityRatePerKWh).toFixed(2)} kWh`,
+      ],
+      [
+        'Yearly Projected',
+        `$${cost.yearlyProjectedSavings.toFixed(2)}`,
+        `${(cost.yearlyProjectedSavings / cost.electricityRatePerKWh).toFixed(2)} kWh`,
+      ],
     ];
 
     this.addDataTable(sheet, data, 3);
 
     // Highlight electricity rate
-    sheet.getCell('A4').font = { bold: true, color: { argb: this.colors.warning } };
+    sheet.getCell('A4').font = {
+      bold: true,
+      color: { argb: this.colors.warning },
+    };
   }
 
   /**
    * Add Peak Generation Sheet
-   * 
+   *
    * Highest power generation details.
    */
-  private addPeakGenerationSheet(workbook: ExcelJS.Workbook, reportData: any): void {
+  private addPeakGenerationSheet(
+    workbook: ExcelJS.Workbook,
+    reportData: any,
+  ): void {
     const sheet = workbook.addWorksheet('Peak Generation');
 
     // Set column widths
-    sheet.columns = [
-      { width: 30 },
-      { width: 30 },
-    ];
+    sheet.columns = [{ width: 30 }, { width: 30 }];
 
     // Title
     sheet.mergeCells('A1:B1');
@@ -364,7 +399,11 @@ export class ExcelGeneratorService {
   /**
    * Helper: Add Data Table
    */
-  private addDataTable(sheet: ExcelJS.Worksheet, data: any[][], startRow: number): void {
+  private addDataTable(
+    sheet: ExcelJS.Worksheet,
+    data: any[][],
+    startRow: number,
+  ): void {
     let row = startRow;
 
     for (let i = 0; i < data.length; i++) {

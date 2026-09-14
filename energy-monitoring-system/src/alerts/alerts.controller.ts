@@ -21,11 +21,11 @@ import { AlertQueryDto } from './dto';
 
 /**
  * Alerts Controller
- * 
+ *
  * Manages system alerts for administrators.
- * 
+ *
  * All endpoints require JWT authentication.
- * 
+ *
  * Endpoints:
  * - GET  /api/alerts - Get all alerts (with filters)
  * - GET  /api/alerts/stats - Get alert statistics
@@ -42,9 +42,9 @@ export class AlertsController {
 
   /**
    * Get Alerts
-   * 
+   *
    * Query alerts with filters, pagination, and sorting.
-   * 
+   *
    * @param query - Query parameters
    * @returns Paginated alerts
    */
@@ -67,9 +67,9 @@ export class AlertsController {
 
   /**
    * Get Alert Statistics
-   * 
+   *
    * Returns aggregate statistics about alerts.
-   * 
+   *
    * @returns Alert statistics
    */
   @Get('stats')
@@ -91,7 +91,7 @@ export class AlertsController {
 
   /**
    * Get Alert by ID
-   * 
+   *
    * @param id - Alert ID
    * @returns Alert details
    */
@@ -118,9 +118,9 @@ export class AlertsController {
 
   /**
    * Acknowledge Alert
-   * 
+   *
    * Marks an alert as acknowledged by the current user.
-   * 
+   *
    * @param id - Alert ID
    * @param user - Current user (from JWT)
    * @returns Updated alert
@@ -147,18 +147,15 @@ export class AlertsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async acknowledgeAlert(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  async acknowledgeAlert(@Param('id') id: string, @CurrentUser() user: any) {
     return this.alertsService.acknowledgeAlert(id, user.sub);
   }
 
   /**
    * Resolve Alert
-   * 
+   *
    * Marks an alert as resolved by the current user.
-   * 
+   *
    * @param id - Alert ID
    * @param user - Current user (from JWT)
    * @returns Updated alert
@@ -185,10 +182,7 @@ export class AlertsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async resolveAlert(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  async resolveAlert(@Param('id') id: string, @CurrentUser() user: any) {
     return this.alertsService.resolveAlert(id, user.sub);
   }
 }

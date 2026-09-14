@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * Hourly Average DTO
- * 
+ *
  * Represents average metrics for a single hour of the day.
  * Used for daily pattern analysis (0-23 hours).
  */
@@ -40,7 +40,7 @@ export class HourlyAverageDto {
 
 /**
  * Hourly Averages Response DTO
- * 
+ *
  * Complete 24-hour pattern data.
  */
 export class HourlyAveragesResponseDto {

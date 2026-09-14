@@ -12,13 +12,13 @@ import {
 
 /**
  * Health Service
- * 
+ *
  * Provides comprehensive health check functionality including:
  * - Database connectivity
  * - Memory usage
  * - System information
  * - Application uptime
- * 
+ *
  * Used by monitoring tools, load balancers, and DevOps dashboards
  */
 @Injectable()
@@ -44,7 +44,8 @@ export class HealthService {
       status,
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      environment: this.configService.get<string>('app.nodeEnv') || 'development',
+      environment:
+        this.configService.get<string>('app.nodeEnv') || 'development',
       database: databaseHealth,
       memory: memoryHealth,
       system: systemInfo,
@@ -57,7 +58,7 @@ export class HealthService {
    */
   private async checkDatabase(): Promise<DatabaseHealthDto> {
     const startTime = Date.now();
-    
+
     try {
       const state = this.connection.readyState;
       const states = {

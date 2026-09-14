@@ -1,9 +1,15 @@
-import { IsString, IsOptional, IsArray, IsBoolean, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Broadcast Message DTO
- * 
+ *
  * Request body for sending broadcast messages to subscribers.
  */
 export class BroadcastMessageDto {
@@ -38,7 +44,7 @@ export class BroadcastMessageDto {
 
 /**
  * Broadcast Result DTO
- * 
+ *
  * Response after sending broadcast.
  */
 export class BroadcastResultDto {

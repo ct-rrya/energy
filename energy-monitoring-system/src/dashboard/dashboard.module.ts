@@ -9,32 +9,32 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
 
 /**
  * Dashboard Module
- * 
+ *
  * Provides real-time WebSocket updates for admin dashboard.
- * 
+ *
  * Features:
  * - Socket.IO WebSocket gateway
  * - Real-time energy reading broadcasts
  * - Sensor status updates
  * - Periodic statistics updates
  * - Power threshold alerts
- * 
+ *
  * Dependencies:
  * - EnergyModule (for statistics)
  * - JwtModule (for authentication)
  * - Sensors schema (for sensor counts)
- * 
+ *
  * Exports:
  * - DashboardService (for IoT module integration)
  * - DashboardGateway (for direct access if needed)
- * 
+ *
  * WebSocket Endpoint:
  * - ws://localhost:3000/dashboard
- * 
+ *
  * Authentication:
  * - JWT token required in handshake
  * - Token passed via auth.token or Authorization header
- * 
+ *
  * Events:
  * - reading:new - New energy reading
  * - sensor:update - Sensor status update

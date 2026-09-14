@@ -2,12 +2,12 @@ import * as Joi from 'joi';
 
 /**
  * Environment Variables Validation Schema
- * 
+ *
  * This schema validates that all required environment variables:
  * 1. Exist
  * 2. Have the correct type
  * 3. Have valid values (where applicable)
- * 
+ *
  * If validation fails, the application will NOT start.
  * This prevents runtime errors due to missing configuration.
  */

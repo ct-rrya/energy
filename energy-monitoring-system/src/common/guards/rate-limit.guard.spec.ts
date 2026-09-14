@@ -6,13 +6,13 @@ import { Reflector } from '@nestjs/core';
 
 /**
  * RateLimitGuard Unit Tests
- * 
+ *
  * Tests rate limiting functionality including:
  * - IP extraction from X-Forwarded-For header
  * - Proper 429 error response formatting
  * - Retry-After header generation
  * - Rate limit enforcement (within limit, exceeded, and TTL reset)
- * 
+ *
  * Requirements:
  * - 8.4: THE Chat_API SHALL implement rate limiting per IP address
  * - 13.5: THE Chat_API SHALL implement rate limiting of 10 requests per minute per IP
@@ -45,9 +45,9 @@ describe('RateLimitGuard', () => {
     ];
 
     guard = new RateLimitGuard(
-      throttlerOptions as any,
-      mockStorageService as any,
-      mockReflector as any,
+      throttlerOptions,
+      mockStorageService,
+      mockReflector,
     );
 
     // Call onModuleInit to initialize the guard's internal state
@@ -191,7 +191,7 @@ describe('RateLimitGuard', () => {
         ip: '127.0.0.1',
         path: '/api/chat',
         route: { path: '/api/chat' },
-        headers: { 'x-forwarded-for': ['203.0.113.1', '198.51.100.1'] as any },
+        headers: { 'x-forwarded-for': ['203.0.113.1', '198.51.100.1'] },
         socket: { remoteAddress: '127.0.0.1' } as any,
       };
 
@@ -268,10 +268,7 @@ describe('RateLimitGuard', () => {
     });
 
     it('should return correct TTL for telemetry endpoint', async () => {
-      const context = createMockContext(
-        '192.168.1.1',
-        '/api/public/telemetry',
-      );
+      const context = createMockContext('192.168.1.1', '/api/public/telemetry');
 
       try {
         await (guard as any).throwThrottlingException(context);
@@ -309,19 +306,19 @@ describe('RateLimitGuard', () => {
   describe('Rate Limit Enforcement (Requirements 14.1, 14.2)', () => {
     /**
      * Test that requests within the configured limit are allowed
-     * 
+     *
      * Note: This test verifies the guard's integration with ThrottlerStorageService.
      * The actual rate limiting logic is provided by @nestjs/throttler's ThrottlerGuard base class.
      * Full end-to-end rate limiting behavior is verified in integration tests.
-     * 
+     *
      * Requirement 14.1: THE Chat_API SHALL have unit tests for request validation
      */
     it('should allow requests within limit (mock storage)', async () => {
       const context = createMockContext('192.168.1.1', '/api/chat');
-      
+
       // Configure reflector to not skip requests (return undefined for skipIf)
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // Mock storage to simulate requests under limit
       // When isBlocked is false, the base ThrottlerGuard allows the request
       mockStorageService.increment.mockResolvedValue({
@@ -331,17 +328,17 @@ describe('RateLimitGuard', () => {
       });
 
       const result = await guard.canActivate(context);
-      
+
       expect(result).toBe(true);
       expect(mockStorageService.increment).toHaveBeenCalled();
     });
 
     it('should allow multiple requests up to the limit (mock storage)', async () => {
       const context = createMockContext('192.168.1.1', '/api/chat');
-      
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // The throttler calls increment for each configured throttler
       // Since we have 2 throttlers (chat, telemetry), it will be called twice per canActivate
       // We need to ensure all responses indicate not blocked
@@ -355,23 +352,25 @@ describe('RateLimitGuard', () => {
         const result = await guard.canActivate(context);
         expect(result).toBe(true);
       }
-      
+
       // Verify increment was called (will be called 2x per request due to 2 throttlers)
-      expect(mockStorageService.increment.mock.calls.length).toBeGreaterThanOrEqual(10);
+      expect(
+        mockStorageService.increment.mock.calls.length,
+      ).toBeGreaterThanOrEqual(10);
     });
 
     /**
      * Test that requests exceeding the limit throw HTTP 429
-     * 
+     *
      * Requirement 14.2: THE Chat_API SHALL have unit tests for error handling
      * Requirement 13.6: WHEN rate limit is exceeded, THE Chat_API SHALL return HTTP 429
      */
     it('should throw 429 when requests exceed limit (mock storage)', async () => {
       const context = createMockContext('192.168.1.1', '/api/chat');
-      
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // Mock storage to simulate rate limit exceeded
       mockStorageService.increment.mockResolvedValue({
         totalHits: 11,
@@ -381,13 +380,15 @@ describe('RateLimitGuard', () => {
 
       // Should throw HttpException with 429 status
       await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
-      
+
       try {
         await guard.canActivate(context);
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
-        expect((error as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
-        
+        expect((error as HttpException).getStatus()).toBe(
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+
         const response = (error as HttpException).getResponse();
         expect(response).toMatchObject({
           statusCode: 429,
@@ -400,10 +401,10 @@ describe('RateLimitGuard', () => {
     it('should set Retry-After header when rate limit exceeded', async () => {
       const context = createMockContext('192.168.1.1', '/api/chat');
       const mockResponse = context.switchToHttp().getResponse();
-      
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       mockStorageService.increment.mockResolvedValue({
         totalHits: 11,
         timeToExpire: 60000,
@@ -415,24 +416,24 @@ describe('RateLimitGuard', () => {
       } catch (error) {
         // Expected to throw
       }
-      
+
       expect(mockResponse.header).toHaveBeenCalledWith('Retry-After', '60');
     });
 
     /**
      * Test that rate limit resets after TTL window expires
-     * 
+     *
      * This simulates the storage service resetting the counter after TTL,
      * which is the actual behavior of the throttler storage.
-     * 
+     *
      * Requirement 14.1: THE Chat_API SHALL have unit tests for request validation
      */
     it('should reset rate limit after TTL window (mock storage)', async () => {
       const context = createMockContext('192.168.1.1', '/api/chat');
-      
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // First: Simulate rate limit exceeded
       mockStorageService.increment.mockResolvedValue({
         totalHits: 11,
@@ -441,7 +442,7 @@ describe('RateLimitGuard', () => {
       });
 
       await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
-      
+
       // Second: After TTL expires, storage service resets the counter
       // This simulates what happens in the actual storage implementation
       // Reset the mock to return a new value
@@ -460,10 +461,10 @@ describe('RateLimitGuard', () => {
     it('should track rate limits per IP address independently', async () => {
       const context1 = createMockContext('192.168.1.1', '/api/chat');
       const context2 = createMockContext('192.168.1.2', '/api/chat');
-      
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // The guard calls increment for each throttler (2 throttlers configured)
       // So we expect 4 total calls (2 per canActivate call)
       mockStorageService.increment.mockResolvedValue({
@@ -475,25 +476,30 @@ describe('RateLimitGuard', () => {
       // Both should succeed
       const result1 = await guard.canActivate(context1);
       const result2 = await guard.canActivate(context2);
-      
+
       expect(result1).toBe(true);
       expect(result2).toBe(true);
       // Called 2x per request (2 throttlers) * 2 requests = 4 calls
-      expect(mockStorageService.increment.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(
+        mockStorageService.increment.mock.calls.length,
+      ).toBeGreaterThanOrEqual(2);
     });
 
     it('should enforce different limits for different endpoints', async () => {
       const chatContext = createMockContext('192.168.1.1', '/api/chat');
-      const telemetryContext = createMockContext('192.168.1.1', '/api/public/telemetry');
-      
+      const telemetryContext = createMockContext(
+        '192.168.1.1',
+        '/api/public/telemetry',
+      );
+
       // Configure reflector
       mockReflector.getAllAndOverride.mockReturnValue(undefined);
-      
+
       // Use mockImplementation to return different values for each call
       mockStorageService.increment.mockImplementation(async (key: string) => {
         // First call is chat, second call is telemetry
         const callIndex = mockStorageService.increment.mock.calls.length;
-        
+
         return callIndex === 1
           ? { totalHits: 10, timeToExpire: 60000, isBlocked: false } // Chat: at limit
           : { totalHits: 50, timeToExpire: 60000, isBlocked: false }; // Telemetry: under limit
@@ -501,7 +507,7 @@ describe('RateLimitGuard', () => {
 
       const chatResult = await guard.canActivate(chatContext);
       const telemetryResult = await guard.canActivate(telemetryContext);
-      
+
       expect(chatResult).toBe(true);
       expect(telemetryResult).toBe(true);
     });

@@ -36,39 +36,39 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
  * IoT Controller
- * 
+ *
  * Handles HTTP requests from ESP32 devices for data ingestion.
- * 
+ *
  * Endpoints:
  * - POST /api/iot/readings - Submit energy reading
- * 
+ *
  * Authentication:
  * - Uses ApiKeyGuard (not JWT)
  * - API key in X-API-Key header
  * - Validated against Sensors collection
- * 
+ *
  * Design Philosophy:
  * - Thin controller (no business logic)
  * - Delegates to service layer
  * - Handles HTTP concerns only
  * - Returns lightweight responses
- * 
+ *
  * Why separate from admin endpoints?
  * - Different authentication (API key vs JWT)
  * - Different consumers (ESP32 vs Admin)
  * - Different response format (lightweight vs detailed)
  * - Different security requirements
- * 
+ *
  * ESP32 Usage Example:
  * ```cpp
  * HTTPClient http;
  * http.begin("http://server.com:3000/api/iot/readings");
  * http.addHeader("Content-Type", "application/json");
  * http.addHeader("X-API-Key", "esp32_abc123...");
- * 
+ *
  * String payload = "{\"voltage\":5.2,\"current\":0.15,\"power\":0.78,\"timestamp\":\"2026-07-17T14:30:00.000Z\"}";
  * int httpCode = http.POST(payload);
- * 
+ *
  * if (httpCode == 201) {
  *   Serial.println("Success");
  * }
@@ -81,18 +81,18 @@ export class IotController {
 
   /**
    * Receive Energy Reading from ESP32
-   * 
+   *
    * Endpoint for ESP32 devices to submit energy readings.
-   * 
+   *
    * @param apiKey - Sensor API key (extracted by ApiKeyGuard and decorator)
    * @param readingDto - Reading data from ESP32
    * @returns Lightweight confirmation response
-   * 
+   *
    * Authentication:
    * - API key required in X-API-Key header
    * - ApiKeyGuard validates format
    * - Service validates against database
-   * 
+   *
    * Process Flow:
    * 1. ApiKeyGuard validates API key format
    * 2. Controller extracts API key and body
@@ -104,7 +104,7 @@ export class IotController {
    * 8. Service returns response
    * 9. Controller serializes to JSON
    * 10. ESP32 receives confirmation
-   * 
+   *
    * Request Example:
    * POST /api/iot/readings
    * Headers:
@@ -117,20 +117,20 @@ export class IotController {
    *   "power": 0.78,
    *   "timestamp": "2026-07-17T14:30:00.000Z"
    * }
-   * 
+   *
    * Success Response (201):
    * {
    *   "success": true,
    *   "readingId": "6a5a40f1e7b0307577942940",
    *   "receivedAt": "2026-07-17T14:30:01.234Z"
    * }
-   * 
+   *
    * Error Response (401):
    * {
    *   "statusCode": 401,
    *   "message": "Unauthorized"
    * }
-   * 
+   *
    * Error Response (400):
    * {
    *   "statusCode": 400,
@@ -182,8 +182,7 @@ export class IotController {
     },
   })
   @ApiUnauthorizedResponse({
-    description:
-      'Invalid API key, sensor not found, or sensor not active',
+    description: 'Invalid API key, sensor not found, or sensor not active',
     schema: {
       example: {
         statusCode: 401,
@@ -202,9 +201,9 @@ export class IotController {
 
   /**
    * Get Latest Reading for Sensor
-   * 
+   *
    * Admin endpoint to get the most recent reading for a sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @returns Latest reading with calculated fields
    */
@@ -230,9 +229,9 @@ export class IotController {
 
   /**
    * Get Latest Readings for All Sensors
-   * 
+   *
    * Admin endpoint to get the most recent reading for each sensor.
-   * 
+   *
    * @returns Array of latest readings
    */
   @Get('readings/latest')
@@ -253,9 +252,9 @@ export class IotController {
 
   /**
    * Get Reading History
-   * 
+   *
    * Admin endpoint to get paginated reading history for a sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Query parameters (pagination, filters)
    * @returns Paginated readings with metadata
@@ -317,9 +316,9 @@ export class IotController {
 
   /**
    * Get Reading Statistics
-   * 
+   *
    * Admin endpoint to get aggregated statistics for sensor readings.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Query parameters (date range, source)
    * @returns Aggregated statistics
@@ -369,25 +368,25 @@ export class IotController {
 
   /**
    * Future Endpoints (Not Implemented Yet)
-   * 
+   *
    * These endpoints may be added in future phases:
-   * 
+   *
    * 1. GET /api/iot/readings/recent
    *    - Get recent readings for dashboard
    *    - Requires admin JWT authentication
-   * 
+   *
    * 2. GET /api/iot/readings/sensor/:sensorId
    *    - Get readings for specific sensor
    *    - Requires admin JWT authentication
-   * 
+   *
    * 3. GET /api/iot/health
    *    - Check IoT module health
    *    - Public endpoint
-   * 
+   *
    * 4. POST /api/iot/batch
    *    - Submit multiple readings at once
    *    - For ESP32 offline buffer
-   * 
+   *
    * Note: These are admin or utility endpoints, not ESP32 endpoints.
    */
 }

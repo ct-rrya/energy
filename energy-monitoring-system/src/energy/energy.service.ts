@@ -8,27 +8,27 @@ import {
 
 /**
  * Energy Service
- * 
+ *
  * Provides query and aggregation capabilities for energy data.
- * 
+ *
  * Responsibilities:
  * - Query readings with filters (sensor, date range)
  * - Calculate today's energy totals
  * - Provide historical data
  * - Generate statistics (min, max, average)
  * - Aggregate energy by sensor
- * 
+ *
  * Does NOT:
  * - Store readings (IoT module handles this)
  * - Authenticate devices (IoT module handles this)
  * - Emit real-time events (Dashboard module handles this)
- * 
+ *
  * Performance Considerations:
  * - Always uses indexed queries (sensorId, timestamp)
  * - Limits result sets to prevent memory issues
  * - Uses aggregation pipelines for calculations
  * - Considers caching for frequent queries
- * 
+ *
  * Index Requirements:
  * - { sensorId: 1, timestamp: -1 } - Sensor time series
  * - { timestamp: -1, sensorId: 1 } - Recent readings
@@ -42,22 +42,22 @@ export class EnergyService {
 
   /**
    * Get Today's Energy Total
-   * 
+   *
    * Calculates total energy for current day across all sensors.
-   * 
+   *
    * @returns Today's energy statistics
-   * 
+   *
    * Calculation:
    * - Filters readings from 00:00:00 to 23:59:59 today
    * - Sums power (W) to estimate energy
    * - Counts total readings
    * - Calculates average power
-   * 
+   *
    * Performance:
    * - Uses { timestamp: -1 } index
    * - Aggregation pipeline on filtered data
    * - Result cached for 5 minutes (future)
-   * 
+   *
    * Energy Calculation Note:
    * - Simplified: Sum of power readings
    * - Accurate: Integrate power over time
@@ -126,12 +126,12 @@ export class EnergyService {
 
   /**
    * Get Today's Energy by Sensor
-   * 
+   *
    * Calculates energy for specific sensor today.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @returns Today's energy statistics for sensor
-   * 
+   *
    * Performance:
    * - Uses { sensorId: 1, timestamp: -1 } index
    * - Efficient compound index scan
@@ -199,18 +199,18 @@ export class EnergyService {
 
   /**
    * Get Energy for Date Range
-   * 
+   *
    * Calculates energy statistics for a date range.
-   * 
+   *
    * @param startDate - Start date (ISO string)
    * @param endDate - End date (ISO string)
    * @returns Energy statistics for date range
-   * 
+   *
    * Performance:
    * - Uses { timestamp: -1 } index
    * - Range scan on timestamp
    * - Limit to reasonable date ranges (< 1 year)
-   * 
+   *
    * Usage:
    * - Weekly reports
    * - Monthly summaries
@@ -275,14 +275,14 @@ export class EnergyService {
 
   /**
    * Get Energy for Date Range by Sensor
-   * 
+   *
    * Calculates energy for specific sensor in date range.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param startDate - Start date
    * @param endDate - End date
    * @returns Energy statistics for sensor in date range
-   * 
+   *
    * Performance:
    * - Uses { sensorId: 1, timestamp: -1 } compound index
    * - Optimal for single sensor queries
@@ -353,23 +353,25 @@ export class EnergyService {
 
   /**
    * Get Recent Readings
-   * 
+   *
    * Retrieves most recent readings across all sensors.
-   * 
+   *
    * @param limit - Number of readings to retrieve (default: 100, max: 1000)
    * @returns Array of recent readings
-   * 
+   *
    * Performance:
    * - Uses { timestamp: -1 } index
    * - Sorted scan (already in index order)
    * - Limited result set prevents memory issues
-   * 
+   *
    * Usage:
    * - Dashboard recent activity
    * - Real-time monitoring
    * - System health check
    */
-  async getRecentReadings(limit: number = 100): Promise<EnergyReadingDocument[]> {
+  async getRecentReadings(
+    limit: number = 100,
+  ): Promise<EnergyReadingDocument[]> {
     // Cap limit to prevent abuse
     const safeLimit = Math.min(limit, 1000);
 
@@ -383,13 +385,13 @@ export class EnergyService {
 
   /**
    * Get Recent Readings by Sensor
-   * 
+   *
    * Retrieves recent readings for specific sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param limit - Number of readings (default: 100, max: 1000)
    * @returns Array of sensor readings
-   * 
+   *
    * Performance:
    * - Uses { sensorId: 1, timestamp: -1 } compound index
    * - Optimal for single sensor queries
@@ -410,20 +412,20 @@ export class EnergyService {
 
   /**
    * Get Readings for Date Range
-   * 
+   *
    * Retrieves all readings within date range.
    * Use with caution - can return large datasets.
-   * 
+   *
    * @param startDate - Start date
    * @param endDate - End date
    * @param limit - Maximum readings (default: 1000)
    * @returns Array of readings
-   * 
+   *
    * Performance:
    * - Uses { timestamp: -1 } index
    * - Range scan on timestamp
    * - ALWAYS use limit to prevent memory issues
-   * 
+   *
    * Recommendation:
    * - Use aggregation for statistics instead
    * - Use pagination for large date ranges
@@ -455,16 +457,16 @@ export class EnergyService {
 
   /**
    * Get Energy by All Sensors (Today)
-   * 
+   *
    * Groups today's energy by sensor.
-   * 
+   *
    * @returns Array of sensor energy statistics
-   * 
+   *
    * Performance:
    * - Uses { timestamp: -1, sensorId: 1 } index
    * - Groups after filtering by date
    * - Result size = number of active sensors (small)
-   * 
+   *
    * Usage:
    * - Dashboard sensor comparison
    * - Identify most productive sensors
@@ -511,11 +513,11 @@ export class EnergyService {
 
   /**
    * Get Total Statistics
-   * 
+   *
    * Returns overall system statistics.
-   * 
+   *
    * @returns System-wide statistics
-   * 
+   *
    * Performance:
    * - Multiple queries (consider caching)
    * - Each query uses indexes

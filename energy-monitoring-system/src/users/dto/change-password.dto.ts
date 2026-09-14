@@ -3,18 +3,18 @@ import { IsString, IsNotEmpty, MinLength, Matches } from 'class-validator';
 
 /**
  * Change Password DTO
- * 
+ *
  * Data Transfer Object for changing user password.
- * 
+ *
  * Validation:
  * - currentPassword: Required, minimum 6 characters
  * - newPassword: Required, minimum 8 characters, must contain uppercase, lowercase, number, and special character
- * 
+ *
  * Security:
  * - Requires current password verification (prevents unauthorized changes)
  * - New password strength enforced
  * - New password must be different from current password
- * 
+ *
  * Usage:
  * POST /api/users/change-password
  * {

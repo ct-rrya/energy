@@ -3,27 +3,27 @@ import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 /**
  * Login DTO
- * 
+ *
  * Validates login request data from clients.
- * 
+ *
  * Validation Rules:
  * - Email must be a valid email format
  * - Email is required (cannot be empty)
  * - Password is required (cannot be empty)
  * - Password must be at least 6 characters
- * 
+ *
  * Example Valid Request:
  * {
  *   "email": "admin@example.com",
  *   "password": "SecurePass123"
  * }
- * 
+ *
  * Example Invalid Requests:
  * {
  *   "email": "not-an-email",      // ❌ Invalid email format
  *   "password": "123"              // ❌ Too short (min 6 chars)
  * }
- * 
+ *
  * Security:
  * - Password validation is minimal (length only)
  * - Actual password verification happens in AuthService

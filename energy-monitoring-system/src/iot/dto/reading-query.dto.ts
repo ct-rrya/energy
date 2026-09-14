@@ -1,13 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsDateString, IsMongoId, IsEnum, IsInt, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsMongoId,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReadingSource } from '../schemas/energy-reading.schema';
 
 /**
  * Reading Query DTO
- * 
+ *
  * Query parameters for fetching sensor readings with filters and pagination.
- * 
+ *
  * Usage:
  * GET /iot/readings/history/:sensorId?startDate=...&endDate=...&page=1&limit=20
  */
@@ -18,7 +26,10 @@ export class ReadingQueryDto {
     type: String,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string' })
+  @IsDateString(
+    {},
+    { message: 'Start date must be a valid ISO 8601 date string' },
+  )
   startDate?: string;
 
   @ApiPropertyOptional({
@@ -27,7 +38,10 @@ export class ReadingQueryDto {
     type: String,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string' })
+  @IsDateString(
+    {},
+    { message: 'End date must be a valid ISO 8601 date string' },
+  )
   endDate?: string;
 
   @ApiPropertyOptional({
@@ -36,7 +50,9 @@ export class ReadingQueryDto {
     example: ReadingSource.HARDWARE,
   })
   @IsOptional()
-  @IsEnum(ReadingSource, { message: 'Source must be either "hardware" or "mock"' })
+  @IsEnum(ReadingSource, {
+    message: 'Source must be either "hardware" or "mock"',
+  })
   source?: ReadingSource;
 
   @ApiPropertyOptional({
@@ -70,9 +86,9 @@ export class ReadingQueryDto {
 
 /**
  * Statistics Query DTO
- * 
+ *
  * Query parameters for fetching reading statistics.
- * 
+ *
  * Usage:
  * GET /iot/readings/statistics/:sensorId?startDate=...&endDate=...
  */
@@ -83,7 +99,10 @@ export class StatisticsQueryDto {
     type: String,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string' })
+  @IsDateString(
+    {},
+    { message: 'Start date must be a valid ISO 8601 date string' },
+  )
   startDate?: string;
 
   @ApiPropertyOptional({
@@ -92,7 +111,10 @@ export class StatisticsQueryDto {
     type: String,
   })
   @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string' })
+  @IsDateString(
+    {},
+    { message: 'End date must be a valid ISO 8601 date string' },
+  )
   endDate?: string;
 
   @ApiPropertyOptional({
@@ -101,6 +123,8 @@ export class StatisticsQueryDto {
     example: ReadingSource.HARDWARE,
   })
   @IsOptional()
-  @IsEnum(ReadingSource, { message: 'Source must be either "hardware" or "mock"' })
+  @IsEnum(ReadingSource, {
+    message: 'Source must be either "hardware" or "mock"',
+  })
   source?: ReadingSource;
 }

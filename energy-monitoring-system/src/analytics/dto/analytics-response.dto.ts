@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * Base Energy Summary DTO
- * 
+ *
  * Common fields for all energy summaries.
  */
 export class BaseEnergySummaryDto {
@@ -343,7 +343,7 @@ export class TrendAnalysisDto {
 
 /**
  * Comprehensive Analytics DTO
- * 
+ *
  * Combines all analytics for dashboard/bot.
  */
 export class ComprehensiveAnalyticsDto {

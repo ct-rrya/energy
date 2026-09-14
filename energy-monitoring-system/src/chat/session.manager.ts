@@ -25,10 +25,10 @@ export interface ChatSession {
 
 /**
  * SessionManager
- * 
+ *
  * Manages anonymous web chat sessions with automatic cleanup.
  * Uses in-memory storage (Phase 1) - can be upgraded to Redis later.
- * 
+ *
  * Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.9
  */
 @Injectable()
@@ -42,7 +42,7 @@ export class SessionManager {
     // Default to 30 minutes, can be configured via env
     this.sessionTimeoutMinutes =
       parseInt(process.env.CHAT_SESSION_TIMEOUT_MINUTES || '30', 10) || 30;
-    
+
     this.logger.log(
       `SessionManager initialized with ${this.sessionTimeoutMinutes} minute timeout`,
     );
@@ -50,7 +50,7 @@ export class SessionManager {
 
   /**
    * Get existing session or create new one
-   * 
+   *
    * @param sessionId - Optional existing session ID
    * @returns Promise<ChatSession>
    */
@@ -73,13 +73,13 @@ export class SessionManager {
 
   /**
    * Get session if exists and not expired
-   * 
+   *
    * @param sessionId - Session ID
    * @returns Promise<ChatSession | null>
    */
   async getSession(sessionId: string): Promise<ChatSession | null> {
     const session = this.sessions.get(sessionId);
-    
+
     if (!session) {
       return null;
     }
@@ -96,19 +96,18 @@ export class SessionManager {
 
   /**
    * Update session activity timestamp and add message to history
-   * 
+   *
    * @param sessionId - Session ID
    * @param message - Message to add to history
    * @returns Promise<void>
    */
-  async updateSession(
-    sessionId: string,
-    message: ChatMessage,
-  ): Promise<void> {
+  async updateSession(sessionId: string, message: ChatMessage): Promise<void> {
     const session = await this.getSession(sessionId);
-    
+
     if (!session) {
-      this.logger.warn(`Attempted to update non-existent session: ${sessionId}`);
+      this.logger.warn(
+        `Attempted to update non-existent session: ${sessionId}`,
+      );
       return;
     }
 
@@ -122,12 +121,14 @@ export class SessionManager {
       session.messageHistory.shift(); // Remove oldest
     }
 
-    this.logger.debug(`Updated session ${sessionId}, expires at ${session.expiresAt.toISOString()}`);
+    this.logger.debug(
+      `Updated session ${sessionId}, expires at ${session.expiresAt.toISOString()}`,
+    );
   }
 
   /**
    * Delete expired sessions (runs every 5 minutes)
-   * 
+   *
    * @returns Promise<number> - Number of sessions cleaned up
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -151,7 +152,7 @@ export class SessionManager {
 
   /**
    * Get current session count (for monitoring)
-   * 
+   *
    * @returns number
    */
   getSessionCount(): number {
@@ -160,7 +161,7 @@ export class SessionManager {
 
   /**
    * Create a new session
-   * 
+   *
    * @returns ChatSession
    */
   private createSession(): ChatSession {
@@ -175,7 +176,7 @@ export class SessionManager {
 
   /**
    * Calculate expiry date based on timeout
-   * 
+   *
    * @returns Date
    */
   private calculateExpiryDate(): Date {

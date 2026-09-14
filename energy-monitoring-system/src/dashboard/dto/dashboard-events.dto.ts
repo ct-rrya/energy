@@ -1,8 +1,8 @@
 /**
  * Dashboard WebSocket Event DTOs
- * 
+ *
  * Defines data structures for real-time events sent via Socket.IO.
- * 
+ *
  * Event Categories:
  * - Reading Events: New energy readings
  * - Sensor Events: Sensor status changes
@@ -12,9 +12,9 @@
 
 /**
  * New Reading Event Payload
- * 
+ *
  * Broadcasted when IoT module receives a new energy reading.
- * 
+ *
  * Event: 'reading:new'
  * Trigger: IoT controller stores reading
  * Frequency: Every time ESP32 sends data
@@ -73,9 +73,9 @@ export class NewReadingEventDto {
 
 /**
  * Sensor Update Event Payload
- * 
+ *
  * Broadcasted when sensor status changes.
- * 
+ *
  * Event: 'sensor:update'
  * Trigger: Sensor lastSeenAt updated
  * Frequency: Every time sensor sends data
@@ -114,9 +114,9 @@ export class SensorUpdateEventDto {
 
 /**
  * Statistics Update Event Payload
- * 
+ *
  * Broadcasted periodically with current statistics.
- * 
+ *
  * Event: 'statistics:update'
  * Trigger: Periodic interval (every 10 seconds)
  * Frequency: Every 10 seconds
@@ -165,9 +165,9 @@ export class StatisticsUpdateEventDto {
 
 /**
  * Power Alert Event Payload
- * 
+ *
  * Broadcasted when power exceeds threshold.
- * 
+ *
  * Event: 'alert:power'
  * Trigger: Reading power > threshold
  * Frequency: Once per alert (throttled)
@@ -221,9 +221,9 @@ export class PowerAlertEventDto {
 
 /**
  * Sensor Online Event Payload
- * 
+ *
  * Broadcasted when sensor comes online (first reading after offline).
- * 
+ *
  * Event: 'sensor:online'
  */
 export class SensorOnlineEventDto {
@@ -250,9 +250,9 @@ export class SensorOnlineEventDto {
 
 /**
  * Sensor Offline Event Payload
- * 
+ *
  * Broadcasted when sensor hasn't sent data for threshold period.
- * 
+ *
  * Event: 'sensor:offline'
  */
 export class SensorOfflineEventDto {
@@ -284,9 +284,9 @@ export class SensorOfflineEventDto {
 
 /**
  * Connection Authenticated Event Payload
- * 
+ *
  * Sent to client after successful authentication.
- * 
+ *
  * Event: 'connection:authenticated'
  */
 export class ConnectionAuthenticatedEventDto {

@@ -2,15 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * User Response DTO
- * 
+ *
  * Defines the structure of user data returned in API responses.
  * This DTO ensures that sensitive information (like password) is never exposed.
- * 
+ *
  * Used in:
  * - Login response (auth)
  * - Get profile endpoint
  * - Any endpoint that returns user data
- * 
+ *
  * Security:
  * - Password field is NEVER included
  * - Only safe, public user information is exposed

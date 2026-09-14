@@ -63,7 +63,9 @@ describe('PublicController', () => {
       };
 
       mockEnergyService.getTodayEnergyTotal.mockResolvedValue(mockTodayData);
-      mockEnergyService.getRecentReadings.mockResolvedValue([mockRecentReading]);
+      mockEnergyService.getRecentReadings.mockResolvedValue([
+        mockRecentReading,
+      ]);
 
       // Act
       const result: TelemetryDto = await controller.getCurrentTelemetry();
@@ -161,7 +163,9 @@ describe('PublicController', () => {
       };
 
       mockEnergyService.getTodayEnergyTotal.mockResolvedValue(mockTodayData);
-      mockEnergyService.getRecentReadings.mockResolvedValue([mockRecentReading]);
+      mockEnergyService.getRecentReadings.mockResolvedValue([
+        mockRecentReading,
+      ]);
 
       // Act
       const result: TelemetryDto = await controller.getCurrentTelemetry();

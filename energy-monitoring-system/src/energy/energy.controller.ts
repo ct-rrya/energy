@@ -25,9 +25,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
  * Energy Controller
- * 
+ *
  * Handles HTTP requests for energy data queries.
- * 
+ *
  * Endpoints:
  * - GET /api/energy/today                      Today's total energy
  * - GET /api/energy/range                      Energy for date range
@@ -38,16 +38,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  * - GET /api/energy/sensor/:id/today           Sensor today's energy
  * - GET /api/energy/sensor/:id/range           Sensor date range energy
  * - GET /api/energy/sensor/:id/recent          Sensor recent readings
- * 
+ *
  * Authentication:
  * - All endpoints require JWT authentication
  * - Protected by JwtAuthGuard
- * 
+ *
  * Responsibilities:
  * - HTTP request/response handling
  * - Query parameter validation
  * - Swagger documentation
- * 
+ *
  * Does NOT:
  * - Business logic (delegated to EnergyService)
  * - Database queries (delegated to EnergyService)
@@ -62,11 +62,11 @@ export class EnergyController {
 
   /**
    * Get Today's Total Energy
-   * 
+   *
    * Retrieves energy statistics for current day across all sensors.
-   * 
+   *
    * @returns Today's energy statistics
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -102,15 +102,15 @@ export class EnergyController {
 
   /**
    * Get Energy for Date Range
-   * 
+   *
    * Retrieves energy statistics for a specific date range.
-   * 
+   *
    * @param query - Start and end dates
    * @returns Energy statistics for date range
-   * 
+   *
    * Example Request:
    * GET /api/energy/range?startDate=2026-07-01&endDate=2026-07-17
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -152,15 +152,15 @@ export class EnergyController {
 
   /**
    * Get Recent Readings
-   * 
+   *
    * Retrieves most recent energy readings across all sensors.
-   * 
+   *
    * @param query - Limit (optional, default: 100, max: 1000)
    * @returns Array of recent readings
-   * 
+   *
    * Example Request:
    * GET /api/energy/recent?limit=50
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -200,21 +200,21 @@ export class EnergyController {
     @Query() query: LimitQueryDto,
   ): Promise<EnergyReadingResponseDto[]> {
     const readings = await this.energyService.getRecentReadings(query.limit);
-    return readings.map((reading) => reading.toJSON() as any);
+    return readings.map((reading) => reading.toJSON());
   }
 
   /**
    * Get Readings for Date Range
-   * 
+   *
    * Retrieves all readings within a date range.
    * Use with caution - can return large datasets.
-   * 
+   *
    * @param query - Start date, end date, and limit
    * @returns Array of readings
-   * 
+   *
    * Example Request:
    * GET /api/energy/readings?startDate=2026-07-01&endDate=2026-07-17&limit=500
-   * 
+   *
    * Note:
    * - Always use limit to prevent memory issues
    * - For statistics, use /range endpoint instead
@@ -246,17 +246,17 @@ export class EnergyController {
       query.endDate,
       query.limit,
     );
-    return readings.map((reading) => reading.toJSON() as any);
+    return readings.map((reading) => reading.toJSON());
   }
 
   /**
    * Get Energy by Sensors
-   * 
+   *
    * Groups today's energy by sensor.
    * Shows which sensors are most productive.
-   * 
+   *
    * @returns Array of sensor energy statistics
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -292,11 +292,11 @@ export class EnergyController {
 
   /**
    * Get Total Statistics
-   * 
+   *
    * Returns overall system statistics.
-   * 
+   *
    * @returns System-wide statistics
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -332,15 +332,15 @@ export class EnergyController {
 
   /**
    * Get Sensor's Today Energy
-   * 
+   *
    * Retrieves energy statistics for a specific sensor today.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @returns Today's energy statistics for sensor
-   * 
+   *
    * Example Request:
    * GET /api/energy/sensor/64f9a1b2c3d4e5f6g7h8i9j0/today
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -386,16 +386,16 @@ export class EnergyController {
 
   /**
    * Get Sensor's Energy Range
-   * 
+   *
    * Retrieves energy statistics for a specific sensor in date range.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Start and end dates
    * @returns Energy statistics for sensor in date range
-   * 
+   *
    * Example Request:
    * GET /api/energy/sensor/64f9a1b2c3d4e5f6g7h8i9j0/range?startDate=2026-07-01&endDate=2026-07-17
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -447,16 +447,16 @@ export class EnergyController {
 
   /**
    * Get Sensor's Recent Readings
-   * 
+   *
    * Retrieves recent readings for a specific sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Limit (optional, default: 100, max: 1000)
    * @returns Array of sensor's recent readings
-   * 
+   *
    * Example Request:
    * GET /api/energy/sensor/64f9a1b2c3d4e5f6g7h8i9j0/recent?limit=50
-   * 
+   *
    * Example Response:
    * {
    *   "success": true,
@@ -505,6 +505,6 @@ export class EnergyController {
       sensorId,
       query.limit,
     );
-    return readings.map((reading) => reading.toJSON() as any);
+    return readings.map((reading) => reading.toJSON());
   }
 }

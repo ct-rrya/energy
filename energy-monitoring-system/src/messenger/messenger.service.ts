@@ -13,22 +13,22 @@ import {
 
 /**
  * Messenger Service
- * 
+ *
  * Handles Facebook Messenger Bot logic with interactive features.
- * 
+ *
  * Architecture:
  * - NEVER accesses database directly
  * - Consumes Analytics Service for calculations
  * - Consumes Energy Service for data queries
  * - Consumes Subscribers Service for subscriptions
- * 
+ *
  * Features:
  * - Text command parsing
  * - Quick Replies for guided interaction
  * - Button Templates for structured responses
  * - Persistent Menu for easy navigation
  * - Postback payload handling
- * 
+ *
  * Commands Supported:
  * - help/start/menu - Welcome message with Quick Replies
  * - status - Comprehensive analytics
@@ -53,14 +53,13 @@ export class MessengerService implements OnModuleInit {
     private geminiAIService: GeminiAIService,
     private chatbotCoreService: ChatbotCoreService,
   ) {
-    this.pageAccessToken = this.configService.get<string>(
-      'messenger.pageAccessToken',
-    ) || '';
+    this.pageAccessToken =
+      this.configService.get<string>('messenger.pageAccessToken') || '';
   }
 
   /**
    * OnModuleInit Lifecycle Hook
-   * 
+   *
    * Initializes Messenger Platform features on application startup.
    */
   async onModuleInit() {
@@ -88,13 +87,13 @@ export class MessengerService implements OnModuleInit {
 
   /**
    * Handle Message
-   * 
+   *
    * Main entry point for processing user messages.
    * Delegates to ChatbotCoreService for processing, then formats for Messenger.
-   * 
+   *
    * @param senderId - Facebook User ID (PSID)
    * @param messageText - Message text or payload from user
-   * 
+   *
    * Requirements: 1.5, 2.2, 2.3, 2.7
    */
   async handleMessage(senderId: string, messageText: string): Promise<void> {
@@ -102,7 +101,9 @@ export class MessengerService implements OnModuleInit {
     this.logger.log(`[MESSENGER SERVICE] handleMessage() called`);
     this.logger.log(`[MESSENGER SERVICE]    Sender ID: ${senderId}`);
     this.logger.log(`[MESSENGER SERVICE]    Message text: "${messageText}"`);
-    this.logger.log(`[MESSENGER SERVICE]    Message length: ${messageText.length} characters`);
+    this.logger.log(
+      `[MESSENGER SERVICE]    Message length: ${messageText.length} characters`,
+    );
 
     try {
       // Create message context for ChatbotCoreService
@@ -112,17 +113,25 @@ export class MessengerService implements OnModuleInit {
         originalText: messageText,
       };
 
-      this.logger.log(`[MESSENGER SERVICE] Calling ChatbotCoreService.processMessage()...`);
-      
+      this.logger.log(
+        `[MESSENGER SERVICE] Calling ChatbotCoreService.processMessage()...`,
+      );
+
       // Delegate to ChatbotCoreService for processing
       const response = await this.chatbotCoreService.processMessage(
         messageText,
         context,
       );
 
-      this.logger.log(`[MESSENGER SERVICE] ✅ Received response from ChatbotCoreService`);
-      this.logger.log(`[MESSENGER SERVICE]    Response text length: ${response.text.length} characters`);
-      this.logger.log(`[MESSENGER SERVICE]    Has suggestions: ${!!response.suggestions}`);
+      this.logger.log(
+        `[MESSENGER SERVICE] ✅ Received response from ChatbotCoreService`,
+      );
+      this.logger.log(
+        `[MESSENGER SERVICE]    Response text length: ${response.text.length} characters`,
+      );
+      this.logger.log(
+        `[MESSENGER SERVICE]    Has suggestions: ${!!response.suggestions}`,
+      );
 
       // Format response for Messenger with Quick Replies
       const quickReplies = this.formatSuggestionsAsQuickReplies(
@@ -130,18 +139,24 @@ export class MessengerService implements OnModuleInit {
         messageText.toLowerCase().trim(),
       );
 
-      this.logger.log(`[MESSENGER SERVICE] Sending formatted response to user...`);
-      
+      this.logger.log(
+        `[MESSENGER SERVICE] Sending formatted response to user...`,
+      );
+
       // Send via Meta API
       await this.sendMessage(senderId, response.text, quickReplies);
-      
-      this.logger.log(`[MESSENGER SERVICE] ✅ handleMessage() completed successfully`);
+
+      this.logger.log(
+        `[MESSENGER SERVICE] ✅ handleMessage() completed successfully`,
+      );
     } catch (error) {
       this.logger.error('[MESSENGER SERVICE] ❌ Error in handleMessage:');
       this.logger.error(`[MESSENGER SERVICE]    Error name: ${error.name}`);
-      this.logger.error(`[MESSENGER SERVICE]    Error message: ${error.message}`);
+      this.logger.error(
+        `[MESSENGER SERVICE]    Error message: ${error.message}`,
+      );
       this.logger.error(`[MESSENGER SERVICE]    Stack trace: ${error.stack}`);
-      
+
       await this.sendMessage(
         senderId,
         '❌ Sorry, something went wrong. Please try again later.',
@@ -151,14 +166,14 @@ export class MessengerService implements OnModuleInit {
 
   /**
    * Format Suggestions as Quick Replies
-   * 
+   *
    * Converts suggestion strings to Messenger Quick Reply format.
    * Maps suggestion commands to user-friendly titles with emojis.
-   * 
+   *
    * @param suggestions - Array of suggestion command strings
    * @param currentCommand - The current command (for context-aware suggestions)
    * @returns Array of Quick Reply objects
-   * 
+   *
    * Requirements: 1.8, 6.6
    */
   private formatSuggestionsAsQuickReplies(
@@ -196,20 +211,28 @@ export class MessengerService implements OnModuleInit {
 
   /**
    * Route Command (DEPRECATED - kept for compatibility)
-   * 
+   *
    * This method is now deprecated as routing is handled by ChatbotCoreService.
    * Keeping it for any legacy code that might still reference it.
-   * 
+   *
    * @deprecated Use ChatbotCoreService.processMessage() instead
    */
-  private async routeCommand(senderId: string, command: string, originalText?: string): Promise<void> {
+  private async routeCommand(
+    senderId: string,
+    command: string,
+    originalText?: string,
+  ): Promise<void> {
     // Log the command for debugging
     this.logger.log('───────────────────────────────────────────────────────');
     this.logger.log(`[ROUTE COMMAND] Command received: "${command}"`);
-    this.logger.log(`[ROUTE COMMAND] Original text: "${originalText || 'N/A'}"`);
+    this.logger.log(
+      `[ROUTE COMMAND] Original text: "${originalText || 'N/A'}"`,
+    );
     this.logger.log(`[ROUTE COMMAND] Has originalText: ${!!originalText}`);
-    this.logger.log(`[ROUTE COMMAND] AI enabled: ${this.geminiAIService.isAIEnabled()}`);
-    
+    this.logger.log(
+      `[ROUTE COMMAND] AI enabled: ${this.geminiAIService.isAIEnabled()}`,
+    );
+
     switch (command) {
       // Welcome/Start commands
       case 'get_started':
@@ -299,23 +322,41 @@ export class MessengerService implements OnModuleInit {
 
       // Unknown command
       default:
-        this.logger.log('[ROUTE COMMAND] ═══════════════════════════════════════');
-        this.logger.log('[ROUTE COMMAND] DEFAULT CASE - No predefined command matched');
+        this.logger.log(
+          '[ROUTE COMMAND] ═══════════════════════════════════════',
+        );
+        this.logger.log(
+          '[ROUTE COMMAND] DEFAULT CASE - No predefined command matched',
+        );
         this.logger.log('[ROUTE COMMAND] Checking AI routing conditions...');
-        this.logger.log(`[ROUTE COMMAND]    ✓ originalText exists: ${!!originalText}`);
-        this.logger.log(`[ROUTE COMMAND]    ✓ originalText value: "${originalText || 'undefined'}"`);
-        this.logger.log(`[ROUTE COMMAND]    ✓ AI service enabled: ${this.geminiAIService.isAIEnabled()}`);
-        
+        this.logger.log(
+          `[ROUTE COMMAND]    ✓ originalText exists: ${!!originalText}`,
+        );
+        this.logger.log(
+          `[ROUTE COMMAND]    ✓ originalText value: "${originalText || 'undefined'}"`,
+        );
+        this.logger.log(
+          `[ROUTE COMMAND]    ✓ AI service enabled: ${this.geminiAIService.isAIEnabled()}`,
+        );
+
         if (originalText && this.geminiAIService.isAIEnabled()) {
-          this.logger.log('[ROUTE COMMAND] ✅ CONDITIONS MET - Routing to AI natural language handler');
+          this.logger.log(
+            '[ROUTE COMMAND] ✅ CONDITIONS MET - Routing to AI natural language handler',
+          );
           await this.handleNaturalLanguageQuery(senderId, originalText);
         } else {
-          this.logger.warn('[ROUTE COMMAND] ❌ CONDITIONS NOT MET - Showing unknown command message');
+          this.logger.warn(
+            '[ROUTE COMMAND] ❌ CONDITIONS NOT MET - Showing unknown command message',
+          );
           if (!originalText) {
-            this.logger.warn('[ROUTE COMMAND]    Reason: originalText is missing/falsy');
+            this.logger.warn(
+              '[ROUTE COMMAND]    Reason: originalText is missing/falsy',
+            );
           }
           if (!this.geminiAIService.isAIEnabled()) {
-            this.logger.warn('[ROUTE COMMAND]    Reason: AI service is not enabled');
+            this.logger.warn(
+              '[ROUTE COMMAND]    Reason: AI service is not enabled',
+            );
           }
           await this.handleUnknownCommand(senderId, command);
         }
@@ -325,7 +366,7 @@ export class MessengerService implements OnModuleInit {
 
   /**
    * Handle Welcome Message
-   * 
+   *
    * Sends welcome message with Quick Replies for main actions.
    */
   private async handleWelcome(senderId: string): Promise<void> {
@@ -352,7 +393,7 @@ Choose an option below to get started:`;
    */
   private async handleStatusCommand(senderId: string): Promise<void> {
     const response = await this.handleStatus();
-    
+
     const quickReplies = [
       { title: "📅 Today's Energy", payload: 'today' },
       { title: '🔋 Battery', payload: 'battery' },
@@ -368,7 +409,7 @@ Choose an option below to get started:`;
    */
   private async handleTodayCommand(senderId: string): Promise<void> {
     const response = await this.handleToday();
-    
+
     const quickReplies = [
       { title: '📅 This Week', payload: 'week' },
       { title: '📆 This Month', payload: 'month' },
@@ -384,7 +425,7 @@ Choose an option below to get started:`;
    */
   private async handleWeekCommand(senderId: string): Promise<void> {
     const response = await this.handleWeek();
-    
+
     const quickReplies = [
       { title: '📆 This Month', payload: 'month' },
       { title: '⚡ Peak Power', payload: 'peak' },
@@ -400,7 +441,7 @@ Choose an option below to get started:`;
    */
   private async handleMonthCommand(senderId: string): Promise<void> {
     const response = await this.handleMonth();
-    
+
     const quickReplies = [
       { title: '🌱 Impact', payload: 'impact' },
       { title: '💰 Savings', payload: 'savings' },
@@ -416,7 +457,7 @@ Choose an option below to get started:`;
    */
   private async handlePeakCommand(senderId: string): Promise<void> {
     const response = await this.handlePeak();
-    
+
     const quickReplies = [
       { title: '📅 Today', payload: 'today' },
       { title: '📈 Analytics', payload: 'analytics_menu' },
@@ -429,7 +470,7 @@ Choose an option below to get started:`;
 
   /**
    * Handle Analytics Menu
-   * 
+   *
    * Shows analytics options with button template.
    */
   private async handleAnalyticsMenu(senderId: string): Promise<void> {
@@ -451,7 +492,7 @@ Choose a time period to view:`;
    */
   private async handleImpactCommand(senderId: string): Promise<void> {
     const response = await this.handleImpact();
-    
+
     const quickReplies = [
       { title: '💰 Cost Savings', payload: 'savings' },
       { title: '📊 Status', payload: 'status' },
@@ -467,7 +508,7 @@ Choose a time period to view:`;
    */
   private async handleSavingsCommand(senderId: string): Promise<void> {
     const response = await this.handleSavings();
-    
+
     const quickReplies = [
       { title: '🌱 Impact', payload: 'impact' },
       { title: '📊 Status', payload: 'status' },
@@ -483,7 +524,7 @@ Choose a time period to view:`;
    */
   private async handleEnergyCommand(senderId: string): Promise<void> {
     const response = await this.handleEnergy();
-    
+
     const quickReplies = [
       { title: '🔋 Battery', payload: 'battery' },
       { title: '📈 Analytics', payload: 'analytics_menu' },
@@ -499,7 +540,7 @@ Choose a time period to view:`;
    */
   private async handleBatteryCommand(senderId: string): Promise<void> {
     const response = await this.handleBattery();
-    
+
     const quickReplies = [
       { title: '📊 Status', payload: 'status' },
       { title: '⚡ Energy', payload: 'energy' },
@@ -515,7 +556,7 @@ Choose a time period to view:`;
    */
   private async handleAboutCommand(senderId: string): Promise<void> {
     const response = await this.handleAbout();
-    
+
     const quickReplies = [
       { title: '📊 System Status', payload: 'status' },
       { title: '🔔 Subscribe', payload: 'subscribe' },
@@ -531,7 +572,7 @@ Choose a time period to view:`;
    */
   private async handleSubscribeCommand(senderId: string): Promise<void> {
     const response = await this.handleSubscribe(senderId);
-    
+
     const quickReplies = [
       { title: '📊 System Status', payload: 'status' },
       { title: '⚡ Energy', payload: 'energy' },
@@ -547,7 +588,7 @@ Choose a time period to view:`;
    */
   private async handleUnsubscribeCommand(senderId: string): Promise<void> {
     const response = await this.handleUnsubscribe(senderId);
-    
+
     const quickReplies = [
       { title: '📊 System Status', payload: 'status' },
       { title: '⚡ Energy', payload: 'energy' },
@@ -561,9 +602,12 @@ Choose a time period to view:`;
   /**
    * Handle Unknown Command with Quick Replies
    */
-  private async handleUnknownCommand(senderId: string, command: string): Promise<void> {
+  private async handleUnknownCommand(
+    senderId: string,
+    command: string,
+  ): Promise<void> {
     const response = await this.handleUnknown(command);
-    
+
     const quickReplies = [
       { title: 'ℹ️ Help', payload: 'help' },
       { title: '📊 Status', payload: 'status' },
@@ -576,7 +620,7 @@ Choose a time period to view:`;
 
   /**
    * Handle Help Command
-   * 
+   *
    * Shows available commands.
    */
   private async handleHelp(): Promise<string> {
@@ -612,7 +656,7 @@ Here's what you can ask me:
 
   /**
    * Handle Status Command
-   * 
+   *
    * Shows comprehensive analytics.
    * Uses Analytics Service.
    */
@@ -653,7 +697,7 @@ ${this.getTrendEmoji(analytics.trend.trend)} ${analytics.trend.trend.charAt(0).t
 
   /**
    * Handle Today Command
-   * 
+   *
    * Shows today's energy summary.
    * Uses Analytics Service.
    */
@@ -679,7 +723,7 @@ Total Readings: ${today.readingCount}
 
   /**
    * Handle Week Command
-   * 
+   *
    * Shows this week's energy summary.
    * Uses Analytics Service.
    */
@@ -699,7 +743,7 @@ Peak Power: ${week.peakPowerW.toFixed(2)} W
 Total Readings: ${week.readingCount}
 
 📈 Daily Breakdown
-${week.dailyBreakdown.map(day => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} kWh`).join('\n')}
+${week.dailyBreakdown.map((day) => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} kWh`).join('\n')}
 
 💡 Try "month" for monthly summary
     `.trim();
@@ -707,7 +751,7 @@ ${week.dailyBreakdown.map(day => `${day.date} (${day.dayOfWeek.substring(0, 3)})
 
   /**
    * Handle Month Command
-   * 
+   *
    * Shows this month's energy summary.
    * Uses Analytics Service.
    */
@@ -733,7 +777,7 @@ Active Days: ${month.daysWithData} of ${month.daysInMonth}
 
   /**
    * Handle Peak Command
-   * 
+   *
    * Shows peak generation.
    * Uses Analytics Service.
    */
@@ -774,7 +818,7 @@ ${peak.sensorLocation}
 
   /**
    * Handle Impact Command
-   * 
+   *
    * Shows environmental impact.
    * Uses Analytics Service.
    */
@@ -804,7 +848,7 @@ ${impact.phoneChargesEquivalent.toLocaleString()} smartphone charges
 
   /**
    * Handle Savings Command
-   * 
+   *
    * Shows cost savings.
    * Uses Analytics Service.
    */
@@ -835,7 +879,7 @@ $${savings.electricityRatePerKWh.toFixed(2)} per kWh
 
   /**
    * Handle Subscribe Command
-   * 
+   *
    * Subscribes user to notifications.
    * Uses Subscribers Service.
    */
@@ -859,7 +903,7 @@ Type "unsubscribe" anytime to stop notifications.
 
   /**
    * Handle Unsubscribe Command
-   * 
+   *
    * Unsubscribes user from notifications.
    * Uses Subscribers Service.
    */
@@ -889,7 +933,7 @@ Type "subscribe" anytime to reactivate.
 
   /**
    * Handle Energy Command (NEW - Phase 7)
-   * 
+   *
    * Shows current energy generation status.
    * Uses Analytics Service.
    */
@@ -920,7 +964,7 @@ ${nextMilestone} Wh (${progress}% complete)
 
   /**
    * Handle Battery Command (NEW - Phase 7)
-   * 
+   *
    * Shows current battery status.
    * Uses Energy Service to get latest reading.
    */
@@ -959,12 +1003,11 @@ Your system will display battery status once sensor readings are received.
 
   /**
    * Handle About Command (NEW - Phase 7)
-   * 
+   *
    * Shows system information and bot capabilities.
    */
   private async handleAbout(): Promise<string> {
-    const subscriberCount =
-      await this.subscribersService.getSubscriberCount();
+    const subscriberCount = await this.subscribersService.getSubscriberCount();
 
     return `
 🌞 EcoStep Energy Monitor
@@ -992,7 +1035,7 @@ Support: admin@energymonitor.com
 
   /**
    * Handle Unknown Command
-   * 
+   *
    * Response for unrecognized commands.
    */
   private async handleUnknown(command: string): Promise<string> {
@@ -1012,9 +1055,9 @@ Try typing one of these:
 
   /**
    * Send Message to User
-   * 
+   *
    * Sends message via Facebook Graph API.
-   * 
+   *
    * @param recipientId - Facebook User ID (PSID)
    * @param messageText - Message text to send
    * @param quickReplies - Optional quick reply buttons
@@ -1027,12 +1070,22 @@ Try typing one of these:
     // [TRACE 7: SENDING TO META]
     this.logger.log('═══════════════════════════════════════════════════════');
     this.logger.log('[TRACE 7: SENDING TO META] Preparing to send message');
-    this.logger.log(`[TRACE 7: SENDING TO META]    Recipient ID: ${recipientId}`);
-    this.logger.log(`[TRACE 7: SENDING TO META]    Message length: ${messageText.length} characters`);
-    this.logger.log(`[TRACE 7: SENDING TO META]    Message preview: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
-    this.logger.log(`[TRACE 7: SENDING TO META]    Has quick replies: ${!!quickReplies}`);
-    this.logger.log(`[TRACE 7: SENDING TO META]    Quick replies count: ${quickReplies ? quickReplies.length : 0}`);
-    
+    this.logger.log(
+      `[TRACE 7: SENDING TO META]    Recipient ID: ${recipientId}`,
+    );
+    this.logger.log(
+      `[TRACE 7: SENDING TO META]    Message length: ${messageText.length} characters`,
+    );
+    this.logger.log(
+      `[TRACE 7: SENDING TO META]    Message preview: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`,
+    );
+    this.logger.log(
+      `[TRACE 7: SENDING TO META]    Has quick replies: ${!!quickReplies}`,
+    );
+    this.logger.log(
+      `[TRACE 7: SENDING TO META]    Quick replies count: ${quickReplies ? quickReplies.length : 0}`,
+    );
+
     try {
       const url = `${this.graphApiUrl}/me/messages`;
 
@@ -1045,7 +1098,9 @@ Try typing one of these:
           title: qr.title,
           payload: qr.payload,
         }));
-        this.logger.log(`[TRACE 7: SENDING TO META]    Quick reply titles: ${quickReplies.map(qr => qr.title).join(', ')}`);
+        this.logger.log(
+          `[TRACE 7: SENDING TO META]    Quick reply titles: ${quickReplies.map((qr) => qr.title).join(', ')}`,
+        );
       }
 
       const payload = {
@@ -1057,48 +1112,69 @@ Try typing one of these:
       this.logger.log(JSON.stringify(payload, null, 2));
       this.logger.log(`[TRACE 7: SENDING TO META] Sending POST to: ${url}`);
 
-      const response = await axios.post(
-        url,
-        payload,
-        {
-          params: { access_token: this.pageAccessToken },
-        },
-      );
+      const response = await axios.post(url, payload, {
+        params: { access_token: this.pageAccessToken },
+      });
 
       // [TRACE 8: META RESPONSE]
-      this.logger.log('[TRACE 8: META RESPONSE] ═══════════════════════════════════');
+      this.logger.log(
+        '[TRACE 8: META RESPONSE] ═══════════════════════════════════',
+      );
       this.logger.log('[TRACE 8: META RESPONSE] ✅ Message sent successfully');
-      this.logger.log(`[TRACE 8: META RESPONSE]    HTTP Status: ${response.status} ${response.statusText}`);
-      this.logger.log(`[TRACE 8: META RESPONSE]    Recipient ID: ${recipientId}`);
-      this.logger.log(`[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(response.data)}`);
-      
+      this.logger.log(
+        `[TRACE 8: META RESPONSE]    HTTP Status: ${response.status} ${response.statusText}`,
+      );
+      this.logger.log(
+        `[TRACE 8: META RESPONSE]    Recipient ID: ${recipientId}`,
+      );
+      this.logger.log(
+        `[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(response.data)}`,
+      );
     } catch (error) {
       // [TRACE 8: META RESPONSE] - Error case
-      this.logger.error('[TRACE 8: META RESPONSE] ═══════════════════════════════════');
-      this.logger.error('[TRACE 8: META RESPONSE] ❌ Failed to send message to Meta');
-      this.logger.error(`[TRACE 8: META RESPONSE]    Error name: ${error.name}`);
-      this.logger.error(`[TRACE 8: META RESPONSE]    Error message: ${error.message}`);
-      this.logger.error(`[TRACE 8: META RESPONSE]    Stack trace: ${error.stack}`);
-      
+      this.logger.error(
+        '[TRACE 8: META RESPONSE] ═══════════════════════════════════',
+      );
+      this.logger.error(
+        '[TRACE 8: META RESPONSE] ❌ Failed to send message to Meta',
+      );
+      this.logger.error(
+        `[TRACE 8: META RESPONSE]    Error name: ${error.name}`,
+      );
+      this.logger.error(
+        `[TRACE 8: META RESPONSE]    Error message: ${error.message}`,
+      );
+      this.logger.error(
+        `[TRACE 8: META RESPONSE]    Stack trace: ${error.stack}`,
+      );
+
       if (error.response) {
-        this.logger.error(`[TRACE 8: META RESPONSE]    HTTP Status: ${error.response.status} ${error.response.statusText}`);
-        this.logger.error(`[TRACE 8: META RESPONSE]    Response headers: ${JSON.stringify(error.response.headers)}`);
-        this.logger.error(`[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(error.response.data)}`);
+        this.logger.error(
+          `[TRACE 8: META RESPONSE]    HTTP Status: ${error.response.status} ${error.response.statusText}`,
+        );
+        this.logger.error(
+          `[TRACE 8: META RESPONSE]    Response headers: ${JSON.stringify(error.response.headers)}`,
+        );
+        this.logger.error(
+          `[TRACE 8: META RESPONSE]    Response data: ${JSON.stringify(error.response.data)}`,
+        );
       }
-      
+
       if (error.request) {
-        this.logger.error('[TRACE 8: META RESPONSE]    Request was made but no response received');
+        this.logger.error(
+          '[TRACE 8: META RESPONSE]    Request was made but no response received',
+        );
       }
-      
+
       throw error;
     }
   }
 
   /**
    * Send Button Template
-   * 
+   *
    * Sends a message with interactive buttons.
-   * 
+   *
    * @param recipientId - Facebook User ID (PSID)
    * @param text - Message text
    * @param buttons - Array of button objects
@@ -1147,7 +1223,7 @@ Try typing one of these:
 
   /**
    * Set Persistent Menu
-   * 
+   *
    * Configures the persistent menu via Messenger Profile API.
    * This should be called once during app initialization.
    */
@@ -1214,7 +1290,7 @@ Try typing one of these:
 
   /**
    * Set Get Started Button
-   * 
+   *
    * Configures the Get Started button for first-time users.
    */
   async setGetStartedButton(): Promise<void> {
@@ -1245,7 +1321,7 @@ Try typing one of these:
 
   /**
    * Set Greeting Text
-   * 
+   *
    * Configures the greeting text shown to new users.
    */
   async setGreetingText(): Promise<void> {
@@ -1279,34 +1355,44 @@ Try typing one of these:
 
   /**
    * Handle Natural Language Query
-   * 
+   *
    * Routes user's natural language message to Gemini AI for processing.
    */
-  private async handleNaturalLanguageQuery(senderId: string, userMessage: string): Promise<void> {
+  private async handleNaturalLanguageQuery(
+    senderId: string,
+    userMessage: string,
+  ): Promise<void> {
     this.logger.log('═══════════════════════════════════════════════════════');
     this.logger.log('[AI HANDLER] handleNaturalLanguageQuery() called');
     this.logger.log(`[AI HANDLER]    Sender ID: ${senderId}`);
     this.logger.log(`[AI HANDLER]    User message: "${userMessage}"`);
-    this.logger.log(`[AI HANDLER]    Message length: ${userMessage.length} characters`);
-    
+    this.logger.log(
+      `[AI HANDLER]    Message length: ${userMessage.length} characters`,
+    );
+
     try {
       this.logger.log('[AI HANDLER] Calling GeminiAIService.processQuery()...');
       const aiResponse = await this.geminiAIService.processQuery(userMessage);
-      
+
       this.logger.log('[AI HANDLER] ✅ Received AI response');
-      this.logger.log(`[AI HANDLER]    Response length: ${aiResponse.length} characters`);
-      this.logger.log(`[AI HANDLER]    Response preview: "${aiResponse.substring(0, 100)}..."`);
-      
+      this.logger.log(
+        `[AI HANDLER]    Response length: ${aiResponse.length} characters`,
+      );
+      this.logger.log(
+        `[AI HANDLER]    Response preview: "${aiResponse.substring(0, 100)}..."`,
+      );
+
       const quickReplies = [
         { title: 'System Status', payload: 'status' },
         { title: 'Help', payload: 'help' },
         { title: '🏠 Main Menu', payload: 'menu' },
       ];
-      
-      this.logger.log('[AI HANDLER] Sending AI response to user via sendMessage()...');
+
+      this.logger.log(
+        '[AI HANDLER] Sending AI response to user via sendMessage()...',
+      );
       await this.sendMessage(senderId, aiResponse, quickReplies);
       this.logger.log('[AI HANDLER] ✅ AI response sent successfully');
-      
     } catch (error) {
       this.logger.error('[AI HANDLER] ═══════════════════════════════════════');
       this.logger.error('[AI HANDLER] ❌ Error in handleNaturalLanguageQuery:');
@@ -1314,14 +1400,14 @@ Try typing one of these:
       this.logger.error(`[AI HANDLER]    Error message: ${error.message}`);
       this.logger.error(`[AI HANDLER]    Stack trace: ${error.stack}`);
       this.logger.error('[AI HANDLER] Falling back to handleUnknownCommand()');
-      
+
       await this.handleUnknownCommand(senderId, userMessage);
     }
   }
 
   /**
    * Get Trend Emoji
-   * 
+   *
    * Returns emoji for trend direction.
    */
   private getTrendEmoji(trend: 'up' | 'down' | 'stable'): string {

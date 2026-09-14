@@ -26,13 +26,13 @@ import { NotificationQueryDto } from './dto/notification-query.dto';
 
 /**
  * Notifications Controller
- * 
+ *
  * Admin endpoints for notification management.
- * 
+ *
  * All endpoints require:
  * - JWT authentication
  * - Admin role
- * 
+ *
  * Endpoints:
  * - POST /api/notifications/broadcast - Send broadcast message
  * - GET  /api/notifications/logs - Query notification logs
@@ -48,11 +48,11 @@ export class NotificationsController {
 
   /**
    * Broadcast Message
-   * 
+   *
    * Send message to multiple subscribers.
-   * 
+   *
    * Admin only.
-   * 
+   *
    * @param dto - Broadcast message DTO
    * @returns Broadcast result with delivery stats
    */
@@ -84,11 +84,11 @@ export class NotificationsController {
 
   /**
    * Get Notification Logs
-   * 
+   *
    * Query notification logs with filters and pagination.
-   * 
+   *
    * Admin only.
-   * 
+   *
    * @param query - Query parameters
    * @returns Paginated notification logs
    */
@@ -108,11 +108,11 @@ export class NotificationsController {
 
   /**
    * Get Notification Statistics
-   * 
+   *
    * Returns aggregated notification statistics.
-   * 
+   *
    * Admin only.
-   * 
+   *
    * @returns Notification statistics
    */
   @Get('stats')

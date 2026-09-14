@@ -30,9 +30,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 /**
  * IoT Service
- * 
+ *
  * Handles all business logic for IoT data ingestion from ESP32 devices.
- * 
+ *
  * Responsibilities:
  * - Validate API keys (delegate to SensorsService)
  * - Validate sensor readings (ranges, timestamp)
@@ -41,16 +41,16 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
  * - Broadcast real-time events to dashboard
  * - Check power thresholds and send alerts
  * - Generate lightweight responses for ESP32
- * 
+ *
  * Does NOT handle:
  * - HTTP request/response (Controller's job)
  * - API key format validation (Guard's job)
- * 
+ *
  * Security:
  * - All validation before database operations
  * - Generic error messages (no internal details)
  * - Sensor status checking (only active sensors)
- * 
+ *
  * Performance:
  * - Async operations (non-blocking)
  * - Fire-and-forget lastSeen update
@@ -75,28 +75,28 @@ export class IotService {
 
   /**
    * Receive Reading from ESP32
-   * 
+   *
    * Main entry point for ESP32 data submission.
    * Validates API key, validates data, stores reading, updates sensor.
-   * 
+   *
    * @param apiKey - Sensor API key from X-API-Key header
    * @param readingDto - Reading data from ESP32
    * @returns Lightweight response with reading ID
    * @throws UnauthorizedException if API key invalid or sensor not active
    * @throws BadRequestException if data validation fails
-   * 
+   *
    * Process:
    * 1. Validate API key and get sensor
    * 2. Validate reading data (ranges, timestamp)
    * 3. Store reading in database
    * 4. Update sensor lastSeenAt (fire and forget)
    * 5. Return lightweight response
-   * 
+   *
    * Transaction Safety:
    * - Reading stored first (critical operation)
    * - LastSeen updated after (non-critical, can fail)
    * - If lastSeen fails, reading still stored
-   * 
+   *
    * Future Enhancements:
    * - Emit Socket.IO event for dashboard (Phase 7)
    * - Calculate energy from previous reading
@@ -153,29 +153,29 @@ export class IotService {
 
   /**
    * Validate API Key
-   * 
+   *
    * Validates API key against database and checks sensor status.
-   * 
+   *
    * @param apiKey - Sensor API key
    * @returns Sensor document if valid
    * @throws UnauthorizedException if invalid or sensor not active
-   * 
+   *
    * Validation Steps:
    * 1. Check API key exists (not null/undefined)
    * 2. Query database for sensor with this API key
    * 3. Check sensor exists
    * 4. Check sensor status is 'active'
    * 5. Return sensor document
-   * 
+   *
    * Security:
    * - Generic error messages (don't reveal why validation failed)
    * - Same error for "not found" and "not active"
    * - Prevents API key enumeration
-   * 
+   *
    * Performance:
    * - Database query indexed on apiKey (fast O(log n))
    * - Single query gets sensor with all needed fields
-   * 
+   *
    * Why return sensor?
    * - Avoid second database query in storeReading
    * - Sensor ID needed for reading document
@@ -206,24 +206,24 @@ export class IotService {
 
   /**
    * Validate Reading Data
-   * 
+   *
    * Additional business logic validation beyond DTO validation.
-   * 
+   *
    * @param readingDto - Reading data to validate
    * @throws BadRequestException if validation fails
-   * 
+   *
    * Validation Rules:
    * 1. Timestamp not in future (vs server time)
    * 2. Timestamp not too old (optional, not implemented)
    * 3. Power calculation check (P = V × I, optional)
    * 4. Anomaly detection (optional, future)
-   * 
+   *
    * Why separate from DTO?
    * - DTO: Format validation (class-validator)
    * - Service: Business logic validation
    * - DTO doesn't have access to current server time
    * - Service can compare with previous readings
-   * 
+   *
    * DTO vs Service Validation:
    * - DTO: "Is this a number?" ✓
    * - DTO: "Is it in range 0-50?" ✓
@@ -258,14 +258,14 @@ export class IotService {
 
   /**
    * Store Reading
-   * 
+   *
    * Saves the reading to MongoDB database.
-   * 
+   *
    * @param sensorId - Sensor ID (from validated sensor)
    * @param readingDto - Validated reading data
    * @returns Saved reading document
    * @throws Error if database operation fails
-   * 
+   *
    * Process:
    * 1. Create reading document
    * 2. Set sensorId (link to sensor)
@@ -275,13 +275,13 @@ export class IotService {
    * 6. Set energy to 0 (calculated by analytics, Phase 8)
    * 7. Save to database
    * 8. Return saved document
-   * 
+   *
    * Data Transformations:
    * - timestamp: string → Date (from DTO)
    * - receivedAt: auto-set by schema default
    * - sensorId: string → ObjectId (Mongoose handles)
    * - energy: default 0 (calculated later)
-   * 
+   *
    * Future Enhancements:
    * - Calculate energy from previous reading
    * - Store energy per reading (not just aggregated)
@@ -312,29 +312,31 @@ export class IotService {
 
   /**
    * Get Recent Readings
-   * 
+   *
    * Retrieves recent readings for dashboard or analytics.
-   * 
+   *
    * @param limit - Number of readings to retrieve (default: 10)
    * @returns Array of recent readings
-   * 
+   *
    * Usage:
    * - Dashboard: Display latest readings
    * - Analytics: Recent data analysis
    * - Monitoring: Check sensor activity
-   * 
+   *
    * Query:
    * - Sort by timestamp descending (newest first)
    * - Limit results to prevent large responses
    * - Populate sensor information (optional)
-   * 
+   *
    * Future Enhancement:
    * - Add filtering by sensor
    * - Add date range filtering
    * - Add pagination
    * - Populate sensor name/location
    */
-  async getRecentReadings(limit: number = 10): Promise<EnergyReadingDocument[]> {
+  async getRecentReadings(
+    limit: number = 10,
+  ): Promise<EnergyReadingDocument[]> {
     return this.readingModel
       .find()
       .sort({ timestamp: -1 }) // Newest first
@@ -344,27 +346,27 @@ export class IotService {
 
   /**
    * Get Readings by Sensor
-   * 
+   *
    * Retrieves all readings for a specific sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param limit - Number of readings to retrieve (default: 100)
    * @returns Array of sensor readings
-   * 
+   *
    * Usage:
    * - Sensor detail page
    * - Analytics per sensor
    * - Historical data export
-   * 
+   *
    * Query:
    * - Filter by sensorId
    * - Sort by timestamp descending
    * - Limit results
-   * 
+   *
    * Performance:
    * - Uses compound index { sensorId, timestamp }
    * - Fast O(log n) query
-   * 
+   *
    * Future Enhancement:
    * - Add date range filtering
    * - Add pagination with skip/limit
@@ -383,20 +385,20 @@ export class IotService {
 
   /**
    * Count Total Readings
-   * 
+   *
    * Returns the total number of readings in database.
-   * 
+   *
    * @returns Total count of readings
-   * 
+   *
    * Usage:
    * - Dashboard statistics
    * - System monitoring
    * - Data retention reports
-   * 
+   *
    * Performance:
    * - Count operation on indexed collection
    * - Relatively fast for moderate datasets
-   * 
+   *
    * Note:
    * - For large datasets, consider caching this value
    * - Update cache on each insert
@@ -407,21 +409,21 @@ export class IotService {
 
   /**
    * Broadcast New Reading
-   * 
+   *
    * Broadcasts new energy reading to dashboard via WebSocket.
-   * 
+   *
    * @param reading - Energy reading document
    * @param sensor - Sensor document
-   * 
+   *
    * Process:
    * 1. Format reading data for broadcast
    * 2. Get dashboard gateway from service
    * 3. Broadcast to all connected clients
-   * 
+   *
    * Fire and Forget:
    * - Called async, doesn't block response to ESP32
    * - Errors logged but don't fail the request
-   * 
+   *
    * Event: 'reading:new'
    */
   private async broadcastNewReading(
@@ -453,23 +455,23 @@ export class IotService {
 
   /**
    * Check Power Threshold
-   * 
+   *
    * Checks if reading power exceeds threshold and sends alert.
-   * 
+   *
    * @param reading - Energy reading document
    * @param sensor - Sensor document
-   * 
+   *
    * Process:
    * 1. Get threshold from config
    * 2. Compare reading power with threshold
    * 3. If exceeded, broadcast power alert
-   * 
+   *
    * Fire and Forget:
    * - Called async, doesn't block response
    * - Errors logged but don't fail request
-   * 
+   *
    * Event: 'alert:power'
-   * 
+   *
    * Future Enhancement:
    * - Per-sensor thresholds
    * - Alert throttling (don't spam alerts)
@@ -511,9 +513,9 @@ export class IotService {
 
   /**
    * Get Latest Reading for Sensor
-   * 
+   *
    * Retrieves the most recent reading for a specific sensor.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @returns Latest reading with virtual fields
    * @throws NotFoundException if no readings found
@@ -530,9 +532,7 @@ export class IotService {
       .exec();
 
     if (!reading) {
-      throw new NotFoundException(
-        `No readings found for sensor ${sensorId}`,
-      );
+      throw new NotFoundException(`No readings found for sensor ${sensorId}`);
     }
 
     return reading;
@@ -540,10 +540,10 @@ export class IotService {
 
   /**
    * Get Latest Readings for All Sensors
-   * 
+   *
    * Retrieves the most recent reading for each sensor.
    * Uses aggregation pipeline for efficient query.
-   * 
+   *
    * @returns Array of latest readings per sensor
    */
   async getLatestReadings(): Promise<EnergyReadingDocument[]> {
@@ -572,9 +572,9 @@ export class IotService {
 
   /**
    * Get Reading History
-   * 
+   *
    * Retrieves paginated reading history for a sensor with filters.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Query parameters (date range, pagination, source)
    * @returns Paginated readings with metadata
@@ -639,9 +639,9 @@ export class IotService {
 
   /**
    * Get Reading Statistics
-   * 
+   *
    * Calculates aggregated statistics for sensor readings.
-   * 
+   *
    * @param sensorId - Sensor ID
    * @param query - Query parameters (date range, source)
    * @returns Aggregated statistics
@@ -708,9 +708,7 @@ export class IotService {
 
     // No readings found
     if (stats.length === 0) {
-      throw new NotFoundException(
-        `No readings found for sensor ${sensorId}`,
-      );
+      throw new NotFoundException(`No readings found for sensor ${sensorId}`);
     }
 
     const result = stats[0];
@@ -771,17 +769,17 @@ export class IotService {
 
   /**
    * Check Battery Alerts (Phase 7)
-   * 
+   *
    * Checks battery level and emits alert events if thresholds crossed.
-   * 
+   *
    * Thresholds:
    * - <20%: Low battery warning
    * - <10%: Critical battery warning
    * - 100%: Full battery notification
-   * 
+   *
    * Throttling:
    * - Max 1 alert per threshold per 30 minutes
-   * 
+   *
    * @param reading - Energy reading document
    * @param sensor - Sensor document
    */
@@ -803,9 +801,12 @@ export class IotService {
     }
 
     // Get thresholds from config
-    const lowThreshold = this.configService.get<number>('BATTERY_ALERT_LOW_1') || 20;
-    const criticalThreshold = this.configService.get<number>('BATTERY_ALERT_LOW_2') || 10;
-    const fullThreshold = this.configService.get<number>('BATTERY_ALERT_FULL') || 100;
+    const lowThreshold =
+      this.configService.get<number>('BATTERY_ALERT_LOW_1') || 20;
+    const criticalThreshold =
+      this.configService.get<number>('BATTERY_ALERT_LOW_2') || 10;
+    const fullThreshold =
+      this.configService.get<number>('BATTERY_ALERT_FULL') || 100;
 
     // Determine alert type
     let alertType: 'low' | 'critical' | 'full' | null = null;
@@ -841,12 +842,12 @@ export class IotService {
 
   /**
    * Check Energy Milestones (Phase 7)
-   * 
+   *
    * Tracks daily energy and emits milestone events.
-   * 
+   *
    * Milestones:
    * - 100Wh, 500Wh, 1000Wh (1kWh), 5000Wh (5kWh)
-   * 
+   *
    * @param reading - Energy reading document
    */
   private async checkEnergyMilestones(
@@ -896,7 +897,7 @@ export class IotService {
 
   /**
    * Cleanup Energy Cache
-   * 
+   *
    * Removes old date entries from cache.
    */
   private cleanupEnergyCache(): void {

@@ -101,8 +101,10 @@ describe('MessengerService - Messenger-Specific Features (Task 3.2)', () => {
         suggestions: ['status', 'help', 'energy'],
       };
 
-      jest.spyOn(chatbotCoreService, 'processMessage').mockResolvedValue(mockResponse);
-      
+      jest
+        .spyOn(chatbotCoreService, 'processMessage')
+        .mockResolvedValue(mockResponse);
+
       // Mock axios post for sendMessage
       mockedAxios.post.mockResolvedValue({
         status: 200,
@@ -199,7 +201,11 @@ describe('MessengerService - Messenger-Specific Features (Task 3.2)', () => {
         { title: 'This Month', payload: 'month' },
       ];
 
-      await service.sendButtonTemplate('user-123', 'Choose a time period:', buttons);
+      await service.sendButtonTemplate(
+        'user-123',
+        'Choose a time period:',
+        buttons,
+      );
 
       expect(mockedAxios.post).toHaveBeenCalledWith(
         expect.stringContaining('/me/messages'),
@@ -232,8 +238,10 @@ describe('MessengerService - Messenger-Specific Features (Task 3.2)', () => {
         suggestions: ['today', 'battery', 'help'],
       };
 
-      jest.spyOn(chatbotCoreService, 'processMessage').mockResolvedValue(mockResponse);
-      
+      jest
+        .spyOn(chatbotCoreService, 'processMessage')
+        .mockResolvedValue(mockResponse);
+
       mockedAxios.post.mockResolvedValue({
         status: 200,
         statusText: 'OK',
@@ -262,8 +270,10 @@ describe('MessengerService - Messenger-Specific Features (Task 3.2)', () => {
         text: 'Simple response with no suggestions',
       };
 
-      jest.spyOn(chatbotCoreService, 'processMessage').mockResolvedValue(mockResponse);
-      
+      jest
+        .spyOn(chatbotCoreService, 'processMessage')
+        .mockResolvedValue(mockResponse);
+
       mockedAxios.post.mockResolvedValue({
         status: 200,
         statusText: 'OK',
@@ -290,7 +300,7 @@ describe('MessengerService - Messenger-Specific Features (Task 3.2)', () => {
       const processMessageSpy = jest
         .spyOn(chatbotCoreService, 'processMessage')
         .mockResolvedValue(mockResponse);
-      
+
       mockedAxios.post.mockResolvedValue({
         status: 200,
         statusText: 'OK',

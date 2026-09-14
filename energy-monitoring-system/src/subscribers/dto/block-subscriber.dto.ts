@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Block Subscriber DTO
- * 
+ *
  * Request body for blocking a subscriber.
  */
 export class BlockSubscriberDto {

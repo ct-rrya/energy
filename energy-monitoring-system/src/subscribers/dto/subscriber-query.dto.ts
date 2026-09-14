@@ -4,7 +4,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Subscriber Query DTO
- * 
+ *
  * Query parameters for filtering subscribers.
  */
 export class SubscriberQueryDto {

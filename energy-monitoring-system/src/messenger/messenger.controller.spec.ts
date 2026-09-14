@@ -8,10 +8,10 @@ import * as fc from 'fast-check';
 
 /**
  * Messenger Controller Tests
- * 
+ *
  * Bug Condition Exploration Tests:
  * - Test 1.1: Webhook Response Time Exploration (EXPECTED TO FAIL on unfixed code)
- * 
+ *
  * These tests verify the bug condition exists on unfixed code.
  * Failure of these tests CONFIRMS the bug is present.
  */
@@ -48,22 +48,22 @@ describe('MessengerController - Bug Condition Exploration', () => {
   describe('Task 1.1: Webhook Response Time Exploration Test', () => {
     /**
      * Bug Condition Exploration: Webhook POST returns 200 OK within 100ms
-     * 
+     *
      * **Validates: Requirements 1.1, 2.1**
-     * 
+     *
      * This test explores the bug condition where webhook response is delayed
      * by awaited message processing. On UNFIXED code, the webhook handler
      * uses `await` on processMessagingEvent(), causing the HTTP response
      * to be delayed until message processing completes.
-     * 
+     *
      * Expected Behavior on UNFIXED code:
      * - Response time > 5000ms (blocked by mock 5-second processing)
      * - This confirms the bug exists (webhook awaits message processing)
-     * 
+     *
      * Expected Behavior on FIXED code:
      * - Response time < 100ms (fire-and-forget pattern)
      * - Message processing happens asynchronously
-     * 
+     *
      * Test Strategy:
      * - Mock messengerService.handleMessage() to take 5 seconds
      * - Send webhook POST with text message payload
@@ -122,9 +122,13 @@ describe('MessengerController - Bug Condition Exploration', () => {
       expect(responseTime).toBeLessThan(100);
 
       // Log actual response time for debugging
-      console.log(`\n[Bug Condition Test] Webhook response time: ${responseTime}ms`);
+      console.log(
+        `\n[Bug Condition Test] Webhook response time: ${responseTime}ms`,
+      );
       console.log('[Bug Condition Test] Expected: < 100ms (fixed code)');
-      console.log('[Bug Condition Test] On unfixed code: > 5000ms (confirms bug)\n');
+      console.log(
+        '[Bug Condition Test] On unfixed code: > 5000ms (confirms bug)\n',
+      );
 
       // Verify handleMessage was called (async processing should still occur)
       // Note: On fixed code, this may not be immediately verifiable
@@ -133,9 +137,9 @@ describe('MessengerController - Bug Condition Exploration', () => {
 
     /**
      * Bug Condition Documentation: Expected Counterexample
-     * 
+     *
      * When the above test FAILS on unfixed code, the counterexample will be:
-     * 
+     *
      * Counterexample:
      * - Input: Webhook POST with text message triggering slow processing
      * - Expected: Response time < 100ms
@@ -143,7 +147,7 @@ describe('MessengerController - Bug Condition Exploration', () => {
      * - Root Cause: receiveWebhook() uses await on processMessagingEvent(),
      *   blocking HTTP response until message processing completes
      * - Description: "Webhook response delayed until message processing completes"
-     * 
+     *
      * This counterexample confirms the bug exists and validates the root cause
      * analysis: synchronous webhook processing that blocks HTTP responses.
      */
@@ -152,25 +156,25 @@ describe('MessengerController - Bug Condition Exploration', () => {
   describe('Task 1.2: Webhook Retry Detection Exploration Test', () => {
     /**
      * Bug Condition Exploration: Duplicate webhook payloads trigger duplicate processing
-     * 
+     *
      * **Validates: Requirements 1.2, 1.3**
-     * 
+     *
      * This test explores Meta's webhook retry behavior. When webhook response
      * exceeds 20 seconds (Meta's timeout), Meta resends the EXACT same payload.
      * The current implementation processes each payload independently, creating
      * duplicate message processing requests that clog the event loop.
-     * 
+     *
      * Expected Behavior on UNFIXED code:
      * - handleMessage() called TWICE for the same message
      * - Duplicate "Text message from [senderId]" log entries
      * - Event loop clogged by duplicate async operations
      * - This confirms the bug exists (no deduplication)
-     * 
+     *
      * Expected Behavior on FIXED code:
      * - Webhook returns 200 OK immediately (no retry triggered)
      * - OR: Deduplication logic prevents duplicate processing
      * - handleMessage() called ONCE per unique message
-     * 
+     *
      * Test Strategy:
      * - Mock Meta retry behavior: send same webhook payload twice
      * - Track handleMessage() call count
@@ -180,9 +184,14 @@ describe('MessengerController - Bug Condition Exploration', () => {
      */
     it('should process each unique message only once (FAILS on unfixed code - detects duplicate processing)', async () => {
       // Track handleMessage call count and arguments
-      const handleMessageCalls: Array<{ senderId: string; text: string; timestamp: number }> = [];
-      const mockHandleMessage = jest.fn().mockImplementation(
-        (senderId: string, messageText: string) => {
+      const handleMessageCalls: Array<{
+        senderId: string;
+        text: string;
+        timestamp: number;
+      }> = [];
+      const mockHandleMessage = jest
+        .fn()
+        .mockImplementation((senderId: string, messageText: string) => {
           handleMessageCalls.push({
             senderId,
             text: messageText,
@@ -191,8 +200,7 @@ describe('MessengerController - Bug Condition Exploration', () => {
           // Simulate slow processing (doesn't need to be 25 seconds for this test)
           // The key is that we're testing duplicate payload handling
           return Promise.resolve();
-        },
-      );
+        });
       (messengerService.handleMessage as jest.Mock) = mockHandleMessage;
 
       // Create webhook payload with text message (unique message ID)
@@ -223,7 +231,9 @@ describe('MessengerController - Bug Condition Exploration', () => {
       console.log('\n[Retry Detection Test] Sending first webhook payload...');
       const result1 = await controller.receiveWebhook(webhookPayload);
 
-      console.log('[Retry Detection Test] Sending second webhook payload (simulating Meta retry)...');
+      console.log(
+        '[Retry Detection Test] Sending second webhook payload (simulating Meta retry)...',
+      );
       const result2 = await controller.receiveWebhook(webhookPayload);
 
       // Verify both webhooks returned 200 OK
@@ -238,13 +248,21 @@ describe('MessengerController - Bug Condition Exploration', () => {
       // handleMessage() should be called ONCE per unique message ID.
       //
       // This assertion EXPECTS TO FAIL on unfixed code (called twice)
-      console.log(`\n[Retry Detection Test] handleMessage() call count: ${handleMessageCalls.length}`);
+      console.log(
+        `\n[Retry Detection Test] handleMessage() call count: ${handleMessageCalls.length}`,
+      );
       console.log('[Retry Detection Test] Call details:');
       handleMessageCalls.forEach((call, index) => {
-        console.log(`  Call ${index + 1}: senderId=${call.senderId}, text="${call.text}"`);
+        console.log(
+          `  Call ${index + 1}: senderId=${call.senderId}, text="${call.text}"`,
+        );
       });
-      console.log('[Retry Detection Test] Expected: 1 call (fixed code with deduplication)');
-      console.log('[Retry Detection Test] On unfixed code: 2 calls (confirms duplicate processing bug)\n');
+      console.log(
+        '[Retry Detection Test] Expected: 1 call (fixed code with deduplication)',
+      );
+      console.log(
+        '[Retry Detection Test] On unfixed code: 2 calls (confirms duplicate processing bug)\n',
+      );
 
       // Assert: handleMessage should be called ONCE for the same message ID
       expect(handleMessageCalls.length).toBe(1);
@@ -252,38 +270,44 @@ describe('MessengerController - Bug Condition Exploration', () => {
       // Verify the message details are correct
       if (handleMessageCalls.length > 0) {
         expect(handleMessageCalls[0].senderId).toBe('test-user-123');
-        expect(handleMessageCalls[0].text).toBe('What is my energy total today?');
+        expect(handleMessageCalls[0].text).toBe(
+          'What is my energy total today?',
+        );
       }
 
       // If test FAILS (more than 1 call), this is the BUG CONDITION
       if (handleMessageCalls.length > 1) {
         console.log('\n❌ BUG DETECTED: Duplicate webhook processing!');
-        console.log('Same message ID was processed multiple times due to Meta retry.');
-        console.log('This confirms the bug exists: webhook response delays cause retries.\n');
+        console.log(
+          'Same message ID was processed multiple times due to Meta retry.',
+        );
+        console.log(
+          'This confirms the bug exists: webhook response delays cause retries.\n',
+        );
       }
     });
 
     /**
      * Bug Condition Documentation: Expected Counterexample
-     * 
+     *
      * When the above test FAILS on unfixed code, the counterexample will be:
-     * 
+     *
      * Counterexample:
      * - Input: Two identical webhook payloads with same message ID (simulating Meta retry)
      * - Expected: handleMessage() called ONCE per unique message ID
      * - Actual: handleMessage() called TWICE (duplicate processing)
-     * - Root Cause: 
+     * - Root Cause:
      *   1. First webhook takes >20s to respond (awaiting message processing)
      *   2. Meta times out and resends same payload
      *   3. No deduplication logic prevents duplicate processing
      *   4. Both payloads trigger separate handleMessage() calls
      * - Description: "Same message ID processed multiple times due to Meta retry"
-     * 
+     *
      * This counterexample confirms:
      * 1. Webhook response delay causes Meta retry behavior
      * 2. Duplicate processing occurs without deduplication
      * 3. Event loop becomes clogged with duplicate async operations
-     * 
+     *
      * The fix requires:
      * - Fire-and-forget webhook pattern (return 200 OK immediately)
      * - OR: Message ID deduplication to drop duplicate payloads
@@ -294,7 +318,7 @@ describe('MessengerController - Bug Condition Exploration', () => {
   describe('Webhook Verification (Preservation Check)', () => {
     /**
      * Preservation Test: GET /webhook verification flow
-     * 
+     *
      * Verifies that webhook verification behavior is unchanged after fix.
      * This is a regression prevention test.
      */
@@ -317,21 +341,23 @@ describe('MessengerController - Bug Condition Exploration', () => {
         'hub.challenge': 'test-challenge-12345',
       };
 
-      expect(() => controller.verifyWebhook(query)).toThrow(BadRequestException);
+      expect(() => controller.verifyWebhook(query)).toThrow(
+        BadRequestException,
+      );
     });
   });
 });
 
 /**
  * Preservation Property Tests
- * 
+ *
  * Task 2.1: Webhook Verification Preservation Test
- * 
+ *
  * **Validates: Requirements 3.1**
- * 
+ *
  * These tests MUST PASS on UNFIXED code to establish baseline behavior
  * that must be preserved after implementing the fire-and-forget webhook fix.
- * 
+ *
  * Property-based testing generates many test cases to verify that webhook
  * verification behavior remains unchanged across all possible inputs.
  */
@@ -369,21 +395,21 @@ describe('MessengerController - Preservation Property Tests', () => {
   describe('Task 2.1: Webhook Verification Preservation Property Test', () => {
     /**
      * Property 3: Preservation - Webhook Verification Flow
-     * 
+     *
      * **Validates: Requirements 3.1**
-     * 
+     *
      * This property-based test generates random verification requests with
      * valid and invalid tokens to verify that the webhook verification flow
      * behaves identically before and after the fire-and-forget fix.
-     * 
+     *
      * Observed Behavior on UNFIXED code:
      * - GET /webhook with mode='subscribe' AND token=VALID_TOKEN returns challenge
      * - GET /webhook with mode='subscribe' AND token!=VALID_TOKEN throws BadRequestException
      * - GET /webhook with mode!='subscribe' throws BadRequestException
-     * 
+     *
      * This test MUST PASS on unfixed code to establish the baseline.
      * After implementing the fix, this test MUST continue to pass.
-     * 
+     *
      * Test Strategy:
      * - Generate random verification requests (valid/invalid tokens, modes, challenges)
      * - For all valid requests: assert challenge returned
@@ -409,7 +435,8 @@ describe('MessengerController - Preservation Property Tests', () => {
             };
 
             // Expected behavior based on token validity
-            const isValidRequest = mode === 'subscribe' && token === VALID_TOKEN;
+            const isValidRequest =
+              mode === 'subscribe' && token === VALID_TOKEN;
 
             if (isValidRequest) {
               // Valid request: Should return challenge string
@@ -417,7 +444,9 @@ describe('MessengerController - Preservation Property Tests', () => {
               expect(result).toBe(challenge);
             } else {
               // Invalid request: Should throw BadRequestException
-              expect(() => controller.verifyWebhook(query)).toThrow(BadRequestException);
+              expect(() => controller.verifyWebhook(query)).toThrow(
+                BadRequestException,
+              );
             }
           },
         ),
@@ -427,16 +456,26 @@ describe('MessengerController - Preservation Property Tests', () => {
         },
       );
 
-      console.log('\n[Preservation Test 2.1] Webhook verification property test completed');
-      console.log('[Preservation Test 2.1] Verified 100 random verification requests');
-      console.log('[Preservation Test 2.1] ✅ All valid tokens returned challenge');
-      console.log('[Preservation Test 2.1] ✅ All invalid tokens threw BadRequestException');
-      console.log('[Preservation Test 2.1] This establishes the baseline behavior to preserve\n');
+      console.log(
+        '\n[Preservation Test 2.1] Webhook verification property test completed',
+      );
+      console.log(
+        '[Preservation Test 2.1] Verified 100 random verification requests',
+      );
+      console.log(
+        '[Preservation Test 2.1] ✅ All valid tokens returned challenge',
+      );
+      console.log(
+        '[Preservation Test 2.1] ✅ All invalid tokens threw BadRequestException',
+      );
+      console.log(
+        '[Preservation Test 2.1] This establishes the baseline behavior to preserve\n',
+      );
     });
 
     /**
      * Additional Property Test: Edge Cases
-     * 
+     *
      * Tests edge cases that might be missed by random generation:
      * - Empty strings
      * - Very long challenges
@@ -479,33 +518,43 @@ describe('MessengerController - Preservation Property Tests', () => {
       });
       expect(specialResult).toBe(specialChallenge);
 
-      console.log('\n[Preservation Test 2.1 Edge Cases] Edge case verification completed');
-      console.log('[Preservation Test 2.1 Edge Cases] ✅ Empty challenge handled correctly');
-      console.log('[Preservation Test 2.1 Edge Cases] ✅ Long challenge (1000 chars) handled correctly');
-      console.log('[Preservation Test 2.1 Edge Cases] ✅ Case sensitivity preserved');
-      console.log('[Preservation Test 2.1 Edge Cases] ✅ Special characters in challenge handled correctly\n');
+      console.log(
+        '\n[Preservation Test 2.1 Edge Cases] Edge case verification completed',
+      );
+      console.log(
+        '[Preservation Test 2.1 Edge Cases] ✅ Empty challenge handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.1 Edge Cases] ✅ Long challenge (1000 chars) handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.1 Edge Cases] ✅ Case sensitivity preserved',
+      );
+      console.log(
+        '[Preservation Test 2.1 Edge Cases] ✅ Special characters in challenge handled correctly\n',
+      );
     });
   });
 
   describe('Task 2.2: Message Filtering Preservation Property Test', () => {
     /**
      * Property 2: Preservation - Message Filtering Logic
-     * 
+     *
      * **Validates: Requirements 3.3**
-     * 
+     *
      * This property-based test generates random messaging events with echo,
      * delivery, and read receipt flags to verify that message filtering behavior
      * remains unchanged after implementing the fire-and-forget webhook fix.
-     * 
+     *
      * Observed Behavior on UNFIXED code:
      * - Events with message.is_echo=true are DROPPED (no handleMessage call)
      * - Events with delivery object are DROPPED (no handleMessage call)
      * - Events with read object are DROPPED (no handleMessage call)
      * - Log output contains "DROPPED" message for each filtered event
-     * 
+     *
      * This test MUST PASS on unfixed code to establish the baseline.
      * After implementing the fix, this test MUST continue to pass.
-     * 
+     *
      * Test Strategy:
      * - Generate random messaging events with echo/delivery/read flags
      * - For all echo events: assert no handleMessage() call
@@ -528,7 +577,7 @@ describe('MessengerController - Preservation Property Tests', () => {
             (messengerService.handleMessage as jest.Mock) = mockHandleMessage;
 
             // Build webhook payload based on event type
-            let messagingEvent: any = {
+            const messagingEvent: any = {
               sender: { id: senderId },
               recipient: { id: recipientId },
               timestamp,
@@ -582,7 +631,9 @@ describe('MessengerController - Preservation Property Tests', () => {
 
             // Log filtering behavior for visibility
             const eventTypeLabel = eventType.toUpperCase();
-            console.log(`[Preservation 2.2] ${eventTypeLabel} event filtered correctly (no handleMessage call)`);
+            console.log(
+              `[Preservation 2.2] ${eventTypeLabel} event filtered correctly (no handleMessage call)`,
+            );
           },
         ),
         {
@@ -591,17 +642,27 @@ describe('MessengerController - Preservation Property Tests', () => {
         },
       );
 
-      console.log('\n[Preservation Test 2.2] Message filtering property test completed');
+      console.log(
+        '\n[Preservation Test 2.2] Message filtering property test completed',
+      );
       console.log('[Preservation Test 2.2] Verified 50 random filtered events');
-      console.log('[Preservation Test 2.2] ✅ All echo messages dropped (no handleMessage call)');
-      console.log('[Preservation Test 2.2] ✅ All delivery receipts dropped (no handleMessage call)');
-      console.log('[Preservation Test 2.2] ✅ All read receipts dropped (no handleMessage call)');
-      console.log('[Preservation Test 2.2] This establishes the baseline filtering behavior to preserve\n');
+      console.log(
+        '[Preservation Test 2.2] ✅ All echo messages dropped (no handleMessage call)',
+      );
+      console.log(
+        '[Preservation Test 2.2] ✅ All delivery receipts dropped (no handleMessage call)',
+      );
+      console.log(
+        '[Preservation Test 2.2] ✅ All read receipts dropped (no handleMessage call)',
+      );
+      console.log(
+        '[Preservation Test 2.2] This establishes the baseline filtering behavior to preserve\n',
+      );
     });
 
     /**
      * Additional Property Test: Multiple Events in Single Webhook
-     * 
+     *
      * Tests that filtering works correctly when multiple events are sent
      * in a single webhook payload, including mixed valid/filtered events.
      */
@@ -684,17 +745,29 @@ describe('MessengerController - Preservation Property Tests', () => {
         'Hello, show me my energy stats',
       );
 
-      console.log('\n[Preservation Test 2.2 Mixed Events] Mixed events webhook completed');
-      console.log('[Preservation Test 2.2 Mixed Events] ✅ Echo message filtered (1/4 events)');
-      console.log('[Preservation Test 2.2 Mixed Events] ✅ Delivery receipt filtered (2/4 events)');
-      console.log('[Preservation Test 2.2 Mixed Events] ✅ Read receipt filtered (3/4 events)');
-      console.log('[Preservation Test 2.2 Mixed Events] ✅ Valid text message processed (4/4 events)');
-      console.log('[Preservation Test 2.2 Mixed Events] ✅ handleMessage called exactly ONCE for valid message\n');
+      console.log(
+        '\n[Preservation Test 2.2 Mixed Events] Mixed events webhook completed',
+      );
+      console.log(
+        '[Preservation Test 2.2 Mixed Events] ✅ Echo message filtered (1/4 events)',
+      );
+      console.log(
+        '[Preservation Test 2.2 Mixed Events] ✅ Delivery receipt filtered (2/4 events)',
+      );
+      console.log(
+        '[Preservation Test 2.2 Mixed Events] ✅ Read receipt filtered (3/4 events)',
+      );
+      console.log(
+        '[Preservation Test 2.2 Mixed Events] ✅ Valid text message processed (4/4 events)',
+      );
+      console.log(
+        '[Preservation Test 2.2 Mixed Events] ✅ handleMessage called exactly ONCE for valid message\n',
+      );
     });
 
     /**
      * Additional Property Test: Edge Cases in Filtering
-     * 
+     *
      * Tests edge cases in message filtering:
      * - Echo message with empty text
      * - Delivery with multiple message IDs
@@ -732,7 +805,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       const result1 = await controller.receiveWebhook(echoEmptyPayload);
       expect(result1).toBe('EVENT_RECEIVED');
       expect(mockHandleMessage1).not.toHaveBeenCalled();
-      console.log('[Preservation 2.2 Edge] ✅ Echo with empty text filtered correctly');
+      console.log(
+        '[Preservation 2.2 Edge] ✅ Echo with empty text filtered correctly',
+      );
 
       // Test Case 2: Delivery with multiple message IDs
       const mockHandleMessage2 = jest.fn().mockResolvedValue(undefined);
@@ -762,7 +837,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       const result2 = await controller.receiveWebhook(deliveryMultiplePayload);
       expect(result2).toBe('EVENT_RECEIVED');
       expect(mockHandleMessage2).not.toHaveBeenCalled();
-      console.log('[Preservation 2.2 Edge] ✅ Delivery with multiple MIDs filtered correctly');
+      console.log(
+        '[Preservation 2.2 Edge] ✅ Delivery with multiple MIDs filtered correctly',
+      );
 
       // Test Case 3: Read receipt with various watermark values
       const mockHandleMessage3 = jest.fn().mockResolvedValue(undefined);
@@ -810,37 +887,47 @@ describe('MessengerController - Preservation Property Tests', () => {
         },
       );
 
-      console.log('[Preservation 2.2 Edge] ✅ Read receipts with various watermarks filtered correctly');
+      console.log(
+        '[Preservation 2.2 Edge] ✅ Read receipts with various watermarks filtered correctly',
+      );
 
-      console.log('\n[Preservation Test 2.2 Edge Cases] Edge case filtering completed');
-      console.log('[Preservation Test 2.2 Edge Cases] ✅ Echo with empty text handled correctly');
-      console.log('[Preservation Test 2.2 Edge Cases] ✅ Delivery with multiple MIDs handled correctly');
-      console.log('[Preservation Test 2.2 Edge Cases] ✅ Read receipts with various watermarks handled correctly\n');
+      console.log(
+        '\n[Preservation Test 2.2 Edge Cases] Edge case filtering completed',
+      );
+      console.log(
+        '[Preservation Test 2.2 Edge Cases] ✅ Echo with empty text handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.2 Edge Cases] ✅ Delivery with multiple MIDs handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.2 Edge Cases] ✅ Read receipts with various watermarks handled correctly\n',
+      );
     });
   });
 
   describe('Task 2.3: Message Routing Preservation Property Test', () => {
     /**
      * Property 2: Preservation - Message Routing Logic
-     * 
+     *
      * **Validates: Requirements 3.3**
-     * 
+     *
      * This property-based test verifies that message routing behavior remains
      * unchanged after implementing the fire-and-forget webhook fix.
-     * 
+     *
      * Observed Behavior on UNFIXED code:
      * - Quick reply payload takes precedence over message text
      * - Postback payload is processed as command
      * - Text message is processed when no quick_reply/postback present
-     * 
+     *
      * Routing Priority (from messenger.controller.ts processMessagingEvent):
      * 1. QUICK_REPLY: event.message.quick_reply exists → process payload
      * 2. POSTBACK: event.postback.payload exists → process payload
      * 3. TEXT: event.message.text exists → process text
-     * 
+     *
      * This test MUST PASS on unfixed code to establish the baseline.
      * After implementing the fix, this test MUST continue to pass.
-     * 
+     *
      * Test Strategy:
      * - Generate events with combinations of text/quick_reply/postback
      * - For quick_reply events: assert payload processed (NOT text)
@@ -855,7 +942,9 @@ describe('MessengerController - Preservation Property Tests', () => {
           // Generate random routing scenarios
           fc.constantFrom('quick_reply', 'postback', 'text'),
           fc.string({ minLength: 5, maxLength: 20 }), // Random sender ID
-          fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0), // Random text/payload (non-whitespace)
+          fc
+            .string({ minLength: 1, maxLength: 100 })
+            .filter((s) => s.trim().length > 0), // Random text/payload (non-whitespace)
           fc.nat(), // Random timestamp
           async (eventType, senderId, content, timestamp) => {
             // Skip whitespace-only inputs
@@ -865,7 +954,7 @@ describe('MessengerController - Preservation Property Tests', () => {
             messengerService.handleMessage = mockHandleMessage as any;
 
             // Build webhook payload based on event type
-            let messagingEvent: any = {
+            const messagingEvent: any = {
               sender: { id: senderId },
               recipient: { id: 'page-123' },
               timestamp,
@@ -925,15 +1014,20 @@ describe('MessengerController - Preservation Property Tests', () => {
             expect(result).toBe('EVENT_RECEIVED');
 
             // Wait for async processing to complete (fire-and-forget pattern)
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
 
             // KEY ASSERTION: handleMessage should be called with correct routing
             expect(mockHandleMessage).toHaveBeenCalledTimes(1);
-            expect(mockHandleMessage).toHaveBeenCalledWith(senderId, expectedCommand);
+            expect(mockHandleMessage).toHaveBeenCalledWith(
+              senderId,
+              expectedCommand,
+            );
 
             // Log routing behavior for visibility
             const eventTypeLabel = eventType.toUpperCase();
-            console.log(`[Preservation 2.3] ${eventTypeLabel} routed correctly: handleMessage("${senderId}", "${expectedCommand}")`);
+            console.log(
+              `[Preservation 2.3] ${eventTypeLabel} routed correctly: handleMessage("${senderId}", "${expectedCommand}")`,
+            );
           },
         ),
         {
@@ -942,34 +1036,50 @@ describe('MessengerController - Preservation Property Tests', () => {
         },
       );
 
-      console.log('\n[Preservation Test 2.3] Message routing property test completed');
-      console.log('[Preservation Test 2.3] Verified 60 random routing scenarios');
-      console.log('[Preservation Test 2.3] ✅ Quick reply payload takes precedence over text');
-      console.log('[Preservation Test 2.3] ✅ Postback payload processed correctly');
-      console.log('[Preservation Test 2.3] ✅ Text message processed when no quick_reply/postback');
-      console.log('[Preservation Test 2.3] This establishes the baseline routing behavior to preserve\n');
+      console.log(
+        '\n[Preservation Test 2.3] Message routing property test completed',
+      );
+      console.log(
+        '[Preservation Test 2.3] Verified 60 random routing scenarios',
+      );
+      console.log(
+        '[Preservation Test 2.3] ✅ Quick reply payload takes precedence over text',
+      );
+      console.log(
+        '[Preservation Test 2.3] ✅ Postback payload processed correctly',
+      );
+      console.log(
+        '[Preservation Test 2.3] ✅ Text message processed when no quick_reply/postback',
+      );
+      console.log(
+        '[Preservation Test 2.3] This establishes the baseline routing behavior to preserve\n',
+      );
     });
 
     /**
      * Additional Property Test: Quick Reply Precedence Over Text
-     * 
+     *
      * Tests the critical routing rule: When both text and quick_reply.payload
      * are present, the payload MUST take precedence (not the text).
-     * 
+     *
      * This is important because Facebook sends BOTH fields when a user clicks
      * a quick reply button:
      * - message.text = The button label shown to the user
      * - message.quick_reply.payload = The actual command to process
-     * 
+     *
      * The system must route to the payload, not the text.
      */
     let testRunCounter = 0; // Counter to ensure unique message IDs across property test runs
     it('should route quick_reply payload over message text when both are present', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.string({ minLength: 5, maxLength: 20 }).filter(s => s.trim().length > 0), // Random sender ID (non-whitespace)
+          fc
+            .string({ minLength: 5, maxLength: 20 })
+            .filter((s) => s.trim().length > 0), // Random sender ID (non-whitespace)
           fc.constantFrom('status', 'energy', 'battery', 'help', 'subscribe'), // Valid payloads
-          fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0), // Random button label text (non-whitespace)
+          fc
+            .string({ minLength: 1, maxLength: 50 })
+            .filter((s) => s.trim().length > 0), // Random button label text (non-whitespace)
           fc.nat(), // Random timestamp
           async (senderId, payload, buttonText, timestamp) => {
             // Skip whitespace-only inputs
@@ -1007,16 +1117,21 @@ describe('MessengerController - Preservation Property Tests', () => {
             expect(result).toBe('EVENT_RECEIVED');
 
             // Wait for async processing to complete (fire-and-forget pattern)
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
 
             // KEY ASSERTION: handleMessage should be called with PAYLOAD, not text
             expect(mockHandleMessage).toHaveBeenCalledTimes(1);
             expect(mockHandleMessage).toHaveBeenCalledWith(senderId, payload);
 
             // Verify it was NOT called with the button text
-            expect(mockHandleMessage).not.toHaveBeenCalledWith(senderId, buttonText);
+            expect(mockHandleMessage).not.toHaveBeenCalledWith(
+              senderId,
+              buttonText,
+            );
 
-            console.log(`[Preservation 2.3 Quick Reply] Payload "${payload}" routed over text "${buttonText}"`);
+            console.log(
+              `[Preservation 2.3 Quick Reply] Payload "${payload}" routed over text "${buttonText}"`,
+            );
           },
         ),
         {
@@ -1025,14 +1140,20 @@ describe('MessengerController - Preservation Property Tests', () => {
         },
       );
 
-      console.log('\n[Preservation Test 2.3 Quick Reply Precedence] Quick reply precedence test completed');
-      console.log('[Preservation Test 2.3 Quick Reply Precedence] ✅ Quick reply payload always takes precedence over button label text');
-      console.log('[Preservation Test 2.3 Quick Reply Precedence] ✅ Verified 25 random quick reply scenarios\n');
+      console.log(
+        '\n[Preservation Test 2.3 Quick Reply Precedence] Quick reply precedence test completed',
+      );
+      console.log(
+        '[Preservation Test 2.3 Quick Reply Precedence] ✅ Quick reply payload always takes precedence over button label text',
+      );
+      console.log(
+        '[Preservation Test 2.3 Quick Reply Precedence] ✅ Verified 25 random quick reply scenarios\n',
+      );
     });
 
     /**
      * Additional Property Test: Mixed Event Types in Single Webhook
-     * 
+     *
      * Tests that routing works correctly when multiple different event types
      * are sent in a single webhook payload.
      */
@@ -1101,18 +1222,32 @@ describe('MessengerController - Preservation Property Tests', () => {
       // Check each call individually
       expect(mockHandleMessage).toHaveBeenNthCalledWith(1, 'user-1', 'status'); // Quick reply payload
       expect(mockHandleMessage).toHaveBeenNthCalledWith(2, 'user-2', 'energy'); // Postback payload
-      expect(mockHandleMessage).toHaveBeenNthCalledWith(3, 'user-3', 'Show me battery status'); // Text
+      expect(mockHandleMessage).toHaveBeenNthCalledWith(
+        3,
+        'user-3',
+        'Show me battery status',
+      ); // Text
 
-      console.log('\n[Preservation Test 2.3 Mixed Events] Mixed event types test completed');
-      console.log('[Preservation Test 2.3 Mixed Events] ✅ Quick reply routed to payload (1/3)');
-      console.log('[Preservation Test 2.3 Mixed Events] ✅ Postback routed to payload (2/3)');
-      console.log('[Preservation Test 2.3 Mixed Events] ✅ Text message routed to text (3/3)');
-      console.log('[Preservation Test 2.3 Mixed Events] ✅ All 3 events routed correctly in single webhook\n');
+      console.log(
+        '\n[Preservation Test 2.3 Mixed Events] Mixed event types test completed',
+      );
+      console.log(
+        '[Preservation Test 2.3 Mixed Events] ✅ Quick reply routed to payload (1/3)',
+      );
+      console.log(
+        '[Preservation Test 2.3 Mixed Events] ✅ Postback routed to payload (2/3)',
+      );
+      console.log(
+        '[Preservation Test 2.3 Mixed Events] ✅ Text message routed to text (3/3)',
+      );
+      console.log(
+        '[Preservation Test 2.3 Mixed Events] ✅ All 3 events routed correctly in single webhook\n',
+      );
     });
 
     /**
      * Additional Property Test: Edge Cases in Routing
-     * 
+     *
      * Tests edge cases in message routing:
      * - Empty payload in quick_reply
      * - Empty payload in postback
@@ -1154,7 +1289,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       expect(result1).toBe('EVENT_RECEIVED');
       // Empty/whitespace payloads are now filtered out (correct behavior)
       expect(mockHandleMessage1).not.toHaveBeenCalled();
-      console.log('[Preservation 2.3 Edge] ✅ Empty quick_reply payload routed correctly');
+      console.log(
+        '[Preservation 2.3 Edge] ✅ Empty quick_reply payload routed correctly',
+      );
 
       // Test Case 2: Empty postback payload (should be filtered - empty string is falsy)
       const mockHandleMessage2 = jest.fn().mockResolvedValue(undefined);
@@ -1186,7 +1323,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       // Empty payload is falsy, so postback handler won't trigger
       // This is correct behavior - empty payloads are filtered
       expect(mockHandleMessage2).not.toHaveBeenCalled();
-      console.log('[Preservation 2.3 Edge] ✅ Empty postback payload filtered correctly (falsy check)');
+      console.log(
+        '[Preservation 2.3 Edge] ✅ Empty postback payload filtered correctly (falsy check)',
+      );
 
       // Test Case 3: Empty text message (should be filtered - empty string is falsy)
       const mockHandleMessage3 = jest.fn().mockResolvedValue(undefined);
@@ -1218,7 +1357,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       // Empty text is falsy, so text handler won't trigger
       // This is correct behavior - empty text messages are filtered
       expect(mockHandleMessage3).not.toHaveBeenCalled();
-      console.log('[Preservation 2.3 Edge] ✅ Empty text message filtered correctly (falsy check)');
+      console.log(
+        '[Preservation 2.3 Edge] ✅ Empty text message filtered correctly (falsy check)',
+      );
 
       // Test Case 4: Very long text message
       const mockHandleMessage4 = jest.fn().mockResolvedValue(undefined);
@@ -1250,7 +1391,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       expect(result4).toBe('EVENT_RECEIVED');
       expect(mockHandleMessage4).toHaveBeenCalledTimes(1);
       expect(mockHandleMessage4).toHaveBeenCalledWith('user-4', longText); // Long text routed
-      console.log('[Preservation 2.3 Edge] ✅ Very long text message (2000 chars) routed correctly');
+      console.log(
+        '[Preservation 2.3 Edge] ✅ Very long text message (2000 chars) routed correctly',
+      );
 
       // Test Case 5: Very long quick_reply payload
       const mockHandleMessage5 = jest.fn().mockResolvedValue(undefined);
@@ -1285,31 +1428,43 @@ describe('MessengerController - Preservation Property Tests', () => {
       expect(result5).toBe('EVENT_RECEIVED');
       expect(mockHandleMessage5).toHaveBeenCalledTimes(1);
       expect(mockHandleMessage5).toHaveBeenCalledWith('user-5', longPayload); // Long payload routed
-      console.log('[Preservation 2.3 Edge] ✅ Very long quick_reply payload (1000 chars) routed correctly');
+      console.log(
+        '[Preservation 2.3 Edge] ✅ Very long quick_reply payload (1000 chars) routed correctly',
+      );
 
-      console.log('\n[Preservation Test 2.3 Edge Cases] Edge case routing completed');
-      console.log('[Preservation Test 2.3 Edge Cases] ✅ Empty quick_reply payload routed correctly');
-      console.log('[Preservation Test 2.3 Edge Cases] ✅ Empty postback payload filtered correctly (falsy check)');
-      console.log('[Preservation Test 2.3 Edge Cases] ✅ Empty text message filtered correctly (falsy check)');
-      console.log('[Preservation Test 2.3 Edge Cases] ✅ Very long text/payloads handled correctly\n');
+      console.log(
+        '\n[Preservation Test 2.3 Edge Cases] Edge case routing completed',
+      );
+      console.log(
+        '[Preservation Test 2.3 Edge Cases] ✅ Empty quick_reply payload routed correctly',
+      );
+      console.log(
+        '[Preservation Test 2.3 Edge Cases] ✅ Empty postback payload filtered correctly (falsy check)',
+      );
+      console.log(
+        '[Preservation Test 2.3 Edge Cases] ✅ Empty text message filtered correctly (falsy check)',
+      );
+      console.log(
+        '[Preservation Test 2.3 Edge Cases] ✅ Very long text/payloads handled correctly\n',
+      );
     });
   });
 
   describe('Task 2.4: Async Error Logging Preservation Property Test', () => {
     /**
      * Property 2: Preservation - Async Error Logging
-     * 
+     *
      * **Validates: Requirements 3.4**
-     * 
+     *
      * This property-based test verifies that async error handling behavior
      * remains unchanged after implementing the fire-and-forget webhook fix.
-     * 
+     *
      * Observed Behavior on UNFIXED code:
      * - Errors in handleMessage() are caught by .catch() handlers
      * - Error logs include error.name, error.message, and error.stack
      * - Server continues to run (doesn't crash) after async errors
      * - Webhook still returns 200 OK even when processing fails
-     * 
+     *
      * From messenger.controller.ts processMessagingEvent():
      * ```
      * this.messengerService
@@ -1321,10 +1476,10 @@ describe('MessengerController - Preservation Property Tests', () => {
      *     this.logger.error(`[TRACE 2: EVENT FILTER]    Stack trace: ${error.stack}`);
      *   });
      * ```
-     * 
+     *
      * This test MUST PASS on unfixed code to establish the baseline.
      * After implementing the fire-and-forget fix, this test MUST continue to pass.
-     * 
+     *
      * Test Strategy:
      * - Mock handleMessage() to throw various error types
      * - Trigger webhook with text/quick_reply/postback events
@@ -1390,7 +1545,7 @@ describe('MessengerController - Preservation Property Tests', () => {
 
             // Build webhook payload based on event type
             const timestamp = Date.now();
-            let messagingEvent: any = {
+            const messagingEvent: any = {
               sender: { id: senderId },
               recipient: { id: 'page-123' },
               timestamp,
@@ -1446,7 +1601,7 @@ describe('MessengerController - Preservation Property Tests', () => {
 
             // KEY ASSERTION 3: Verify error logging with full details
             // The .catch() handler should log error.name, error.message, error.stack
-            
+
             // Check that error logging occurred
             expect(loggerErrorSpy).toHaveBeenCalled();
 
@@ -1482,19 +1637,33 @@ describe('MessengerController - Preservation Property Tests', () => {
       // Restore logger spy
       loggerErrorSpy.mockRestore();
 
-      console.log('\n[Preservation Test 2.4] Async error logging property test completed');
+      console.log(
+        '\n[Preservation Test 2.4] Async error logging property test completed',
+      );
       console.log('[Preservation Test 2.4] Verified 50 random error scenarios');
-      console.log('[Preservation Test 2.4] ✅ All errors caught by .catch() handlers');
-      console.log('[Preservation Test 2.4] ✅ All errors logged with error.name');
-      console.log('[Preservation Test 2.4] ✅ All errors logged with error.message');
-      console.log('[Preservation Test 2.4] ✅ All errors logged with error.stack');
-      console.log('[Preservation Test 2.4] ✅ Webhook returns 200 OK despite async errors');
-      console.log('[Preservation Test 2.4] This establishes the baseline error handling to preserve\n');
+      console.log(
+        '[Preservation Test 2.4] ✅ All errors caught by .catch() handlers',
+      );
+      console.log(
+        '[Preservation Test 2.4] ✅ All errors logged with error.name',
+      );
+      console.log(
+        '[Preservation Test 2.4] ✅ All errors logged with error.message',
+      );
+      console.log(
+        '[Preservation Test 2.4] ✅ All errors logged with error.stack',
+      );
+      console.log(
+        '[Preservation Test 2.4] ✅ Webhook returns 200 OK despite async errors',
+      );
+      console.log(
+        '[Preservation Test 2.4] This establishes the baseline error handling to preserve\n',
+      );
     });
 
     /**
      * Additional Property Test: Multiple Errors in Single Webhook
-     * 
+     *
      * Tests that error handling works correctly when multiple events in a
      * single webhook payload trigger errors independently.
      */
@@ -1511,15 +1680,17 @@ describe('MessengerController - Preservation Property Tests', () => {
       const error3 = new Error('Generic error in event 3');
 
       // Mock handleMessage to throw different errors based on sender ID
-      const mockHandleMessage = jest.fn().mockImplementation((senderId: string) => {
-        if (senderId === 'user-1') {
-          return Promise.reject(error1);
-        } else if (senderId === 'user-2') {
-          return Promise.reject(error2);
-        } else {
-          return Promise.reject(error3);
-        }
-      });
+      const mockHandleMessage = jest
+        .fn()
+        .mockImplementation((senderId: string) => {
+          if (senderId === 'user-1') {
+            return Promise.reject(error1);
+          } else if (senderId === 'user-2') {
+            return Promise.reject(error2);
+          } else {
+            return Promise.reject(error3);
+          }
+        });
       messengerService.handleMessage = mockHandleMessage as any;
 
       // Create webhook with 3 events from different users
@@ -1610,17 +1781,29 @@ describe('MessengerController - Preservation Property Tests', () => {
       // Restore logger spy
       loggerErrorSpy.mockRestore();
 
-      console.log('\n[Preservation Test 2.4 Multiple Errors] Multiple async errors test completed');
-      console.log('[Preservation Test 2.4 Multiple Errors] ✅ Error 1 (TypeError) logged with full details');
-      console.log('[Preservation Test 2.4 Multiple Errors] ✅ Error 2 (ReferenceError) logged with full details');
-      console.log('[Preservation Test 2.4 Multiple Errors] ✅ Error 3 (Error) logged with full details');
-      console.log('[Preservation Test 2.4 Multiple Errors] ✅ Webhook returns 200 OK despite 3 async errors');
-      console.log('[Preservation Test 2.4 Multiple Errors] ✅ Each error handled independently\n');
+      console.log(
+        '\n[Preservation Test 2.4 Multiple Errors] Multiple async errors test completed',
+      );
+      console.log(
+        '[Preservation Test 2.4 Multiple Errors] ✅ Error 1 (TypeError) logged with full details',
+      );
+      console.log(
+        '[Preservation Test 2.4 Multiple Errors] ✅ Error 2 (ReferenceError) logged with full details',
+      );
+      console.log(
+        '[Preservation Test 2.4 Multiple Errors] ✅ Error 3 (Error) logged with full details',
+      );
+      console.log(
+        '[Preservation Test 2.4 Multiple Errors] ✅ Webhook returns 200 OK despite 3 async errors',
+      );
+      console.log(
+        '[Preservation Test 2.4 Multiple Errors] ✅ Each error handled independently\n',
+      );
     });
 
     /**
      * Additional Property Test: Error Logging Doesn't Crash Server
-     * 
+     *
      * Tests that errors in async processing don't crash the server or
      * affect subsequent webhook requests.
      */
@@ -1628,7 +1811,9 @@ describe('MessengerController - Preservation Property Tests', () => {
       const timestamp = Date.now();
 
       // First webhook: Trigger error
-      const mockHandleMessage1 = jest.fn().mockRejectedValue(new Error('First webhook error'));
+      const mockHandleMessage1 = jest
+        .fn()
+        .mockRejectedValue(new Error('First webhook error'));
       messengerService.handleMessage = mockHandleMessage1 as any;
 
       const errorPayload: WebhookBodyDto = {
@@ -1694,18 +1879,31 @@ describe('MessengerController - Preservation Property Tests', () => {
 
       // Verify second webhook processed successfully
       expect(mockHandleMessage2).toHaveBeenCalledTimes(1);
-      expect(mockHandleMessage2).toHaveBeenCalledWith('user-success', 'This should work normally');
+      expect(mockHandleMessage2).toHaveBeenCalledWith(
+        'user-success',
+        'This should work normally',
+      );
 
-      console.log('\n[Preservation Test 2.4 Server Resilience] Server resilience test completed');
-      console.log('[Preservation Test 2.4 Server Resilience] ✅ First webhook with error processed (returned 200 OK)');
-      console.log('[Preservation Test 2.4 Server Resilience] ✅ Server continued running after async error');
-      console.log('[Preservation Test 2.4 Server Resilience] ✅ Second webhook processed successfully');
-      console.log('[Preservation Test 2.4 Server Resilience] ✅ Async errors do not crash the server\n');
+      console.log(
+        '\n[Preservation Test 2.4 Server Resilience] Server resilience test completed',
+      );
+      console.log(
+        '[Preservation Test 2.4 Server Resilience] ✅ First webhook with error processed (returned 200 OK)',
+      );
+      console.log(
+        '[Preservation Test 2.4 Server Resilience] ✅ Server continued running after async error',
+      );
+      console.log(
+        '[Preservation Test 2.4 Server Resilience] ✅ Second webhook processed successfully',
+      );
+      console.log(
+        '[Preservation Test 2.4 Server Resilience] ✅ Async errors do not crash the server\n',
+      );
     });
 
     /**
      * Additional Property Test: Edge Cases in Error Properties
-     * 
+     *
      * Tests edge cases in error object properties:
      * - Errors with missing stack traces
      * - Errors with very long messages
@@ -1746,16 +1944,22 @@ describe('MessengerController - Preservation Property Tests', () => {
       const result1 = await controller.receiveWebhook(payload1);
       expect(result1).toBe('EVENT_RECEIVED');
       await new Promise((resolve) => setTimeout(resolve, 50));
-      
+
       // Should still log error.name and error.message, stack will be undefined
       expect(loggerErrorSpy).toHaveBeenCalled();
       expect(
-        loggerErrorSpy.mock.calls.some((call) => call[0]?.includes('Error name: Error')),
+        loggerErrorSpy.mock.calls.some((call) =>
+          call[0]?.includes('Error name: Error'),
+        ),
       ).toBe(true);
       expect(
-        loggerErrorSpy.mock.calls.some((call) => call[0]?.includes('Error message: Error without stack')),
+        loggerErrorSpy.mock.calls.some((call) =>
+          call[0]?.includes('Error message: Error without stack'),
+        ),
       ).toBe(true);
-      console.log('[Preservation 2.4 Edge] ✅ Error without stack logged correctly');
+      console.log(
+        '[Preservation 2.4 Edge] ✅ Error without stack logged correctly',
+      );
 
       // Test Case 2: Error with very long message
       loggerErrorSpy.mockClear();
@@ -1786,12 +1990,16 @@ describe('MessengerController - Preservation Property Tests', () => {
       const result2 = await controller.receiveWebhook(payload2);
       expect(result2).toBe('EVENT_RECEIVED');
       await new Promise((resolve) => setTimeout(resolve, 50));
-      
+
       expect(loggerErrorSpy).toHaveBeenCalled();
       expect(
-        loggerErrorSpy.mock.calls.some((call) => call[0]?.includes(longMessage)),
+        loggerErrorSpy.mock.calls.some((call) =>
+          call[0]?.includes(longMessage),
+        ),
       ).toBe(true);
-      console.log('[Preservation 2.4 Edge] ✅ Error with long message (2000+ chars) logged correctly');
+      console.log(
+        '[Preservation 2.4 Edge] ✅ Error with long message (2000+ chars) logged correctly',
+      );
 
       // Test Case 3: Error with special characters in message
       loggerErrorSpy.mockClear();
@@ -1822,20 +2030,32 @@ describe('MessengerController - Preservation Property Tests', () => {
       const result3 = await controller.receiveWebhook(payload3);
       expect(result3).toBe('EVENT_RECEIVED');
       await new Promise((resolve) => setTimeout(resolve, 50));
-      
+
       expect(loggerErrorSpy).toHaveBeenCalled();
       expect(
-        loggerErrorSpy.mock.calls.some((call) => call[0]?.includes('Error message:')),
+        loggerErrorSpy.mock.calls.some((call) =>
+          call[0]?.includes('Error message:'),
+        ),
       ).toBe(true);
-      console.log('[Preservation 2.4 Edge] ✅ Error with special characters logged correctly');
+      console.log(
+        '[Preservation 2.4 Edge] ✅ Error with special characters logged correctly',
+      );
 
       // Restore logger spy
       loggerErrorSpy.mockRestore();
 
-      console.log('\n[Preservation Test 2.4 Edge Cases] Edge case error properties completed');
-      console.log('[Preservation Test 2.4 Edge Cases] ✅ Error without stack handled correctly');
-      console.log('[Preservation Test 2.4 Edge Cases] ✅ Error with long message (2000+ chars) handled correctly');
-      console.log('[Preservation Test 2.4 Edge Cases] ✅ Error with special characters handled correctly\n');
+      console.log(
+        '\n[Preservation Test 2.4 Edge Cases] Edge case error properties completed',
+      );
+      console.log(
+        '[Preservation Test 2.4 Edge Cases] ✅ Error without stack handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.4 Edge Cases] ✅ Error with long message (2000+ chars) handled correctly',
+      );
+      console.log(
+        '[Preservation Test 2.4 Edge Cases] ✅ Error with special characters handled correctly\n',
+      );
     });
   });
 });

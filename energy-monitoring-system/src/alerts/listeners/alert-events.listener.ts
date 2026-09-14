@@ -4,9 +4,9 @@ import { DashboardGateway } from '../../dashboard/dashboard.gateway';
 
 /**
  * Alert Events Listener
- * 
+ *
  * Listens to alert events and broadcasts them via WebSocket.
- * 
+ *
  * Events:
  * - alert.created - New alert created
  * - alert.acknowledged - Alert acknowledged
@@ -20,22 +20,24 @@ export class AlertEventsListener {
 
   /**
    * Handle Alert Created Event
-   * 
+   *
    * Broadcasts new alert to all connected dashboard clients.
-   * 
+   *
    * @param alert - Alert data
    */
   @OnEvent('alert.created')
   handleAlertCreated(alert: any) {
-    this.logger.log(`Alert created event received: ${alert.id} - ${alert.type}`);
+    this.logger.log(
+      `Alert created event received: ${alert.id} - ${alert.type}`,
+    );
     this.dashboardGateway.broadcastAlertCreated(alert);
   }
 
   /**
    * Handle Alert Acknowledged Event
-   * 
+   *
    * Broadcasts alert acknowledgement to all connected dashboard clients.
-   * 
+   *
    * @param alert - Updated alert data
    */
   @OnEvent('alert.acknowledged')
@@ -46,9 +48,9 @@ export class AlertEventsListener {
 
   /**
    * Handle Alert Resolved Event
-   * 
+   *
    * Broadcasts alert resolution to all connected dashboard clients.
-   * 
+   *
    * @param alert - Updated alert data
    */
   @OnEvent('alert.resolved')

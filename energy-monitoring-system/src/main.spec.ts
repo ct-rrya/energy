@@ -3,10 +3,10 @@ import * as path from 'path';
 
 /**
  * Unit Tests for main.ts Helmet Configuration
- * 
+ *
  * Task 8.2: Add Helmet.js security headers
  * Requirements: 8.11 - THE Chat_API SHALL sanitize user input to prevent XSS attacks
- * 
+ *
  * These tests verify that Helmet.js is properly configured in main.ts
  */
 describe('Main.ts Helmet Configuration', () => {
@@ -33,7 +33,9 @@ describe('Main.ts Helmet Configuration', () => {
     });
 
     it('should have Task 8.2 comment marker', () => {
-      expect(mainFileContent).toContain('TASK 8.2: Add Helmet.js security headers');
+      expect(mainFileContent).toContain(
+        'TASK 8.2: Add Helmet.js security headers',
+      );
       expect(mainFileContent).toContain('Requirements: 8.11');
     });
   });
@@ -86,7 +88,9 @@ describe('Main.ts Helmet Configuration', () => {
   describe('Cross-Origin Configuration for API', () => {
     it('should disable crossOriginEmbedderPolicy for development', () => {
       expect(mainFileContent).toContain('crossOriginEmbedderPolicy: false');
-      expect(mainFileContent).toContain('// Disable in development for better DX with Swagger');
+      expect(mainFileContent).toContain(
+        '// Disable in development for better DX with Swagger',
+      );
     });
 
     it('should configure crossOriginResourcePolicy for API usage', () => {

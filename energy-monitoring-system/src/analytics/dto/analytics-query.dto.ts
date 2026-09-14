@@ -33,7 +33,7 @@ export enum SourceFilter {
 
 /**
  * Analytics Query DTO
- * 
+ *
  * Query parameters for analytics endpoints.
  */
 export class AnalyticsQueryDto {

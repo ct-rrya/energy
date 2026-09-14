@@ -6,7 +6,7 @@ import { HealthService } from './health.service';
 
 /**
  * Health Module
- * 
+ *
  * Provides health check endpoints for monitoring system health.
  * This module is essential for production deployments where
  * load balancers and orchestration tools need to know if the
