@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { EcoStepLogo } from '@/components/common/EcoStepLogo';
 import { ROUTES } from '@/routes/routes.config';
@@ -170,8 +170,7 @@ export function LoginPage() {
       </div>
 
       {/* RIGHT SIDE - AUTHENTICATION FORM (45%) */}
-      <div className="w-full lg:w-[45%] flex items-center justify-center px-6 py-12 lg:px-12 bg-white dark:bg-[#0B0D12]">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-[45%] flex items-center justify-center px-6 py-12 lg:px-12 bg-white dark:bg-[#0B0D12]"><div className="w-full max-w-md">{/* Back to Home Button */}<Link to={ROUTES.HOME} className="inline-flex items-center gap-2 mb-6 text-sm font-medium text-[#428475] hover:text-[#1A312C] dark:hover:text-[#89D7B7] transition-colors group"><ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /><span>Back to Home</span></Link>
           {/* Mobile Logo - Show only on small screens */}
           <div className="lg:hidden mb-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-2">

@@ -1,4 +1,4 @@
-# Implementation Plan: Landing Page Chat Interface
+﻿# Implementation Plan: Landing Page Chat Interface
 
 ## Overview
 
@@ -424,36 +424,36 @@ This plan implements a public chat interface on the EcoStep landing page while p
     - Test user can chat from Home without navigation
     - _Requirements: 4.1_
 
-- [ ] 21. Implement role-based feature visibility in unified Dashboard
-  - [ ] 21.1 Update Dashboard to support public and admin views
+- [x] 21. Implement role-based feature visibility in unified Dashboard
+  - [x] 21.1 Update Dashboard to support public and admin views
     - Keep existing /dashboard/* routes (analytics, devices, reports, settings)
     - Add role detection logic (check user authentication state)
     - Define public features (view telemetry, basic analytics)
     - Define admin-only features (device management, settings, alerts)
     - _Requirements: User story context_
   
-  - [ ] 21.2 Conditionally render dashboard sections based on role
+  - [x] 21.2 Conditionally render dashboard sections based on role
     - Show only telemetry and basic analytics to public users
     - Show full dashboard navigation to authenticated admin users
     - Add "Login to access more features" message for public users
     - Hide or disable admin-only navigation items for public users
     - _Requirements: User story context_
   
-  - [ ] 21.3 Style public vs admin dashboard views
+  - [x] 21.3 Style public vs admin dashboard views
     - Add visual indicator showing current user role (Public or Admin)
     - Ensure consistent EcoStep design across both views
     - Add smooth transitions when switching views
     - _Requirements: 12.1, 12.10_
   
-  - [ ] 21.4 Test role-based access control
+  - [~] 21.4 Test role-based access control
     - Test public user sees limited dashboard
     - Test admin user sees full dashboard
     - Test navigation restrictions work correctly
     - Verify FloatingChatButton works for both roles
     - _Requirements: User story context_
 
-- [ ] 22. Write unit tests for new components
-  - [ ]* 22.1 Write FloatingChatButton component tests
+- [x] 22. Write unit tests for new components
+  - [x]* 22.1 Write FloatingChatButton component tests
     - Test button renders in collapsed state by default
     - Test clicking button expands chat panel
     - Test close button collapses chat panel
@@ -461,13 +461,13 @@ This plan implements a public chat interface on the EcoStep landing page while p
     - Test chat functionality works when expanded
     - _Requirements: 14.5, 14.6_
   
-  - [ ]* 22.2 Write navigation component tests
+  - [x]* 22.2 Write navigation component tests
     - Test Home and Dashboard links render correctly
     - Test active state styling applies to current route
     - Test navigation is keyboard accessible
     - _Requirements: 18.1, 18.2_
   
-  - [ ]* 22.3 Write role-based dashboard tests
+  - [x]* 22.3 Write role-based dashboard tests
     - Test public user sees limited features
     - Test admin user sees all features
     - Test FloatingChatButton appears in both views
@@ -512,7 +512,7 @@ This plan implements a public chat interface on the EcoStep landing page while p
     - _Requirements: 16.8, 16.9_
   
   - [ ] 24.3 Final checkpoint - Verify new architecture works end-to-end
-    - Test complete user journey: Home → FloatingChat → Dashboard → Chat persists
+    - Test complete user journey: Home â†’ FloatingChat â†’ Dashboard â†’ Chat persists
     - Test public user dashboard experience
     - Test admin user dashboard experience
     - Test chat works on all routes without issues

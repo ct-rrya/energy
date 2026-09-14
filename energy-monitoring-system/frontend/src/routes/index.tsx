@@ -1,5 +1,6 @@
 ﻿import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
+import { FlexibleRoute } from './FlexibleRoute';
 import { ROUTES } from './routes.config';
 
 // Layouts
@@ -38,25 +39,39 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.LOGIN,
     element: (
-      <AuthLayout>
-        <LoginPage />
-      </AuthLayout>
+      <FlexibleRoute redirectIfAuth={true}>
+        <AuthLayout>
+          <LoginPage />
+        </AuthLayout>
+      </FlexibleRoute>
     ),
   },
 
-  // Protected routes
+  // Dashboard routes - PUBLIC ACCESS ALLOWED (with limited features)
   {
     path: ROUTES.DASHBOARD,
     element: (
-      <ProtectedRoute>
+      <FlexibleRoute requireAuth={false}>
         <DashboardLayout>
           <DashboardPage />
         </DashboardLayout>
-      </ProtectedRoute>
+      </FlexibleRoute>
     ),
   },
 
-  // Sensor Monitoring (NEW)
+  // Analytics - PUBLIC ACCESS ALLOWED (with limited features)
+  {
+    path: ROUTES.ANALYTICS,
+    element: (
+      <FlexibleRoute requireAuth={false}>
+        <DashboardLayout>
+          <AnalyticsPage />
+        </DashboardLayout>
+      </FlexibleRoute>
+    ),
+  },
+
+  // Admin-only protected routes
   {
     path: ROUTES.SENSORS_MONITORING,
     element: (
@@ -68,19 +83,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Analytics (Phase 6)
-  {
-    path: ROUTES.ANALYTICS,
-    element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <AnalyticsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
-    ),
-  },
-
-  // Alerts (Phase 8)
+  // Alerts (Admin only)
   {
     path: ROUTES.ALERTS,
     element: (
@@ -92,7 +95,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Reports (Phase 9)
+  // Reports (Admin only)
   {
     path: ROUTES.REPORTS,
     element: (
@@ -137,6 +140,19 @@ export const router = createBrowserRouter([
         <DashboardLayout>
           <div className="p-8">
             <h1 className="text-3xl font-bold text-primary-500">Energy Monitoring</h1>
+            <p className="mt-2 text-neutral-600">Coming soon</p>
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.SETTINGS,
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <div className="p-8">
+            <h1 className="text-3xl font-bold text-primary-500">Settings</h1>
             <p className="mt-2 text-neutral-600">Coming soon</p>
           </div>
         </DashboardLayout>

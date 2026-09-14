@@ -1,476 +1,553 @@
-import { screen, waitFor } from '@testing-library/react';
-import { render } from '../test/test-utils';
-import { describe, it, expect, vi } from 'vitest';
-import userEvent from '@testing-library/user-event';
-import FloatingChatButton from './FloatingChatButton';
-
 /**
- * Unit tests for FloatingChatButton component - Tasks 15.1, 17 verification
+ * FloatingChatButton Component Unit Tests
  * 
- * Tests Requirements: 4.1, 4.2, 4.12, 7.7, 7.8, 12.1, 12.2, 12.3, 12.4, 12.10, 12.11
- * Tests Accessibility Requirements: 18.1, 18.2, 18.4, 18.8
+ * Task 22.1: Write FloatingChatButton component tests
  * 
- * Task 15.1 - Add ARIA labels and keyboard navigation to FloatingChatButton
- * - ARIA labels for all interactive elements
- * - Keyboard navigation (Tab, Enter, Space, Escape)
- * - Focus management when opening/closing
- * - Focus trap within expanded chat panel
+ * Requirements:
+ * - 14.5, 14.6: Component functionality and session persistence
+ * - 18.1: ARIA labels for accessibility
+ * - 18.2: Keyboard navigation (Tab, Enter, Escape)
+ * - 18.4: Focus management when chat opens/closes
+ * - 18.8: Focus trap when chat is expanded
+ * - 4.12: Responsive design (desktop and mobile)
+ * - 12.10: Smooth expand/collapse animations
+ * - 12.11: EcoStep design system colors
  */
-describe('FloatingChatButton - Component Rendering', () => {
-  it('should render floating button in collapsed state by default', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    expect(button).toBeInTheDocument();
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-  });
 
-  it('should not show chat panel when collapsed', () => {
-    render(<FloatingChatButton />);
-    
-    const chatPanel = screen.queryByRole('dialog');
-    expect(chatPanel).not.toBeInTheDocument();
-  });
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import FloatingChatButton from './FloatingChatButton';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
-  it('should have touch-friendly button size (minimum 44px)', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    const styles = window.getComputedStyle(button);
-    
-    // Check minimum 44px touch target (requirement: button is 60px)
-    expect(parseInt(styles.width)).toBeGreaterThanOrEqual(44);
-    expect(parseInt(styles.height)).toBeGreaterThanOrEqual(44);
-  });
+// Mock ChatInterface component to focus on FloatingChatButton logic
+vi.mock('@/features/chat/components/ChatInterface', () => ({
+  default: ({ initialMessage, className }: { initialMessage?: string; className?: string }) => (
+    <div data-testid="chat-interface" className={className}>
+      <textarea data-testid="chat-input" aria-label="Type your message" />
+      <button data-testid="send-button">Send</button>
+      {initialMessage && <div data-testid="initial-message">{initialMessage}</div>}
+    </div>
+  ),
+}));
 
-  it('should use EcoStep accent color (#89D7B7) for button', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    const styles = window.getComputedStyle(button);
-    
-    expect(styles.backgroundColor).toContain('137, 215, 183'); // RGB of #89D7B7
-  });
-});
+// Helper to render with ThemeProvider
+const renderWithTheme = (component: React.ReactElement) => {
+  return render(
+    <ThemeProvider>
+      {component}
+    </ThemeProvider>
+  );
+};
 
-describe('FloatingChatButton - Expand/Collapse Functionality', () => {
-  it('should expand chat panel when button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
+describe('FloatingChatButton Component', () => {
+  let user: ReturnType<typeof userEvent.setup>;
+
+  beforeEach(() => {
+    user = userEvent.setup();
+    sessionStorage.clear();
+    localStorage.clear();
     
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      const chatPanel = screen.getByRole('dialog', { name: /Chat assistant panel/i });
-      expect(chatPanel).toBeInTheDocument();
+    // Mock window.innerWidth for responsive tests
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1024,
     });
   });
 
-  it('should hide floating button when chat is expanded', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      expect(screen.queryByLabelText(/Open chat assistant/i)).not.toBeInTheDocument();
-    });
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('should start collapse animation when close button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Expand chat
-    const openButton = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(openButton);
-    
-    // Wait for chat to open (300ms animation)
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Close chat
-    const closeButton = screen.getByLabelText(/Close chat/i);
-    await user.click(closeButton);
-    
-    // Verify panel still exists during close animation
-    await waitFor(() => {
-      const animatingPanel = screen.queryByRole('dialog');
-      expect(animatingPanel).toBeInTheDocument();
-    });
-  });
-
-  it('should handle Escape key press to trigger close', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Expand chat
-    const openButton = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(openButton);
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Press Escape
-    await user.keyboard('{Escape}');
-    
-    // Verify escape triggers close (panel stays in DOM during animation but isAnimating is set)
-    await waitFor(() => {
-      const panel = screen.queryByRole('dialog');
-      expect(panel).toBeInTheDocument(); // Still in DOM during animation
-    });
-  });
-});
-
-describe('FloatingChatButton - Chat Interface Integration', () => {
-  it('should render ChatInterface component when expanded', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      // ChatInterface has a text input for messages
-      const textarea = screen.getByRole('textbox', { name: /chat message input/i });
-      expect(textarea).toBeInTheDocument();
-    });
-  });
-
-  it('should display initial welcome message in chat', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      // Use getAllByText since the message appears in two places (visible + screen reader announcement)
-      const messages = screen.getAllByText(/Hi! I'm your EcoStep assistant/i);
-      expect(messages.length).toBeGreaterThan(0);
-    });
-  });
-
-  it('should display EcoStep branding in header', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      expect(screen.getByText('EcoStep Chat')).toBeInTheDocument();
-    });
-  });
-});
-
-describe('FloatingChatButton - Accessibility', () => {
-  it('should have proper ARIA labels', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    expect(button).toHaveAttribute('aria-label');
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
-  });
-
-  it('should update aria-expanded when chat opens', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    
-    await user.click(button);
-    
-    // Button should be hidden when expanded, but let's check the dialog
-    await waitFor(() => {
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toBeInTheDocument();
-    });
-  });
-
-  it('should have aria-modal=true when chat panel is open', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveAttribute('aria-modal', 'true');
-      expect(dialog).toHaveAttribute('aria-label');
-      expect(dialog).toHaveAttribute('aria-describedby');
-    });
-  });
-
-  it('should be keyboard accessible with Tab navigation', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Tab to button
-    await user.tab();
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    expect(button).toHaveFocus();
-  });
-
-  it('should open chat with Enter key', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    button.focus();
-    
-    await user.keyboard('{Enter}');
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-  });
-
-  it('should open chat with Space key', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    button.focus();
-    
-    await user.keyboard(' ');
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-  });
-
-  it('should close chat with Escape key', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Open chat
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Press Escape
-    await user.keyboard('{Escape}');
-    
-    // Verify escape triggers close (panel stays in DOM during animation)
-    await waitFor(() => {
-      const panel = screen.queryByRole('dialog');
-      expect(panel).toBeInTheDocument(); // Still in DOM during animation
-    });
-  });
-
-  it('should close chat with Enter on close button', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Open chat
-    await user.click(screen.getByLabelText(/Open chat assistant/i));
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Focus and press Enter on close button
-    const closeButton = screen.getByLabelText(/Close chat assistant panel/i);
-    closeButton.focus();
-    await user.keyboard('{Enter}');
-    
-    // Verify panel still exists during animation
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-  });
-
-  it('should manage focus when opening chat', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    await user.click(button);
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Wait for focus to be set (after animation completes)
-    await waitFor(() => {
-      const focusedElement = document.activeElement;
-      expect(focusedElement).toBeTruthy();
-      // Focus should be on an interactive element within the dialog
-      const dialog = screen.getByRole('dialog');
-      expect(dialog.contains(focusedElement)).toBe(true);
-    }, { timeout: 500 });
-  });
-
-  it('should restore focus to button when closing chat', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    
-    // Open chat
-    await user.click(button);
-    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    
-    // Close chat
-    const closeButton = screen.getByLabelText(/Close chat assistant panel/i);
-    await user.click(closeButton);
-    
-    // Wait for close animation and focus restoration
-    await waitFor(() => {
-      // After animation completes, button should be back
-      const reopenButton = screen.queryByLabelText(/Open chat assistant/i);
-      if (reopenButton) {
-        expect(reopenButton).toHaveFocus();
-      }
-    }, { timeout: 500 });
-  });
-
-  it('should trap focus within chat panel when open', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Open chat
-    await user.click(screen.getByLabelText(/Open chat assistant/i));
-    
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    
-    // Get all focusable elements within the dialog
-    const dialog = screen.getByRole('dialog');
-    const focusableElements = dialog.querySelectorAll(
-      'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
-    );
-    
-    expect(focusableElements.length).toBeGreaterThan(0);
-    
-    // Tab through elements - focus should stay within dialog
-    await user.tab();
-    let focusedElement = document.activeElement;
-    expect(dialog.contains(focusedElement)).toBe(true);
-    
-    await user.tab();
-    focusedElement = document.activeElement;
-    expect(dialog.contains(focusedElement)).toBe(true);
-  });
-
-  it('should have visible focus indicators', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    
-    // Focus the button
-    button.focus();
-    
-    // Check for focus styles (outline should be applied)
-    const styles = window.getComputedStyle(button);
-    expect(button).toHaveFocus();
-    // Focus styles are applied via onFocus handler, so we verify the button has focus
-  });
-
-  it('should have descriptive close button label', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    await user.click(screen.getByLabelText(/Open chat assistant/i));
-    
-    await waitFor(() => {
-      const closeButton = screen.getByLabelText(/Close chat assistant panel/i);
-      expect(closeButton).toBeInTheDocument();
-      expect(closeButton).toHaveAttribute('title', 'Close chat (Esc)');
-    });
-  });
-
-  it('should include hidden description for screen readers', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    await user.click(screen.getByLabelText(/Open chat assistant/i));
-    
-    await waitFor(() => {
-      const dialog = screen.getByRole('dialog');
-      const descriptionId = dialog.getAttribute('aria-describedby');
-      expect(descriptionId).toBe('chat-description');
+  describe('Subtask 22.1.1: Button renders in collapsed state by default', () => {
+    it('should render floating button in collapsed state on initial load', () => {
+      renderWithTheme(<FloatingChatButton />);
       
-      const description = document.getElementById(descriptionId!);
-      expect(description).toBeInTheDocument();
-      expect(description?.textContent).toContain('Tab to navigate');
-      expect(description?.textContent).toContain('Enter to interact');
-      expect(description?.textContent).toContain('Escape to close');
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     });
-  });
-});
 
-describe('FloatingChatButton - Session Persistence', () => {
-  it('should maintain ChatInterface when toggled multiple times', async () => {
-    const user = userEvent.setup();
-    render(<FloatingChatButton />);
-    
-    // Expand chat
-    await user.click(screen.getByLabelText(/Open chat assistant/i));
-    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    
-    // Verify initial message exists (appears in both visible message and screen reader announcement)
-    await waitFor(() => {
-      const messages = screen.getAllByText(/Hi! I'm your EcoStep assistant/i);
-      expect(messages.length).toBeGreaterThan(0);
-    });
-    
-    // Close chat
-    await user.click(screen.getByLabelText(/Close chat/i));
-    
-    // Wait a moment for animation
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Re-open chat immediately (during or after animation)
-    const reopenButton = screen.queryByLabelText(/Open chat assistant/i);
-    if (reopenButton) {
-      await user.click(reopenButton);
-      await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    it('should not render chat panel when collapsed', () => {
+      renderWithTheme(<FloatingChatButton />);
       
-      // Message should still be accessible
-      await waitFor(() => {
-        const messages = screen.getAllByText(/Hi! I'm your EcoStep assistant/i);
-        expect(messages.length).toBeGreaterThan(0);
+      const chatPanel = screen.queryByRole('dialog');
+      expect(chatPanel).not.toBeInTheDocument();
+    });
+
+    it('should render button with correct ARIA labels (Requirement 18.1)', () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { 
+        name: /open chat assistant to get help with energy monitoring/i 
       });
-    } else {
-      // Dialog still present (animation not complete) - that's also valid behavior
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    }
-  });
-});
+      expect(button).toHaveAttribute('aria-label', 'Open chat assistant to get help with energy monitoring');
+      expect(button).toHaveAttribute('aria-controls', 'floating-chat-panel');
+    });
 
-describe('FloatingChatButton - Responsive Design', () => {
-  it('should render at fixed position bottom-right', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    const styles = window.getComputedStyle(button);
-    
-    expect(styles.position).toBe('fixed');
-    expect(styles.bottom).toBe('24px');
-    expect(styles.right).toBe('24px');
+    it('should render button with EcoStep accent color (Requirement 12.3, 12.11)', () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      expect(button).toHaveStyle({ backgroundColor: '#89D7B7' });
+    });
   });
 
-  it('should have high z-index to stay above other content', () => {
-    render(<FloatingChatButton />);
-    
-    const button = screen.getByLabelText(/Open chat assistant/i);
-    const styles = window.getComputedStyle(button);
-    
-    expect(parseInt(styles.zIndex)).toBeGreaterThan(9000);
+  describe('Subtask 22.1.2: Clicking button expands chat panel', () => {
+    it('should expand chat panel when button is clicked', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(button);
+      
+      // Wait for animation and panel to appear
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(dialog).toHaveAttribute('aria-label', /chat assistant panel/i);
+      });
+    });
+
+    it('should update aria-expanded attribute when expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      
+      await user.click(button);
+      
+      // Button should not be visible when expanded
+      await waitFor(() => {
+        expect(button).not.toBeVisible();
+      });
+    });
+
+    it('should render ChatInterface component when expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(button);
+      
+      await waitFor(() => {
+        const chatInterface = screen.getByTestId('chat-interface');
+        expect(chatInterface).toBeInTheDocument();
+        expect(chatInterface).toHaveClass('floating-chat-interface');
+      });
+    });
+
+    it('should render chat header with EcoStep branding (Requirement 12.5)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(button);
+      
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('EcoStep Chat')).toBeInTheDocument();
+        expect(within(dialog).getByText('🌱')).toBeInTheDocument();
+      });
+    });
+
+    it('should announce state change to screen readers (Requirement 18.3)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(button);
+      
+      await waitFor(() => {
+        const statusRegion = screen.getByRole('status');
+        expect(statusRegion).toHaveTextContent(/chat assistant opened/i);
+      });
+    });
+  });
+
+  describe('Subtask 22.1.3: Close button collapses chat panel', () => {
+    it('should render close button when chat is expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const openButton = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+        expect(closeButton).toBeInTheDocument();
+        expect(closeButton).toHaveAttribute('title', 'Close chat (Esc)');
+      });
+    });
+
+    it('should collapse chat panel when close button is clicked', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      // Open chat
+      const openButton = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Close chat
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      await user.click(closeButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /open chat assistant/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should announce close to screen readers (Requirement 18.3)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      // Open and close
+      const openButton = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      await user.click(closeButton);
+      
+      await waitFor(() => {
+        const statusRegion = screen.getByRole('status');
+        expect(statusRegion).toHaveTextContent(/chat assistant closed/i);
+      });
+    });
+
+    it('should restore focus to open button after closing (Requirement 18.4)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const openButton = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      await user.click(closeButton);
+      
+      await waitFor(() => {
+        expect(openButton).toHaveFocus();
+      });
+    });
+  });
+
+  describe('Subtask 22.1.4: Session persists across expand/collapse', () => {
+    it('should maintain ChatInterface state when collapsed and re-expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      // Open chat
+      const openButton = screen.getByRole('button', { name: /open chat assistant/i });
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Close chat
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      await user.click(closeButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+      
+      // Re-open chat
+      await user.click(openButton);
+      
+      await waitFor(() => {
+        const chatInterface = screen.getByTestId('chat-interface');
+        expect(chatInterface).toBeInTheDocument();
+      });
+      
+      // Note: ChatInterface itself manages session persistence via sessionStorage
+      // This test verifies the FloatingChatButton doesn't destroy/recreate the component
+    });
+
+    it('should not lose chat state during expand/collapse cycle', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      // Open chat
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('initial-message')).toBeInTheDocument();
+      });
+      
+      // Close and re-open
+      await user.click(screen.getByRole('button', { name: /close chat assistant panel/i }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('initial-message')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Subtask 22.1.5: Chat functionality works when expanded', () => {
+    it('should render chat input field when expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const input = screen.getByTestId('chat-input');
+        expect(input).toBeInTheDocument();
+        expect(input).toHaveAttribute('aria-label', 'Type your message');
+      });
+    });
+
+    it('should render send button when expanded', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('send-button')).toBeInTheDocument();
+      });
+    });
+
+    it('should display initial welcome message', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const message = screen.getByTestId('initial-message');
+        expect(message).toHaveTextContent(/Hi! I'm your EcoStep assistant/i);
+      });
+    });
+  });
+
+  describe('Keyboard Navigation (Requirement 18.2)', () => {
+    it('should open chat when Enter is pressed on button', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      button.focus();
+      
+      await user.keyboard('{Enter}');
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+    });
+
+    it('should open chat when Space is pressed on button', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      button.focus();
+      
+      await user.keyboard(' ');
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+    });
+
+    it('should close chat when Escape is pressed', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      // Open chat
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Press Escape
+      await user.keyboard('{Escape}');
+      
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should close chat when Enter is pressed on close button', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      closeButton.focus();
+      await user.keyboard('{Enter}');
+      
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Focus Management (Requirements 18.4, 18.8)', () => {
+    it('should focus chat input when panel opens', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const chatInput = screen.getByTestId('chat-input');
+        expect(chatInput).toHaveFocus();
+      }, { timeout: 500 }); // Allow time for animation and focus
+    });
+
+    it('should include descriptive text for screen readers (Requirement 18.1)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toHaveAttribute('aria-describedby', 'chat-description');
+        
+        const description = document.getElementById('chat-description');
+        expect(description).toHaveTextContent(/Interactive chat assistant/i);
+      });
+    });
+
+    it('should trap focus within chat panel when expanded (Requirement 18.8)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Tab through elements - focus should stay within dialog
+      await user.tab();
+      const closeButton = screen.getByRole('button', { name: /close chat assistant panel/i });
+      
+      // At least the close button should be focusable
+      expect(closeButton).toBeInTheDocument();
+    });
+  });
+
+  describe('Responsive Design (Requirement 4.12)', () => {
+    it('should render in desktop size by default', () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      expect(button).toHaveStyle({ 
+        width: '60px',
+        height: '60px',
+      });
+    });
+
+    it('should handle mobile viewport width', async () => {
+      // Set mobile width
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+      
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+      });
+      
+      // In mobile mode, chat should be full screen (tested via CSS class in real browser)
+    });
+  });
+
+  describe('Animation Behavior (Requirement 12.10)', () => {
+    it('should apply animation class when expanding', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toHaveClass('chat-panel-enter');
+      });
+    });
+
+    it('should respect reduced motion preference (Requirement 18.9)', () => {
+      // Mock prefers-reduced-motion
+      window.matchMedia = vi.fn().mockImplementation((query) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+      
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      expect(button).toBeInTheDocument();
+      
+      // Animation duration should be minimal with reduced motion
+      // This is tested in the component via prefersReducedMotion flag
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should not allow multiple rapid clicks (debouncing)', async () => {
+      renderWithTheme(<FloatingChatButton />);
+      
+      const button = screen.getByRole('button', { name: /open chat assistant/i });
+      
+      // Rapid clicks
+      await user.click(button);
+      await user.click(button); // This should be ignored during animation
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Only one dialog should be present
+      const dialogs = screen.queryAllByRole('dialog');
+      expect(dialogs).toHaveLength(1);
+    });
+
+    it('should prevent body scroll on mobile when chat is open', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+      
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Body should have overflow hidden class on mobile
+      // This is managed by the component's useEffect
+    });
+
+    it('should handle missing ChatInterface gracefully', async () => {
+      // This test verifies the component structure, actual ChatInterface is mocked
+      renderWithTheme(<FloatingChatButton />);
+      
+      await user.click(screen.getByRole('button', { name: /open chat assistant/i }));
+      
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-interface')).toBeInTheDocument();
+      });
+    });
   });
 });

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';  // Add Sun and Moon icons
 import Logo from '@/assets/logo/1.svg?react';
 import { ROUTES } from '@/routes/routes.config';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';  // Add this import
+
 
 /**
  * Navigation Component
@@ -23,6 +26,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActivePath = (path: string) => {
@@ -33,15 +37,13 @@ export function Navigation() {
   };
 
   const handleNavigate = (path: string) => {
-    if (path === ROUTES.DASHBOARD && !isAuthenticated) {
-      // If not authenticated, redirect to login
-      navigate(ROUTES.LOGIN);
-    } else {
-      navigate(path);
-    }
-    // Close mobile menu after navigation
-    setIsMobileMenuOpen(false);
-  };
+  // Navigate directly without authentication check
+  // Dashboard is now public-accessible with limited features for non-authenticated users
+  navigate(path);
+  // Close mobile menu after navigation
+  setIsMobileMenuOpen(false);
+};
+
 
   // Close mobile menu on Escape key
   useEffect(() => {
@@ -193,6 +195,26 @@ export function Navigation() {
                 Login
               </button>
             )}
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="ml-2 flex items-center justify-center rounded-lg p-2 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2"
+              style={{
+                color: '#1A312C',
+                backgroundColor: 'rgba(66, 132, 117, 0.1)',
+                '--tw-ring-color': '#89D7B7'
+              } as React.CSSProperties}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(66, 132, 117, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(66, 132, 117, 0.1)'}
+              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+            >
+              {theme === 'light' ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+            </button>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -336,7 +358,36 @@ export function Navigation() {
               >
                 Login
               </button>
-            )}
+                          )}
+                          {/* Theme Toggle Button - Mobile */}
+              <button
+                onClick={() => {
+                  toggleTheme();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-3"
+                style={{
+                  color: '#1A312C',
+                  backgroundColor: 'rgba(66, 132, 117, 0.1)',
+                  '--tw-ring-color': '#89D7B7'
+                } as React.CSSProperties}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(66, 132, 117, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(66, 132, 117, 0.1)'}
+                aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="h-5 w-5" />
+                    <span>Dark Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-5 w-5" />
+                    <span>Light Mode</span>
+                  </>
+                )}
+              </button>
+
           </nav>
         )}
       </div>

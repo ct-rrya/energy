@@ -3,6 +3,9 @@ import { EcoPageHeader, EcoCard, EcoEmptyState } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { SummaryGrid } from '../components/summary';
 import { useAnalytics } from '../hooks';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserRole } from '@/lib/permissions';
+import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 
 /**
  * Analytics Page Component
@@ -12,6 +15,11 @@ import { useAnalytics } from '../hooks';
  */
 export function AnalyticsPage() {
   const { data: analytics, isLoading, error, refetch, isRefetching } = useAnalytics();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Determine user role
+  const userRole = getUserRole(isAuthenticated, user);
+  const isPublicUser = userRole === 'public';
 
   // Loading state
   if (isLoading && !analytics) {
@@ -57,6 +65,11 @@ export function AnalyticsPage() {
 
   return (
     <div className="eco-page-container">
+      {/* Public User Banner - Show at top for guest users */}
+      {isPublicUser && (
+        <PublicUserBanner className="mb-6" />
+      )}
+      
       {/* Page Header */}
       <EcoPageHeader
         title="Analytics & Insights"

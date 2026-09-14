@@ -64,12 +64,13 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: allowedOrigins.filter(Boolean), // Remove empty strings
-    methods: ['GET', 'POST'], // Only allow GET and POST
-    allowedHeaders: ['Content-Type', 'Accept'], // Required headers for public API
-    credentials: false, // Disable credentials for public API
-    maxAge: 3600, // Cache preflight for 1 hour
+  origin: allowedOrigins.filter(Boolean),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ All HTTP methods
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'], // ✅ Include Authorization
+  credentials: true, // ✅ Enable credentials
+  maxAge: 3600,
   });
+
 
   // Set global API prefix (e.g., /api/...)
   const apiPrefix = configService.get<string>('app.apiPrefix') || 'api';

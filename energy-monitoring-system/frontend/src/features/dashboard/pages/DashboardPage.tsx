@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserRole } from '@/lib/permissions';
 import { 
   Zap, 
   Activity,
@@ -14,6 +16,7 @@ import {
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
+import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 
 /**
  * Healthcare-Inspired Dashboard Page
@@ -21,6 +24,11 @@ import { useLiveSensorData } from '../hooks/useLiveSensorData';
  */
 export function DashboardPage() {
   const { theme } = useTheme();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Determine user role
+  const userRole = getUserRole(isAuthenticated, user);
+  const isPublicUser = userRole === 'public';
 
   // Fetch dashboard data
   const {
@@ -224,6 +232,11 @@ export function DashboardPage() {
 
         {/* RIGHT PANEL - Main Content (expands when left panel collapses) */}
         <div className={`transition-all duration-300 ${isQuickActionsExpanded ? 'lg:col-span-8' : 'lg:col-span-8'} space-y-6`}>
+          
+          {/* Public User Banner - Show at top for guest users */}
+          {isPublicUser && (
+            <PublicUserBanner />
+          )}
           
           {/* Header */}
           <div>

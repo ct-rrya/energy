@@ -16,6 +16,7 @@ export const ROUTES = {
   ANALYTICS: '/analytics',
   REPORTS: '/reports',
   ALERTS: '/alerts',
+  SETTINGS: '/settings',
   PROFILE: '/profile',
 
   // Special routes

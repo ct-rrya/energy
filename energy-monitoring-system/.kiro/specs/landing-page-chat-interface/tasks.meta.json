@@ -708,6 +708,60 @@
         "chatSessionId": "sess_188877d1-8e8f-41a0-bcdb-0da6adfd38ef",
         "timestamp": 1789297570206
       }
+    ],
+    "21.1 Update Dashboard to support public and admin views": [
+      {
+        "executionId": "4a5a5c5a-4b3c-4f80-85df-4482ba353f51",
+        "chatSessionId": "sess_f9c56d0e-6f74-4dd1-add6-35d955dfeefa",
+        "timestamp": 1789304599770
+      },
+      {
+        "executionId": "4a5a5c5a-4b3c-4f80-85df-4482ba353f51",
+        "chatSessionId": "sess_f9c56d0e-6f74-4dd1-add6-35d955dfeefa",
+        "timestamp": 1789306566049
+      }
+    ],
+    "21.2 Conditionally render dashboard sections based on role": [
+      {
+        "executionId": "4a5a5c5a-4b3c-4f80-85df-4482ba353f51",
+        "chatSessionId": "sess_f9c56d0e-6f74-4dd1-add6-35d955dfeefa",
+        "timestamp": 1789306572213
+      }
+    ],
+    "21.3 Style public vs admin dashboard views": [
+      {
+        "executionId": "4a5a5c5a-4b3c-4f80-85df-4482ba353f51",
+        "chatSessionId": "sess_f9c56d0e-6f74-4dd1-add6-35d955dfeefa",
+        "timestamp": 1789306572783
+      }
+    ],
+    "22.1 Write FloatingChatButton component tests": [
+      {
+        "executionId": "53237d23-9a4f-4fe3-a307-43c807a50869",
+        "chatSessionId": "sess_77cfb6c7-3da3-4ebe-8ea5-dd721b37c927",
+        "timestamp": 1789310314315
+      }
+    ],
+    "22. Write unit tests for new components": [
+      {
+        "executionId": "53237d23-9a4f-4fe3-a307-43c807a50869",
+        "chatSessionId": "sess_77cfb6c7-3da3-4ebe-8ea5-dd721b37c927",
+        "timestamp": 1789310314392
+      }
+    ],
+    "22.2 Write navigation component tests": [
+      {
+        "executionId": "53237d23-9a4f-4fe3-a307-43c807a50869",
+        "chatSessionId": "sess_77cfb6c7-3da3-4ebe-8ea5-dd721b37c927",
+        "timestamp": 1789310314840
+      }
+    ],
+    "22.3 Write role-based dashboard tests": [
+      {
+        "executionId": "53237d23-9a4f-4fe3-a307-43c807a50869",
+        "chatSessionId": "sess_77cfb6c7-3da3-4ebe-8ea5-dd721b37c927",
+        "timestamp": 1789310315694
+      }
     ]
   }
 }

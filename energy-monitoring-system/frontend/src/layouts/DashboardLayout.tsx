@@ -11,13 +11,15 @@ import {
   Sun,
   Moon,
   Settings,
-  User
+  User,
+  LogIn
 } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { ROUTES } from '@/routes/routes.config';
+import { getUserRole, getUserPermissions, type UserRole } from '@/lib/permissions';
 
 /**
  * Dashboard Layout Props
@@ -29,12 +31,19 @@ interface DashboardLayoutProps {
 /**
  * Professional Collapsible Sidebar Layout
  * Clean, minimal, SaaS-style with account menu
+ * Supports both public (unauthenticated) and admin (authenticated) users
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Determine user role and permissions
+  const userRole: UserRole = getUserRole(isAuthenticated, user);
+  const permissions = getUserPermissions(isAuthenticated, user);
+  const isAdminUser = userRole === 'admin';
+  const isPublicUser = userRole === 'public';
   
   // Sidebar collapse state (persisted to localStorage)
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -94,13 +103,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const isActivePath = (path: string) => location.pathname === path;
 
-  // Simplified navigation - only core items
-  const navigationItems = [
-    { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: Home },
-    { path: ROUTES.ANALYTICS, label: 'Analytics', icon: BarChart3 },
-    { path: ROUTES.REPORTS, label: 'Reports', icon: FileText },
-    { path: ROUTES.ALERTS, label: 'Notifications', icon: Bell },
-  ];
+const navigationItems = [
+  // Back to Home button - only for public users
+  ...(isPublicUser ? [{
+    path: ROUTES.HOME,
+    label: 'Back to Home',
+    icon: Home,
+    visible: true,
+    isBackButton: true
+  }] : []),
+  // Dashboard - always visible
+  {
+    path: ROUTES.DASHBOARD,
+    label: 'Dashboard',
+    icon: Home,
+    visible: permissions.canAccessDashboard
+  },
+  // Analytics - only for admin users
+  ...(isAdminUser ? [{
+    path: ROUTES.ANALYTICS,
+    label: 'Analytics',
+    icon: BarChart3,
+    visible: permissions.canAccessAnalytics
+  }] : []),
+  // Admin-only items
+  {
+    path: ROUTES.REPORTS,
+    label: 'Reports',
+    icon: FileText,
+    visible: permissions.canAccessReports
+  },
+  {
+    path: ROUTES.ALERTS,
+    label: 'Notifications',
+    icon: Bell,
+    visible: permissions.canAccessAlerts
+  },
+  {
+    path: ROUTES.SETTINGS,
+    label: 'Settings',
+    icon: Settings,
+    visible: permissions.canAccessSettings
+  },
+].filter(item => item.visible);
 
   const sidebarWidth = isExpanded ? 200 : 64;
   const sidebarBg = theme === 'light' ? '#1E2128' : '#0B0D12';
@@ -126,7 +171,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         }}
       >
         {/* Logo + Toggle Button */}
-        <div className="flex items-center justify-between px-4 mb-8">
+        <div className="flex items-center justify-between px-4 mb-6">
           {isExpanded ? (
             <div className="flex items-center gap-3">
               <div 
@@ -166,6 +211,45 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
           )}
         </div>
+
+        {/* Role Indicator Badge */}
+        {isExpanded && (
+          <div className="px-4 mb-6">
+            <div 
+              className="px-3 py-2 rounded-lg text-xs font-medium text-center"
+              style={{
+                backgroundColor: isAdminUser 
+                  ? 'rgba(59, 130, 246, 0.1)' 
+                  : 'rgba(168, 85, 247, 0.1)',
+                color: isAdminUser ? '#60A5FA' : '#C084FC',
+                border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+              }}
+              role="status"
+              aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
+            >
+              {isAdminUser ? '👤 Admin Access' : '👁️ Public View'}
+            </div>
+          </div>
+        )}
+        
+        {!isExpanded && (
+          <div className="px-3 mb-6">
+            <div 
+              className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center text-lg"
+              style={{
+                backgroundColor: isAdminUser 
+                  ? 'rgba(59, 130, 246, 0.1)' 
+                  : 'rgba(168, 85, 247, 0.1)',
+                border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+              }}
+              role="status"
+              aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
+              title={isAdminUser ? 'Admin Access' : 'Public View'}
+            >
+              {isAdminUser ? '👤' : '👁️'}
+            </div>
+          </div>
+        )}
 
         {/* Expand Button (only show when collapsed) */}
         {!isExpanded && (
@@ -268,17 +352,62 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
         </div>
 
-        {/* Account Section with Menu */}
+        {/* Account Section with Menu - Different for public vs admin */}
         <div className="px-3 pt-4 border-t account-menu-container relative" style={{ borderColor: '#2A2E37' }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowAccountMenu(!showAccountMenu);
-            }}
-            className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
-              isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
-            }`}
-          >
+          {isPublicUser ? (
+            /* PUBLIC USER - Show Login Button */
+            <button
+              onClick={() => navigate(ROUTES.LOGIN)}
+              className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
+                isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
+              }`}
+              title={!isExpanded ? 'Login' : undefined}
+            >
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
+                  color: '#FFFFFF'
+                }}
+              >
+                <LogIn className="w-5 h-5" strokeWidth={2} />
+              </div>
+              
+              {isExpanded && (
+                <div className="flex-1 text-left">
+                  <div className="text-sm font-medium" style={{ color: '#EDEEF0' }}>
+                    Login
+                  </div>
+                  <div className="text-xs" style={{ color: '#9CA3AF' }}>
+                    Access more features
+                  </div>
+                </div>
+              )}
+
+              {!isExpanded && (
+                <div className="absolute left-full ml-4 px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#1A1D23' : '#EDEEF0',
+                    color: theme === 'light' ? '#EDEEF0' : '#1A1D23',
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }}
+                >
+                  Login
+                </div>
+              )}
+            </button>
+          ) : (
+            /* ADMIN USER - Show Account Menu */
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAccountMenu(!showAccountMenu);
+              }}
+              className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
+                isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
+              }`}
+            >
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0"
               style={{
@@ -299,10 +428,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             )}
-          </button>
+            </button>
+          )}
 
-          {/* Account Menu Popover - Fixed positioning to avoid clipping */}
-          {showAccountMenu && (
+          {/* Account Menu Popover - Only for admin users */}
+          {isAdminUser && showAccountMenu && (
             <div 
               className="fixed rounded-2xl p-2 min-w-[200px] z-[100]"
               style={{
@@ -332,7 +462,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Settings */}
               <button
                 onClick={() => {
-                  navigate('/settings');
+                  navigate(ROUTES.SETTINGS);
                   setShowAccountMenu(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
