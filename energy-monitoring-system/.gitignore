@@ -50,3 +50,6 @@ lerna-debug.log*
 
 # Deployment secrets (generated)
 .deployment-secrets.txt
+
+# Temporary Render deployment config
+.render-temporary-config.txt
