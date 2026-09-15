@@ -409,7 +409,7 @@ export default function FloatingChatButton() {
             borderRadius: '16px',
             overflow: 'hidden',
             boxShadow: theme === 'light'
-              ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
+              ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.15)'
               : '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4)',
             outline: 'none',
           }}
@@ -468,7 +468,7 @@ export default function FloatingChatButton() {
                   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 }}
               >
-                EcoStep Chat
+                EcoChat
               </span>
             </div>
 
@@ -585,3 +585,4 @@ export default function FloatingChatButton() {
     </>
   );
 }
+

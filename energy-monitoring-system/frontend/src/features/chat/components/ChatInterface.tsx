@@ -325,7 +325,7 @@ function Message({ message, theme }: { message: ChatMessage; theme: 'light' | 'd
       style={{
         display: 'flex',
         justifyContent: isUser ? 'flex-end' : 'flex-start',
-        marginBottom: '14px',
+        marginBottom: '12px',
         animation: 'messageSlideIn 0.3s ease-out', // Requirement 12.11: Smooth animation
       }}
     >
@@ -333,8 +333,8 @@ function Message({ message, theme }: { message: ChatMessage; theme: 'light' | 'd
         className="message-bubble"
         style={{
           maxWidth: '70%',
-          padding: '14px 18px', // Requirement 12.6: Appropriate padding
-          borderRadius: '18px', // Requirement 12.6: Rounded message bubbles
+          padding: '12px 16px', // Requirement 12.6: Appropriate padding
+          borderRadius: '16px', // Requirement 12.6: Rounded message bubbles
           // User messages: #1A312C (Requirement 12.1)
           // Bot messages: #428475 (Requirement 12.2)
           backgroundColor: isUser ? '#1A312C' : '#428475',
@@ -344,8 +344,8 @@ function Message({ message, theme }: { message: ChatMessage; theme: 'light' | 'd
           lineHeight: '1.5',
           wordWrap: 'break-word',
           boxShadow: theme === 'light'
-            ? '0 2px 8px rgba(0, 0, 0, 0.08)' // Subtle shadow
-            : '0 2px 8px rgba(0, 0, 0, 0.25)',
+            ? '0 1px 3px rgba(0, 0, 0, 0.1)' // Subtle shadow
+            : '0 1px 3px rgba(0, 0, 0, 0.3)',
         }}
       >
         {renderMessageContent()}
@@ -506,7 +506,7 @@ function ChatInput({ onSendMessage, disabled, value: externalValue, setValue: ex
             ? 'Please wait...' 
             : disabled 
             ? 'Sending...' 
-            : 'Type your message... (Enter to send, Shift+Enter for newline)'
+            : 'Type your message...'
         }
         rows={1}
         aria-label="Chat message input"
@@ -985,3 +985,5 @@ export default function ChatInterface({
     </>
   );
 }
+
+

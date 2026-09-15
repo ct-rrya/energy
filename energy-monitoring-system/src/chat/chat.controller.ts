@@ -37,7 +37,7 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 @ApiTags('Public Chat')
 @Controller('chat')
 @UseGuards(RateLimitGuard)
-@Throttle({ chat: { limit: 10, ttl: 60000 } })
+@Throttle({ chat: { limit: 20, ttl: 60000 } }) // Increased to 20 messages per minute for natural conversation flow
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
@@ -435,3 +435,4 @@ export class ChatController {
     };
   }
 }
+
