@@ -1,7 +1,5 @@
-import { useNavigate } from 'react-router-dom';
-import { Info, LogIn } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ROUTES } from '@/routes/routes.config';
 
 /**
  * Public User Banner Props
@@ -14,14 +12,13 @@ interface PublicUserBannerProps {
 /**
  * Public User Banner Component
  * Displays an informational banner for unauthenticated users
- * with a call-to-action to login for full access
+ * showing they are in guest mode with read-only access
  */
 export function PublicUserBanner({
-  message = 'You are viewing in guest mode. Login to access all features including device management, reports, and alerts.',
+  message = 'You are viewing in guest mode with read-only access to system monitoring and analytics.',
   className = '',
 }: PublicUserBannerProps) {
   const { theme } = useTheme();
-  const navigate = useNavigate();
 
   const colors = {
     bg: theme === 'light' ? '#EAF6FF' : '#1A2332',
@@ -64,19 +61,6 @@ export function PublicUserBanner({
           {message}
         </p>
       </div>
-
-      {/* Login Button */}
-      <button
-        onClick={() => navigate(ROUTES.LOGIN)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 hover:opacity-90 flex-shrink-0"
-        style={{
-          backgroundColor: colors.buttonBg,
-          color: colors.buttonText,
-        }}
-      >
-        <LogIn className="w-4 h-4" strokeWidth={2} />
-        <span>Login</span>
-      </button>
     </div>
   );
 }

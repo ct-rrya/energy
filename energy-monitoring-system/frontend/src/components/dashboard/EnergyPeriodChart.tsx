@@ -1,0 +1,190 @@
+import { useState, useMemo } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useEnergyByPeriod, type PeriodFilter } from '@/features/dashboard/hooks/useEnergyByPeriod';
+import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
+import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './chartUtils';
+import { ChartContainer } from './ChartContainer';
+import { CustomChartTooltip } from './CustomChartTooltip';
+import type { EnergyPeriodChartProps } from './chartTypes';
+import {
+  ResponsiveContainer,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Bar,
+  Tooltip,
+} from 'recharts';
+
+/**
+ * EnergyPeriodChart Component
+ * 
+ * Displays energy generation aggregated by different time periods.
+ * Users can switch between Hourly, Daily, and Weekly views to compare production
+ * across hours, days, or weeks.
+ * 
+ * Requirements:
+ * - 4.1: Render as BarChart using Recharts BarChart component
+ * - 4.2: Fetch data from Time_Series_API with metric parameter set to "energy"
+ * - 4.3: Display three period filter options: "Hourly", "Daily", "Weekly"
+ * - 4.4-4.6: Fetch appropriate data based on period filter selection
+ * - 4.7: Display energy values in kilowatt-hours (kWh) on Y-axis
+ * - 4.8: Display time period labels on X-axis
+ * - 4.9: Use bar colors from EcoStep Design System with theme-appropriate shading
+ * - 4.10: Use TanStack_Query for data fetching with appropriate caching
+ * - 4.11: Refetch data when period filter changes
+ * - 11.3: Apply theme-appropriate colors
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <EnergyPeriodChart />
+ * ```
+ */
+export function EnergyPeriodChart({ 
+  className = '', 
+  defaultPeriodFilter = 'daily' 
+}: EnergyPeriodChartProps) {
+  const { theme } = useTheme();
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(defaultPeriodFilter);
+  
+  // Subscribe to real-time WebSocket updates for chart data
+  // This hook invalidates TanStack Query cache when new sensor readings arrive,
+  // triggering automatic refetch of chart data for live updates
+  useChartRealTimeUpdates();
+  
+  // Fetch energy data based on current period filter
+  const { data: timeSeries, isLoading, error, refetch } = useEnergyByPeriod(periodFilter);
+  
+  // Transform API data to chart format
+  const chartData = useMemo(() => transformToChartData(timeSeries), [timeSeries]);
+  
+  // Determine if dataset is empty
+  const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
+
+  // Determine granularity based on period filter for X-axis formatting
+  const granularity = useMemo(() => {
+    switch (periodFilter) {
+      case 'hourly':
+        return 'hour' as const;
+      case 'daily':
+        return 'day' as const;
+      case 'weekly':
+        return 'week' as const;
+    }
+  }, [periodFilter]);
+
+  // Color system based on theme following EcoStep Design System
+  const colors = {
+    barColor: '#89D7B7', // Fresh Mint from EcoStep Design System
+    gridColor: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : 'rgba(42, 46, 55, 0.3)',
+    textColor: theme === 'light' ? '#1A312C' : '#9CA3AF',
+    filterBg: theme === 'light' ? '#F5F6F8' : '#12141A',
+    filterActiveBg: theme === 'light' ? '#E8F8EF' : '#1E2B24',
+    filterText: theme === 'light' ? 'rgba(26, 49, 44, 0.7)' : '#9CA3AF',
+    accent: theme === 'light' ? '#428475' : '#3ED98A',
+    border: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : '#2A2E37',
+  };
+
+  /**
+   * Filter button configuration
+   */
+  const filterButtons: Array<{ value: PeriodFilter; label: string }> = [
+    { value: 'hourly', label: 'Hourly' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+  ];
+
+  /**
+   * Handle period filter change
+   */
+  const handleFilterChange = (filter: PeriodFilter) => {
+    setPeriodFilter(filter);
+  };
+
+  /**
+   * Render period filter controls
+   */
+  const filterControls = (
+    <div
+      className="flex gap-1 rounded-xl p-1"
+      role="group"
+      aria-label="Period filter options"
+      style={{
+        backgroundColor: colors.filterBg,
+        border: `1px solid ${colors.border}`,
+      }}
+    >
+      {filterButtons.map((button) => (
+        <button
+          key={button.value}
+          onClick={() => handleFilterChange(button.value)}
+          className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          style={{
+            backgroundColor:
+              periodFilter === button.value
+                ? colors.filterActiveBg
+                : 'transparent',
+            color:
+              periodFilter === button.value
+                ? colors.accent
+                : colors.filterText,
+          }}
+          aria-pressed={periodFilter === button.value}
+          aria-label={`Show ${button.label.toLowerCase()} energy data`}
+        >
+          {button.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <ChartContainer
+      title="Energy Generated by Period"
+      subtitle="Energy production aggregated by time period"
+      isLoading={isLoading}
+      error={error}
+      isEmpty={isEmpty}
+      onRetry={refetch}
+      actions={filterControls}
+      height={350}
+      className={className}
+    >
+      <ResponsiveContainer width="100%" height={350}>
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
+          <XAxis
+            dataKey="timestamp"
+            tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+            stroke={colors.textColor}
+            style={{ fontSize: '12px' }}
+          />
+          <YAxis
+            label={{
+              value: 'Energy (kWh)',
+              angle: -90,
+              position: 'insideLeft',
+              style: { fill: colors.textColor, fontSize: '12px' },
+            }}
+            stroke={colors.textColor}
+            style={{ fontSize: '12px' }}
+          />
+          <Tooltip 
+            content={<CustomChartTooltip unit="kWh" />}
+            position={{ y: 0 }}
+            wrapperStyle={{ zIndex: 1000 }}
+            allowEscapeViewBox={{ x: false, y: true }}
+            cursor={{ fill: 'rgba(66, 132, 117, 0.1)' }}
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey="value"
+            fill={colors.barColor}
+            radius={[8, 8, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
+  );
+}

@@ -1,7 +1,6 @@
 ﻿import { type ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Home, 
   BarChart3, 
   FileText, 
   Bell, 
@@ -12,7 +11,8 @@ import {
   Moon,
   Settings,
   User,
-  LogIn
+  ArrowLeft,
+  LayoutDashboard
 } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,7 +108,7 @@ const navigationItems = [
   ...(isPublicUser ? [{
     path: ROUTES.HOME,
     label: 'Back to Home',
-    icon: Home,
+    icon: ArrowLeft,
     visible: true,
     isBackButton: true
   }] : []),
@@ -116,7 +116,7 @@ const navigationItems = [
   {
     path: ROUTES.DASHBOARD,
     label: 'Dashboard',
-    icon: Home,
+    icon: LayoutDashboard,
     visible: permissions.canAccessDashboard
   },
   // Analytics - only for admin users
@@ -355,48 +355,33 @@ const navigationItems = [
         {/* Account Section with Menu - Different for public vs admin */}
         <div className="px-3 pt-4 border-t account-menu-container relative" style={{ borderColor: '#2A2E37' }}>
           {isPublicUser ? (
-            /* PUBLIC USER - Show Login Button */
-            <button
-              onClick={() => navigate(ROUTES.LOGIN)}
-              className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
+            /* PUBLIC USER - Guest Mode Indicator */
+            <div
+              className={`relative w-full flex items-center gap-3 rounded-xl ${
                 isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
               }`}
-              title={!isExpanded ? 'Login' : undefined}
             >
               <div 
                 className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
-                  color: '#FFFFFF'
+                  backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37',
+                  color: theme === 'light' ? '#6B7280' : '#9CA3AF'
                 }}
               >
-                <LogIn className="w-5 h-5" strokeWidth={2} />
+                <span className="text-lg">👁️</span>
               </div>
               
               {isExpanded && (
                 <div className="flex-1 text-left">
-                  <div className="text-sm font-medium" style={{ color: '#EDEEF0' }}>
-                    Login
+                  <div className="text-sm font-medium" style={{ color: '#9CA3AF' }}>
+                    Guest Mode
                   </div>
-                  <div className="text-xs" style={{ color: '#9CA3AF' }}>
-                    Access more features
+                  <div className="text-xs" style={{ color: '#6B7280' }}>
+                    Read-only access
                   </div>
                 </div>
               )}
-
-              {!isExpanded && (
-                <div className="absolute left-full ml-4 px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
-                  style={{
-                    backgroundColor: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-                    color: theme === 'light' ? '#EDEEF0' : '#1A1D23',
-                    fontSize: '0.875rem',
-                    fontWeight: 500
-                  }}
-                >
-                  Login
-                </div>
-              )}
-            </button>
+            </div>
           ) : (
             /* ADMIN USER - Show Account Menu */
             <button

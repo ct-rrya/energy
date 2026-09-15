@@ -1,9 +1,8 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
@@ -15,8 +14,9 @@ import {
   EnvironmentalImpactDto,
   CostSavingsDto,
   ComprehensiveAnalyticsDto,
+  TimeSeriesDto,
+  AnalyticsQueryDto,
 } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
  * Analytics Controller
@@ -33,7 +33,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  * - GET /api/analytics/environmental     Environmental impact
  * - GET /api/analytics/cost-savings      Cost savings
  *
- * All endpoints require JWT authentication.
+ * All endpoints are publicly accessible to support public dashboard viewing.
  *
  * Usage:
  * - Dashboard: Fetch comprehensive analytics
@@ -42,8 +42,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  */
 @ApiTags('Analytics')
 @Controller('analytics')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
@@ -313,5 +311,55 @@ export class AnalyticsController {
       Number(periodDays),
       electricityRate ? Number(electricityRate) : undefined,
     );
+  }
+
+  /**
+   * Get Time Series Data
+   *
+   * Returns aggregated time-series data for charts with specified granularity.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data with data points and summary
+   */
+  @Get('time-series')
+  @ApiOperation({
+    summary: 'Get time-series data',
+    description:
+      'Returns aggregated time-series data for charts. Supports power, voltage, current, battery, and energy metrics with hourly, daily, weekly, or monthly granularity.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Time-series data retrieved successfully',
+    type: TimeSeriesDto,
+  })
+  async getTimeSeries(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<TimeSeriesDto> {
+    return this.analyticsService.getTimeSeries(query);
+  }
+
+  /**
+   * Get Battery History
+   *
+   * Returns battery percentage over time.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for battery
+   */
+  @Get('battery-history')
+  @ApiOperation({
+    summary: 'Get battery history',
+    description:
+      'Returns battery percentage over time. Convenience endpoint for battery metric time-series data.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Battery history retrieved successfully',
+    type: TimeSeriesDto,
+  })
+  async getBatteryHistory(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<TimeSeriesDto> {
+    return this.analyticsService.getBatteryHistory(query);
   }
 }

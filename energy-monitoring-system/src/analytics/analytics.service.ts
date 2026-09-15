@@ -739,4 +739,270 @@ export class AnalyticsService {
     endOfDay.setHours(23, 59, 59, 999);
     return endOfDay;
   }
+
+  // ============================================================================
+  // Time Series Methods for Charts
+  // ============================================================================
+
+  /**
+   * Get Time Series Data
+   *
+   * Fetches aggregated time-series data for charts with specified granularity.
+   * Supports power, voltage, current, energy, and battery metrics.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data with data points and summary
+   */
+  async getTimeSeries(query: AnalyticsQueryDto): Promise<TimeSeriesDto> {
+    this.logger.debug(
+      `Fetching time-series for metric: ${query.metric}, granularity: ${query.granularity}`,
+    );
+
+    const {
+      metric = MetricType.POWER,
+      granularity = Granularity.HOUR,
+      startDate,
+      endDate,
+      sensorId,
+      source = SourceFilter.HARDWARE,
+    } = query;
+
+    // Set default date range if not provided (last 24 hours)
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - 24 * 60 * 60 * 1000);
+
+    // Build aggregation pipeline
+    const matchStage: any = {
+      timestamp: {
+        $gte: start,
+        $lte: this.getEndOfDay(end),
+      },
+    };
+
+    // Filter by source
+    if (source !== SourceFilter.ALL) {
+      matchStage.source = source;
+    }
+
+    // Filter by sensor
+    if (sensorId) {
+      matchStage.sensorId = new Types.ObjectId(sensorId);
+    }
+
+    // Determine field to aggregate based on metric
+    let fieldName: string;
+    let unit: string;
+
+    switch (metric) {
+      case MetricType.VOLTAGE:
+        fieldName = 'voltage';
+        unit = 'V';
+        break;
+      case MetricType.CURRENT:
+        fieldName = 'current';
+        unit = 'A';
+        break;
+      case MetricType.BATTERY:
+        fieldName = 'batteryPercentage';
+        unit = '%';
+        break;
+      case MetricType.ENERGY:
+        fieldName = 'power'; // We'll calculate energy from power
+        unit = 'kWh';
+        break;
+      case MetricType.POWER:
+      default:
+        fieldName = 'power';
+        unit = 'W';
+        break;
+    }
+
+    // Build group stage based on granularity
+    const groupId = this.buildGroupId(granularity);
+
+    const pipeline: any[] = [
+      { $match: matchStage },
+      { $sort: { timestamp: 1 } },
+      {
+        $group: {
+          _id: groupId,
+          value: { $avg: `$${fieldName}` },
+          min: { $min: `$${fieldName}` },
+          max: { $max: `$${fieldName}` },
+          count: { $sum: 1 },
+          timestamp: { $first: '$timestamp' },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.hour': 1 } },
+    ];
+
+    const results = await this.readingModel.aggregate(pipeline).exec();
+
+    // Convert energy from W to kWh if needed
+    const dataPoints: TimeSeriesDataPointDto[] = results.map((r) => {
+      let value = r.value;
+      let minValue = r.min;
+      let maxValue = r.max;
+
+      // For energy metric, convert from average power (W) to energy (kWh)
+      if (metric === MetricType.ENERGY) {
+        const hours = this.getHoursForGranularity(granularity);
+        value = (value * hours) / 1000; // Convert W to kWh
+        minValue = (minValue * hours) / 1000;
+        maxValue = (maxValue * hours) / 1000;
+      }
+
+      return {
+        timestamp: r.timestamp,
+        value: Math.round(value * 100) / 100,
+        label: this.formatTimeSeriesLabel(r._id, granularity),
+        min: Math.round(minValue * 100) / 100,
+        max: Math.round(maxValue * 100) / 100,
+        count: r.count,
+      };
+    });
+
+    // Calculate summary
+    const values = dataPoints.map((dp) => dp.value);
+    const summary: TimeSeriesSummaryDto = {
+      min: values.length > 0 ? Math.min(...values) : 0,
+      max: values.length > 0 ? Math.max(...values) : 0,
+      avg:
+        values.length > 0
+          ? values.reduce((a, b) => a + b, 0) / values.length
+          : 0,
+      total:
+        metric === MetricType.ENERGY
+          ? values.reduce((a, b) => a + b, 0)
+          : undefined,
+      dataPoints: dataPoints.length,
+      totalReadings: results.reduce((sum, r) => sum + r.count, 0),
+    };
+
+    // Round summary values
+    summary.min = Math.round(summary.min * 100) / 100;
+    summary.max = Math.round(summary.max * 100) / 100;
+    summary.avg = Math.round(summary.avg * 100) / 100;
+    if (summary.total !== undefined) {
+      summary.total = Math.round(summary.total * 100) / 100;
+    }
+
+    return {
+      metric,
+      unit,
+      dataPoints,
+      summary,
+      startDate: start,
+      endDate: end,
+      granularity,
+    };
+  }
+
+  /**
+   * Get Battery History
+   *
+   * Fetches battery percentage over time.
+   * This is a convenience wrapper around getTimeSeries for battery metric.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for battery
+   */
+  async getBatteryHistory(query: AnalyticsQueryDto): Promise<TimeSeriesDto> {
+    this.logger.debug('Fetching battery history');
+
+    // Force metric to battery
+    const batteryQuery: AnalyticsQueryDto = {
+      ...query,
+      metric: MetricType.BATTERY,
+    };
+
+    return this.getTimeSeries(batteryQuery);
+  }
+
+  /**
+   * Build Group ID for Aggregation
+   *
+   * Constructs the MongoDB group _id object based on granularity.
+   */
+  private buildGroupId(granularity: Granularity): any {
+    const base = {
+      year: { $year: '$timestamp' },
+      month: { $month: '$timestamp' },
+    };
+
+    switch (granularity) {
+      case Granularity.HOUR:
+        return {
+          ...base,
+          day: { $dayOfMonth: '$timestamp' },
+          hour: { $hour: '$timestamp' },
+        };
+      case Granularity.DAY:
+        return {
+          ...base,
+          day: { $dayOfMonth: '$timestamp' },
+        };
+      case Granularity.WEEK:
+        return {
+          ...base,
+          week: { $week: '$timestamp' },
+        };
+      case Granularity.MONTH:
+        return base;
+      default:
+        return {
+          ...base,
+          day: { $dayOfMonth: '$timestamp' },
+        };
+    }
+  }
+
+  /**
+   * Format Time Series Label
+   *
+   * Formats the display label based on granularity.
+   */
+  private formatTimeSeriesLabel(groupId: any, granularity: Granularity): string {
+    const { year, month, day, hour, week } = groupId;
+
+    switch (granularity) {
+      case Granularity.HOUR:
+        return `${String(hour).padStart(2, '0')}:00`;
+      case Granularity.DAY:
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      case Granularity.WEEK:
+        return `Week ${week}`;
+      case Granularity.MONTH:
+        const monthNames = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ];
+        return monthNames[month - 1];
+      default:
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+
+  /**
+   * Get Hours for Granularity
+   *
+   * Returns the number of hours represented by a granularity level.
+   * Used for energy calculations.
+   */
+  private getHoursForGranularity(granularity: Granularity): number {
+    switch (granularity) {
+      case Granularity.HOUR:
+        return 1;
+      case Granularity.DAY:
+        return 24;
+      case Granularity.WEEK:
+        return 168; // 7 * 24
+      case Granularity.MONTH:
+        return 730; // ~30.4 * 24
+      default:
+        return 1;
+    }
+  }
 }

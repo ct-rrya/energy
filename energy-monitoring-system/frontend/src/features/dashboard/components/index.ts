@@ -13,3 +13,4 @@ export { QuickActionsCard } from './QuickActionsCard';
 export { StatsGrid } from './StatsGrid';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { EmptyDashboard } from './EmptyDashboard';
+export { ChartsLayoutContainer } from './ChartsLayoutContainer';
