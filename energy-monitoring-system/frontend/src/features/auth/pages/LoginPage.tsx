@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -298,21 +298,6 @@ export function LoginPage() {
               {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 rounded-xl bg-[#89D7B7]/10 dark:bg-[#428475]/20 border border-[#89D7B7]/30 dark:border-[#89D7B7]/20">
-            <p className="text-xs font-semibold text-[#1A312C] dark:text-[#FFF4E1] uppercase tracking-wide mb-2">
-              Demo Credentials
-            </p>
-            <div className="space-y-1 text-sm">
-              <p className="text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
-                <span className="font-medium">Email:</span> admin@energymonitor.com
-              </p>
-              <p className="text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
-                <span className="font-medium">Password:</span> Admin@2024!
-              </p>
-            </div>
-          </div>
 
           {/* Register Link */}
           <p className="mt-6 text-center text-sm text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
