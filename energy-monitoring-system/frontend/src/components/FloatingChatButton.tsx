@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import ChatInterface from '@/features/chat/components/ChatInterface';
@@ -8,25 +8,43 @@ import ChatInterface from '@/features/chat/components/ChatInterface';
  * Requirements: 4.12, 12.10, 12.11
  */
 const floatingChatStyles = `
-  @keyframes slideUp {
+  @keyframes slideUpFromBottom {
     from {
       opacity: 0;
-      transform: translateY(20px) scale(0.95);
+      transform: translateY(100%);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
-  @keyframes slideDown {
+  @keyframes slideDownToBottom {
     from {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
     to {
       opacity: 0;
-      transform: translateY(20px) scale(0.95);
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
     }
   }
 
@@ -39,13 +57,21 @@ const floatingChatStyles = `
     }
   }
 
-  /* Smooth transitions for expand/collapse */
-  .chat-panel-enter {
-    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  /* Smooth transitions for bottom sheet */
+  .chat-panel-slide-up {
+    animation: slideUpFromBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
-  .chat-panel-exit {
-    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  .chat-panel-slide-down {
+    animation: slideDownToBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .backdrop-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .backdrop-fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
   }
 
   /* Floating button animations */
@@ -55,17 +81,29 @@ const floatingChatStyles = `
 
   /* Reduced motion support - Requirement 18.9 */
   @media (prefers-reduced-motion: reduce) {
-    @keyframes slideUp {
+    @keyframes slideUpFromBottom {
       from, to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
       }
     }
     
-    @keyframes slideDown {
+    @keyframes slideDownToBottom {
       from, to {
         opacity: 0;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeIn {
+      from, to {
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      from, to {
+        opacity: 0;
       }
     }
     
@@ -75,8 +113,10 @@ const floatingChatStyles = `
       }
     }
     
-    .chat-panel-enter,
-    .chat-panel-exit,
+    .chat-panel-slide-up,
+    .chat-panel-slide-down,
+    .backdrop-fade-in,
+    .backdrop-fade-out,
     .floating-button-pulse {
       animation-duration: 0.01ms !important;
     }
@@ -94,14 +134,25 @@ if (typeof document !== 'undefined' && !document.getElementById('floating-chat-a
 /**
  * FloatingChatButton Component
  * 
- * A floating action button that expands into a full chat interface.
- * Positioned at bottom-right corner on desktop, full-screen on mobile.
- * Maintains session state when collapsed/expanded.
+ * A floating action button that expands into a bottom-sheet chat interface on mobile
+ * and a floating panel on desktop.
+ * 
+ * Mobile Design (< 640px):
+ * - Bottom sheet occupying 85-90% of viewport height
+ * - Leaves 10-15% of dashboard visible behind
+ * - Rounded top corners
+ * - Subtle overlay/backdrop
+ * - Dashboard context remains visible
+ * 
+ * Desktop Design (≥ 1024px):
+ * - Fixed floating panel (400x600px)
+ * - Bottom-right positioning
+ * - Traditional chat window
  * 
  * Features:
  * - Expandable/collapsible chat panel
  * - Smooth slide-up/fade-in animations
- * - Responsive design (400x600px desktop, full-screen mobile)
+ * - Responsive design with bottom-sheet on mobile
  * - Session persistence across expand/collapse
  * - EcoStep design system integration
  * - Keyboard accessibility with Escape to close
@@ -193,14 +244,15 @@ export default function FloatingChatButton() {
       document.addEventListener('keydown', handleEscape);
       
       // Prevent body scroll on mobile when chat is open - Task 7.3
+      // BUT only hide overflow-y, not overflow itself, to maintain dashboard visibility
       if (isMobile) {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflowY = 'hidden';
       }
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      document.body.style.overflowY = '';
     };
   }, [isExpanded, isAnimating, isMobile]);
 
@@ -329,47 +381,35 @@ export default function FloatingChatButton() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             <path d="M8 10h8M8 14h4" />
           </svg>
-
-          {/* 
-            TODO: Notification Badge (Future Enhancement)
-            Requirements: 12.11 - Add notification badge for unread messages
-            
-            Implementation placeholder:
-            - Show red badge with count when unread messages exist
-            - Position: top-right corner of button (absolute positioning)
-            - Style: 18px diameter circle, #EF4444 background, white text
-            - Accessibility: Include aria-label with unread count
-            
-            Example structure:
-            {unreadCount > 0 && (
-              <div
-                role="status"
-                aria-label={`${unreadCount} unread messages`}
-                style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid #89D7B7',
-                }}
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </div>
-            )}
-          */}
         </button>
       )}
 
-      {/* Expandable Chat Panel - Requirements: 4.12, 12.10, 18.1, 18.4, 18.8, Task 7.1-7.5 */}
+      {/* Backdrop - Subtle overlay that dims dashboard but keeps it visible */}
+      {(isExpanded || isAnimating) && (
+        <div
+          onClick={toggleChat}
+          aria-hidden="true"
+          className={isExpanded && !isAnimating ? 'backdrop-fade-in' : 'backdrop-fade-out'}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // Mobile: Lighter backdrop to keep dashboard context visible
+            backgroundColor: isMobile 
+              ? 'rgba(0, 0, 0, 0.3)' // 30% opacity - dashboard remains recognizable
+              : isTablet 
+              ? 'rgba(0, 0, 0, 0.4)' // 40% opacity for tablet
+              : 'rgba(0, 0, 0, 0.5)', // 50% opacity for desktop
+            zIndex: 9998,
+            backdropFilter: 'blur(2px)', // Subtle blur maintains context
+            WebkitBackdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
+      {/* Expandable Chat Panel - Bottom Sheet on Mobile, Floating Panel on Desktop */}
       {(isExpanded || isAnimating) && (
         <div
           id="floating-chat-panel"
@@ -379,36 +419,45 @@ export default function FloatingChatButton() {
           aria-modal="true"
           aria-describedby="chat-description"
           tabIndex={-1}
-          className={`floating-chat-panel ${
-            isExpanded && !isAnimating ? 'chat-panel-enter' : 'chat-panel-exit'
-          }`}
+          className={isExpanded && !isAnimating ? 'chat-panel-slide-up' : 'chat-panel-slide-down'}
           style={{
             position: 'fixed',
             zIndex: 10000,
             overflow: 'hidden',
+            backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
             boxShadow: theme === 'light'
-              ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.15)'
-              : '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4)',
+              ? '0 -4px 20px rgba(0, 0, 0, 0.15), 0 -2px 8px rgba(0, 0, 0, 0.1)'
+              : '0 -4px 20px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.4)',
             outline: 'none',
-            // Mobile: Full-screen (Task 7.1, 7.2, 7.5)
+            
+            // Mobile: Bottom sheet (85-90% height, leaves dashboard visible)
             ...(isMobile && {
-              inset: 0,
-              width: '100%',
-              height: '100dvh', // Dynamic viewport height for mobile
-              borderRadius: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '88dvh', // 88% of dynamic viewport height
+              maxHeight: '88dvh',
+              borderTopLeftRadius: '20px', // Rounded top corners for bottom sheet
+              borderTopRightRadius: '20px',
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+              // Add safe area inset padding at bottom for devices with bottom notch/bar
+              paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
             }),
-            // Tablet: 90% width/height, centered (Task 7.1)
+            
+            // Tablet: Large centered panel (leaves more context visible)
             ...(isTablet && {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '90%',
-              height: '90%',
+              width: 'min(90%, 600px)',
+              height: 'min(85%, 750px)',
               maxWidth: '600px',
-              maxHeight: '800px',
+              maxHeight: '750px',
               borderRadius: '16px',
             }),
-            // Desktop: Fixed panel (Task 7.1)
+            
+            // Desktop: Fixed floating panel (traditional chat window)
             ...(isDesktop && {
               bottom: '24px',
               right: '24px',
@@ -418,16 +467,32 @@ export default function FloatingChatButton() {
             }),
           }}
         >
+          {/* Drag Handle - Visual indicator for bottom sheet on mobile */}
+          {isMobile && (
+            <div
+              aria-hidden="true"
+              style={{
+                width: '40px',
+                height: '4px',
+                backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)',
+                borderRadius: '2px',
+                margin: '8px auto 4px',
+                flexShrink: 0,
+              }}
+            />
+          )}
+
           {/* Chat Header with Close Button */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '16px 20px',
+              padding: isMobile ? '12px 20px' : '16px 20px',
               backgroundColor: '#1A312C', // Primary color
               color: '#FFFFFF',
               borderBottom: '1px solid rgba(137, 215, 183, 0.2)',
+              flexShrink: 0,
             }}
           >
             {/* Hidden description for screen readers - Requirement 18.1 */}
@@ -468,7 +533,7 @@ export default function FloatingChatButton() {
               <span
                 style={{
                   fontWeight: '600',
-                  fontSize: '16px',
+                  fontSize: isMobile ? '15px' : '16px',
                   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 }}
               >
@@ -491,7 +556,6 @@ export default function FloatingChatButton() {
               }}
               aria-label="Close chat assistant panel"
               title="Close chat (Esc)"
-              className="rounded-lg flex items-center justify-center transition-colors duration-200"
               style={{
                 width: isMobile ? '44px' : '32px', // Task 7.4: 44px on mobile, 32px on desktop
                 height: isMobile ? '44px' : '32px',
@@ -499,9 +563,15 @@ export default function FloatingChatButton() {
                 minHeight: isMobile ? '44px' : '32px',
                 backgroundColor: 'transparent',
                 border: 'none',
+                borderRadius: '8px',
                 color: '#FFFFFF',
                 cursor: 'pointer',
                 outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'background-color 0.2s',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
@@ -538,8 +608,12 @@ export default function FloatingChatButton() {
           {/* ChatInterface Component - Requirements: 4.2, 4.3, 4.4, 4.5, 7.7, 7.8 */}
           <div
             style={{
-              height: 'calc(100% - 64px)', // Subtract header height
+              height: isMobile 
+                ? 'calc(100% - 64px - env(safe-area-inset-bottom))' // Subtract header + drag handle + safe area
+                : 'calc(100% - 64px)', // Subtract header height
               overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             <ChatInterface
@@ -548,23 +622,6 @@ export default function FloatingChatButton() {
             />
           </div>
         </div>
-      )}
-
-      {/* Backdrop for mobile/tablet - Task 7.3 */}
-      {isExpanded && (isMobile || isTablet) && (
-        <div
-          onClick={toggleChat}
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 9998,
-          }}
-        />
       )}
 
       {/* Screen reader announcement region for chat state changes - Requirement 18.3 */}
@@ -585,4 +642,3 @@ export default function FloatingChatButton() {
     </>
   );
 }
-

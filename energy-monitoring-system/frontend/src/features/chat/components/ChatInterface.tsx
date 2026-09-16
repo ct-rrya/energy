@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import api from '../../../lib/api';
@@ -95,8 +95,8 @@ const messageAnimationStyles = `
   /* Responsive styles for mobile */
   @media (max-width: 768px) {
     .chat-interface {
-      height: calc(100vh - 80px) !important;
-      max-height: none !important;
+      height: 100% !important;
+      max-height: 100% !important;
       border-radius: 8px !important;
     }
 
@@ -832,7 +832,7 @@ export default function ChatInterface({
       }
       
       // Display descriptive error in chat as bot message (Requirement 18.10)
-      const fullErrorMessage = `❌ **Error**: ${errorMessage}\n\n${errorDetails}\n\nIf you continue to experience issues, please contact support or try again later.`;
+      const fullErrorMessage = `âŒ **Error**: ${errorMessage}\n\n${errorDetails}\n\nIf you continue to experience issues, please contact support or try again later.`;
       addMessage('bot', fullErrorMessage);
       
       // Clear suggestions on error
@@ -957,7 +957,7 @@ export default function ChatInterface({
                 flexShrink: 0,
               }}
             >
-              🌱
+              ðŸŒ±
             </div>
             <span>EcoStep Chat Assistant</span>
           </div>
