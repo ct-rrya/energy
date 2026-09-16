@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ChartContainer Component
  * 
  * Wrapper component providing consistent styling and state handling for all chart components.
@@ -106,14 +106,14 @@ export function ChartContainer({
       aria-label={`${title} chart`}
       role="region"
     >
-      {/* Header Section */}
+      {/* Header Section - Responsive layout wraps on mobile */}
       <div
-        className="flex items-start justify-between gap-4 px-6 pt-6 pb-4"
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-4"
         style={{ borderBottom: `1px solid ${themeColors.border}` }}
       >
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2
-            className="text-xl font-bold mb-1"
+            className="text-lg sm:text-xl font-bold mb-1"
             style={{ color: themeColors.text }}
           >
             {title}
@@ -128,16 +128,16 @@ export function ChartContainer({
           )}
         </div>
 
-        {/* Optional action buttons (e.g., time filter controls) */}
+        {/* Optional action buttons (e.g., time filter controls) - Full width on mobile */}
         {actions && (
-          <div className="flex items-center gap-2">
+          <div className="w-full sm:w-auto flex items-center">
             {actions}
           </div>
         )}
       </div>
 
       {/* Content Section */}
-      <div className="px-6 py-4">
+      <div className="px-4 sm:px-6 py-4">
         {renderContent()}
       </div>
     </div>

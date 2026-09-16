@@ -10,14 +10,20 @@ import FloatingChatButton from '@/components/FloatingChatButton';
 
 /**
  * TanStack Query Client Configuration
+ * 
+ * Task 9.4: Optimized cache settings for performance:
+ * - staleTime: 30s (data considered fresh for 30 seconds, reduces refetches)
+ * - gcTime: 5min (keep unused data in cache for 5 minutes)
+ * - refetchOnWindowFocus: false (prevent duplicate requests on focus)
+ * - retry: 2 attempts for queries, 1 for mutations
  */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      staleTime: 30 * 1000, // 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
       retry: 2,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false, // Task 9.4: Prevent duplicate requests on focus
     },
     mutations: {
       retry: 1,

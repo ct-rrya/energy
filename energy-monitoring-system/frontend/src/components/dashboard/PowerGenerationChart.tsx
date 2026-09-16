@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { usePowerGeneration } from '@/features/dashboard/hooks/usePowerGeneration';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
 import { transformToChartData, isDatasetEmpty, formatChartTimestamp, limitDataPoints } from './chartUtils';
@@ -38,6 +39,7 @@ import {
  */
 export function PowerGenerationChart({ className = '', defaultTimeFilter = 'today' }: PowerGenerationChartProps) {
   const { theme } = useTheme();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   
   // Subscribe to real-time WebSocket updates for chart data
@@ -104,11 +106,11 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
   };
 
   /**
-   * Render time filter controls
+   * Render time filter controls - Responsive button sizing
    */
   const filterControls = (
     <div
-      className="flex gap-1 rounded-xl p-1"
+      className="flex gap-1 rounded-xl p-1 w-full"
       role="group"
       aria-label="Time range filter options"
       style={{
@@ -120,7 +122,7 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
         <button
           key={button.value}
           onClick={() => handleFilterChange(button.value)}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          className="flex-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap"
           style={{
             backgroundColor:
               timeFilter === button.value
@@ -149,27 +151,39 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
       isEmpty={isEmpty}
       onRetry={refetch}
       actions={filterControls}
-      height={400}
+      height={isMobile ? 250 : 400}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData}>
+      <ResponsiveContainer width="100%" height={isMobile ? 250 : 400}>
+        <LineChart 
+          data={chartData}
+          margin={{ 
+            top: 5, 
+            right: isMobile ? 5 : 20, 
+            left: isMobile ? -20 : 0, 
+            bottom: 5 
+          }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
             stroke={colors.textColor}
-            style={{ fontSize: '12px' }}
+            tick={{ fontSize: isMobile ? 11 : 12 }}
+            angle={isMobile ? -45 : 0}
+            textAnchor={isMobile ? 'end' : 'middle'}
+            style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
           <YAxis
             label={{
               value: 'Power (W)',
               angle: -90,
               position: 'insideLeft',
-              style: { fill: colors.textColor, fontSize: '12px' },
+              style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
             }}
             stroke={colors.textColor}
-            style={{ fontSize: '12px' }}
+            tick={{ fontSize: isMobile ? 11 : 12 }}
+            style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
           <Tooltip 
             content={<CustomChartTooltip unit="W" />}
@@ -183,7 +197,7 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
             type="monotone"
             dataKey="value"
             stroke="#428475"
-            strokeWidth={2}
+            strokeWidth={isMobile ? 2 : 3}
             dot={false}
             activeDot={{ r: 6 }}
           />

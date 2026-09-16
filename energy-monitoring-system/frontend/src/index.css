@@ -270,6 +270,20 @@
 }
 
 @layer utilities {
+  /* Touch Target Utilities - Responsive Mobile Optimization */
+  .min-w-touch {
+    min-width: 44px;
+  }
+
+  .min-h-touch {
+    min-height: 44px;
+  }
+
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   /* Animations */
   @keyframes spin {
     to {

@@ -28,14 +28,14 @@ export function ChartsLayoutContainer() {
       </div>
 
       {/* Secondary Charts - Responsive Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Voltage and Current Charts - Left Column on Desktop */}
         <div className="w-full">
           <VoltageCurrentChart />
         </div>
 
         {/* Energy Charts - Right Column on Desktop */}
-        <div className="space-y-6">
+        <div className="space-y-4 lg:space-y-6">
           <EnergyPeriodChart />
           <CumulativeEnergyChart />
         </div>

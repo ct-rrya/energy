@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
@@ -14,7 +14,9 @@ import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
-import { ChartsLayoutContainer } from '../components/ChartsLayoutContainer';
+
+// Task 9.3: Lazy load ChartsLayoutContainer for performance optimization
+const ChartsLayoutContainer = lazy(() => import('../components/ChartsLayoutContainer').then(module => ({ default: module.ChartsLayoutContainer })));
 
 /**
  * EcoStep Dashboard Page - Redesigned
@@ -141,7 +143,7 @@ export function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 
-              className="text-3xl font-bold mb-2"
+              className="text-2xl sm:text-3xl font-bold mb-2"
               style={{ color: colors.text }}
             >
               EcoStep Dashboard
@@ -152,7 +154,7 @@ export function DashboardPage() {
                 style={{ backgroundColor: systemStatus?.database === 'connected' ? colors.accent : '#EF4444' }}
               />
               <p 
-                className="text-sm"
+                className="text-sm sm:text-base"
                 style={{ color: colors.subtext }}
               >
                 System {systemStatus?.database === 'connected' ? 'Online' : 'Offline'} · Real-time monitoring active
@@ -164,7 +166,8 @@ export function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               disabled={isPublicUser}
-              className="px-4 py-2 rounded-xl flex items-center gap-2 transition-colors duration-200"
+              aria-label="Open settings"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -185,12 +188,13 @@ export function DashboardPage() {
               }}
               aria-disabled={isPublicUser}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="text-sm font-medium hidden sm:inline">Settings</span>
             </button>
             <button
               disabled={isPublicUser}
-              className="px-4 py-2 rounded-xl flex items-center gap-2 transition-colors duration-200 relative"
+              aria-label="View alerts (3 unread)"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200 relative"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -211,7 +215,7 @@ export function DashboardPage() {
               }}
               aria-disabled={isPublicUser}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="text-sm font-medium hidden sm:inline">Alerts</span>
               {/* Only show notification badge for admin users */}
               {!isPublicUser && (
@@ -225,7 +229,8 @@ export function DashboardPage() {
             </button>
             <button
               disabled={isPublicUser}
-              className="px-4 py-2 rounded-xl flex items-center gap-2 transition-colors duration-200"
+              aria-label="Export data"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -246,7 +251,7 @@ export function DashboardPage() {
               }}
               aria-disabled={isPublicUser}
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="text-sm font-medium hidden sm:inline">Export</span>
             </button>
           </div>
@@ -318,92 +323,92 @@ export function DashboardPage() {
         </div>
 
         {/* Primary Metrics - 4 Chips in a row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Voltage */}
           <div 
-            className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
               backgroundColor: theme === 'light' ? colors.voltageLight : colors.voltageDark,
             }}
           >
             <div 
-              className="text-xs font-medium mb-2"
+              className="text-xs sm:text-sm font-medium mb-2"
               style={{ color: colors.subtext }}
             >
               Voltage
             </div>
             <div 
-              className="text-3xl font-bold"
+              className="text-2xl sm:text-3xl font-bold"
               style={{ color: colors.accent }}
             >
               {lastReading?.voltage?.toFixed(1) || '0.0'}
-              <span className="text-lg ml-1" style={{ color: colors.subtext }}>V</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>V</span>
             </div>
           </div>
 
           {/* Current */}
           <div 
-            className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
               backgroundColor: theme === 'light' ? colors.currentLight : colors.currentDark,
             }}
           >
             <div 
-              className="text-xs font-medium mb-2"
+              className="text-xs sm:text-sm font-medium mb-2"
               style={{ color: colors.subtext }}
             >
               Current
             </div>
             <div 
-              className="text-3xl font-bold"
+              className="text-2xl sm:text-3xl font-bold"
               style={{ color: '#F59E0B' }}
             >
               {lastReading?.current?.toFixed(2) || '0.00'}
-              <span className="text-lg ml-1" style={{ color: colors.subtext }}>A</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>A</span>
             </div>
           </div>
 
           {/* Power */}
           <div 
-            className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
               backgroundColor: theme === 'light' ? colors.powerLight : colors.powerDark,
             }}
           >
             <div 
-              className="text-xs font-medium mb-2"
+              className="text-xs sm:text-sm font-medium mb-2"
               style={{ color: colors.subtext }}
             >
               Power
             </div>
             <div 
-              className="text-3xl font-bold"
+              className="text-2xl sm:text-3xl font-bold"
               style={{ color: '#3B82F6' }}
             >
               {lastReading?.power?.toFixed(1) || '0.0'}
-              <span className="text-lg ml-1" style={{ color: colors.subtext }}>W</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>W</span>
             </div>
           </div>
 
           {/* Energy */}
           <div 
-            className="rounded-3xl p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
               backgroundColor: theme === 'light' ? colors.energyLight : colors.energyDark,
             }}
           >
             <div 
-              className="text-xs font-medium mb-2"
+              className="text-xs sm:text-sm font-medium mb-2"
               style={{ color: colors.subtext }}
             >
               Energy Today
             </div>
             <div 
-              className="text-3xl font-bold"
+              className="text-2xl sm:text-3xl font-bold"
               style={{ color: '#F59E0B' }}
             >
               {metrics?.dailyEnergy?.toFixed(2) || '0.00'}
-              <span className="text-lg ml-1" style={{ color: colors.subtext }}>kWh</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>kWh</span>
             </div>
           </div>
         </div>
@@ -462,7 +467,34 @@ export function DashboardPage() {
         </div>
 
         {/* Charts Section - Full Width Analytics */}
-        <ChartsLayoutContainer />
+        {/* Task 9.3: Lazy-loaded charts with Suspense boundary for performance */}
+        <Suspense fallback={
+          <div 
+            className="rounded-3xl p-6 animate-pulse"
+            style={{
+              backgroundColor: colors.cardBg,
+              boxShadow: theme === 'light' 
+                ? '0 8px 30px rgba(0,0,0,0.08)' 
+                : '0 8px 30px rgba(0,0,0,0.4)',
+              height: '400px',
+            }}
+          >
+            <div 
+              className="h-6 w-48 rounded mb-2"
+              style={{ backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37' }}
+            />
+            <div 
+              className="h-4 w-64 rounded mb-6"
+              style={{ backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37' }}
+            />
+            <div 
+              className="h-64 rounded-xl"
+              style={{ backgroundColor: theme === 'light' ? '#F9FAFB' : '#12141A' }}
+            />
+          </div>
+        }>
+          <ChartsLayoutContainer />
+        </Suspense>
 
         {/* Sensor Nodes / Recent Readings Section */}
         <div 
@@ -559,7 +591,7 @@ export function DashboardPage() {
                 {/* Action Icons */}
                 <div className="flex gap-2">
                   <button 
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
                     style={{
                       backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
                       border: `1px solid ${colors.border}`,
@@ -570,7 +602,7 @@ export function DashboardPage() {
                     <Activity className="w-4 h-4" strokeWidth={2} />
                   </button>
                   <button 
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
                     style={{
                       backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
                       border: `1px solid ${colors.border}`,

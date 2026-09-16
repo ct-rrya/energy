@@ -1,5 +1,8 @@
 /**
  * Dashboard Components Barrel Export
+ * 
+ * Note: ChartsLayoutContainer is excluded from barrel export to enable
+ * lazy loading and code splitting (Task 9.3)
  */
 export { DashboardCard } from './DashboardCard';
 export { StatCard } from './StatCard';
@@ -13,4 +16,4 @@ export { QuickActionsCard } from './QuickActionsCard';
 export { StatsGrid } from './StatsGrid';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { EmptyDashboard } from './EmptyDashboard';
-export { ChartsLayoutContainer } from './ChartsLayoutContainer';
+// ChartsLayoutContainer excluded - lazy loaded in DashboardPage for code splitting

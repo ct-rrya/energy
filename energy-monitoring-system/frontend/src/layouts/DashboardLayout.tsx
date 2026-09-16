@@ -1,4 +1,4 @@
-﻿import { type ReactNode, useState, useEffect } from 'react';
+﻿import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -12,7 +12,9 @@ import {
   Settings,
   User,
   ArrowLeft,
-  LayoutDashboard
+  LayoutDashboard,
+  Menu,
+  X
 } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +22,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { ROUTES } from '@/routes/routes.config';
 import { getUserRole, getUserPermissions, type UserRole } from '@/lib/permissions';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 /**
  * Dashboard Layout Props
@@ -53,6 +56,84 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Account menu state
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+
+  // Task 2.1: Mobile Sidebar State Management
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const hamburgerButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Close mobile sidebar when resizing to desktop
+  useEffect(() => {
+    if (isDesktop && mobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isDesktop, mobileSidebarOpen]);
+
+  // Task 2.6: Body Scroll Lock for Mobile Sidebar
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileSidebarOpen]);
+
+  // Task 2.4: Focus Trapping and Keyboard Management for Mobile Sidebar
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape key closes sidebar
+      if (e.key === 'Escape') {
+        setMobileSidebarOpen(false);
+        hamburgerButtonRef.current?.focus();
+        return;
+      }
+
+      // Tab key focus trapping
+      if (e.key === 'Tab') {
+        const sidebar = document.querySelector('.mobile-sidebar');
+        if (!sidebar) return;
+
+        const focusableElements = sidebar.querySelectorAll<HTMLElement>(
+          'a, button, input, [tabindex]:not([tabindex="-1"])'
+        );
+        
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    // Focus first interactive element when sidebar opens
+    setTimeout(() => {
+      const sidebar = document.querySelector('.mobile-sidebar');
+      const firstFocusable = sidebar?.querySelector<HTMLElement>(
+        'a, button, input, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus();
+    }, 50);
+
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileSidebarOpen]);
 
   // Persist sidebar state
   useEffect(() => {
@@ -150,6 +231,7 @@ const navigationItems = [
   const sidebarWidth = isExpanded ? 200 : 64;
   const sidebarBg = theme === 'light' ? '#1E2128' : '#0B0D12';
   const accentColor = theme === 'light' ? '#2FBF71' : '#3ED98A';
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div 
@@ -158,18 +240,220 @@ const navigationItems = [
         backgroundColor: theme === 'light' ? '#F5F6F8' : '#12141A'
       }}
     >
-      {/* COLLAPSIBLE FLOATING SIDEBAR */}
-      <aside 
-        className="fixed left-6 top-6 bottom-6 z-50 flex flex-col py-6 transition-all duration-250"
+      {/* Task 10.3: Skip Link for Keyboard Navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
         style={{
-          width: `${sidebarWidth}px`,
-          backgroundColor: sidebarBg,
-          borderRadius: '32px',
-          boxShadow: theme === 'light' 
-            ? '0 4px 20px rgba(0,0,0,0.08)' 
-            : '0 4px 20px rgba(0,0,0,0.4)'
+          backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
+          color: theme === 'light' ? '#1A1D23' : '#EDEEF0',
+          border: `3px solid ${theme === 'light' ? '#2FBF71' : '#3ED98A'}`,
+          fontWeight: 600,
+          fontSize: '14px'
         }}
       >
+        Skip to main content
+      </a>
+
+      {/* Task 2.2: Mobile Hamburger Menu Button */}
+      {!isDesktop && (
+        <button
+          ref={hamburgerButtonRef}
+          onClick={() => setMobileSidebarOpen(true)}
+          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-200"
+          style={{
+            backgroundColor: sidebarBg,
+            color: '#EDEEF0'
+          }}
+          aria-label="Open navigation menu"
+        >
+          <Menu className="w-6 h-6" strokeWidth={2} />
+        </button>
+      )}
+
+      {/* Task 2.3: Mobile Sidebar Overlay */}
+      {!isDesktop && mobileSidebarOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              hamburgerButtonRef.current?.focus();
+            }}
+            aria-hidden="true"
+          />
+          
+          {/* Mobile Sidebar */}
+          <aside 
+            className={`mobile-sidebar fixed left-0 top-0 bottom-0 z-50 flex flex-col py-6 w-64 ${
+              prefersReducedMotion ? '' : 'transform transition-transform duration-300'
+            }`}
+            style={{
+              backgroundColor: sidebarBg,
+              borderTopRightRadius: '32px',
+              borderBottomRightRadius: '32px',
+              boxShadow: theme === 'light' 
+                ? '0 4px 20px rgba(0,0,0,0.08)' 
+                : '0 4px 20px rgba(0,0,0,0.4)'
+            }}
+          >
+            {/* Close Button */}
+            <div className="flex items-center justify-between px-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center p-2 flex-shrink-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
+                    color: '#FFFFFF'
+                  }}
+                >
+                  <Logo className="h-full w-full" />
+                </div>
+                <span className="text-sm font-semibold" style={{ color: '#EDEEF0' }}>
+                  EcoStep
+                </span>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  hamburgerButtonRef.current?.focus();
+                }}
+                className="w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
+                style={{ color: '#9CA3AF' }}
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Role Indicator Badge */}
+            <div className="px-4 mb-6">
+              <div 
+                className="px-3 py-2 rounded-lg text-xs font-medium text-center"
+                style={{
+                  backgroundColor: isAdminUser 
+                    ? 'rgba(59, 130, 246, 0.1)' 
+                    : 'rgba(168, 85, 247, 0.1)',
+                  color: isAdminUser ? '#60A5FA' : '#C084FC',
+                  border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+                }}
+                role="status"
+                aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
+              >
+                {isAdminUser ? '👤 Admin Access' : '👁️ Public View'}
+              </div>
+            </div>
+
+            {/* Navigation Items */}
+            <nav className="flex-1 flex flex-col gap-1 px-3">
+              {navigationItems.map(({ path, label, icon: Icon }) => {
+                const isActive = isActivePath(path);
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    onClick={() => {
+                      setMobileSidebarOpen(false);
+                      hamburgerButtonRef.current?.focus();
+                    }}
+                    className="group relative flex items-center gap-3 rounded-xl transition-all duration-200 px-4 py-3"
+                    style={{
+                      backgroundColor: isActive ? accentColor : 'transparent',
+                      color: isActive ? '#FFFFFF' : '#9CA3AF'
+                    }}
+                  >
+                    <Icon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      {label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Theme Toggle */}
+            <div className="px-3 pb-4">
+              <button
+                onClick={toggleTheme}
+                className="group relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 px-4 py-3"
+                style={{ color: '#9CA3AF' }}
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      Dark Mode
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      Light Mode
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Account Section */}
+            <div className="px-3 pt-4 border-t" style={{ borderColor: '#2A2E37' }}>
+              {isPublicUser ? (
+                /* PUBLIC USER - Guest Mode Indicator */
+                <div className="relative w-full flex items-center gap-3 rounded-xl px-4 py-3">
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{
+                      backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37',
+                      color: theme === 'light' ? '#6B7280' : '#9CA3AF'
+                    }}
+                  >
+                    <span className="text-lg">👁️</span>
+                  </div>
+                  
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-medium" style={{ color: '#9CA3AF' }}>
+                      Guest Mode
+                    </div>
+                    <div className="text-xs" style={{ color: '#6B7280' }}>
+                      Read-only access
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ADMIN USER - Show Logout Button */
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-500/10"
+                  style={{ color: '#EF4444' }}
+                >
+                  <LogOut className="w-5 h-5" strokeWidth={2} />
+                  <span className="text-sm font-medium">Logout</span>
+                </button>
+              )}
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* COLLAPSIBLE FLOATING SIDEBAR - Desktop Only */}
+      {isDesktop && (
+        <aside 
+          className="fixed left-6 top-6 bottom-6 z-50 flex flex-col py-6 transition-all duration-250"
+          style={{
+            width: `${sidebarWidth}px`,
+            backgroundColor: sidebarBg,
+            borderRadius: '32px',
+            boxShadow: theme === 'light' 
+              ? '0 4px 20px rgba(0,0,0,0.08)' 
+              : '0 4px 20px rgba(0,0,0,0.4)'
+          }}
+        >
         {/* Logo + Toggle Button */}
         <div className="flex items-center justify-between px-4 mb-6">
           {isExpanded ? (
@@ -497,16 +781,23 @@ const navigationItems = [
             </div>
           )}
         </div>
-      </aside>
+        </aside>
+      )}
 
-      {/* MAIN CONTENT AREA - Dynamic offset based on sidebar width */}
+      {/* Task 2.5: MAIN CONTENT AREA - Responsive margin logic */}
+      {/* Task 10.3: Added id and tabIndex for skip link navigation */}
       <main 
-        className="min-h-screen transition-all duration-250"
-        style={{
-          marginLeft: `${sidebarWidth + 48}px` // sidebar width + 24px margin on each side
-        }}
+        id="main-content"
+        tabIndex={-1}
+        className="min-h-screen transition-all duration-250 p-4 sm:p-6 lg:p-8"
+        style={isDesktop ? {
+          '--sidebar-width': `${sidebarWidth}px`,
+          marginLeft: 'calc(var(--sidebar-width) + 48px)'
+        } as React.CSSProperties : {}}
       >
-        {children}
+        <div className="max-w-[1600px] mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );

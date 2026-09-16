@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import ChatInterface from '@/features/chat/components/ChatInterface';
 
 /**
@@ -50,28 +51,6 @@ const floatingChatStyles = `
   /* Floating button animations */
   .floating-button-pulse {
     animation: pulse 2s infinite ease-in-out;
-  }
-
-  /* Prevent body scroll when chat is expanded on mobile */
-  .chat-expanded-mobile {
-    overflow: hidden;
-  }
-
-  /* Mobile full-screen chat */
-  @media (max-width: 768px) {
-    .floating-chat-panel {
-      position: fixed !important;
-      top: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      max-width: 100% !important;
-      max-height: 100% !important;
-      border-radius: 0 !important;
-      margin: 0 !important;
-    }
   }
 
   /* Reduced motion support - Requirement 18.9 */
@@ -138,6 +117,11 @@ export default function FloatingChatButton() {
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const isTablet = useMediaQuery('(min-width: 640px) and (max-width: 1023px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   // Detect reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -208,17 +192,17 @@ export default function FloatingChatButton() {
     if (isExpanded) {
       document.addEventListener('keydown', handleEscape);
       
-      // Prevent body scroll on mobile when chat is open
-      if (window.innerWidth <= 768) {
-        document.body.classList.add('chat-expanded-mobile');
+      // Prevent body scroll on mobile when chat is open - Task 7.3
+      if (isMobile) {
+        document.body.style.overflow = 'hidden';
       }
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.classList.remove('chat-expanded-mobile');
+      document.body.style.overflow = '';
     };
-  }, [isExpanded, isAnimating]);
+  }, [isExpanded, isAnimating, isMobile]);
 
   /**
    * Trap focus within chat panel when expanded
@@ -266,6 +250,7 @@ export default function FloatingChatButton() {
   return (
     <>
       {/* Floating Chat Button - Requirements: 12.3, 12.11, 18.1, 18.2 */}
+      {/* Task 8.2: Safe Area Insets for notched devices */}
       {!isExpanded && (
         <button
           ref={buttonRef}
@@ -284,8 +269,8 @@ export default function FloatingChatButton() {
           className="floating-button-pulse"
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
+            bottom: 'max(24px, env(safe-area-inset-bottom))',
+            right: 'max(24px, env(safe-area-inset-right))',
             width: '60px',
             height: '60px',
             minWidth: '60px',
@@ -384,7 +369,7 @@ export default function FloatingChatButton() {
         </button>
       )}
 
-      {/* Expandable Chat Panel - Requirements: 4.12, 12.10, 18.1, 18.4, 18.8 */}
+      {/* Expandable Chat Panel - Requirements: 4.12, 12.10, 18.1, 18.4, 18.8, Task 7.1-7.5 */}
       {(isExpanded || isAnimating) && (
         <div
           id="floating-chat-panel"
@@ -399,19 +384,38 @@ export default function FloatingChatButton() {
           }`}
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '400px',
-            height: '600px',
-            maxWidth: 'calc(100vw - 48px)',
-            maxHeight: 'calc(100vh - 48px)',
             zIndex: 10000,
-            borderRadius: '16px',
             overflow: 'hidden',
             boxShadow: theme === 'light'
               ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.15)'
               : '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4)',
             outline: 'none',
+            // Mobile: Full-screen (Task 7.1, 7.2, 7.5)
+            ...(isMobile && {
+              inset: 0,
+              width: '100%',
+              height: '100dvh', // Dynamic viewport height for mobile
+              borderRadius: 0,
+            }),
+            // Tablet: 90% width/height, centered (Task 7.1)
+            ...(isTablet && {
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              height: '90%',
+              maxWidth: '600px',
+              maxHeight: '800px',
+              borderRadius: '16px',
+            }),
+            // Desktop: Fixed panel (Task 7.1)
+            ...(isDesktop && {
+              bottom: '24px',
+              right: '24px',
+              width: '400px',
+              height: '600px',
+              borderRadius: '16px',
+            }),
           }}
         >
           {/* Chat Header with Close Button */}
@@ -472,7 +476,7 @@ export default function FloatingChatButton() {
               </span>
             </div>
 
-            {/* Close Button - Requirements 4.12, 18.1, 18.2 */}
+            {/* Close Button - Requirements 4.12, 18.1, 18.2, Task 7.4 */}
             <button
               onClick={toggleChat}
               onKeyDown={(e) => {
@@ -487,20 +491,16 @@ export default function FloatingChatButton() {
               }}
               aria-label="Close chat assistant panel"
               title="Close chat (Esc)"
+              className="rounded-lg flex items-center justify-center transition-colors duration-200"
               style={{
-                width: '32px',
-                height: '32px',
-                minWidth: '32px',
-                minHeight: '32px',
-                borderRadius: '6px',
+                width: isMobile ? '44px' : '32px', // Task 7.4: 44px on mobile, 32px on desktop
+                height: isMobile ? '44px' : '32px',
+                minWidth: isMobile ? '44px' : '32px',
+                minHeight: isMobile ? '44px' : '32px',
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#FFFFFF',
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: prefersReducedMotion ? 'none' : 'background-color 0.2s',
                 outline: 'none',
               }}
               onMouseEnter={(e) => {
@@ -550,8 +550,8 @@ export default function FloatingChatButton() {
         </div>
       )}
 
-      {/* Backdrop for mobile (optional, can add for better UX) */}
-      {isExpanded && window.innerWidth <= 768 && (
+      {/* Backdrop for mobile/tablet - Task 7.3 */}
+      {isExpanded && (isMobile || isTablet) && (
         <div
           onClick={toggleChat}
           aria-hidden="true"

@@ -28,6 +28,7 @@
 
 import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
 import {
@@ -69,6 +70,7 @@ export function CumulativeEnergyChart({
   daysToShow = 30,
 }: CumulativeEnergyChartProps) {
   const { theme } = useTheme();
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
@@ -136,11 +138,19 @@ export function CumulativeEnergyChart({
       error={error}
       isEmpty={isEmpty}
       onRetry={refetch}
-      height={350}
+      height={isMobile ? 250 : 350}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={350}>
-        <AreaChart data={cumulativeData}>
+      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+        <AreaChart 
+          data={cumulativeData}
+          margin={{ 
+            top: 5, 
+            right: isMobile ? 5 : 20, 
+            left: isMobile ? -20 : 0, 
+            bottom: 5 
+          }}
+        >
           {/* Define linear gradient for area fill */}
           <defs>
             <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
@@ -157,7 +167,10 @@ export function CumulativeEnergyChart({
             dataKey="timestamp"
             tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'day')}
             stroke={colors.textColor}
-            style={{ fontSize: '12px' }}
+            tick={{ fontSize: isMobile ? 11 : 12 }}
+            angle={isMobile ? -45 : 0}
+            textAnchor={isMobile ? 'end' : 'middle'}
+            style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
 
           {/* Y-axis: Cumulative Energy in kWh */}
@@ -166,10 +179,11 @@ export function CumulativeEnergyChart({
               value: 'Cumulative Energy (kWh)',
               angle: -90,
               position: 'insideLeft',
-              style: { fill: colors.textColor, fontSize: '12px' },
+              style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
             }}
             stroke={colors.textColor}
-            style={{ fontSize: '12px' }}
+            tick={{ fontSize: isMobile ? 11 : 12 }}
+            style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
 
           {/* Tooltip with custom formatting and viewport-aware positioning */}
@@ -187,7 +201,7 @@ export function CumulativeEnergyChart({
             type="monotone"
             dataKey="value"
             stroke="#89D7B7"
-            strokeWidth={2}
+            strokeWidth={isMobile ? 2 : 3}
             fill="url(#energyGradient)"
             fillOpacity={1}
           />

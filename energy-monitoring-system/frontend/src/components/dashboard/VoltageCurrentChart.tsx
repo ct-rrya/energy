@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
 import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './chartUtils';
@@ -43,6 +44,7 @@ import {
  */
 export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps) {
   const { theme } = useTheme();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   
   // Subscribe to real-time WebSocket updates
   useChartRealTimeUpdates();
@@ -109,26 +111,38 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
         error={voltageError}
         isEmpty={isVoltageEmpty}
         onRetry={refetchVoltage}
-        height={350}
+        height={isMobile ? 250 : 350}
       >
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={voltageData}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+          <LineChart 
+            data={voltageData}
+            margin={{ 
+              top: 5, 
+              right: isMobile ? 5 : 20, 
+              left: isMobile ? -20 : 0, 
+              bottom: 5 
+            }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'hour')}
               stroke={colors.textColor}
-              style={{ fontSize: '12px' }}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
               label={{
                 value: 'Voltage (V)',
                 angle: -90,
                 position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: '12px' },
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
               }}
               stroke={colors.textColor}
-              style={{ fontSize: '12px' }}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <Tooltip 
               content={<CustomChartTooltip unit="V" />}
@@ -142,7 +156,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               type="monotone"
               dataKey="value"
               stroke={colors.voltage}
-              strokeWidth={2}
+              strokeWidth={isMobile ? 2 : 3}
               dot={false}
               activeDot={{ r: 6 }}
               name="Voltage"
@@ -159,26 +173,38 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
         error={currentError}
         isEmpty={isCurrentEmpty}
         onRetry={refetchCurrent}
-        height={350}
+        height={isMobile ? 250 : 350}
       >
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={currentData}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+          <LineChart 
+            data={currentData}
+            margin={{ 
+              top: 5, 
+              right: isMobile ? 5 : 20, 
+              left: isMobile ? -20 : 0, 
+              bottom: 5 
+            }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'hour')}
               stroke={colors.textColor}
-              style={{ fontSize: '12px' }}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
               label={{
                 value: 'Current (A)',
                 angle: -90,
                 position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: '12px' },
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
               }}
               stroke={colors.textColor}
-              style={{ fontSize: '12px' }}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <Tooltip 
               content={<CustomChartTooltip unit="A" />}
@@ -192,7 +218,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               type="monotone"
               dataKey="value"
               stroke={colors.current}
-              strokeWidth={2}
+              strokeWidth={isMobile ? 2 : 3}
               dot={false}
               activeDot={{ r: 6 }}
               name="Current"
