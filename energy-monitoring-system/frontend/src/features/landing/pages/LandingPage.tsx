@@ -1,10 +1,11 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Activity, Database, BarChart3, ShieldCheck, TrendingUp, Lock } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { ROUTES } from '@/routes/routes.config';
 import { Navigation } from '@/components/layout';
 import TelemetryDisplay from '@/features/landing/components/TelemetryDisplay';
-import { useTheme } from '@/contexts/ThemeContext';  // Add this import
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
 
 /**
  * LandingPage Component
@@ -45,8 +46,8 @@ if (typeof document !== 'undefined' && !document.getElementById('landing-page-re
 
 export function LandingPage() {
   const navigate = useNavigate();
-
   const { theme } = useTheme();
+  const colors = getThemeColors(theme);
 
   const handleAccessDashboard = () => {
     navigate(ROUTES.LOGIN);
@@ -58,7 +59,7 @@ export function LandingPage() {
       style={{
         background: theme === 'light'
           ? 'linear-gradient(135deg, #FFF4E1 0%, #FFEFD5 100%)'
-          : 'linear-gradient(135deg, #12141A 0%, #1A1D23 100%)'
+          : `linear-gradient(135deg, ${colors.pageBackground} 0%, #1A1D23 100%)`
       }}
     >
       {/* Navigation */}
@@ -66,9 +67,9 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24"><div className="text-center"><div className="mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold" style={{
-          background: theme === 'light' ? '#89D7B7' : 'rgba(137, 215, 183, 0.2)',
-          color: theme === 'light' ? '#1A312C' : '#89D7B7',
-          borderColor: theme === 'light' ? '#428475' : 'rgba(137, 215, 183, 0.3)'
+          background: colors.accentSubtle,
+          color: colors.accent,
+          borderColor: colors.border
         }}>
             <ShieldCheck className="h-4 w-4" />
             <span>Authorized Personnel Only</span>
@@ -76,10 +77,10 @@ export function LandingPage() {
 
           {/* Headline */}
           <h2 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" style={{
-            color: theme === 'light' ? '#1A312C' : '#FFF4E1'
+            color: colors.textPrimary
           }}>
             <br />
-            <span style={{ color: '#428475' }}>Energy Monitoring Dashboard</span>
+            <span style={{ color: colors.accent }}>Energy Monitoring Dashboard</span>
           </h2>
 
           {/* Subheadline - Enhanced value proposition */}
@@ -98,7 +99,7 @@ export function LandingPage() {
               onClick={handleAccessDashboard}
               className="hero-cta-button inline-flex items-center gap-2 rounded-lg px-8 py-4 text-base font-semibold shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2"
               style={{
-                background: theme === 'light' ? '#1A312C' : '#428475',
+                background: colors.accent,
                 color: '#FFFFFF',
                 boxShadow: theme === 'light'
                   ? '0 10px 25px rgba(26, 49, 44, 0.3)'
@@ -121,8 +122,8 @@ export function LandingPage() {
               className="hero-cta-button inline-flex items-center gap-2 rounded-lg border-2 px-8 py-4 text-base font-semibold transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
               style={{
                 background: 'white',
-                color: '#1A312C',
-                borderColor: '#428475'
+                color: colors.textPrimary,
+                borderColor: colors.accent
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#428475';
@@ -140,26 +141,26 @@ export function LandingPage() {
 
         {/* Hero Visual - System Stats Preview */}
         <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
-          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: '1px solid rgba(66, 132, 117, 0.2)' }}>
+          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: `1px solid ${colors.border}` }}>
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-white p-2">
               <Logo className="h-full w-full" />
             </div>
-            <div className="text-3xl font-bold" style={{ color: '#1A312C' }}>Real-Time</div>
-            <div className="text-sm font-medium" style={{ color: '#428475' }}>Data Monitoring</div>
+            <div className="text-3xl font-bold" style={{ color: colors.textPrimary }}>Real-Time</div>
+            <div className="text-sm font-medium" style={{ color: colors.accent }}>Data Monitoring</div>
           </div>
-          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: '1px solid rgba(66, 132, 117, 0.2)' }}>
+          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: `1px solid ${colors.border}` }}>
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg" style={{ background: 'rgba(66, 132, 117, 0.15)' }}>
-              <Activity className="h-6 w-6" style={{ color: '#428475' }} />
+              <Activity className="h-6 w-6" style={{ color: colors.accent }} />
             </div>
-            <div className="text-3xl font-bold" style={{ color: '#1A312C' }}>ESP32</div>
-            <div className="text-sm font-medium" style={{ color: '#428475' }}>IoT Integration</div>
+            <div className="text-3xl font-bold" style={{ color: colors.textPrimary }}>ESP32</div>
+            <div className="text-sm font-medium" style={{ color: colors.accent }}>IoT Integration</div>
           </div>
-          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: '1px solid rgba(66, 132, 117, 0.2)' }}>
+          <div className="rounded-xl bg-white p-6 text-center shadow-lg transition-all hover:shadow-xl" style={{ border: `1px solid ${colors.border}` }}>
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg" style={{ background: 'rgba(66, 132, 117, 0.15)' }}>
-              <Database className="h-6 w-6" style={{ color: '#428475' }} />
+              <Database className="h-6 w-6" style={{ color: colors.accent }} />
             </div>
-            <div className="text-3xl font-bold" style={{ color: '#1A312C' }}>MongoDB</div>
-            <div className="text-sm font-medium" style={{ color: '#428475' }}>Time-Series Storage</div>
+            <div className="text-3xl font-bold" style={{ color: colors.textPrimary }}>MongoDB</div>
+            <div className="text-sm font-medium" style={{ color: colors.accent }}>Time-Series Storage</div>
           </div>
         </div>
       </section>
@@ -174,18 +175,18 @@ export function LandingPage() {
           <div className="mb-12 text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold" style={{
               background: 'rgba(137, 215, 183, 0.15)',
-              color: '#1A312C',
+              color: colors.textPrimary,
               borderColor: 'rgba(66, 132, 117, 0.3)'
             }}>
-              <Activity className="h-4 w-4" style={{ color: '#428475' }} />
+              <Activity className="h-4 w-4" style={{ color: colors.accent }} />
               <span>Live Data Stream</span>
             </div>
             
-            <h3 className="mb-4 text-3xl font-bold sm:text-4xl" style={{ color: '#1A312C' }}>
+            <h3 className="mb-4 text-3xl font-bold sm:text-4xl" style={{ color: colors.textPrimary }}>
               Real-Time Energy Data
             </h3>
             
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed" style={{ color: '#1A312C', opacity: 0.7 }}>
+            <p className="mx-auto max-w-2xl text-lg leading-relaxed" style={{ color: colors.textPrimary, opacity: 0.7 }}>
               See live telemetry streaming from our piezoelectric energy harvesting system. 
               Watch voltage, current, power output, and daily energy generation update in real-time 
               as footsteps power the future of sustainable energy.
@@ -199,7 +200,7 @@ export function LandingPage() {
 
           {/* Call-to-Action */}
           <div className="flex flex-col items-center gap-4 text-center">
-            <p className="text-base font-medium" style={{ color: '#1A312C', opacity: 0.8 }}>
+            <p className="text-base font-medium" style={{ color: colors.textPrimary, opacity: 0.8 }}>
               Want to dive deeper into system analytics and performance metrics?
             </p>
             
@@ -223,7 +224,7 @@ export function LandingPage() {
               Access Full Dashboard for Detailed Analytics
             </button>
 
-            <p className="mt-2 text-sm" style={{ color: '#1A312C', opacity: 0.6 }}>
+            <p className="mt-2 text-sm" style={{ color: colors.textPrimary, opacity: 0.6 }}>
               Administrator authentication required
             </p>
           </div>
@@ -235,10 +236,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Section Header */}
           <div className="mb-12 text-center">
-            <h3 className="mb-3 text-3xl font-bold sm:text-4xl" style={{ color: '#1A312C' }}>
+            <h3 className="mb-3 text-3xl font-bold sm:text-4xl" style={{ color: colors.textPrimary }}>
               Core Administrative Functions
             </h3>
-            <p className="mx-auto max-w-2xl text-lg" style={{ color: '#1A312C', opacity: 0.7 }}>
+            <p className="mx-auto max-w-2xl text-lg" style={{ color: colors.textPrimary, opacity: 0.7 }}>
               Comprehensive tools for managing and monitoring the EcoStep piezoelectric energy harvesting system
             </p>
           </div>
@@ -247,7 +248,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Feature 1: Real-Time Monitoring */}
             <div className="group rounded-xl bg-white p-8 shadow-lg transition-all hover:shadow-xl" style={{ 
-              border: '1px solid rgba(66, 132, 117, 0.2)',
+              border: `1px solid ${colors.border}`,
               background: 'linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)'
             }}>
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110" style={{ 
@@ -255,23 +256,23 @@ export function LandingPage() {
               }}>
                 <Activity className="h-7 w-7 text-white" />
               </div>
-              <h4 className="mb-3 text-xl font-bold" style={{ color: '#1A312C' }}>
+              <h4 className="mb-3 text-xl font-bold" style={{ color: colors.textPrimary }}>
                 Real-Time Monitoring
               </h4>
-              <p className="mb-4 text-base leading-relaxed" style={{ color: '#1A312C', opacity: 0.8 }}>
+              <p className="mb-4 text-base leading-relaxed" style={{ color: colors.textPrimary, opacity: 0.8 }}>
                 View live voltage, current, power, and accumulated energy metrics streamed via WebSocket connections. Monitor system performance with sub-second latency and interactive dashboards.
               </p>
-              <ul className="space-y-2 text-sm" style={{ color: '#1A312C', opacity: 0.7 }}>
+              <ul className="space-y-2 text-sm" style={{ color: colors.textPrimary, opacity: 0.7 }}>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Live voltage, current, power readings</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>WebSocket real-time updates</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Interactive time-series charts</span>
                 </li>
               </ul>
@@ -279,7 +280,7 @@ export function LandingPage() {
 
             {/* Feature 2: Hardware Management */}
             <div className="group rounded-xl bg-white p-8 shadow-lg transition-all hover:shadow-xl" style={{ 
-              border: '1px solid rgba(66, 132, 117, 0.2)',
+              border: `1px solid ${colors.border}`,
               background: 'linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)'
             }}>
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110" style={{ 
@@ -287,23 +288,23 @@ export function LandingPage() {
               }}>
                 <Database className="h-7 w-7 text-white" />
               </div>
-              <h4 className="mb-3 text-xl font-bold" style={{ color: '#1A312C' }}>
+              <h4 className="mb-3 text-xl font-bold" style={{ color: colors.textPrimary }}>
                 Hardware Management
               </h4>
-              <p className="mb-4 text-base leading-relaxed" style={{ color: '#1A312C', opacity: 0.8 }}>
+              <p className="mb-4 text-base leading-relaxed" style={{ color: colors.textPrimary, opacity: 0.8 }}>
                 Manage ESP32 microcontroller API keys, monitor sensor connectivity status, and configure hardware endpoints. Ensure reliable IoT infrastructure operation.
               </p>
-              <ul className="space-y-2 text-sm" style={{ color: '#1A312C', opacity: 0.7 }}>
+              <ul className="space-y-2 text-sm" style={{ color: colors.textPrimary, opacity: 0.7 }}>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>ESP32 API key management</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Sensor health diagnostics</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Connection status tracking</span>
                 </li>
               </ul>
@@ -311,7 +312,7 @@ export function LandingPage() {
 
             {/* Feature 3: Data Analytics */}
             <div className="group rounded-xl bg-white p-8 shadow-lg transition-all hover:shadow-xl" style={{ 
-              border: '1px solid rgba(66, 132, 117, 0.2)',
+              border: `1px solid ${colors.border}`,
               background: 'linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)'
             }}>
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110" style={{ 
@@ -319,23 +320,23 @@ export function LandingPage() {
               }}>
                 <BarChart3 className="h-7 w-7 text-white" />
               </div>
-              <h4 className="mb-3 text-xl font-bold" style={{ color: '#1A312C' }}>
+              <h4 className="mb-3 text-xl font-bold" style={{ color: colors.textPrimary }}>
                 Data Analytics
               </h4>
-              <p className="mb-4 text-base leading-relaxed" style={{ color: '#1A312C', opacity: 0.8 }}>
+              <p className="mb-4 text-base leading-relaxed" style={{ color: colors.textPrimary, opacity: 0.8 }}>
                 Generate historical reports, analyze system reliability metrics, and evaluate performance efficiency. Export data for research and compliance documentation.
               </p>
-              <ul className="space-y-2 text-sm" style={{ color: '#1A312C', opacity: 0.7 }}>
+              <ul className="space-y-2 text-sm" style={{ color: colors.textPrimary, opacity: 0.7 }}>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Historical trend analysis</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Performance efficiency reports</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: '#428475' }} />
+                  <TrendingUp className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: colors.accent }} />
                   <span>Automated PDF/CSV export</span>
                 </li>
               </ul>
@@ -351,18 +352,18 @@ export function LandingPage() {
       }}>
         <div className="mx-auto max-w-4xl px-6 lg:px-8">
           <div className="rounded-xl bg-white p-8 shadow-lg" style={{ 
-            border: '1px solid rgba(66, 132, 117, 0.2)'
+            border: `1px solid ${colors.border}`
           }}>
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: 'rgba(137, 215, 183, 0.2)' }}>
-                <ShieldCheck className="h-6 w-6" style={{ color: '#428475' }} />
+                <ShieldCheck className="h-6 w-6" style={{ color: colors.accent }} />
               </div>
-              <h3 className="text-2xl font-bold" style={{ color: '#1A312C' }}>
+              <h3 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
                 Privacy & Data Handling
               </h3>
             </div>
             
-            <div className="space-y-4 text-base leading-relaxed" style={{ color: '#1A312C', opacity: 0.8 }}>
+            <div className="space-y-4 text-base leading-relaxed" style={{ color: colors.textPrimary, opacity: 0.8 }}>
               <p>
                 <strong>Your privacy matters.</strong> The EcoStep system is designed with data protection in mind:
               </p>
@@ -417,7 +418,7 @@ export function LandingPage() {
             {/* Right: Version & Copyright */}
             <div className="text-center text-sm sm:text-right" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               <div>System Version 1.0.0</div>
-              <div>© {new Date().getFullYear()} CTU. All rights reserved.</div>
+              <div>� {new Date().getFullYear()} CTU. All rights reserved.</div>
             </div>
           </div>
         </div>

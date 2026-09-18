@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/common/Toast';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
 import { useCreateReferenceConfig, useReferenceConfig } from '../hooks/useDiagnostics';
 import type { CreateReferenceConfigRequest } from '@/types/diagnostic.types';
 
@@ -34,6 +36,8 @@ const referenceConfigSchema = z.object({
 export function ReferenceConfigForm() {
   const { data: currentConfig, isLoading: isLoadingConfig } = useReferenceConfig();
   const createMutation = useCreateReferenceConfig();
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
 
   const {
     register,
@@ -72,55 +76,132 @@ export function ReferenceConfigForm() {
 
   if (isLoadingConfig) {
     return (
-      <div className="rounded-lg border border-[#E5E7EB] dark:border-[#2A2E37] bg-white dark:bg-[#1C1F26] p-6 shadow-sm">
+      <div 
+        className="rounded-lg p-6"
+        style={{
+          backgroundColor: colors.cardBackground,
+          border: `1px solid ${colors.border}`,
+          boxShadow: colors.shadow
+        }}
+      >
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-[#E5E7EB] dark:bg-[#2A2E37] rounded w-1/4"></div>
-          <div className="h-10 bg-[#E5E7EB] dark:bg-[#2A2E37] rounded"></div>
-          <div className="h-10 bg-[#E5E7EB] dark:bg-[#2A2E37] rounded"></div>
+          <div 
+            className="h-4 rounded w-1/4"
+            style={{ backgroundColor: colors.hoverBackground }}
+          ></div>
+          <div 
+            className="h-10 rounded"
+            style={{ backgroundColor: colors.hoverBackground }}
+          ></div>
+          <div 
+            className="h-10 rounded"
+            style={{ backgroundColor: colors.hoverBackground }}
+          ></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-[#E5E7EB] dark:border-[#2A2E37] bg-white dark:bg-[#1C1F26] p-6 shadow-sm">
+    <div 
+      className="rounded-lg p-6"
+      style={{
+        backgroundColor: colors.cardBackground,
+        border: `1px solid ${colors.border}`,
+        boxShadow: colors.shadow
+      }}
+    >
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-[#1A1D23] dark:text-[#EDEEF0] mb-2">
+        <h3 
+          className="text-lg font-semibold mb-2"
+          style={{ 
+            color: colors.textPrimary,
+            fontWeight: TYPOGRAPHY.fontWeight.semibold
+          }}
+        >
           Reference Configuration
         </h3>
-        <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF]">
+        <p 
+          className="text-sm"
+          style={{ color: colors.textSecondary }}
+        >
           Set baseline values for diagnostic tests. Contact hardware team for expected values.
         </p>
       </div>
 
       {/* Current Configuration Display */}
       {currentConfig && (
-        <div className="mb-6 p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-          <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-2">
+        <div 
+          className="mb-6 p-4 rounded-lg"
+          style={{ backgroundColor: colors.surfaceMuted }}
+        >
+          <p 
+            className="text-xs font-medium mb-2"
+            style={{ 
+              color: colors.textSecondary,
+              fontWeight: TYPOGRAPHY.fontWeight.medium
+            }}
+          >
             Current Configuration
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm font-semibold text-[#1A1D23] dark:text-[#EDEEF0]">
+              <p 
+                className="text-sm font-semibold"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
                 {currentConfig.appliedWeightKg} kg
               </p>
-              <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">Applied Weight</p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Applied Weight
+              </p>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#1A1D23] dark:text-[#EDEEF0]">
+              <p 
+                className="text-sm font-semibold"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
                 {currentConfig.expectedEnergyWh} Wh
               </p>
-              <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">Expected Energy</p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Expected Energy
+              </p>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#1A1D23] dark:text-[#EDEEF0]">
+              <p 
+                className="text-sm font-semibold"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
                 ±{currentConfig.tolerancePercent}%
               </p>
-              <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">Tolerance</p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Tolerance
+              </p>
             </div>
           </div>
-          <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] mt-3">
+          <p 
+            className="text-xs mt-3"
+            style={{ color: colors.textSecondary }}
+          >
             Last updated by {currentConfig.createdBy} on{' '}
             {new Date(currentConfig.updatedAt).toLocaleDateString()}
           </p>

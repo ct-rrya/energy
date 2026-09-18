@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
 import { showToast } from '@/components/common/Toast';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
 import { useRecordDiagnosticTest, useReferenceConfig } from '../hooks/useDiagnostics';
 import { DiagnosticResultStatus } from '@/types/diagnostic.types';
 import type { RecordDiagnosticTestRequest, DiagnosticTest } from '@/types/diagnostic.types';
@@ -37,6 +39,8 @@ export function DiagnosticTestForm() {
   
   const { data: referenceConfig } = useReferenceConfig();
   const recordMutation = useRecordDiagnosticTest();
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
 
   const {
     register,
@@ -92,13 +96,29 @@ export function DiagnosticTestForm() {
   };
 
   return (
-    <div className="rounded-lg border border-[#E5E7EB] dark:border-[#2A2E37] bg-white dark:bg-[#1C1F26] p-6 shadow-sm">
+    <div 
+      className="rounded-lg p-6"
+      style={{
+        backgroundColor: colors.cardBackground,
+        border: `1px solid ${colors.border}`,
+        boxShadow: colors.shadow
+      }}
+    >
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-[#1A1D23] dark:text-[#EDEEF0] mb-2">
+        <h3 
+          className="text-lg font-semibold mb-2"
+          style={{ 
+            color: colors.textPrimary,
+            fontWeight: TYPOGRAPHY.fontWeight.semibold
+          }}
+        >
           Diagnostic Test
         </h3>
-        <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF]">
+        <p 
+          className="text-sm"
+          style={{ color: colors.textSecondary }}
+        >
           Record actual measured energy from a diagnostic test to compare against expected values.
         </p>
       </div>
@@ -135,14 +155,26 @@ export function DiagnosticTestForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Expected Energy Info */}
             {referenceConfig && (
-              <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-2">
+              <div 
+                className="p-4 rounded-lg"
+                style={{ backgroundColor: colors.surfaceMuted }}
+              >
+                <p 
+                  className="text-xs font-medium mb-2"
+                  style={{ color: colors.textSecondary }}
+                >
                   Expected Energy
                 </p>
-                <p className="text-2xl font-bold text-[#2FBF71] dark:text-[#3ED98A]">
+                <p 
+                  className="text-2xl font-bold"
+                  style={{ color: colors.accent }}
+                >
                   {referenceConfig.expectedEnergyWh} Wh
                 </p>
-                <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] mt-1">
+                <p 
+                  className="text-xs mt-1"
+                  style={{ color: colors.textSecondary }}
+                >
                   Tolerance: ±{referenceConfig.tolerancePercent}%
                 </p>
               </div>
@@ -165,7 +197,8 @@ export function DiagnosticTestForm() {
             <div>
               <label
                 htmlFor="notes"
-                className="block text-sm font-medium text-[#1A1D23] dark:text-[#EDEEF0] mb-2"
+                className="block text-sm font-medium mb-2"
+                style={{ color: colors.textPrimary }}
               >
                 Notes (Optional)
               </label>
@@ -175,7 +208,13 @@ export function DiagnosticTestForm() {
                 placeholder="Test conditions, observations, etc."
                 disabled={recordMutation.isPending}
                 maxLength={500}
-                className="w-full px-4 py-2.5 rounded-lg border border-[#E5E7EB] dark:border-[#2A2E37] bg-white dark:bg-[#1C1F26] text-[#1A1D23] dark:text-[#EDEEF0] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2FBF71] dark:focus:ring-[#3ED98A] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  border: `1px solid ${colors.border}`,
+                  backgroundColor: colors.inputBackground,
+                  color: colors.textPrimary,
+                  focusRing: colors.focusRing
+                }}
                 {...register('notes')}
               />
               {errors.notes && (

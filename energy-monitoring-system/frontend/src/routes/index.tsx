@@ -1,4 +1,5 @@
-﻿import { createBrowserRouter } from 'react-router-dom';
+﻿import { lazy, Suspense } from 'react';
+import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { AdminRoute } from './AdminRoute';
 import { FlexibleRoute } from './FlexibleRoute';
@@ -8,20 +9,48 @@ import { ROUTES } from './routes.config';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 
-// Pages
+// Core pages (loaded immediately for landing/auth experience only)
 import { LandingPage } from '@/features/landing/pages/LandingPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
-import { SensorMonitoringPage } from '@/features/sensors/pages/SensorMonitoringPage';
-import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
-import { EnergyMonitoringPage } from '@/features/energy/pages/EnergyMonitoringPage';
-import { AlertsPage } from '@/features/alerts/pages/AlertsPage';
-import { ReportsPage } from '@/features/reports/pages/ReportsPage';
-import { DiagnosticsPage } from '@/features/admin/pages/DiagnosticsPage';
-import { ProfilePage } from '@/features/profile/pages/ProfilePage';
-import { SettingsPage } from '@/features/admin/pages/SettingsPage';
 import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
+
+// Lazy-loaded pages (code-split for better initial bundle size)
+// EcoStep Central (Dashboard) - lazy loaded to reduce initial bundle
+const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+
+// Historical Analytics and other public pages
+const AnalyticsPage = lazy(() => import('@/features/analytics/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const EnergyMonitoringPage = lazy(() => import('@/features/energy/pages/EnergyMonitoringPage').then(m => ({ default: m.EnergyMonitoringPage })));
+const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+
+// Admin-only pages (heavy features with charts/reports/diagnostics)
+const SensorMonitoringPage = lazy(() => import('@/features/sensors/pages/SensorMonitoringPage').then(m => ({ default: m.SensorMonitoringPage })));
+const AlertsPage = lazy(() => import('@/features/alerts/pages/AlertsPage').then(m => ({ default: m.AlertsPage })));
+const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
+const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+
+/**
+ * Loading fallback component for lazy-loaded routes
+ */
+const RouteLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-[#2FBF71] border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-sm text-gray-600 dark:text-gray-400">Loading...</p>
+    </div>
+  </div>
+);
+
+/**
+ * Wrapper component for lazy-loaded routes with Suspense boundary
+ */
+const LazyRoute = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<RouteLoadingFallback />}>
+    {children}
+  </Suspense>
+);
 
 /**
  * Application Router Configuration
@@ -52,14 +81,17 @@ export const router = createBrowserRouter([
   },
 
   // Dashboard routes - PUBLIC ACCESS ALLOWED (with limited features)
+  // EcoStep Central is now lazy-loaded to reduce initial bundle size
   {
     path: ROUTES.DASHBOARD,
     element: (
-      <FlexibleRoute requireAuth={false}>
-        <DashboardLayout>
-          <DashboardPage />
-        </DashboardLayout>
-      </FlexibleRoute>
+      <LazyRoute>
+        <FlexibleRoute requireAuth={false}>
+          <DashboardLayout>
+            <DashboardPage />
+          </DashboardLayout>
+        </FlexibleRoute>
+      </LazyRoute>
     ),
   },
 
@@ -67,11 +99,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.ANALYTICS,
     element: (
-      <FlexibleRoute requireAuth={false}>
-        <DashboardLayout>
-          <AnalyticsPage />
-        </DashboardLayout>
-      </FlexibleRoute>
+      <LazyRoute>
+        <FlexibleRoute requireAuth={false}>
+          <DashboardLayout>
+            <AnalyticsPage />
+          </DashboardLayout>
+        </FlexibleRoute>
+      </LazyRoute>
     ),
   },
 
@@ -79,11 +113,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.ENERGY,
     element: (
-      <FlexibleRoute requireAuth={false}>
-        <DashboardLayout>
-          <EnergyMonitoringPage />
-        </DashboardLayout>
-      </FlexibleRoute>
+      <LazyRoute>
+        <FlexibleRoute requireAuth={false}>
+          <DashboardLayout>
+            <EnergyMonitoringPage />
+          </DashboardLayout>
+        </FlexibleRoute>
+      </LazyRoute>
     ),
   },
 
@@ -91,11 +127,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.SENSORS_MONITORING,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <SensorMonitoringPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <LazyRoute>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <SensorMonitoringPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </LazyRoute>
     ),
   },
 
@@ -103,11 +141,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.ALERTS,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <AlertsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <LazyRoute>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <AlertsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </LazyRoute>
     ),
   },
 
@@ -115,11 +155,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.REPORTS,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <ReportsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <LazyRoute>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ReportsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </LazyRoute>
     ),
   },
 
@@ -127,11 +169,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.ADMIN_DIAGNOSTICS,
     element: (
-      <AdminRoute>
-        <DashboardLayout>
-          <DiagnosticsPage />
-        </DashboardLayout>
-      </AdminRoute>
+      <LazyRoute>
+        <AdminRoute>
+          <DashboardLayout>
+            <DiagnosticsPage />
+          </DashboardLayout>
+        </AdminRoute>
+      </LazyRoute>
     ),
   },
 
@@ -139,11 +183,13 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.PROFILE,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <ProfilePage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <LazyRoute>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ProfilePage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </LazyRoute>
     ),
   },
 
@@ -164,9 +210,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.SETTINGS,
     element: (
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
+      <LazyRoute>
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      </LazyRoute>
     ),
   },
 

@@ -2,10 +2,12 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { EcoStepLogo } from '@/components/common/EcoStepLogo';
 import { ROUTES } from '@/routes/routes.config';
 import { APP_NAME } from '@/lib/constants';
 import { showToast } from '@/components/common/Toast';
+import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
 
 /**
  * Login Page - Split Screen Design
@@ -15,6 +17,8 @@ import { showToast } from '@/components/common/Toast';
 export function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, login } = useAuth();
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,14 +62,15 @@ export function LoginPage() {
     <>
       {/* LEFT SIDE - ECOSTEP BRAND PANEL (55%) */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
-        {/* Deep forest green atmospheric background */}
+        {/* Deep atmospheric background */}
         <div 
-          className="absolute inset-0 bg-[#1A312C]"
+          className="absolute inset-0"
           style={{
+            backgroundColor: theme === 'light' ? '#1A312C' : colors.sidebarBackground,
             backgroundImage: `
-              radial-gradient(circle at 15% 20%, rgba(66, 132, 117, 0.15), transparent 40%),
-              radial-gradient(circle at 80% 60%, rgba(137, 215, 183, 0.10), transparent 45%),
-              radial-gradient(circle at 40% 80%, rgba(66, 132, 117, 0.08), transparent 35%)
+              radial-gradient(circle at 15% 20%, ${theme === 'light' ? 'rgba(66, 132, 117, 0.15)' : 'rgba(62, 217, 138, 0.08)'}, transparent 40%),
+              radial-gradient(circle at 80% 60%, ${theme === 'light' ? 'rgba(137, 215, 183, 0.10)' : 'rgba(137, 215, 183, 0.05)'}, transparent 45%),
+              radial-gradient(circle at 40% 80%, ${theme === 'light' ? 'rgba(66, 132, 117, 0.08)' : 'rgba(47, 191, 113, 0.05)'}, transparent 35%)
             `
           }}
         />
@@ -124,8 +129,8 @@ export function LoginPage() {
 
           {/* Description */}
           <p className="text-lg text-[#89D7B7]/90 mb-10 leading-relaxed max-w-md">
-            EcoStep helps monitor energy consumption, understand usage patterns, 
-            and make smarter decisions for a more sustainable future.
+            Lorem ipsum dolor sit amet dubidubidapdap mamaaaaaaaaaaaaaaaa
+            pwede nang mangawat lorem ipsum dolor sit amet dubidubidapdap.
           </p>
 
           {/* Value Indicators */}

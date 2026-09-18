@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/lib/theme';
 
 export interface DropdownOption {
   value: string;
@@ -30,6 +32,9 @@ export function CustomDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
 
   // Get selected option label
   const selectedOption = options.find((opt) => opt.value === value);
@@ -148,15 +153,17 @@ export function CustomDropdown({
       <button
         type="button"
         onClick={toggleDropdown}
-        className="eco-input py-1.5 px-3 text-sm flex items-center justify-between gap-2 w-full min-w-[140px] text-[#1A1D23] dark:text-[#EDEEF0]"
+        className="eco-input py-1.5 px-3 text-sm flex items-center justify-between gap-2 w-full min-w-[140px]"
+        style={{ color: colors.textPrimary }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown
-          className={`h-4 w-4 text-[#9CA3AF] dark:text-[#6B7280] transition-transform duration-200 flex-shrink-0 ${
+          className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${
             isOpen ? 'rotate-180' : ''
           }`}
+          style={{ color: colors.textMuted }}
           strokeWidth={2}
         />
       </button>
@@ -166,11 +173,12 @@ export function CustomDropdown({
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute z-[200] mt-1 w-full min-w-[140px] max-h-[240px] overflow-y-auto
-                     bg-white dark:bg-[#1C1F26] 
-                     border border-[#E5E7EB] dark:border-[#2A2E37]
-                     rounded-lg shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)]
-                     py-1"
+          className="absolute z-[200] mt-1 w-full min-w-[140px] max-h-[240px] overflow-y-auto rounded-lg py-1"
+          style={{
+            backgroundColor: colors.cardBackground,
+            border: `1px solid ${colors.border}`,
+            boxShadow: colors.shadowLg
+          }}
           tabIndex={-1}
         >
           {options.map((option, index) => {
@@ -184,22 +192,17 @@ export function CustomDropdown({
                 aria-selected={isSelected}
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setFocusedIndex(index)}
-                className={`
-                  px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2
-                  transition-colors duration-150
-                  ${
-                    isFocused
-                      ? 'bg-[#F0FDF7] dark:bg-[#16261D] text-[#2FBF71] dark:text-[#3ED98A]'
-                      : isSelected
-                      ? 'text-[#2FBF71] dark:text-[#3ED98A]'
-                      : 'text-[#1A1D23] dark:text-[#EDEEF0]'
-                  }
-                `}
+                className="px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2 transition-colors duration-150"
+                style={{
+                  backgroundColor: isFocused ? colors.hoverBackground : 'transparent',
+                  color: isSelected || isFocused ? colors.accent : colors.textPrimary
+                }}
               >
                 <span className="truncate">{option.label}</span>
                 {isSelected && (
                   <Check
-                    className="h-4 w-4 text-[#2FBF71] dark:text-[#3ED98A] flex-shrink-0"
+                    className="h-4 w-4 flex-shrink-0"
+                    style={{ color: colors.accent }}
                     strokeWidth={2}
                   />
                 )}

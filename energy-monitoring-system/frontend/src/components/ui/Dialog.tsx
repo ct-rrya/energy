@@ -1,6 +1,8 @@
 import { type ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/lib/theme';
 
 /**
  * Dialog Props
@@ -38,6 +40,9 @@ export function Dialog({
   size = 'md',
   className,
 }: DialogProps) {
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -76,7 +81,8 @@ export function Dialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -85,27 +91,42 @@ export function Dialog({
       <div
         className={cn(
           'relative z-50 w-full mx-4 rounded-lg',
-          'bg-white dark:bg-[#1C1F26]',
-          'shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)]',
           sizeClasses[size],
           className
         )}
+        style={{
+          backgroundColor: colors.cardBackground,
+          boxShadow: colors.shadowLg
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2A2E37] px-6 py-4">
+          <div 
+            className="flex items-center justify-between px-6 py-4"
+            style={{ borderBottom: `1px solid ${colors.border}` }}
+          >
             <h2
               id="dialog-title"
-              className="text-lg font-semibold text-[#2FBF71] dark:text-[#3ED98A]"
+              className="text-lg font-semibold"
+              style={{ color: colors.accent }}
             >
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-[#9CA3AF] dark:text-[#6B7280] hover:bg-[#F5F6F8] dark:hover:bg-[#2A2E37] hover:text-[#1A1D23] dark:hover:text-[#EDEEF0] transition-colors"
+              className="rounded-lg p-1 transition-colors"
+              style={{ color: colors.textMuted }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.hoverBackground;
+                e.currentTarget.style.color = colors.textPrimary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.textMuted;
+              }}
               aria-label="Close dialog"
             >
               <X className="h-5 w-5" />
@@ -133,12 +154,16 @@ interface DialogFooterProps {
 }
 
 export function DialogFooter({ children, className }: DialogFooterProps) {
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+  
   return (
     <div
       className={cn(
-        'flex items-center justify-end gap-3 border-t border-[#E5E7EB] dark:border-[#2A2E37] px-6 py-4',
+        'flex items-center justify-end gap-3 px-6 py-4',
         className
       )}
+      style={{ borderTop: `1px solid ${colors.border}` }}
     >
       {children}
     </div>

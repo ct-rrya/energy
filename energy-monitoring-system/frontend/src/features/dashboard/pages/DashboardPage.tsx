@@ -14,6 +14,7 @@ import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
+import { getThemeColors, SPACING, TYPOGRAPHY } from '@/lib/theme';
 
 // Task 9.3: Lazy load ChartsLayoutContainer for performance optimization
 const ChartsLayoutContainer = lazy(() => import('../components/ChartsLayoutContainer').then(module => ({ default: module.ChartsLayoutContainer })));
@@ -53,25 +54,8 @@ export function DashboardPage() {
     localStorage.setItem('dashboard-filter', selectedFilter);
   }, [selectedFilter]);
 
-  // Color system based on theme
-  const colors = {
-    cardBg: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-    text: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-    subtext: theme === 'light' ? '#6B7280' : '#9CA3AF',
-    accent: theme === 'light' ? '#2FBF71' : '#3ED98A',
-    border: theme === 'light' ? '#E5E7EB' : '#2A2E37',
-    hoverBg: theme === 'light' ? '#F9FAFB' : '#12141A',
-    
-    // Metric chips with more subtle colors
-    voltageLight: '#E8F8EF',
-    voltageDark: '#1E2B24',
-    currentLight: '#FEF3E7',
-    currentDark: '#2B2620',
-    powerLight: '#EAF0FD',
-    powerDark: '#1F2430',
-    energyLight: '#FEF3E7',
-    energyDark: '#2B2520',
-  };
+  // Use centralized theme colors
+  const colors = getThemeColors(theme);
 
   // Filter options for the compact dropdown
   const filterOptions = [
@@ -96,20 +80,26 @@ export function DashboardPage() {
           <div>
             <h1 
               className="text-2xl sm:text-3xl font-bold mb-2"
-              style={{ color: colors.text }}
+              style={{ 
+                color: colors.textPrimary,
+                fontWeight: TYPOGRAPHY.fontWeight.bold
+              }}
             >
-              EcoStep Dashboard
+              EcoStep Central
             </h1>
             <div className="flex items-center gap-2">
               <div 
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: systemStatus?.database === 'connected' ? colors.accent : '#EF4444' }}
+                style={{ backgroundColor: systemStatus?.database === 'connected' ? colors.success : colors.error }}
               />
               <p 
                 className="text-sm sm:text-base"
-                style={{ color: colors.subtext }}
+                style={{ 
+                  color: colors.textPrimarySecondary,
+                  fontSize: TYPOGRAPHY.fontSize.sm
+                }}
               >
-                System {systemStatus?.database === 'connected' ? 'Online' : 'Offline'} · Real-time monitoring active
+                Real-time energy, activity, and system monitoring
               </p>
             </div>
           </div>
@@ -119,23 +109,24 @@ export function DashboardPage() {
             <button
               disabled={isPublicUser}
               aria-label="Open settings"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200"
               style={{
-                backgroundColor: colors.cardBg,
+                backgroundColor: colors.cardBackground,
                 border: `1px solid ${colors.border}`,
-                color: colors.text,
+                color: colors.textPrimary,
                 opacity: isPublicUser ? 0.5 : 1,
                 cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto'
+                pointerEvents: isPublicUser ? 'none' : 'auto',
+                fontWeight: TYPOGRAPHY.fontWeight.medium
               }}
               onMouseEnter={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBg;
+                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBg;
+                  e.currentTarget.style.backgroundColor = colors.cardBackground;
                 }
               }}
               aria-disabled={isPublicUser}
@@ -146,23 +137,24 @@ export function DashboardPage() {
             <button
               disabled={isPublicUser}
               aria-label="View alerts (3 unread)"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200 relative"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200 relative"
               style={{
-                backgroundColor: colors.cardBg,
+                backgroundColor: colors.cardBackground,
                 border: `1px solid ${colors.border}`,
-                color: colors.text,
+                color: colors.textPrimary,
                 opacity: isPublicUser ? 0.5 : 1,
                 cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto'
+                pointerEvents: isPublicUser ? 'none' : 'auto',
+                fontWeight: TYPOGRAPHY.fontWeight.medium
               }}
               onMouseEnter={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBg;
+                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBg;
+                  e.currentTarget.style.backgroundColor = colors.cardBackground;
                 }
               }}
               aria-disabled={isPublicUser}
@@ -173,7 +165,7 @@ export function DashboardPage() {
               {!isPublicUser && (
                 <div 
                   className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                  style={{ backgroundColor: '#EF4444' }}
+                  style={{ backgroundColor: colors.error }}
                 >
                   3
                 </div>
@@ -182,23 +174,24 @@ export function DashboardPage() {
             <button
               disabled={isPublicUser}
               aria-label="Export data"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-xl flex items-center gap-2 transition-colors duration-200"
+              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200"
               style={{
-                backgroundColor: colors.cardBg,
+                backgroundColor: colors.cardBackground,
                 border: `1px solid ${colors.border}`,
-                color: colors.text,
+                color: colors.textPrimary,
                 opacity: isPublicUser ? 0.5 : 1,
                 cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto'
+                pointerEvents: isPublicUser ? 'none' : 'auto',
+                fontWeight: TYPOGRAPHY.fontWeight.medium
               }}
               onMouseEnter={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBg;
+                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBg;
+                  e.currentTarget.style.backgroundColor = colors.cardBackground;
                 }
               }}
               aria-disabled={isPublicUser}
@@ -213,11 +206,12 @@ export function DashboardPage() {
         <div className="relative">
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="w-full sm:w-auto min-w-[240px] px-4 py-3 rounded-xl flex items-center justify-between gap-3 transition-colors duration-200"
+            className="w-full sm:w-auto min-w-[240px] px-4 py-3 rounded-lg flex items-center justify-between gap-3 transition-colors duration-200"
             style={{
-              backgroundColor: colors.cardBg,
+              backgroundColor: colors.cardBackground,
               border: `1px solid ${colors.border}`,
-              color: colors.text
+              color: colors.textPrimary,
+              fontWeight: TYPOGRAPHY.fontWeight.medium
             }}
           >
             <span className="text-sm font-medium">
@@ -227,7 +221,7 @@ export function DashboardPage() {
               className="w-4 h-4 transition-transform duration-200"
               style={{ 
                 transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                color: colors.subtext 
+                color: colors.textPrimarySecondary
               }}
             />
           </button>
@@ -235,13 +229,11 @@ export function DashboardPage() {
           {/* Dropdown Menu */}
           {isFilterOpen && (
             <div 
-              className="absolute top-full mt-2 w-full sm:w-auto min-w-[240px] rounded-xl overflow-hidden z-10"
+              className="absolute top-full mt-2 w-full sm:w-auto min-w-[240px] rounded-lg overflow-hidden z-10"
               style={{
-                backgroundColor: colors.cardBg,
+                backgroundColor: colors.elevatedBackground,
                 border: `1px solid ${colors.border}`,
-                boxShadow: theme === 'light' 
-                  ? '0 10px 40px rgba(0,0,0,0.1)' 
-                  : '0 10px 40px rgba(0,0,0,0.5)'
+                boxShadow: colors.shadowLg
               }}
             >
               {filterOptions.map((option) => (
@@ -253,12 +245,12 @@ export function DashboardPage() {
                   }}
                   className="w-full px-4 py-3 text-left text-sm transition-colors duration-150"
                   style={{
-                    color: selectedFilter === option.value ? colors.accent : colors.text,
+                    color: selectedFilter === option.value ? colors.accent : colors.textPrimary,
                     backgroundColor: selectedFilter === option.value ? (theme === 'light' ? colors.voltageLight : colors.voltageDark) : 'transparent'
                   }}
                   onMouseEnter={(e) => {
                     if (selectedFilter !== option.value) {
-                      e.currentTarget.style.backgroundColor = colors.hoverBg;
+                      e.currentTarget.style.backgroundColor = colors.hoverBackground;
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -285,7 +277,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Voltage
             </div>
@@ -294,7 +286,7 @@ export function DashboardPage() {
               style={{ color: colors.accent }}
             >
               {lastReading?.voltage?.toFixed(1) || '0.0'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>V</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>V</span>
             </div>
           </div>
 
@@ -307,7 +299,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Current
             </div>
@@ -316,7 +308,7 @@ export function DashboardPage() {
               style={{ color: '#F59E0B' }}
             >
               {lastReading?.current?.toFixed(2) || '0.00'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>A</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>A</span>
             </div>
           </div>
 
@@ -329,7 +321,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Power
             </div>
@@ -338,7 +330,7 @@ export function DashboardPage() {
               style={{ color: '#3B82F6' }}
             >
               {lastReading?.power?.toFixed(1) || '0.0'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>W</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>W</span>
             </div>
           </div>
 
@@ -351,7 +343,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Energy Today
             </div>
@@ -360,7 +352,7 @@ export function DashboardPage() {
               style={{ color: '#F59E0B' }}
             >
               {metrics?.dailyEnergy?.toFixed(2) || '0.00'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>kWh</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>kWh</span>
             </div>
           </div>
         </div>
@@ -376,7 +368,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Step Count
             </div>
@@ -385,10 +377,10 @@ export function DashboardPage() {
               style={{ color: colors.accent }}
             >
               {lastReading?.stepCount !== undefined ? lastReading.stepCount : '—'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>steps</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>steps</span>
             </div>
             {!lastReading?.stepCount && (
-              <p className="text-xs mt-2" style={{ color: colors.subtext }}>
+              <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
                 No step data available
               </p>
             )}
@@ -403,7 +395,7 @@ export function DashboardPage() {
           >
             <div 
               className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Capacitor Voltage
             </div>
@@ -412,10 +404,10 @@ export function DashboardPage() {
               style={{ color: '#3B82F6' }}
             >
               {lastReading?.capacitorVoltage !== undefined ? lastReading.capacitorVoltage.toFixed(1) : '—'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>V</span>
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>V</span>
             </div>
             {!lastReading?.capacitorVoltage && (
-              <p className="text-xs mt-2" style={{ color: colors.subtext }}>
+              <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
                 No capacitor data available
               </p>
             )}
@@ -426,7 +418,7 @@ export function DashboardPage() {
         <div 
           className="rounded-3xl p-6 transition-colors duration-300"
           style={{
-            backgroundColor: colors.cardBg,
+            backgroundColor: colors.cardBackground,
             boxShadow: theme === 'light' 
               ? '0 4px 20px rgba(0,0,0,0.05)' 
               : 'none'
@@ -434,7 +426,7 @@ export function DashboardPage() {
         >
           <h3 
             className="text-lg font-semibold mb-4"
-            style={{ color: colors.text }}
+            style={{ color: colors.textPrimary }}
           >
             System Status
           </h3>
@@ -449,19 +441,19 @@ export function DashboardPage() {
                     ? colors.accent 
                     : lastReading?.wifiConnected === false 
                     ? '#EF4444' 
-                    : colors.subtext 
+                    : colors.textSecondary 
                 }}
               />
               <div className="flex-1">
                 <p 
                   className="text-sm font-medium"
-                  style={{ color: colors.text }}
+                  style={{ color: colors.textPrimary }}
                 >
                   Wi-Fi
                 </p>
                 <p 
                   className="text-xs"
-                  style={{ color: colors.subtext }}
+                  style={{ color: colors.textSecondary }}
                 >
                   {lastReading?.wifiConnected === true 
                     ? 'Connected' 
@@ -481,19 +473,19 @@ export function DashboardPage() {
                     ? colors.accent 
                     : lastReading?.bluetoothConnected === false 
                     ? '#EF4444' 
-                    : colors.subtext 
+                    : colors.textSecondary 
                 }}
               />
               <div className="flex-1">
                 <p 
                   className="text-sm font-medium"
-                  style={{ color: colors.text }}
+                  style={{ color: colors.textPrimary }}
                 >
                   Bluetooth
                 </p>
                 <p 
                   className="text-xs"
-                  style={{ color: colors.subtext }}
+                  style={{ color: colors.textSecondary }}
                 >
                   {lastReading?.bluetoothConnected === true 
                     ? 'Connected' 
@@ -511,26 +503,26 @@ export function DashboardPage() {
                 style={{ 
                   backgroundColor: lastReading 
                     ? colors.accent 
-                    : colors.subtext 
+                    : colors.textSecondary 
                 }}
               />
               <div className="flex-1">
                 <p 
                   className="text-sm font-medium"
-                  style={{ color: colors.text }}
+                  style={{ color: colors.textPrimary }}
                 >
                   Data Transfer
                 </p>
                 <p 
                   className="text-xs"
-                  style={{ color: colors.subtext }}
+                  style={{ color: colors.textSecondary }}
                 >
                   {lastReading ? 'Receiving' : 'Waiting for Data'}
                 </p>
                 {lastReading?.timestamp && (
                   <p 
                     className="text-xs mt-0.5"
-                    style={{ color: colors.subtext }}
+                    style={{ color: colors.textSecondary }}
                   >
                     Last: {new Date(lastReading.timestamp).toLocaleTimeString()}
                   </p>
@@ -544,7 +536,7 @@ export function DashboardPage() {
         <div 
           className="rounded-3xl p-6 transition-all duration-300"
           style={{
-            backgroundColor: colors.cardBg,
+            backgroundColor: colors.cardBackground,
             boxShadow: theme === 'light' 
               ? '0 8px 30px rgba(0,0,0,0.08)' 
               : '0 8px 30px rgba(0,0,0,0.4)',
@@ -554,7 +546,7 @@ export function DashboardPage() {
             <div>
               <h3 
                 className="text-sm font-medium mb-2"
-                style={{ color: colors.subtext }}
+                style={{ color: colors.textSecondary }}
               >
                 Live Power Output
               </h3>
@@ -563,7 +555,7 @@ export function DashboardPage() {
                 style={{ color: colors.accent }}
               >
                 {lastReading?.power?.toFixed(1) || '0.0'}
-                <span className="text-2xl ml-2" style={{ color: colors.subtext }}>Watts</span>
+                <span className="text-2xl ml-2" style={{ color: colors.textSecondary }}>Watts</span>
               </div>
             </div>
             <div 
@@ -582,7 +574,7 @@ export function DashboardPage() {
             <div className="h-20 flex items-center justify-center">
               <p 
                 className="text-sm"
-                style={{ color: colors.subtext }}
+                style={{ color: colors.textSecondary }}
               >
                 Waiting for sensor data
               </p>
@@ -596,7 +588,7 @@ export function DashboardPage() {
           <div 
             className="rounded-3xl p-6 animate-pulse"
             style={{
-              backgroundColor: colors.cardBg,
+              backgroundColor: colors.cardBackground,
               boxShadow: theme === 'light' 
                 ? '0 8px 30px rgba(0,0,0,0.08)' 
                 : '0 8px 30px rgba(0,0,0,0.4)',
@@ -625,7 +617,7 @@ export function DashboardPage() {
         <div 
           className="rounded-3xl p-6 transition-colors duration-300"
           style={{
-            backgroundColor: colors.cardBg,
+            backgroundColor: colors.cardBackground,
             boxShadow: theme === 'light' 
               ? '0 4px 20px rgba(0,0,0,0.05)' 
               : 'none'
@@ -633,7 +625,7 @@ export function DashboardPage() {
         >
           <h3 
             className="text-lg font-semibold mb-4"
-            style={{ color: colors.text }}
+            style={{ color: colors.textPrimary }}
           >
             Sensor Nodes
           </h3>
@@ -655,13 +647,13 @@ export function DashboardPage() {
             </div>
             <p 
               className="text-sm font-medium mb-2"
-              style={{ color: colors.text }}
+              style={{ color: colors.textPrimary }}
             >
               No sensor data available
             </p>
             <p 
               className="text-xs text-center max-w-sm"
-              style={{ color: colors.subtext }}
+              style={{ color: colors.textSecondary }}
             >
               Waiting for sensor data. Connect ESP32 sensors to view real-time node status and readings.
             </p>

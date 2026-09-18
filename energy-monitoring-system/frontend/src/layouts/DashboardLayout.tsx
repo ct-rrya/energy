@@ -1,9 +1,7 @@
 ﻿import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  BarChart3, 
   FileText, 
-  Bell, 
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -12,10 +10,10 @@ import {
   Settings,
   User,
   ArrowLeft,
-  LayoutDashboard,
   Menu,
   X,
-  Activity
+  Activity,
+  TrendingUp
 } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +22,7 @@ import { showToast } from '@/components/common/Toast';
 import { ROUTES } from '@/routes/routes.config';
 import { getUserRole, getUserPermissions, type UserRole } from '@/lib/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { getThemeColors, SPACING, TYPOGRAPHY, ANIMATION } from '@/lib/theme';
 
 /**
  * Dashboard Layout Props
@@ -194,40 +193,40 @@ const navigationItems = [
     visible: true,
     isBackButton: true
   }] : []),
-  // Dashboard - always visible
+  
+  // EcoStep Central - the single central monitoring hub (combines Dashboard + Energy Monitoring)
   {
     path: ROUTES.DASHBOARD,
-    label: 'Dashboard',
-    icon: LayoutDashboard,
+    label: 'EcoStep Central',
+    icon: Activity,
     visible: permissions.canAccessDashboard
   },
-  // Analytics - only for admin users
-  ...(isAdminUser ? [{
+  
+  // Historical Analytics - past data and trends
+  {
     path: ROUTES.ANALYTICS,
-    label: 'Analytics',
-    icon: BarChart3,
-    visible: permissions.canAccessAnalytics
-  }] : []),
-  // System Diagnostics - only for admin users (positioned after Analytics)
+    label: 'Historical Analytics',
+    icon: TrendingUp,
+    visible: true // Public access per requirements
+  },
+  
+  // System Diagnostics - admin only
   ...(isAdminUser ? [{
     path: ROUTES.ADMIN_DIAGNOSTICS,
     label: 'System Diagnostics',
     icon: Activity,
-    visible: permissions.canAccessReports // Using canAccessReports permission as a proxy for admin-only access
+    visible: permissions.canAccessReports // Using as proxy for admin-only
   }] : []),
-  // Admin-only items
+  
+  // Reports - admin only
   {
     path: ROUTES.REPORTS,
     label: 'Reports',
     icon: FileText,
     visible: permissions.canAccessReports
   },
-  {
-    path: ROUTES.ALERTS,
-    label: 'Notifications',
-    icon: Bell,
-    visible: permissions.canAccessAlerts
-  },
+  
+  // Settings - admin only
   {
     path: ROUTES.SETTINGS,
     label: 'Settings',
@@ -236,16 +235,15 @@ const navigationItems = [
   },
 ].filter(item => item.visible);
 
-  const sidebarWidth = isExpanded ? 200 : 64;
-  const sidebarBg = theme === 'light' ? '#1E2128' : '#0B0D12';
-  const accentColor = theme === 'light' ? '#2FBF71' : '#3ED98A';
+  const colors = getThemeColors(theme);
+  const sidebarWidth = isExpanded ? SPACING.sidebarWidth.expanded : SPACING.sidebarWidth.collapsed;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div 
       className="min-h-screen transition-colors duration-300"
       style={{
-        backgroundColor: theme === 'light' ? '#F5F6F8' : '#12141A'
+        backgroundColor: colors.pageBackground
       }}
     >
       {/* Task 10.3: Skip Link for Keyboard Navigation */}
@@ -253,11 +251,11 @@ const navigationItems = [
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
         style={{
-          backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-          color: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-          border: `3px solid ${theme === 'light' ? '#2FBF71' : '#3ED98A'}`,
-          fontWeight: 600,
-          fontSize: '14px'
+          backgroundColor: colors.cardBackground,
+          color: colors.textPrimary,
+          border: `3px solid ${colors.accent}`,
+          fontWeight: TYPOGRAPHY.fontWeight.semibold,
+          fontSize: TYPOGRAPHY.fontSize.sm
         }}
       >
         Skip to main content
@@ -270,8 +268,8 @@ const navigationItems = [
           onClick={() => setMobileSidebarOpen(true)}
           className="fixed top-4 left-4 z-50 w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-200"
           style={{
-            backgroundColor: sidebarBg,
-            color: '#EDEEF0'
+            backgroundColor: colors.sidebarBackground,
+            color: colors.textPrimary
           }}
           aria-label="Open navigation menu"
         >
@@ -298,27 +296,31 @@ const navigationItems = [
               prefersReducedMotion ? '' : 'transform transition-transform duration-300'
             }`}
             style={{
-              backgroundColor: sidebarBg,
-              borderTopRightRadius: '32px',
-              borderBottomRightRadius: '32px',
-              boxShadow: theme === 'light' 
-                ? '0 4px 20px rgba(0,0,0,0.08)' 
-                : '0 4px 20px rgba(0,0,0,0.4)'
+              backgroundColor: colors.sidebarBackground,
+              borderTopRightRadius: '20px',
+              borderBottomRightRadius: '20px',
+              boxShadow: colors.shadowLg
             }}
           >
             {/* Close Button */}
             <div className="flex items-center justify-between px-4 mb-6">
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center p-2 flex-shrink-0"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center p-2 flex-shrink-0"
                   style={{
-                    background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
+                    background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accent} 100%)`,
                     color: '#FFFFFF'
                   }}
                 >
                   <Logo className="h-full w-full" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: '#EDEEF0' }}>
+                <span 
+                  className="text-sm font-semibold" 
+                  style={{ 
+                    color: colors.textPrimary,
+                    fontWeight: TYPOGRAPHY.fontWeight.semibold
+                  }}
+                >
                   EcoStep
                 </span>
               </div>
@@ -328,29 +330,31 @@ const navigationItems = [
                   setMobileSidebarOpen(false);
                   hamburgerButtonRef.current?.focus();
                 }}
-                className="w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
-                style={{ color: '#9CA3AF' }}
+                className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
+                style={{ color: colors.navIconInactive }}
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" strokeWidth={2} />
               </button>
             </div>
 
-            {/* Role Indicator Badge */}
-            <div className="px-4 mb-6">
+            {/* Role Indicator Badge - Non-clickable status indicator */}
+            <div className="px-4 mb-5">
               <div 
-                className="px-3 py-2 rounded-lg text-xs font-medium text-center"
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-center tracking-wide uppercase"
                 style={{
                   backgroundColor: isAdminUser 
-                    ? 'rgba(59, 130, 246, 0.1)' 
+                    ? colors.accentSubtle
                     : 'rgba(168, 85, 247, 0.1)',
-                  color: isAdminUser ? '#60A5FA' : '#C084FC',
-                  border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+                  color: isAdminUser ? colors.accent : '#C084FC',
+                  border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold,
+                  fontSize: TYPOGRAPHY.fontSize.xs
                 }}
                 role="status"
-                aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
+                aria-label={`Current role: ${isAdminUser ? 'Administrator' : 'Public Viewer'}`}
               >
-                {isAdminUser ? '👤 Admin Access' : '👁️ Public View'}
+                {isAdminUser ? 'Administrator' : 'Public Viewer'}
               </div>
             </div>
 
@@ -366,14 +370,18 @@ const navigationItems = [
                       setMobileSidebarOpen(false);
                       hamburgerButtonRef.current?.focus();
                     }}
-                    className="group relative flex items-center gap-3 rounded-xl transition-all duration-200 px-4 py-3"
+                    className="group relative flex items-center gap-3 rounded-lg transition-all duration-200 px-4 py-3"
                     style={{
-                      backgroundColor: isActive ? accentColor : 'transparent',
-                      color: isActive ? '#FFFFFF' : '#9CA3AF'
+                      backgroundColor: isActive ? colors.activeBackground : 'transparent',
+                      color: isActive ? colors.navTextActive : colors.navText,
+                      height: `${SPACING.navItem.height}px`
                     }}
                   >
-                    <Icon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
-                    <span className="text-sm font-medium whitespace-nowrap">
+                    <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+                    <span 
+                      className="text-sm font-medium whitespace-nowrap"
+                      style={{ fontWeight: isActive ? TYPOGRAPHY.fontWeight.semibold : TYPOGRAPHY.fontWeight.medium }}
+                    >
                       {label}
                     </span>
                   </Link>
@@ -381,51 +389,38 @@ const navigationItems = [
               })}
             </nav>
 
-            {/* Theme Toggle */}
-            <div className="px-3 pb-4">
-              <button
-                onClick={toggleTheme}
-                className="group relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 px-4 py-3"
-                style={{ color: '#9CA3AF' }}
-              >
-                {theme === 'light' ? (
-                  <>
-                    <Moon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
-                    <span className="text-sm font-medium whitespace-nowrap">
-                      Dark Mode
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Sun className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
-                    <span className="text-sm font-medium whitespace-nowrap">
-                      Light Mode
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-
             {/* Account Section */}
-            <div className="px-3 pt-4 border-t" style={{ borderColor: '#2A2E37' }}>
+            <div className="px-3 pt-4 border-t" style={{ borderColor: colors.border }}>
               {isPublicUser ? (
                 /* PUBLIC USER - Guest Mode Indicator */
-                <div className="relative w-full flex items-center gap-3 rounded-xl px-4 py-3">
+                <div className="relative w-full flex items-center gap-3 rounded-lg px-4 py-3">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{
-                      backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37',
-                      color: theme === 'light' ? '#6B7280' : '#9CA3AF'
+                      backgroundColor: colors.inputBackground,
+                      color: colors.textSecondary
                     }}
                   >
                     <span className="text-lg">👁️</span>
                   </div>
                   
                   <div className="flex-1 text-left">
-                    <div className="text-sm font-medium" style={{ color: '#9CA3AF' }}>
+                    <div 
+                      className="text-sm font-medium" 
+                      style={{ 
+                        color: colors.textSecondary,
+                        fontWeight: TYPOGRAPHY.fontWeight.medium 
+                      }}
+                    >
                       Guest Mode
                     </div>
-                    <div className="text-xs" style={{ color: '#6B7280' }}>
+                    <div 
+                      className="text-xs" 
+                      style={{ 
+                        color: colors.textTertiary,
+                        fontSize: TYPOGRAPHY.fontSize.xs 
+                      }}
+                    >
                       Read-only access
                     </div>
                   </div>
@@ -437,11 +432,16 @@ const navigationItems = [
                     handleLogout();
                     setMobileSidebarOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-500/10"
-                  style={{ color: '#EF4444' }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-red-500/10"
+                  style={{ color: colors.error }}
                 >
                   <LogOut className="w-5 h-5" strokeWidth={2} />
-                  <span className="text-sm font-medium">Logout</span>
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ fontWeight: TYPOGRAPHY.fontWeight.medium }}
+                  >
+                    Logout
+                  </span>
                 </button>
               )}
             </div>
@@ -455,11 +455,9 @@ const navigationItems = [
           className="fixed left-6 top-6 bottom-6 z-50 flex flex-col py-6 transition-all duration-250"
           style={{
             width: `${sidebarWidth}px`,
-            backgroundColor: sidebarBg,
-            borderRadius: '32px',
-            boxShadow: theme === 'light' 
-              ? '0 4px 20px rgba(0,0,0,0.08)' 
-              : '0 4px 20px rgba(0,0,0,0.4)'
+            backgroundColor: colors.sidebarBackground,
+            borderRadius: '20px',
+            boxShadow: colors.shadowLg
           }}
         >
         {/* Logo + Toggle Button */}
@@ -467,23 +465,29 @@ const navigationItems = [
           {isExpanded ? (
             <div className="flex items-center gap-3">
               <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center p-2 flex-shrink-0"
+                className="w-9 h-9 rounded-lg flex items-center justify-center p-2 flex-shrink-0"
                 style={{
-                  background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
+                  background: colors.accent,
                   color: '#FFFFFF'
                 }}
               >
                 <Logo className="h-full w-full" />
               </div>
-              <span className="text-sm font-semibold" style={{ color: '#EDEEF0' }}>
+              <span 
+                className="text-sm font-semibold" 
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
                 EcoStep
               </span>
             </div>
           ) : (
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center p-2 mx-auto"
+              className="w-10 h-10 rounded-lg flex items-center justify-center p-2 mx-auto"
               style={{
-                background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
+                background: colors.accent,
                 color: '#FFFFFF'
               }}
             >
@@ -496,7 +500,7 @@ const navigationItems = [
             <button
               onClick={() => setIsExpanded(false)}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
-              style={{ color: '#9CA3AF' }}
+              style={{ color: colors.navIconInactive }}
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -504,41 +508,46 @@ const navigationItems = [
           )}
         </div>
 
-        {/* Role Indicator Badge */}
+        {/* Role Indicator Badge - Non-clickable status indicator */}
         {isExpanded && (
-          <div className="px-4 mb-6">
+          <div className="px-4 mb-5">
             <div 
-              className="px-3 py-2 rounded-lg text-xs font-medium text-center"
+              className="px-3 py-2 rounded-lg text-xs font-semibold text-center tracking-wide uppercase"
               style={{
                 backgroundColor: isAdminUser 
-                  ? 'rgba(59, 130, 246, 0.1)' 
+                  ? colors.accentSubtle
                   : 'rgba(168, 85, 247, 0.1)',
-                color: isAdminUser ? '#60A5FA' : '#C084FC',
-                border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+                color: isAdminUser ? colors.accent : '#C084FC',
+                border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                fontWeight: TYPOGRAPHY.fontWeight.semibold,
+                fontSize: TYPOGRAPHY.fontSize.xs
               }}
               role="status"
-              aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
+              aria-label={`Current role: ${isAdminUser ? 'Administrator' : 'Public Viewer'}`}
             >
-              {isAdminUser ? '👤 Admin Access' : '👁️ Public View'}
+              {isAdminUser ? 'Administrator' : 'Public Viewer'}
             </div>
           </div>
         )}
         
         {!isExpanded && (
-          <div className="px-3 mb-6">
+          <div className="px-3 mb-5">
             <div 
-              className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center text-lg"
+              className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center text-xs font-bold"
               style={{
                 backgroundColor: isAdminUser 
-                  ? 'rgba(59, 130, 246, 0.1)' 
+                  ? colors.accentSubtle
                   : 'rgba(168, 85, 247, 0.1)',
-                border: `1px solid ${isAdminUser ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}`
+                color: isAdminUser ? colors.accent : '#C084FC',
+                border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                fontWeight: TYPOGRAPHY.fontWeight.bold,
+                fontSize: TYPOGRAPHY.fontSize.xs
               }}
               role="status"
-              aria-label={`Current role: ${isAdminUser ? 'Admin' : 'Public Viewer'}`}
-              title={isAdminUser ? 'Admin Access' : 'Public View'}
+              aria-label={`Current role: ${isAdminUser ? 'Administrator' : 'Public Viewer'}`}
+              title={isAdminUser ? 'Administrator' : 'Public Viewer'}
             >
-              {isAdminUser ? '👤' : '👁️'}
+              {isAdminUser ? 'A' : 'P'}
             </div>
           </div>
         )}
@@ -548,7 +557,7 @@ const navigationItems = [
           <button
             onClick={() => setIsExpanded(true)}
             className="w-10 h-10 mx-auto mb-4 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5"
-            style={{ color: '#9CA3AF' }}
+            style={{ color: colors.navIconInactive }}
             aria-label="Expand sidebar"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={2} />
@@ -563,31 +572,36 @@ const navigationItems = [
               <Link
                 key={path}
                 to={path}
-                className={`group relative flex items-center gap-3 rounded-xl transition-all duration-200 ${
+                className={`group relative flex items-center gap-3 rounded-lg transition-all duration-200 ${
                   isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
                 }`}
                 style={{
-                  backgroundColor: isActive ? accentColor : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#9CA3AF'
+                  backgroundColor: isActive ? colors.activeBackground : 'transparent',
+                  color: isActive ? colors.navTextActive : colors.navText,
+                  height: !isExpanded ? `${SPACING.navItem.height}px` : 'auto'
                 }}
                 title={!isExpanded ? label : undefined}
               >
-                <Icon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
                 
                 {isExpanded && (
-                  <span className="text-sm font-medium whitespace-nowrap">
+                  <span 
+                    className="text-sm font-medium whitespace-nowrap"
+                    style={{ fontWeight: isActive ? TYPOGRAPHY.fontWeight.semibold : TYPOGRAPHY.fontWeight.medium }}
+                  >
                     {label}
                   </span>
                 )}
                 
                 {/* Tooltip for collapsed mode */}
                 {!isExpanded && (
-                  <div className="absolute left-full ml-4 px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+                  <div className="absolute left-full ml-4 px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
                     style={{
-                      backgroundColor: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-                      color: theme === 'light' ? '#EDEEF0' : '#1A1D23',
-                      fontSize: '0.875rem',
-                      fontWeight: 500
+                      backgroundColor: colors.elevatedBackground,
+                      color: colors.textPrimary,
+                      fontSize: TYPOGRAPHY.fontSize.sm,
+                      fontWeight: TYPOGRAPHY.fontWeight.medium,
+                      boxShadow: colors.shadowLg
                     }}
                   >
                     {label}
@@ -597,52 +611,6 @@ const navigationItems = [
             );
           })}
         </nav>
-
-        {/* Theme Toggle - Always visible in navigation */}
-        <div className="px-3 pb-4">
-          <button
-            onClick={toggleTheme}
-            className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
-              isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
-            }`}
-            style={{ color: '#9CA3AF' }}
-            title={!isExpanded ? (theme === 'light' ? 'Dark Mode' : 'Light Mode') : undefined}
-          >
-            {theme === 'light' ? (
-              <>
-                <Moon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
-                {isExpanded && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    Dark Mode
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <Sun className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
-                {isExpanded && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    Light Mode
-                  </span>
-                )}
-              </>
-            )}
-            
-            {/* Tooltip for collapsed mode */}
-            {!isExpanded && (
-              <div className="absolute left-full ml-4 px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
-                style={{
-                  backgroundColor: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-                  color: theme === 'light' ? '#EDEEF0' : '#1A1D23',
-                  fontSize: '0.875rem',
-                  fontWeight: 500
-                }}
-              >
-                {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-              </div>
-            )}
-          </button>
-        </div>
 
         {/* Account Section with Menu - Different for public vs admin */}
         <div className="px-3 pt-4 border-t account-menu-container relative" style={{ borderColor: '#2A2E37' }}>
@@ -681,15 +649,16 @@ const navigationItems = [
                 e.stopPropagation();
                 setShowAccountMenu(!showAccountMenu);
               }}
-              className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-white/5 ${
+              className={`relative w-full flex items-center gap-3 rounded-lg transition-all duration-200 hover:bg-white/5 ${
                 isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
               }`}
             >
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0"
               style={{
-                background: `linear-gradient(135deg, ${accentColor} 0%, #3ED98A 100%)`,
-                color: '#FFFFFF'
+                background: colors.accent,
+                color: '#FFFFFF',
+                fontWeight: TYPOGRAPHY.fontWeight.semibold
               }}
             >
               {user?.name?.charAt(0).toUpperCase()}
@@ -697,10 +666,22 @@ const navigationItems = [
             
             {isExpanded && (
               <div className="flex-1 text-left overflow-hidden">
-                <div className="text-sm font-medium truncate" style={{ color: '#EDEEF0' }}>
+                <div 
+                  className="text-sm font-medium truncate" 
+                  style={{ 
+                    color: colors.textPrimary,
+                    fontWeight: TYPOGRAPHY.fontWeight.medium
+                  }}
+                >
                   {user?.name}
                 </div>
-                <div className="text-xs truncate" style={{ color: '#9CA3AF' }}>
+                <div 
+                  className="text-xs truncate" 
+                  style={{ 
+                    color: colors.textSecondary,
+                    fontSize: TYPOGRAPHY.fontSize.xs
+                  }}
+                >
                   {user?.email}
                 </div>
               </div>
@@ -711,14 +692,12 @@ const navigationItems = [
           {/* Account Menu Popover - Only for admin users */}
           {isAdminUser && showAccountMenu && (
             <div 
-              className="fixed rounded-2xl p-2 min-w-[200px] z-[100]"
+              className="fixed rounded-xl p-2 min-w-[200px] z-[100]"
               style={{
-                backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-                boxShadow: theme === 'light' 
-                  ? '0 8px 30px rgba(0,0,0,0.12)' 
-                  : '0 8px 30px rgba(0,0,0,0.5)',
-                // Position to the right of sidebar in collapsed mode, above in expanded mode
-                left: isExpanded ? `${24 + 12}px` : `${24 + sidebarWidth + 8}px`, // sidebar margin + sidebar width + gap
+                backgroundColor: colors.elevatedBackground,
+                boxShadow: colors.shadowLg,
+                border: `1px solid ${colors.border}`,
+                left: isExpanded ? `${24 + 12}px` : `${24 + sidebarWidth + 8}px`,
                 bottom: '32px',
               }}
               onClick={(e) => e.stopPropagation()}
@@ -729,11 +708,16 @@ const navigationItems = [
                   navigate(ROUTES.PROFILE);
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: theme === 'light' ? '#1A1D23' : '#EDEEF0' }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.medium
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hoverBackground}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <User className="w-5 h-5" strokeWidth={2} />
-                <span className="text-sm font-medium">Profile</span>
+                <span className="text-sm">Profile</span>
               </button>
 
               {/* Settings */}
@@ -742,11 +726,16 @@ const navigationItems = [
                   navigate(ROUTES.SETTINGS);
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: theme === 'light' ? '#1A1D23' : '#EDEEF0' }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.medium
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hoverBackground}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Settings className="w-5 h-5" strokeWidth={2} />
-                <span className="text-sm font-medium">Settings</span>
+                <span className="text-sm">Settings</span>
               </button>
 
               {/* Theme Toggle */}
@@ -755,24 +744,29 @@ const navigationItems = [
                   toggleTheme();
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: theme === 'light' ? '#1A1D23' : '#EDEEF0' }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.medium
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hoverBackground}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 {theme === 'light' ? (
                   <>
                     <Moon className="w-5 h-5" strokeWidth={2} />
-                    <span className="text-sm font-medium">Dark Mode</span>
+                    <span className="text-sm">Dark Mode</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" strokeWidth={2} />
-                    <span className="text-sm font-medium">Light Mode</span>
+                    <span className="text-sm">Light Mode</span>
                   </>
                 )}
               </button>
 
               {/* Divider */}
-              <div className="my-2 h-px" style={{ backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37' }} />
+              <div className="my-2 h-px" style={{ backgroundColor: colors.border }} />
 
               {/* Logout */}
               <button
@@ -780,11 +774,16 @@ const navigationItems = [
                   handleLogout();
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-500/10"
-                style={{ color: '#EF4444' }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                style={{ 
+                  color: colors.error,
+                  fontWeight: TYPOGRAPHY.fontWeight.medium
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <LogOut className="w-5 h-5" strokeWidth={2} />
-                <span className="text-sm font-medium">Logout</span>
+                <span className="text-sm">Logout</span>
               </button>
             </div>
           )}

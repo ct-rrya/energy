@@ -3,6 +3,8 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CustomDropdown, CustomRadio, MonthDropdown } from '@/components/common';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/lib/theme';
 import { ReportType, ReportFormat, type GenerateReportDto } from '@/types/report.types';
 
 /**
@@ -40,6 +42,9 @@ export function GenerateReportDialog({
   const [day, setDay] = useState(new Date().getDate());
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +82,7 @@ export function GenerateReportDialog({
         <div className="space-y-5">
           {/* Report Type */}
           <div>
-            <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               Report Type
             </label>
             <CustomDropdown
@@ -94,7 +99,7 @@ export function GenerateReportDialog({
 
           {/* Format */}
           <div>
-            <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               Format
             </label>
             <CustomRadio
@@ -112,7 +117,7 @@ export function GenerateReportDialog({
           {type === ReportType.CUSTOM && (
             <>
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                   Start Date
                 </label>
                 <Input
@@ -124,7 +129,7 @@ export function GenerateReportDialog({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                   End Date
                 </label>
                 <Input
@@ -142,7 +147,7 @@ export function GenerateReportDialog({
           {type !== ReportType.CUSTOM && (
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                   Year
                 </label>
                 <Input
@@ -159,7 +164,7 @@ export function GenerateReportDialog({
                 type === ReportType.MONTHLY ||
                 type === ReportType.WEEKLY) && (
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                     Month
                   </label>
                   <MonthDropdown
@@ -170,7 +175,7 @@ export function GenerateReportDialog({
               )}
               {(type === ReportType.DAILY || type === ReportType.WEEKLY) && (
                 <div>
-                  <label className="block text-sm font-medium text-[#9CA3AF] dark:text-[#9CA3AF] mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                     Day
                   </label>
                   <Input

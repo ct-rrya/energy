@@ -2,6 +2,8 @@ import { forwardRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/lib/theme';
 
 /**
  * Input Props
@@ -19,18 +21,32 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, type, className, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword && showPassword ? 'text' : type;
+    
+    const { theme } = useTheme();
+    const colors = getThemeColors(theme);
+
+    // Determine border color based on state
+    const getBorderColor = () => {
+      if (error) return colors.error;
+      if (isFocused) return colors.accent;
+      if (isHovered) return colors.accent;
+      return colors.border;
+    };
 
     return (
       <div className="w-full">
         {label && (
           <label
             htmlFor={props.id}
-            className="mb-2 block text-sm font-medium text-[#1A1D23] dark:text-[#EDEEF0]"
+            className="mb-2 block text-sm font-medium"
+            style={{ color: colors.textPrimary }}
           >
             {label}
-            {props.required && <span className="ml-1 text-error-500">*</span>}
+            {props.required && <span className="ml-1" style={{ color: colors.error }}>*</span>}
           </label>
         )}
         
@@ -40,17 +56,27 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             className={cn(
               'w-full rounded-lg border-2 px-4 py-2.5 transition-all',
-              'bg-white dark:bg-[#12141A]',
-              'text-[#1A1D23] dark:text-[#EDEEF0]',
-              'placeholder:text-[#9CA3AF] dark:placeholder:text-[#6B7280]',
-              'focus:outline-none focus:ring-2',
+              'focus:outline-none',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              error
-                ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-[#EF4444]/20'
-                : 'border-[#E5E7EB] dark:border-[#2A2E37] hover:border-[#2FBF71] dark:hover:border-[#3ED98A] focus:border-[#2FBF71] dark:focus:border-[#3ED98A] focus:ring-[#2FBF71]/20 dark:focus:ring-[#3ED98A]/20',
               isPassword && 'pr-12',
               className
             )}
+            style={{
+              backgroundColor: colors.inputBackground,
+              color: colors.textPrimary,
+              borderColor: getBorderColor(),
+              boxShadow: isFocused ? `0 0 0 3px ${error ? colors.error : colors.accent}20` : 'none'
+            }}
+            onFocus={(e) => {
+              setIsFocused(true);
+              props.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              props.onBlur?.(e);
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             aria-invalid={!!error}
             aria-describedby={
               error
@@ -66,7 +92,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[#9CA3AF] dark:text-[#6B7280] hover:text-[#2FBF71] dark:hover:text-[#3ED98A] hover:bg-[#F5F6F8] dark:hover:bg-[#2A2E37] focus:outline-none focus:ring-2 focus:ring-[#2FBF71]/30 dark:focus:ring-[#3ED98A]/30 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors focus:outline-none"
+              style={{
+                color: colors.textMuted
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = colors.accent;
+                e.currentTarget.style.backgroundColor = colors.hoverBackground;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = colors.textMuted;
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               tabIndex={-1}
             >
@@ -82,7 +119,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && (
           <p
             id={`${props.id}-error`}
-            className="mt-2 text-sm font-medium text-[#EF4444]"
+            className="mt-2 text-sm font-medium"
+            style={{ color: colors.error }}
             role="alert"
           >
             {error}
@@ -92,7 +130,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {helperText && !error && (
           <p
             id={`${props.id}-helper`}
-            className="mt-2 text-sm text-[#6B7280] dark:text-[#9CA3AF]"
+            className="mt-2 text-sm"
+            style={{ color: colors.textSecondary }}
           >
             {helperText}
           </p>

@@ -116,35 +116,41 @@
     --color-info-700: 29 78 216;
   }
 
-  /* Dark Mode Theme */
+  /* Dark Mode Theme - Refined EcoStep Design System */
   .dark {
-    /* Primary - Lighter for dark mode */
-    --color-primary-500: 137 215 183; /* Mint becomes primary text */
-    --color-primary-600: 110 200 165;
+    /* Page Background - Deep charcoal (not pure black) */
+    --color-background: 15 17 22; /* #0F1116 */
+    --color-background-subtle: 18 20 26;
+    --color-background-muted: 22 25 31;
+
+    /* Surface Colors - Layered hierarchy */
+    --color-surface: 28 31 40; /* #1C1F28 - Cards */
+    --color-surface-elevated: 35 39 47; /* #23272F - Elevated surfaces */
+    --color-surface-overlay: 22 25 47; /* Sidebar: #161921 */
+
+    /* Neutral - Adjusted for dark mode readability */
+    --color-neutral-50: 42 46 57;
+    --color-neutral-100: 64 69 84;
+    --color-neutral-200: 82 88 105;
+    --color-neutral-300: 107 114 128;
+    --color-neutral-400: 156 163 175; /* #9CA3AF - Inactive nav */
+    --color-neutral-500: 156 163 175;
+    --color-neutral-600: 107 114 128;
+    --color-neutral-700: 209 213 219;
+    --color-neutral-800: 229 231 235;
+    --color-neutral-900: 249 250 251; /* #F9FAFB - Primary text */
+
+    /* Primary - EcoStep Green for dark mode */
+    --color-primary-500: 62 217 138; /* #3ED98A - Light green for dark mode */
+    --color-primary-600: 47 191 113; /* #2FBF71 */
     
-    /* Background - Dark forest green derivatives */
-    --color-background: 15 27 24; /* Darker version of #1A312C */
-    --color-background-subtle: 18 32 28;
-    --color-background-muted: 21 37 33;
+    /* Secondary and Accent - EcoStep brand */
+    --color-secondary-500: 47 191 113; /* #2FBF71 */
+    --color-accent-500: 137 215 183; /* #89D7B7 - Subtle green */
 
-    /* Surface - Slightly lighter dark green */
-    --color-surface: 26 49 44; /* Original #1A312C becomes surface */
-    --color-surface-elevated: 31 59 52;
-    --color-surface-overlay: 36 69 60;
-
-    /* Neutral - Adjusted for dark mode */
-    --color-neutral-50: 38 38 38;
-    --color-neutral-100: 64 64 64;
-    --color-neutral-200: 82 82 82;
-    --color-neutral-300: 115 115 115;
-    --color-neutral-400: 163 163 163;
-    --color-neutral-500: 200 200 200;
-    --color-neutral-600: 215 215 215;
-    --color-neutral-700: 229 229 229;
-    --color-neutral-800: 243 243 243;
-    --color-neutral-900: 250 250 250;
-
-    /* Secondary and Accent remain the same for brand consistency */
+    /* Shadows - Deeper for dark mode */
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -604,8 +610,8 @@
 
   /* EcoStep Card System - ONE unified style */
   .eco-card {
-    background: rgba(255, 255, 255, 0.70);
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: #FFFFFF;
+    border: 1px solid rgb(var(--color-neutral-200));
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
     padding: 24px;
@@ -624,8 +630,8 @@
 
   /* Compact card variant */
   .eco-card-compact {
-    background: rgba(255, 255, 255, 0.70);
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: #FFFFFF;
+    border: 1px solid rgb(var(--color-neutral-200));
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-soft);
     padding: 16px;
