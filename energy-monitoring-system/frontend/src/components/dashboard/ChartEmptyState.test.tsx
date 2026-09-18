@@ -27,8 +27,8 @@ describe('ChartEmptyState', () => {
     it('renders with default message and suggestion', () => {
       renderWithTheme(<ChartEmptyState />);
 
-      expect(screen.getByText('No data available for this time range')).toBeInTheDocument();
-      expect(screen.getByText('Try selecting a different time range or check back later')).toBeInTheDocument();
+      expect(screen.getByText('No data available')).toBeInTheDocument();
+      expect(screen.getByText('Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.')).toBeInTheDocument();
     });
 
     it('renders with custom message', () => {
@@ -147,8 +147,8 @@ describe('ChartEmptyState', () => {
     it('applies theme-aware colors in light mode', () => {
       renderWithTheme(<ChartEmptyState />);
 
-      const message = screen.getByText('No data available for this time range');
-      const suggestion = screen.getByText('Try selecting a different time range or check back later');
+      const message = screen.getByText('No data available');
+      const suggestion = screen.getByText('Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.');
 
       // Check that styles are applied (we can't easily test computed styles without more setup)
       expect(message).toBeInTheDocument();

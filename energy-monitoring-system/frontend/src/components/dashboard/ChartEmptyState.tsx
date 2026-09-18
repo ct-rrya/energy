@@ -2,11 +2,14 @@
  * ChartEmptyState Component
  * 
  * Displays an empty state message when no chart data is available.
- * Provides helpful suggestions and guidance for the user.
+ * Provides helpful guidance for the user to connect sensors.
  * 
  * Requirements:
+ * - 11.4: Display "No data available" message when data is empty
+ * - 11.5: Remove fake/placeholder values from charts
+ * - 11.6: Show "Waiting for sensor data" instead of placeholder values when sensor data is empty
  * - 12.2: Display empty state message when no data points exist
- * - 12.6: Suggest possible actions (e.g., "Try selecting a different time range")
+ * - 12.6: Suggest possible actions (e.g., "Connect ESP32 sensors")
  * 
  * Features:
  * - Theme-aware colors from ThemeContext (light/dark mode)
@@ -21,8 +24,8 @@ import { ChartNoAxesColumn } from 'lucide-react';
 import type { ChartEmptyStateProps } from './chartTypes';
 
 export function ChartEmptyState({
-  message = 'No data available for this time range',
-  suggestion = 'Try selecting a different time range or check back later',
+  message = 'No data available',
+  suggestion = 'Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.',
   height = 400,
 }: ChartEmptyStateProps) {
   const { theme } = useTheme();

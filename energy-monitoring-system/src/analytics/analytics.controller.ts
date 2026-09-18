@@ -1,11 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { Controller, Get, Query, Post, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
+import { GeminiAIService } from '../messenger/gemini-ai.service';
 import {
   DailyEnergySummaryDto,
   WeeklyEnergySummaryDto,
@@ -16,6 +12,8 @@ import {
   ComprehensiveAnalyticsDto,
   TimeSeriesDto,
   AnalyticsQueryDto,
+  HistoricalAnalysisRequestDto,
+  HistoricalAnalysisResponseDto,
 } from './dto';
 
 /**
@@ -43,7 +41,10 @@ import {
 @ApiTags('Analytics')
 @Controller('analytics')
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    private readonly geminiAIService: GeminiAIService,
+  ) {}
 
   /**
    * Get Dashboard Analytics (Phase 6)
@@ -361,5 +362,140 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ): Promise<TimeSeriesDto> {
     return this.analyticsService.getBatteryHistory(query);
+  }
+
+  /**
+   * Get Voltage History
+   *
+   * Returns voltage measurements over time.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for voltage
+   */
+  @Get('voltage-history')
+  @ApiOperation({
+    summary: 'Get voltage history',
+    description:
+      'Returns voltage measurements over time. Convenience endpoint for voltage metric time-series data.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Voltage history retrieved successfully',
+    type: TimeSeriesDto,
+  })
+  async getVoltageHistory(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<TimeSeriesDto> {
+    return this.analyticsService.getVoltageHistory(query);
+  }
+
+  /**
+   * Get Capacitor Voltage History
+   *
+   * Returns capacitor voltage measurements over time.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for capacitor voltage
+   */
+  @Get('capacitor-history')
+  @ApiOperation({
+    summary: 'Get capacitor voltage history',
+    description:
+      'Returns capacitor voltage measurements over time. Shows energy storage level in the capacitor.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Capacitor voltage history retrieved successfully',
+    type: TimeSeriesDto,
+  })
+  async getCapacitorHistory(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<TimeSeriesDto> {
+    return this.analyticsService.getCapacitorHistory(query);
+  }
+
+  /**
+   * Get Steps History
+   *
+   * Returns step count over time.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for steps
+   */
+  @Get('steps-history')
+  @ApiOperation({
+    summary: 'Get steps history',
+    description:
+      'Returns step count over time. Shows detected footsteps on the piezoelectric tile. Steps are summed per time period.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Steps history retrieved successfully',
+    type: TimeSeriesDto,
+  })
+  async getStepsHistory(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<TimeSeriesDto> {
+    return this.analyticsService.getStepsHistory(query);
+  }
+
+  /**
+   * Historical Analysis (Phase 6)
+   *
+   * Analyzes historical energy data and generates AI-powered insights.
+   * Uses GeminiAIService to provide comprehensive analysis of trends, patterns, and recommendations.
+   *
+   * @param request - Historical analysis request with period and optional custom dates
+   * @returns AI-generated insights and structured metrics
+   */
+  @Post('historical-analysis')
+  @ApiOperation({
+    summary: 'Get historical analysis with AI insights',
+    description:
+      'Analyzes historical energy data for a specified period (7/30/90 days) and generates AI-powered insights about trends, patterns, and recommendations using structured metrics.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Historical analysis completed successfully',
+    type: HistoricalAnalysisResponseDto,
+  })
+  async getHistoricalAnalysis(
+    @Body() request: HistoricalAnalysisRequestDto,
+  ): Promise<HistoricalAnalysisResponseDto> {
+    // Calculate structured metrics
+    const metrics = await this.analyticsService.analyzeHistoricalData(
+      request.period,
+      request.startDate,
+      request.endDate,
+    );
+
+    // Build structured prompt for AI
+    const prompt = `Analyze this historical energy data from EcoStep piezoelectric system and provide insights:
+
+**Period:** ${metrics.period} (${metrics.startDate} to ${metrics.endDate})
+**Days Analyzed:** ${metrics.daysAnalyzed}
+**Total Energy Generated:** ${metrics.totalEnergyKWh} kWh
+**Average Daily Energy:** ${metrics.avgDailyEnergyKWh} kWh/day
+**Peak Power:** ${metrics.peakPowerW} W
+**Average Power:** ${metrics.avgPowerW} W
+**Energy Trend:** ${metrics.energyTrend}
+**CO2 Avoided:** ${metrics.co2AvoidedKg} kg
+**Cost Savings:** $${metrics.costSavingsUSD} USD
+
+Provide a concise analysis (3-4 sentences) covering:
+1. Overall performance assessment
+2. Notable trends or patterns
+3. One actionable recommendation
+
+Keep it brief, practical, and focused on the data provided.`;
+
+    // Generate AI insights
+    const insights = await this.geminiAIService.processQuery(prompt);
+
+    return {
+      insights,
+      metrics,
+      generatedAt: new Date(),
+    };
   }
 }

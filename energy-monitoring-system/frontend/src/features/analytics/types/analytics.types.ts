@@ -85,7 +85,16 @@ export interface TimeSeries {
 // Query Parameter Types
 // ============================================================================
 
-export type MetricType = 'power' | 'voltage' | 'current' | 'battery' | 'energy';
+export type MetricType = 
+  | 'power' 
+  | 'voltage' 
+  | 'current' 
+  | 'battery' 
+  | 'energy' 
+  | 'steps' 
+  | 'capacitorVoltage' 
+  | 'temperature' 
+  | 'frequency';
 export type Granularity = 'hour' | 'day' | 'week' | 'month';
 export type SourceFilter = 'all' | 'hardware' | 'mock';
 

@@ -78,6 +78,7 @@ export class EnergyService {
             $gte: todayStart,
             $lte: todayEnd,
           },
+          source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
         },
       },
       {
@@ -228,6 +229,7 @@ export class EnergyService {
             $gte: start,
             $lte: end,
           },
+          source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
         },
       },
       {

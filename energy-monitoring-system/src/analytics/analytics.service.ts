@@ -34,6 +34,8 @@ import {
   HourlyAveragesResponseDto,
   SensorUptimeDto,
   SensorUptimeResponseDto,
+  HistoricalMetricsDto,
+  HistoricalPeriod,
 } from './dto';
 
 /**
@@ -302,13 +304,14 @@ export class AnalyticsService {
 
     this.logger.debug(`Finding peak generation from ${startDate} to ${end}`);
 
-    // Query database for max power reading
+    // Query database for max power reading (hardware data only)
     const peakReading = await this.readingModel
       .findOne({
         timestamp: {
           $gte: new Date(startDate),
           $lte: new Date(end + 'T23:59:59.999Z'),
         },
+        source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
       })
       .sort({ power: -1 }) // Highest power first
       .limit(1)
@@ -812,6 +815,22 @@ export class AnalyticsService {
         fieldName = 'power'; // We'll calculate energy from power
         unit = 'kWh';
         break;
+      case MetricType.STEPS:
+        fieldName = 'stepCount';
+        unit = 'steps';
+        break;
+      case MetricType.CAPACITOR_VOLTAGE:
+        fieldName = 'capacitorVoltage';
+        unit = 'V';
+        break;
+      case MetricType.TEMPERATURE:
+        fieldName = 'temperature';
+        unit = '°C';
+        break;
+      case MetricType.FREQUENCY:
+        fieldName = 'frequency';
+        unit = 'Hz';
+        break;
       case MetricType.POWER:
       default:
         fieldName = 'power';
@@ -822,13 +841,16 @@ export class AnalyticsService {
     // Build group stage based on granularity
     const groupId = this.buildGroupId(granularity);
 
+    // For steps, we want to sum instead of average
+    const aggregationOperator = metric === MetricType.STEPS ? '$sum' : '$avg';
+
     const pipeline: any[] = [
       { $match: matchStage },
       { $sort: { timestamp: 1 } },
       {
         $group: {
           _id: groupId,
-          value: { $avg: `$${fieldName}` },
+          value: { [aggregationOperator]: `$${fieldName}` },
           min: { $min: `$${fieldName}` },
           max: { $max: `$${fieldName}` },
           count: { $sum: 1 },
@@ -874,7 +896,7 @@ export class AnalyticsService {
           ? values.reduce((a, b) => a + b, 0) / values.length
           : 0,
       total:
-        metric === MetricType.ENERGY
+        metric === MetricType.ENERGY || metric === MetricType.STEPS
           ? values.reduce((a, b) => a + b, 0)
           : undefined,
       dataPoints: dataPoints.length,
@@ -922,6 +944,67 @@ export class AnalyticsService {
   }
 
   /**
+   * Get Voltage History
+   *
+   * Fetches voltage measurements over time.
+   * This is a convenience wrapper around getTimeSeries for voltage metric.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for voltage
+   */
+  async getVoltageHistory(query: AnalyticsQueryDto): Promise<TimeSeriesDto> {
+    this.logger.debug('Fetching voltage history');
+
+    const voltageQuery: AnalyticsQueryDto = {
+      ...query,
+      metric: MetricType.VOLTAGE,
+    };
+
+    return this.getTimeSeries(voltageQuery);
+  }
+
+  /**
+   * Get Capacitor Voltage History
+   *
+   * Fetches capacitor voltage measurements over time.
+   * This is a convenience wrapper around getTimeSeries for capacitor voltage metric.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for capacitor voltage
+   */
+  async getCapacitorHistory(query: AnalyticsQueryDto): Promise<TimeSeriesDto> {
+    this.logger.debug('Fetching capacitor voltage history');
+
+    const capacitorQuery: AnalyticsQueryDto = {
+      ...query,
+      metric: MetricType.CAPACITOR_VOLTAGE,
+    };
+
+    return this.getTimeSeries(capacitorQuery);
+  }
+
+  /**
+   * Get Steps History
+   *
+   * Fetches step count over time.
+   * This is a convenience wrapper around getTimeSeries for steps metric.
+   * Note: Steps are summed, not averaged, per time period.
+   *
+   * @param query - Analytics query parameters
+   * @returns Time-series data for steps
+   */
+  async getStepsHistory(query: AnalyticsQueryDto): Promise<TimeSeriesDto> {
+    this.logger.debug('Fetching steps history');
+
+    const stepsQuery: AnalyticsQueryDto = {
+      ...query,
+      metric: MetricType.STEPS,
+    };
+
+    return this.getTimeSeries(stepsQuery);
+  }
+
+  /**
    * Build Group ID for Aggregation
    *
    * Constructs the MongoDB group _id object based on granularity.
@@ -964,7 +1047,10 @@ export class AnalyticsService {
    *
    * Formats the display label based on granularity.
    */
-  private formatTimeSeriesLabel(groupId: any, granularity: Granularity): string {
+  private formatTimeSeriesLabel(
+    groupId: any,
+    granularity: Granularity,
+  ): string {
     const { year, month, day, hour, week } = groupId;
 
     switch (granularity) {
@@ -976,8 +1062,18 @@ export class AnalyticsService {
         return `Week ${week}`;
       case Granularity.MONTH:
         const monthNames = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ];
         return monthNames[month - 1];
       default:
@@ -1004,5 +1100,138 @@ export class AnalyticsService {
       default:
         return 1;
     }
+  }
+
+  // ============================================================================
+  // Historical Analysis Methods
+  // ============================================================================
+
+  /**
+   * Analyze Historical Data
+   *
+   * Calculates structured metrics for a given historical period.
+   * Used for AI-powered historical insights.
+   *
+   * @param period - Historical period (last7days, last30days, last90days)
+   * @param startDate - Optional custom start date (overrides period)
+   * @param endDate - Optional custom end date (overrides period)
+   * @returns Structured historical metrics for AI analysis
+   */
+  async analyzeHistoricalData(
+    period: HistoricalPeriod,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<HistoricalMetricsDto> {
+    this.logger.debug(
+      `Analyzing historical data for period: ${period}, startDate: ${startDate}, endDate: ${endDate}`,
+    );
+
+    // Calculate date range
+    let start: Date;
+    let end: Date;
+
+    if (startDate && endDate) {
+      // Use custom date range
+      start = new Date(startDate);
+      end = new Date(endDate);
+    } else {
+      // Use predefined period
+      end = new Date();
+      switch (period) {
+        case HistoricalPeriod.LAST_7_DAYS:
+          start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case HistoricalPeriod.LAST_30_DAYS:
+          start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case HistoricalPeriod.LAST_90_DAYS:
+          start = new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    const startDateStr = this.getDateString(start);
+    const endDateStr = this.getDateString(end);
+
+    // Calculate days analyzed
+    const daysAnalyzed = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    // Get energy data for the period
+    const energyData = await this.energyService.getEnergyRange(
+      startDateStr,
+      endDateStr,
+    );
+
+    // Get peak power
+    const peakGeneration = await this.getPeakGeneration(
+      startDateStr,
+      endDateStr,
+    );
+
+    // Calculate metrics
+    const totalEnergyKWh = energyData.estimatedEnergyKWh;
+    const avgDailyEnergyKWh =
+      daysAnalyzed > 0 ? totalEnergyKWh / daysAnalyzed : 0;
+    const peakPowerW = peakGeneration ? peakGeneration.peakPowerW : 0;
+    const avgPowerW = energyData.avgPower;
+
+    // Calculate environmental impact
+    const environmentalImpact =
+      this.calculateEnvironmentalImpact(totalEnergyKWh);
+
+    // Calculate cost savings
+    const costSavings = this.calculateCostSavings(totalEnergyKWh, daysAnalyzed);
+
+    // Determine energy trend (compare first half vs second half)
+    let energyTrend: 'up' | 'down' | 'stable' = 'stable';
+    if (daysAnalyzed >= 4) {
+      const midPoint = Math.floor(daysAnalyzed / 2);
+      const midDate = new Date(
+        start.getTime() + midPoint * 24 * 60 * 60 * 1000,
+      );
+      const midDateStr = this.getDateString(midDate);
+
+      const firstHalfEnergy = await this.energyService.getEnergyRange(
+        startDateStr,
+        midDateStr,
+      );
+      const secondHalfEnergy = await this.energyService.getEnergyRange(
+        midDateStr,
+        endDateStr,
+      );
+
+      const firstHalfAvg = firstHalfEnergy.estimatedEnergyKWh / midPoint;
+      const secondHalfAvg =
+        secondHalfEnergy.estimatedEnergyKWh / (daysAnalyzed - midPoint);
+
+      const changePercent =
+        firstHalfAvg > 0
+          ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100
+          : 0;
+
+      if (changePercent > 10) {
+        energyTrend = 'up';
+      } else if (changePercent < -10) {
+        energyTrend = 'down';
+      }
+    }
+
+    return {
+      totalEnergyKWh: Math.round(totalEnergyKWh * 1000) / 1000,
+      avgDailyEnergyKWh: Math.round(avgDailyEnergyKWh * 1000) / 1000,
+      peakPowerW: Math.round(peakPowerW * 100) / 100,
+      avgPowerW: Math.round(avgPowerW * 100) / 100,
+      energyTrend,
+      co2AvoidedKg: environmentalImpact.co2AvoidedKg,
+      costSavingsUSD: costSavings.totalSavings,
+      daysAnalyzed,
+      period,
+      startDate: startDateStr,
+      endDate: endDateStr,
+    };
   }
 }

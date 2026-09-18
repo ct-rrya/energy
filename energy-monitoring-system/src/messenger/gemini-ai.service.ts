@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
+import { IotService } from '../iot/iot.service';
 
 /**
  * Gemini AI Service
@@ -34,6 +35,7 @@ export class GeminiAIService {
     private configService: ConfigService,
     private analyticsService: AnalyticsService,
     private energyService: EnergyService,
+    private iotService: IotService,
   ) {
     this.logger.log('═══════════════════════════════════════════════════════');
     this.logger.log('[GEMINI CONSTRUCTOR] Initializing GeminiAIService...');
@@ -145,6 +147,9 @@ Keep responses extremely brief and to-the-point.
    - Cost savings and efficiency analysis
    - How the piezoelectric system works
    - Sensor readings and IoT monitoring
+   - Monitoring metrics (capacitor voltage, step count, temperature, frequency)
+   - Connectivity status (WiFi, Bluetooth)
+   - System health and diagnostics
 
 2. **Decline Rule - CRITICAL INSTRUCTION:**
    **IF THE USER ASKS ABOUT ANYTHING UNRELATED TO ECOSTEP (politics, religion, general knowledge, other topics), YOU MUST STILL GENERATE A RESPONSE. DO NOT BLOCK OR REFUSE TO RESPOND.**
@@ -158,13 +163,14 @@ Keep responses extremely brief and to-the-point.
 3. **Data Usage - When answering:**
    - ALWAYS use the provided real-time data from MongoDB
    - Reference actual numbers from the injected JSON data
+   - The data includes a 'monitoring' section with capacitor voltage, step count, temperature, frequency, and connectivity status
    - Never fabricate or estimate values
    - If data is unavailable, explicitly state: "Live sensor data is currently unavailable"
    - Translate technical units to user-friendly terms (e.g., "127.5Wh is enough to charge 6 smartphones")
 
 4. **Response Format:**
    - Be concise: 2-3 sentences maximum
-   - Use emojis sparingly (⚡💚📊🌱)
+   - Use emojis sparingly (⚡💚📊🌱🔋🌡️👣📡)
    - Start with a direct answer
    - Add context or comparison if helpful
    - Be encouraging about energy generation achievements
@@ -174,10 +180,12 @@ Keep responses extremely brief and to-the-point.
    - Explain peak power in terms of footstep activity
    - Frame CO₂ savings in understandable terms
    - Celebrate milestones and improvements
+   - Explain monitoring metrics in simple terms (capacitor health, activity levels, system temperature)
 
 6. **EcoStep System Context:**
    - Technology: Piezoelectric tiles convert mechanical footstep energy into electricity
-   - Hardware: ESP32 microcontroller monitors voltage, current, power, energy
+   - Hardware: ESP32 microcontroller monitors voltage, current, power, energy, capacitor voltage, step count, temperature, frequency
+   - Connectivity: WiFi and Bluetooth for data transmission
    - Storage: Data stored in MongoDB with timestamps
    - Interface: Web dashboard + Facebook Messenger bot
    - Purpose: University capstone project for sustainable energy research
@@ -187,6 +195,8 @@ Keep responses extremely brief and to-the-point.
 - "⚡ Today you've generated 127.5Wh of clean energy! That's enough to charge a smartphone 6 times. Keep stepping! 💚"
 - "📊 Your peak generation was 45.2W at 2:34 PM today, showing strong footstep activity during afternoon hours."
 - "🌱 This month you've avoided 2.3kg of CO₂ emissions - equivalent to planting 3 trees for a year!"
+- "🔋 Capacitor voltage is at 4.2V with 1,234 steps counted today - great activity level! 👣"
+- "🌡️ System temperature is 28.5°C and WiFi is connected, everything running smoothly! 📡"
 
 **Example Decline Response (for "Who is the president?"):**
 - "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?"
@@ -196,6 +206,7 @@ The system will provide real-time data in JSON format with fields like:
 - totalEnergy, avgPower, peakPower (numerical values with units)
 - timestamp (ISO format)
 - analytics (aggregated metrics)
+- monitoring (capacitorVoltage, stepCount, temperature, frequency, wifiConnected, bluetoothConnected, voltage, current)
 
 Always cite these actual values in your response.`;
   }
@@ -481,40 +492,45 @@ Always cite these actual values in your response.`;
    *
    * Retrieves real-time EcoStep sensor readings for RAG injection.
    *
-   * Data Sources:
-   * - Today's total energy generation
-   * - Latest voltage and current readings
-   * - Daily analytics summary
-   * - Peak power metrics
+   * IMPORTANT: Only fetches real hardware data (source='hardware').
+   * Mock/demo data (source='mock') is never included in AI queries.
    *
-   * @returns Combined energy data object with all metrics
+   * Data Sources:
+   * - Today's total energy generation (hardware only)
+   * - Latest voltage and current readings (hardware only)
+   * - Daily analytics summary (hardware only)
+   * - Peak power metrics (hardware only)
+   *
+   * @returns Combined energy data object with all metrics, or "no data" message
    *
    * Error Handling:
+   * - Returns "no real data" message if no hardware readings exist
    * - Returns empty data structure with error flag on failure
    * - Logs detailed error information
    * - Never throws exceptions
    */
   private async fetchEnergyData(): Promise<any> {
     this.logger.log('[TRACE 3: DB CONTEXT] Starting fetchEnergyData()...');
+    this.logger.log('[TRACE 3: DB CONTEXT] Filtering for source=hardware ONLY');
 
     try {
-      // Fetch today's energy total
+      // Fetch today's energy total (hardware only)
       this.logger.log(
-        '[TRACE 3: DB CONTEXT] [1/2] Querying EnergyService.getTodayEnergyTotal()...',
+        '[TRACE 3: DB CONTEXT] [1/3] Querying EnergyService.getTodayEnergyTotal()...',
       );
       const query1Start = Date.now();
       const todayEnergy = await this.energyService.getTodayEnergyTotal();
       const query1Duration = Date.now() - query1Start;
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [1/2] ✅ Completed in ${query1Duration}ms`,
+        `[TRACE 3: DB CONTEXT] [1/3] ✅ Completed in ${query1Duration}ms`,
       );
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [1/2] Result: ${JSON.stringify(todayEnergy).substring(0, 100)}...`,
+        `[TRACE 3: DB CONTEXT] [1/3] Result: ${JSON.stringify(todayEnergy).substring(0, 100)}...`,
       );
 
-      // Fetch daily analytics summary
+      // Fetch daily analytics summary (hardware only)
       this.logger.log(
-        '[TRACE 3: DB CONTEXT] [2/2] Querying AnalyticsService.getDailySummary()...',
+        '[TRACE 3: DB CONTEXT] [2/3] Querying AnalyticsService.getDailySummary()...',
       );
       const query2Start = Date.now();
       const todaySummary = await this.analyticsService.getDailySummary(
@@ -522,11 +538,80 @@ Always cite these actual values in your response.`;
       );
       const query2Duration = Date.now() - query2Start;
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [2/2] ✅ Completed in ${query2Duration}ms`,
+        `[TRACE 3: DB CONTEXT] [2/3] ✅ Completed in ${query2Duration}ms`,
       );
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [2/2] Result: ${JSON.stringify(todaySummary).substring(0, 100)}...`,
+        `[TRACE 3: DB CONTEXT] [2/3] Result: ${JSON.stringify(todaySummary).substring(0, 100)}...`,
       );
+
+      // Fetch latest sensor readings with monitoring metrics (NEW)
+      this.logger.log(
+        '[TRACE 3: DB CONTEXT] [3/3] Querying IotService for latest readings with monitoring data...',
+      );
+      const query3Start = Date.now();
+      const latestReadings = (await this.iotService.getLatestReadings()) || [];
+      const latestReading =
+        latestReadings.length > 0 ? latestReadings[0] : null;
+      const query3Duration = Date.now() - query3Start;
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [3/3] ✅ Completed in ${query3Duration}ms`,
+      );
+      this.logger.log(
+        `[TRACE 3: DB CONTEXT] [3/3] Latest reading: ${latestReading ? 'Found' : 'None'}`,
+      );
+
+      // Check if any real hardware data exists
+      if (todayEnergy.count === 0 && todaySummary.readingCount === 0) {
+        this.logger.warn(
+          '[TRACE 3: DB CONTEXT] ⚠️  No real hardware data available',
+        );
+        this.logger.warn(
+          '[TRACE 3: DB CONTEXT] AI will return "no data" message',
+        );
+
+        return {
+          timestamp: new Date().toISOString(),
+          today: {
+            totalEnergyWh: 0,
+            avgPowerW: 0,
+            maxPowerW: 0,
+            readingCount: 0,
+          },
+          analytics: {
+            totalEnergyKWh: 0,
+            peakPowerW: 0,
+            avgPowerW: 0,
+            date: new Date().toISOString().split('T')[0],
+          },
+          monitoring: {
+            available: false,
+          },
+          status: 'no_data',
+          message: 'No real hardware data available for analysis',
+        };
+      }
+
+      // Extract monitoring metrics from latest reading
+      const monitoringMetrics = latestReading
+        ? {
+            available: true,
+            capacitorVoltage: latestReading.capacitorVoltage || null,
+            stepCount: latestReading.stepCount || null,
+            temperature: latestReading.temperature || null,
+            frequency: latestReading.frequency || null,
+            wifiConnected: latestReading.wifiConnected ?? null,
+            bluetoothConnected: latestReading.bluetoothConnected ?? null,
+            voltage: latestReading.voltage || null,
+            current: latestReading.current || null,
+            lastUpdated: latestReading.timestamp
+              ? new Date(latestReading.timestamp).toISOString()
+              : null,
+          }
+        : {
+            available: false,
+            message:
+              'Monitoring metrics not available - waiting for sensor data',
+          };
 
       // Combine data for AI context
       const combinedData = {
@@ -543,6 +628,7 @@ Always cite these actual values in your response.`;
           avgPowerW: todaySummary.avgPowerW || 0,
           date: todaySummary.date || new Date().toISOString().split('T')[0],
         },
+        monitoring: monitoringMetrics,
         status: 'ok',
       };
 
@@ -575,6 +661,7 @@ Always cite these actual values in your response.`;
           readingCount: 0,
         },
         analytics: { totalEnergyKWh: 0, peakPowerW: 0, avgPowerW: 0 },
+        monitoring: { available: false },
         status: 'error',
         error: 'Data temporarily unavailable',
       };
@@ -591,11 +678,29 @@ Always cite these actual values in your response.`;
    * This is the "Augmentation" step in RAG.
    *
    * @param userMessage - User's question
-   * @param energyData - Real-time data from MongoDB
+   * @param energyData - Real-time data from MongoDB (hardware only)
    * @returns Complete prompt with system context + data + user query
    */
   private buildPrompt(userMessage: string, energyData: any): string {
-    return `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE:**
+    // Check if no real data is available
+    if (energyData.status === 'no_data') {
+      return `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE:**
+
+\`\`\`json
+${JSON.stringify(energyData, null, 2)}
+\`\`\`
+
+**USER QUESTION:**
+${userMessage}
+
+**CRITICAL INSTRUCTIONS:**
+- The data shows status: "no_data" which means NO REAL HARDWARE DATA is available for analysis
+- You MUST respond with: "No real data available for analysis. The system is waiting for ESP32 sensor data. Connect your hardware sensors to begin monitoring energy generation."
+- DO NOT make up or estimate any values
+- DO NOT provide analysis when no data exists`;
+    }
+
+    return `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE (source=hardware ONLY):**
 
 \`\`\`json
 ${JSON.stringify(energyData, null, 2)}
@@ -605,6 +710,8 @@ ${JSON.stringify(energyData, null, 2)}
 ${userMessage}
 
 **CRITICAL REMINDER:**
+- This data contains ONLY real hardware readings (source='hardware')
+- Demo/mock data (source='mock') is NEVER included in AI queries
 - If this question is about EcoStep energy data, answer using the JSON data above
 - If this question is NOT about EcoStep (politics, religion, general topics), respond with: "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?"
 - Be concise (2 sentences max)

@@ -286,6 +286,7 @@ This project follows strict REST API standards for consistency and maintainabili
 - 📝 Sensor management
 - 👥 Subscriber management
 - 📄 Report generation
+- 🔧 System diagnostics
 
 ### For Public Users (via Messenger Bot)
 - 📱 Subscribe to updates
@@ -293,6 +294,57 @@ This project follows strict REST API standards for consistency and maintainabili
 - 📊 Request daily statistics
 - 🌱 View environmental impact
 - 🔔 Receive notifications
+
+---
+
+## System Diagnostics
+
+The System Diagnostics feature enables administrators to perform standardized reference tests that measure overall energy harvesting performance and compare results against expected baseline values.
+
+### Key Features
+
+- **Reference Configuration Management**: Set baseline values for applied weight, expected energy output, and acceptable tolerance
+- **Diagnostic Test Recording**: Record actual measured energy from standardized tests and automatically calculate performance metrics
+- **Historical Tracking**: View complete history of all diagnostic tests with performance trends
+- **Real-time Results**: Instant calculation of difference, performance percentage, and status (Within Range, Below Expected, Above Expected)
+- **Data Export**: Export diagnostic history to CSV for external analysis
+
+### Admin-Only Access
+
+System Diagnostics is an **admin-only feature**. All diagnostic functionality requires:
+- Valid JWT authentication
+- Admin role privileges
+
+Public users cannot access diagnostic features or endpoints. Direct access attempts to `/admin/diagnostics` will be redirected to an unauthorized page.
+
+### API Endpoints
+
+The System Diagnostics module exposes four protected RESTful API endpoints:
+
+1. **POST /api/diagnostics/reference** - Create or update reference configuration
+   - Rate limit: 10 requests per 60 seconds
+   - Requires: `appliedWeightKg` (0.1-500), `expectedEnergyWh` (0.001-100), `tolerancePercent` (0-50)
+
+2. **GET /api/diagnostics/reference** - Retrieve current reference configuration
+   - Returns active baseline configuration or null if not set
+
+3. **POST /api/diagnostics/test** - Record a diagnostic test result
+   - Rate limit: 5 requests per 60 seconds
+   - Requires: `actualEnergy` (positive number), optional `notes` (max 500 characters)
+   - Automatically calculates performance metrics and determines result status
+
+4. **GET /api/diagnostics/history** - Retrieve diagnostic test history
+   - Rate limit: 20 requests per 60 seconds
+   - Supports pagination: `page` and `limit` query parameters
+   - Returns tests sorted by date (newest first)
+
+All endpoints are protected by JWT authentication and require admin role. Unauthorized requests return 403 Forbidden.
+
+### Important Note: Overall System Performance
+
+The System Diagnostics feature monitors **overall energy harvesting performance** through standardized reference tests. It does **NOT** and **CANNOT** monitor individual piezoelectric disc performance or identify specific defective components.
+
+Diagnostic tests measure the aggregate output of the entire system under controlled conditions, providing insights into overall system health and efficiency rather than component-level diagnostics.
 
 ---
 

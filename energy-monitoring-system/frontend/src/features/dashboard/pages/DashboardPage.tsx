@@ -82,54 +82,6 @@ export function DashboardPage() {
     { value: 'alerts', label: 'Alerts & Issues' },
   ];
 
-  // Sensor nodes data (mock - replace with actual data)
-  const sensorNodes = [
-    { 
-      id: 1, 
-      name: 'Entrance Tile A1', 
-      location: 'Main Entrance', 
-      status: 'Active',
-      voltage: '5.2V',
-      current: '0.48A',
-      timestamp: '2 min ago',
-      statusColor: theme === 'light' ? '#2FBF71' : '#3ED98A',
-      statusBg: theme === 'light' ? '#E8F8EF' : '#16261D'
-    },
-    { 
-      id: 2, 
-      name: 'Hallway Tile B3', 
-      location: 'West Corridor', 
-      status: 'Active',
-      voltage: '4.8V',
-      current: '0.42A',
-      timestamp: '5 min ago',
-      statusColor: theme === 'light' ? '#2FBF71' : '#3ED98A',
-      statusBg: theme === 'light' ? '#E8F8EF' : '#16261D'
-    },
-    { 
-      id: 3, 
-      name: 'Lobby Tile C2', 
-      location: 'Lobby Area', 
-      status: 'Idle',
-      voltage: '3.1V',
-      current: '0.15A',
-      timestamp: '12 min ago',
-      statusColor: theme === 'light' ? '#F59E0B' : '#FBBF24',
-      statusBg: theme === 'light' ? '#FEF3E7' : '#2B2520'
-    },
-    { 
-      id: 4, 
-      name: 'Exit Tile D1', 
-      location: 'Emergency Exit', 
-      status: 'Offline',
-      voltage: '0.0V',
-      current: '0.00A',
-      timestamp: '45 min ago',
-      statusColor: theme === 'light' ? '#EF4444' : '#F87171',
-      statusBg: theme === 'light' ? '#FEECEC' : '#2A1717'
-    },
-  ];
-
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto space-y-6">
@@ -413,7 +365,182 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Featured Power Output Card with Sparkline */}
+        {/* Secondary Metrics - Step Count and Capacitor */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Step Count */}
+          <div 
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            style={{
+              backgroundColor: theme === 'light' ? colors.voltageLight : colors.voltageDark,
+            }}
+          >
+            <div 
+              className="text-xs sm:text-sm font-medium mb-2"
+              style={{ color: colors.subtext }}
+            >
+              Step Count
+            </div>
+            <div 
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ color: colors.accent }}
+            >
+              {lastReading?.stepCount !== undefined ? lastReading.stepCount : '—'}
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>steps</span>
+            </div>
+            {!lastReading?.stepCount && (
+              <p className="text-xs mt-2" style={{ color: colors.subtext }}>
+                No step data available
+              </p>
+            )}
+          </div>
+
+          {/* Capacitor Voltage */}
+          <div 
+            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            style={{
+              backgroundColor: theme === 'light' ? colors.powerLight : colors.powerDark,
+            }}
+          >
+            <div 
+              className="text-xs sm:text-sm font-medium mb-2"
+              style={{ color: colors.subtext }}
+            >
+              Capacitor Voltage
+            </div>
+            <div 
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ color: '#3B82F6' }}
+            >
+              {lastReading?.capacitorVoltage !== undefined ? lastReading.capacitorVoltage.toFixed(1) : '—'}
+              <span className="text-base sm:text-lg ml-1" style={{ color: colors.subtext }}>V</span>
+            </div>
+            {!lastReading?.capacitorVoltage && (
+              <p className="text-xs mt-2" style={{ color: colors.subtext }}>
+                No capacitor data available
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* System Status Indicators */}
+        <div 
+          className="rounded-3xl p-6 transition-colors duration-300"
+          style={{
+            backgroundColor: colors.cardBg,
+            boxShadow: theme === 'light' 
+              ? '0 4px 20px rgba(0,0,0,0.05)' 
+              : 'none'
+          }}
+        >
+          <h3 
+            className="text-lg font-semibold mb-4"
+            style={{ color: colors.text }}
+          >
+            System Status
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Wi-Fi Status */}
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ 
+                  backgroundColor: lastReading?.wifiConnected === true 
+                    ? colors.accent 
+                    : lastReading?.wifiConnected === false 
+                    ? '#EF4444' 
+                    : colors.subtext 
+                }}
+              />
+              <div className="flex-1">
+                <p 
+                  className="text-sm font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Wi-Fi
+                </p>
+                <p 
+                  className="text-xs"
+                  style={{ color: colors.subtext }}
+                >
+                  {lastReading?.wifiConnected === true 
+                    ? 'Connected' 
+                    : lastReading?.wifiConnected === false 
+                    ? 'Disconnected' 
+                    : 'Unknown'}
+                </p>
+              </div>
+            </div>
+
+            {/* Bluetooth Status */}
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ 
+                  backgroundColor: lastReading?.bluetoothConnected === true 
+                    ? colors.accent 
+                    : lastReading?.bluetoothConnected === false 
+                    ? '#EF4444' 
+                    : colors.subtext 
+                }}
+              />
+              <div className="flex-1">
+                <p 
+                  className="text-sm font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Bluetooth
+                </p>
+                <p 
+                  className="text-xs"
+                  style={{ color: colors.subtext }}
+                >
+                  {lastReading?.bluetoothConnected === true 
+                    ? 'Connected' 
+                    : lastReading?.bluetoothConnected === false 
+                    ? 'Disconnected' 
+                    : 'Unknown'}
+                </p>
+              </div>
+            </div>
+
+            {/* Data Transfer Status */}
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
+                style={{ 
+                  backgroundColor: lastReading 
+                    ? colors.accent 
+                    : colors.subtext 
+                }}
+              />
+              <div className="flex-1">
+                <p 
+                  className="text-sm font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Data Transfer
+                </p>
+                <p 
+                  className="text-xs"
+                  style={{ color: colors.subtext }}
+                >
+                  {lastReading ? 'Receiving' : 'Waiting for Data'}
+                </p>
+                {lastReading?.timestamp && (
+                  <p 
+                    className="text-xs mt-0.5"
+                    style={{ color: colors.subtext }}
+                  >
+                    Last: {new Date(lastReading.timestamp).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Featured Power Output Card - Real-time data only, no placeholder sparkline */}
         <div 
           className="rounded-3xl p-6 transition-all duration-300"
           style={{
@@ -450,20 +577,17 @@ export function DashboardPage() {
             </div>
           </div>
           
-          {/* Sparkline */}
-          <div className="h-20 flex items-end gap-1">
-            {[3, 7, 5, 9, 6, 8, 4, 10, 7, 9, 6, 8, 5, 9, 8, 7, 10, 6, 9, 8].map((height, idx) => (
-              <div 
-                key={idx}
-                className="flex-1 rounded-t transition-all duration-300"
-                style={{
-                  height: `${height * 8}%`,
-                  backgroundColor: colors.accent,
-                  opacity: 0.6
-                }}
-              />
-            ))}
-          </div>
+          {/* Sparkline removed - placeholder data removed per requirements 11.6, 11.7 */}
+          {!lastReading && (
+            <div className="h-20 flex items-center justify-center">
+              <p 
+                className="text-sm"
+                style={{ color: colors.subtext }}
+              >
+                Waiting for sensor data
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Charts Section - Full Width Analytics */}
@@ -496,7 +620,8 @@ export function DashboardPage() {
           <ChartsLayoutContainer />
         </Suspense>
 
-        {/* Sensor Nodes / Recent Readings Section */}
+        {/* Sensor Nodes / Recent Readings Section - Removed hard-coded data */}
+        {/* Real sensor data will be displayed when sensors are connected and transmitting */}
         <div 
           className="rounded-3xl p-6 transition-colors duration-300"
           style={{
@@ -513,108 +638,33 @@ export function DashboardPage() {
             Sensor Nodes
           </h3>
 
-          <div className="space-y-3">
-            {sensorNodes.map((node) => (
-              <div 
-                key={node.id}
-                className="rounded-3xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-200 hover:scale-[1.01]"
+          {/* Empty state for sensor nodes */}
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(26, 49, 44, 0.06)' : 'rgba(255, 255, 255, 0.06)'
+              }}
+            >
+              <Activity 
+                className="w-8 h-8"
                 style={{
-                  backgroundColor: theme === 'light' ? '#F9FAFB' : '#12141A',
-                  border: `1px solid ${colors.border}`,
+                  color: theme === 'light' ? 'rgba(26, 49, 44, 0.4)' : 'rgba(255, 255, 255, 0.3)'
                 }}
-              >
-                {/* Status Circle */}
-                <div 
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: node.statusColor }}
-                />
-
-                {/* Node Info */}
-                <div className="flex-1 min-w-0">
-                  <div 
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: colors.text }}
-                  >
-                    {node.name}
-                  </div>
-                  <div 
-                    className="text-xs"
-                    style={{ color: colors.subtext }}
-                  >
-                    {node.location}
-                  </div>
-                </div>
-
-                {/* Status Pill */}
-                <div 
-                  className="px-3 py-1 rounded-full text-xs font-medium w-fit"
-                  style={{
-                    backgroundColor: node.statusBg,
-                    color: node.statusColor
-                  }}
-                >
-                  {node.status}
-                </div>
-
-                {/* Metadata */}
-                <div className="flex gap-6">
-                  <div>
-                    <div 
-                      className="text-[10px] font-medium mb-0.5"
-                      style={{ color: colors.subtext }}
-                    >
-                      READING
-                    </div>
-                    <div 
-                      className="text-xs font-semibold"
-                      style={{ color: colors.text }}
-                    >
-                      {node.voltage} / {node.current}
-                    </div>
-                  </div>
-                  <div>
-                    <div 
-                      className="text-[10px] font-medium mb-0.5"
-                      style={{ color: colors.subtext }}
-                    >
-                      UPDATED
-                    </div>
-                    <div 
-                      className="text-xs font-semibold"
-                      style={{ color: colors.text }}
-                    >
-                      {node.timestamp}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Icons */}
-                <div className="flex gap-2">
-                  <button 
-                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
-                    style={{
-                      backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-                      border: `1px solid ${colors.border}`,
-                      color: colors.accent
-                    }}
-                    aria-label="View details"
-                  >
-                    <Activity className="w-4 h-4" strokeWidth={2} />
-                  </button>
-                  <button 
-                    className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
-                    style={{
-                      backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-                      border: `1px solid ${colors.border}`,
-                      color: colors.accent
-                    }}
-                    aria-label="Download data"
-                  >
-                    <Download className="w-4 h-4" strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              />
+            </div>
+            <p 
+              className="text-sm font-medium mb-2"
+              style={{ color: colors.text }}
+            >
+              No sensor data available
+            </p>
+            <p 
+              className="text-xs text-center max-w-sm"
+              style={{ color: colors.subtext }}
+            >
+              Waiting for sensor data. Connect ESP32 sensors to view real-time node status and readings.
+            </p>
           </div>
         </div>
 

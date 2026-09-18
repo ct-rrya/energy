@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   LayoutDashboard,
   Menu,
-  X
+  X,
+  Activity
 } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -206,6 +207,13 @@ const navigationItems = [
     label: 'Analytics',
     icon: BarChart3,
     visible: permissions.canAccessAnalytics
+  }] : []),
+  // System Diagnostics - only for admin users (positioned after Analytics)
+  ...(isAdminUser ? [{
+    path: ROUTES.ADMIN_DIAGNOSTICS,
+    label: 'System Diagnostics',
+    icon: Activity,
+    visible: permissions.canAccessReports // Using canAccessReports permission as a proxy for admin-only access
   }] : []),
   // Admin-only items
   {

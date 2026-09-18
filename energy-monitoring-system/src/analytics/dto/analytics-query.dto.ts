@@ -10,6 +10,10 @@ export enum MetricType {
   CURRENT = 'current',
   BATTERY = 'battery',
   ENERGY = 'energy',
+  STEPS = 'steps',
+  CAPACITOR_VOLTAGE = 'capacitorVoltage',
+  TEMPERATURE = 'temperature',
+  FREQUENCY = 'frequency',
 }
 
 /**

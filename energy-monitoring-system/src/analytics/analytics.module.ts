@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
@@ -22,6 +22,7 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
  * - Cost savings estimation
  * - Trend analysis
  * - Comprehensive analytics (all in one)
+ * - Historical analysis with AI insights (Phase 6)
  *
  * Architecture:
  * - Uses EnergyService for database queries (don't duplicate)
@@ -38,6 +39,7 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
  * - EnergyModule (for database queries)
  * - EnergyReading schema (for peak detection)
  * - Sensor schema (for sensor details)
+ * - MessengerModule (for AI insights via GeminiAIService)
  *
  * Exports:
  * - AnalyticsService (for Dashboard and Messenger Bot)
@@ -50,6 +52,7 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
  * - GET /api/analytics/peak
  * - GET /api/analytics/environmental
  * - GET /api/analytics/cost-savings
+ * - POST /api/analytics/historical-analysis (Phase 6)
  */
 @Module({
   imports: [
@@ -58,6 +61,9 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
 
     // Import SensorsModule to use SensorsService (Phase 6)
     SensorsModule,
+
+    // Import MessengerModule to use GeminiAIService for historical insights (Phase 6)
+    forwardRef(() => require('../messenger/messenger.module').MessengerModule),
 
     // Import schemas for direct queries (peak detection)
     MongooseModule.forFeature([

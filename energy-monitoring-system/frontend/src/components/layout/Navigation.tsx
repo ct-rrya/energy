@@ -94,22 +94,24 @@ export function Navigation() {
       <div className="mx-auto max-w-7xl px-6 py-4 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo/Title */}
-          <Link 
-            to={ROUTES.HOME} 
-            className="flex items-center gap-3 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:rounded-lg"
-            style={{ 
-              '--tw-ring-color': '#89D7B7' 
-            } as React.CSSProperties}
-            aria-label="EcoStep home"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1.5">
-              <Logo className="h-full w-full" aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: '#1A312C' }}>EcoStep</h1>
-              <p className="text-xs" style={{ color: '#428475' }}>Energy Monitoring System</p>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link 
+              to={ROUTES.HOME} 
+              className="flex items-center gap-3 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:rounded-lg"
+              style={{ 
+                '--tw-ring-color': '#89D7B7' 
+              } as React.CSSProperties}
+              aria-label="EcoStep home"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1.5">
+                <Logo className="h-full w-full" aria-hidden="true" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold" style={{ color: '#1A312C' }}>EcoStep</h1>
+                <p className="text-xs" style={{ color: '#428475' }}>Energy Monitoring System</p>
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation Links */}
           <nav 

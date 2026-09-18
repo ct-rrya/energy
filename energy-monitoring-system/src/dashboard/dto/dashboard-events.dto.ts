@@ -61,6 +61,41 @@ export class NewReadingEventDto {
   energy: number;
 
   /**
+   * Battery Percentage (%)
+   */
+  batteryPercentage?: number;
+
+  /**
+   * Temperature (°C)
+   */
+  temperature?: number;
+
+  /**
+   * Frequency (Hz)
+   */
+  frequency?: number;
+
+  /**
+   * Step Count
+   */
+  stepCount?: number;
+
+  /**
+   * Capacitor Voltage (V)
+   */
+  capacitorVoltage?: number;
+
+  /**
+   * Wi-Fi Connection Status
+   */
+  wifiConnected?: boolean;
+
+  /**
+   * Bluetooth Connection Status
+   */
+  bluetoothConnected?: boolean;
+
+  /**
    * Timestamp from ESP32
    */
   timestamp: Date;

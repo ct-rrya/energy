@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -31,6 +31,7 @@ import { AlertsModule } from './alerts/alerts.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
 import { PublicModule } from './public/public.module';
+import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 
 /**
  * Root Application Module
@@ -114,6 +115,9 @@ import { PublicModule } from './public/public.module';
     ChatbotModule, // Shared chatbot core logic
     ChatModule, // Public chat API
     PublicModule, // Public telemetry API
+
+    // System Diagnostics Module
+    DiagnosticsModule, // Admin-only diagnostic testing
   ],
   controllers: [AppController],
   providers: [

@@ -300,6 +300,10 @@ export class IotService {
       batteryPercentage: readingDto.batteryPercentage ?? 100, // Default to 100%
       temperature: readingDto.temperature,
       frequency: readingDto.frequency,
+      stepCount: readingDto.stepCount,
+      capacitorVoltage: readingDto.capacitorVoltage,
+      wifiConnected: readingDto.wifiConnected,
+      bluetoothConnected: readingDto.bluetoothConnected,
       timestamp: new Date(readingDto.timestamp), // Convert string to Date
       receivedAt: new Date(), // Server timestamp (now)
       energy: 0, // Will be calculated by analytics module
@@ -442,6 +446,13 @@ export class IotService {
         current: reading.current,
         power: reading.power,
         energy: reading.energy,
+        batteryPercentage: reading.batteryPercentage,
+        temperature: reading.temperature,
+        frequency: reading.frequency,
+        stepCount: reading.stepCount,
+        capacitorVoltage: reading.capacitorVoltage,
+        wifiConnected: reading.wifiConnected,
+        bluetoothConnected: reading.bluetoothConnected,
         timestamp: reading.timestamp,
         receivedAt: reading.receivedAt,
       };
@@ -700,6 +711,10 @@ export class IotService {
           minFrequency: { $min: '$frequency' },
           maxFrequency: { $max: '$frequency' },
           avgFrequency: { $avg: '$frequency' },
+          totalSteps: { $sum: '$stepCount' },
+          minCapacitorVoltage: { $min: '$capacitorVoltage' },
+          maxCapacitorVoltage: { $max: '$capacitorVoltage' },
+          avgCapacitorVoltage: { $avg: '$capacitorVoltage' },
           minTimestamp: { $min: '$timestamp' },
           maxTimestamp: { $max: '$timestamp' },
         },
@@ -740,6 +755,7 @@ export class IotService {
         max: result.maxBattery,
         avg: result.avgBattery,
       },
+      totalSteps: result.totalSteps || 0,
     };
 
     // Add temperature stats if available
@@ -757,6 +773,15 @@ export class IotService {
         min: result.minFrequency,
         max: result.maxFrequency,
         avg: result.avgFrequency,
+      };
+    }
+
+    // Add capacitor voltage stats if available
+    if (result.minCapacitorVoltage !== null) {
+      response.capacitorVoltage = {
+        min: result.minCapacitorVoltage,
+        max: result.maxCapacitorVoltage,
+        avg: result.avgCapacitorVoltage,
       };
     }
 

@@ -9,6 +9,12 @@ export interface DashboardMetrics {
   batteryPercentage: number;
   dailyEnergy: number;
   estimatedDailyEnergy: number;
+  stepCount?: number;
+  capacitorVoltage?: number;
+  temperature?: number;
+  frequency?: number;
+  wifiConnected?: boolean;
+  bluetoothConnected?: boolean;
   lastUpdate: string;
   activeSensors: number;
   connectedDevices: number;
@@ -49,7 +55,15 @@ export interface SensorReading {
   current: number;
   power: number;
   energy: number;
+  batteryPercentage?: number;
+  temperature?: number;
+  frequency?: number;
+  stepCount?: number;
+  capacitorVoltage?: number;
+  wifiConnected?: boolean;
+  bluetoothConnected?: boolean;
   timestamp: string;
+  receivedAt?: string;
 }
 
 /**

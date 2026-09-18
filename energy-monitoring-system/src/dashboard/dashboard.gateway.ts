@@ -349,4 +349,39 @@ export class DashboardGateway
     }
     return this.server.sockets.sockets.size;
   }
+
+  /**
+   * Emit Event to Admin Users Only
+   *
+   * Broadcasts WebSocket event only to connected admin users.
+   * Filters clients by role stored in socket.data during authentication.
+   *
+   * Use Cases:
+   * - Diagnostic operations (only admins can perform diagnostics)
+   * - Admin-specific system notifications
+   * - Sensitive operations that shouldn't be broadcasted to public users
+   *
+   * @param event - Event name (e.g., 'diagnostic:test-completed')
+   * @param data - Event payload data
+   */
+  emitToAdmins(event: string, data: any): void {
+    if (!this.server?.sockets?.sockets) {
+      this.logger.warn(
+        `Cannot emit to admins: Server not initialized for event ${event}`,
+      );
+      return;
+    }
+
+    let adminCount = 0;
+
+    // Iterate through all connected sockets and emit only to admins
+    this.server.sockets.sockets.forEach((socket) => {
+      if (socket.data.user?.role === 'admin') {
+        socket.emit(event, data);
+        adminCount++;
+      }
+    });
+
+    this.logger.debug(`Emitted ${event} to ${adminCount} admin client(s)`);
+  }
 }

@@ -4,6 +4,7 @@ import { MessengerService } from './messenger.service';
 import { GeminiAIService } from './gemini-ai.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { EnergyModule } from '../energy/energy.module';
+import { IotModule } from '../iot/iot.module';
 import { SubscribersModule } from '../subscribers/subscribers.module';
 import { ChatbotModule } from '../chatbot/chatbot.module';
 
@@ -57,6 +58,7 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
   imports: [
     AnalyticsModule, // For calculations
     EnergyModule, // For data queries
+    IotModule, // For latest sensor readings with monitoring metrics
     SubscribersModule, // For subscriptions
     forwardRef(() => ChatbotModule), // Circular dependency with ChatbotModule
   ],

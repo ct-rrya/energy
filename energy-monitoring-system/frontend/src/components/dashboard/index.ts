@@ -22,6 +22,8 @@ export { PowerGenerationChart } from './PowerGenerationChart';
 export { VoltageCurrentChart } from './VoltageCurrentChart';
 export { EnergyPeriodChart } from './EnergyPeriodChart';
 export { CumulativeEnergyChart } from './CumulativeEnergyChart';
+export { CapacitorVoltageChart } from './CapacitorVoltageChart';
+export { StepsChart } from './StepsChart';
 
 // ============================================================================
 // Types

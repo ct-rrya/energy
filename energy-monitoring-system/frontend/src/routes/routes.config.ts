@@ -16,6 +16,7 @@ export const ROUTES = {
   ANALYTICS: '/analytics',
   REPORTS: '/reports',
   ALERTS: '/alerts',
+  ADMIN_DIAGNOSTICS: '/admin/diagnostics',
   SETTINGS: '/settings',
   PROFILE: '/profile',
 

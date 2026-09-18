@@ -86,6 +86,30 @@ export class ReadingResponseDto {
   })
   frequency?: number;
 
+  @ApiPropertyOptional({
+    description: 'Step count',
+    example: 42,
+  })
+  stepCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Capacitor voltage in volts',
+    example: 12.5,
+  })
+  capacitorVoltage?: number;
+
+  @ApiPropertyOptional({
+    description: 'Wi-Fi connection status',
+    example: true,
+  })
+  wifiConnected?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Bluetooth connection status',
+    example: false,
+  })
+  bluetoothConnected?: boolean;
+
   @ApiProperty({
     description: 'Reading timestamp from device',
     example: '2026-07-17T14:30:00.000Z',
@@ -281,6 +305,26 @@ export class ReadingStatisticsResponseDto {
     },
   })
   frequency?: {
+    min: number;
+    max: number;
+    avg: number;
+  };
+
+  @ApiProperty({
+    description: 'Total step count',
+    example: 1250,
+  })
+  totalSteps: number;
+
+  @ApiPropertyOptional({
+    description: 'Capacitor voltage statistics (if available)',
+    example: {
+      min: 8.5,
+      max: 14.2,
+      avg: 11.3,
+    },
+  })
+  capacitorVoltage?: {
     min: number;
     max: number;
     avg: number;

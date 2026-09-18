@@ -1,5 +1,6 @@
 ﻿import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
+import { AdminRoute } from './AdminRoute';
 import { FlexibleRoute } from './FlexibleRoute';
 import { ROUTES } from './routes.config';
 
@@ -14,9 +15,12 @@ import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
 import { SensorMonitoringPage } from '@/features/sensors/pages/SensorMonitoringPage';
 import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
+import { EnergyMonitoringPage } from '@/features/energy/pages/EnergyMonitoringPage';
 import { AlertsPage } from '@/features/alerts/pages/AlertsPage';
 import { ReportsPage } from '@/features/reports/pages/ReportsPage';
+import { DiagnosticsPage } from '@/features/admin/pages/DiagnosticsPage';
 import { ProfilePage } from '@/features/profile/pages/ProfilePage';
+import { SettingsPage } from '@/features/admin/pages/SettingsPage';
 import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 
 /**
@@ -71,6 +75,18 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // Energy Monitoring - PUBLIC ACCESS ALLOWED (with limited features)
+  {
+    path: ROUTES.ENERGY,
+    element: (
+      <FlexibleRoute requireAuth={false}>
+        <DashboardLayout>
+          <EnergyMonitoringPage />
+        </DashboardLayout>
+      </FlexibleRoute>
+    ),
+  },
+
   // Admin-only protected routes
   {
     path: ROUTES.SENSORS_MONITORING,
@@ -107,6 +123,18 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // System Diagnostics (Admin only)
+  {
+    path: ROUTES.ADMIN_DIAGNOSTICS,
+    element: (
+      <AdminRoute>
+        <DashboardLayout>
+          <DiagnosticsPage />
+        </DashboardLayout>
+      </AdminRoute>
+    ),
+  },
+
   // Profile (Phase 10)
   {
     path: ROUTES.PROFILE,
@@ -134,28 +162,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: ROUTES.ENERGY,
-    element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-primary-500">Energy Monitoring</h1>
-            <p className="mt-2 text-neutral-600">Coming soon</p>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: ROUTES.SETTINGS,
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-primary-500">Settings</h1>
-            <p className="mt-2 text-neutral-600">Coming soon</p>
-          </div>
-        </DashboardLayout>
+        <SettingsPage />
       </ProtectedRoute>
     ),
   },

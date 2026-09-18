@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsOptional,
   IsEnum,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
@@ -143,6 +144,48 @@ export class CreateReadingDto {
   @Min(0, { message: 'Frequency must be at least 0Hz' })
   @Max(1000, { message: 'Frequency must not exceed 1000Hz' })
   frequency?: number;
+
+  @ApiPropertyOptional({
+    description: 'Number of detected footsteps on the piezoelectric tile',
+    example: 42,
+    minimum: 0,
+    type: Number,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Step count must be a valid number' })
+  @Min(0, { message: 'Step count must be at least 0' })
+  stepCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Voltage level of the energy storage capacitor in volts',
+    example: 12.5,
+    minimum: 0,
+    maximum: 50,
+    type: Number,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Capacitor voltage must be a valid number' })
+  @Min(0, { message: 'Capacitor voltage must be at least 0V' })
+  @Max(50, { message: 'Capacitor voltage must not exceed 50V' })
+  capacitorVoltage?: number;
+
+  @ApiPropertyOptional({
+    description: 'Wi-Fi connection status of the ESP32 device',
+    example: true,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'Wi-Fi connected must be a boolean value' })
+  wifiConnected?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Bluetooth connection status of the ESP32 device',
+    example: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'Bluetooth connected must be a boolean value' })
+  bluetoothConnected?: boolean;
 
   @ApiProperty({
     description:

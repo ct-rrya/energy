@@ -11,10 +11,15 @@ interface EmptyDashboardProps {
 /**
  * Empty Dashboard Component
  * Displayed when no data is available
+ * 
+ * Requirements:
+ * - 11.1: Display proper empty state when no real data exists
+ * - 11.2: Remove placeholder/mock data from dashboard cards
+ * - 26.1: Show helpful empty state with ESP32 connection instructions
  */
 export function EmptyDashboard({
   title = 'No Data Available',
-  message = 'Connect sensors to start monitoring energy data. The dashboard will update automatically once sensors are connected and transmitting data.',
+  message = 'No energy data available. Connect ESP32 sensors to begin monitoring.',
 }: EmptyDashboardProps) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -28,9 +33,9 @@ export function EmptyDashboard({
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 flex-shrink-0 text-accent-600 mt-0.5" />
             <div className="text-left">
-              <p className="text-sm font-medium text-accent-900">Hardware Integration Pending</p>
+              <p className="text-sm font-medium text-accent-900">ESP32 Hardware Connection Required</p>
               <p className="mt-1 text-xs text-accent-700">
-                This system is ready to receive data. Configure and connect your ESP32 sensors to begin monitoring.
+                Configure and connect your ESP32 sensors to begin collecting real-time energy data. The dashboard will update automatically once sensors start transmitting.
               </p>
             </div>
           </div>

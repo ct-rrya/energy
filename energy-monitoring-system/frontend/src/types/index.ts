@@ -8,3 +8,5 @@ export * from './energy.types';
 export * from './alert.types';
 export * from './report.types';
 export * from './user.types';
+export * from './diagnostic.types';
+export * from './monitoring.types';

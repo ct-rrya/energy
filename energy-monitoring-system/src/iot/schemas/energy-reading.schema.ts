@@ -367,6 +367,112 @@ export class EnergyReading {
   frequency?: number;
 
   /**
+   * Step Count
+   *
+   * Number of detected footsteps on the piezoelectric tile.
+   * Tracks cumulative or session-based step activity.
+   *
+   * Range: 0 - unlimited
+   *
+   * Usage:
+   * - Monitor foot traffic
+   * - Correlate steps with energy generation
+   * - Track usage patterns
+   * - Calculate energy per step efficiency
+   *
+   * Note:
+   * - This can be cumulative (total lifetime steps)
+   * - Or session-based (reset periodically)
+   * - Implementation depends on hardware logic
+   *
+   * Optional: Only if hardware supports step detection
+   */
+  @Prop({
+    required: false,
+    type: Number,
+    min: 0,
+    default: 0,
+  })
+  stepCount?: number;
+
+  /**
+   * Capacitor Voltage (V)
+   *
+   * Voltage level of the energy storage capacitor.
+   * Indicates how much energy is currently stored.
+   *
+   * Range: 0-50V (typical capacitor range)
+   *
+   * Usage:
+   * - Monitor energy storage level
+   * - Detect charging/discharging patterns
+   * - Calculate storage efficiency
+   * - Trigger storage alerts
+   *
+   * Note:
+   * - This represents actual capacitor voltage
+   * - NOT a percentage unless hardware calculates that
+   * - Use actual hardware measurement unit
+   *
+   * Optional: Only if hardware has capacitor and measures voltage
+   */
+  @Prop({
+    required: false,
+    type: Number,
+    min: 0,
+    max: 50,
+  })
+  capacitorVoltage?: number;
+
+  /**
+   * Wi-Fi Connection Status
+   *
+   * Indicates whether the ESP32 device has Wi-Fi connectivity.
+   *
+   * Values:
+   * - true: Wi-Fi connected
+   * - false: Wi-Fi disconnected
+   * - undefined: Status unknown or not reported
+   *
+   * Usage:
+   * - Monitor device connectivity
+   * - Detect network issues
+   * - System diagnostics
+   * - Connection quality tracking
+   *
+   * Optional: Hardware reports if available
+   */
+  @Prop({
+    required: false,
+    type: Boolean,
+  })
+  wifiConnected?: boolean;
+
+  /**
+   * Bluetooth Connection Status
+   *
+   * Indicates whether the ESP32 device has Bluetooth connectivity.
+   *
+   * Values:
+   * - true: Bluetooth connected/available
+   * - false: Bluetooth disconnected/unavailable
+   * - undefined: Status unknown or not reported
+   *
+   * Usage:
+   * - Monitor Bluetooth availability
+   * - Track alternative connectivity
+   * - System diagnostics
+   * - Multi-protocol connectivity monitoring
+   *
+   * Optional: Hardware reports if available
+   */
+  @Prop({
+    required: false,
+    type: Boolean,
+  })
+  bluetoothConnected?: boolean;
+
+  /**
    * Reading Source
    *
    * Indicates whether this reading came from real hardware or mock data.
