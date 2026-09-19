@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import { EcoStepLogo } from '@/components/common/EcoStepLogo';
 import { ROUTES } from '@/routes/routes.config';
 import { APP_NAME } from '@/lib/constants';
 import { showToast } from '@/components/common/Toast';
-import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
+import { getThemeColors } from '@/lib/theme';
 
 /**
  * Login Page - Split Screen Design

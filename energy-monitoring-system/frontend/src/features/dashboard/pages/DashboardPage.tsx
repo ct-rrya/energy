@@ -96,7 +96,7 @@ export function DashboardPage() {
               <p 
                 className="text-sm sm:text-base"
                 style={{ 
-                  color: colors.textPrimarySecondary,
+                  color: colors.textSecondary,
                   fontSize: TYPOGRAPHY.fontSize.sm
                 }}
               >
@@ -167,7 +167,7 @@ export function DashboardPage() {
               className="w-4 h-4 transition-transform duration-200"
               style={{ 
                 transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                color: colors.textPrimarySecondary
+                color: colors.textSecondary
               }}
             />
           </button>
@@ -192,7 +192,7 @@ export function DashboardPage() {
                   className="w-full px-4 py-3 text-left text-sm transition-colors duration-150"
                   style={{
                     color: selectedFilter === option.value ? colors.accent : colors.textPrimary,
-                    backgroundColor: selectedFilter === option.value ? (theme === 'light' ? colors.voltageLight : colors.voltageDark) : 'transparent'
+                    backgroundColor: selectedFilter === option.value ? (colors.surfaceMuted) : 'transparent'
                   }}
                   onMouseEnter={(e) => {
                     if (selectedFilter !== option.value) {
@@ -218,7 +218,7 @@ export function DashboardPage() {
           <div 
             className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
-              backgroundColor: theme === 'light' ? colors.voltageLight : colors.voltageDark,
+              backgroundColor: colors.surfaceMuted,
             }}
           >
             <div 
@@ -240,7 +240,7 @@ export function DashboardPage() {
           <div 
             className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
-              backgroundColor: theme === 'light' ? colors.currentLight : colors.currentDark,
+              backgroundColor: colors.surfaceMuted,
             }}
           >
             <div 
@@ -262,7 +262,7 @@ export function DashboardPage() {
           <div 
             className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
-              backgroundColor: theme === 'light' ? colors.powerLight : colors.powerDark,
+              backgroundColor: colors.surfaceMuted,
             }}
           >
             <div 
@@ -284,7 +284,7 @@ export function DashboardPage() {
           <div 
             className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
             style={{
-              backgroundColor: theme === 'light' ? colors.energyLight : colors.energyDark,
+              backgroundColor: colors.surfaceMuted,
             }}
           >
             <div 
@@ -458,7 +458,7 @@ export function DashboardPage() {
             <div 
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{
-                backgroundColor: theme === 'light' ? colors.voltageLight : colors.voltageDark,
+                backgroundColor: colors.surfaceMuted,
                 color: colors.accent
               }}
             >

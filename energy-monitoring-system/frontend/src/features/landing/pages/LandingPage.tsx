@@ -5,7 +5,7 @@ import { ROUTES } from '@/routes/routes.config';
 import { Navigation } from '@/components/layout';
 import TelemetryDisplay from '@/features/landing/components/TelemetryDisplay';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
+import { getThemeColors } from '@/lib/theme';
 
 /**
  * LandingPage Component

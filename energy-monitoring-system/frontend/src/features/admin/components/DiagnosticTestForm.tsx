@@ -212,8 +212,7 @@ export function DiagnosticTestForm() {
                 style={{
                   border: `1px solid ${colors.border}`,
                   backgroundColor: colors.inputBackground,
-                  color: colors.textPrimary,
-                  focusRing: colors.focusRing
+                  color: colors.textPrimary
                 }}
                 {...register('notes')}
               />

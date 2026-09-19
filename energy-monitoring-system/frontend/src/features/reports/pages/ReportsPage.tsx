@@ -9,7 +9,6 @@ import {
   Download, 
   Eye, 
   Trash2,
-  MoreVertical,
   Filter
 } from 'lucide-react';
 import { GenerateReportDialog } from '../components/GenerateReportDialog';
@@ -47,7 +46,6 @@ export function ReportsPage() {
   const [formatFilter, setFormatFilter] = useState<ReportFormat | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [previewReport, setPreviewReport] = useState<Report | null>(null);
 
   // Hooks
@@ -67,10 +65,8 @@ export function ReportsPage() {
     generateReport,
     isGenerating,
     downloadReport,
-    isDownloading,
-    deleteReport,
-    isDeleting,
-  } = useReportActions();
+deleteReport,
+} = useReportActions();
 
   // Handlers
   const handleGenerateReport = (dto: GenerateReportDto) => {
@@ -88,7 +84,6 @@ export function ReportsPage() {
 
   const handleDownload = (id: string, fileName: string) => {
     downloadReport({ id, fileName });
-    setActiveDropdown(null);
   };
 
   const handleDelete = (id: string) => {
@@ -96,7 +91,6 @@ export function ReportsPage() {
       deleteReport(id, {
         onSuccess: () => {
           refetchReports();
-          setActiveDropdown(null);
         },
       });
     }
@@ -104,7 +98,6 @@ export function ReportsPage() {
 
   const handleView = (report: Report) => {
     setPreviewReport(report);
-    setActiveDropdown(null);
   };
 
   const getReportTypeLabel = (type: ReportType): string => {

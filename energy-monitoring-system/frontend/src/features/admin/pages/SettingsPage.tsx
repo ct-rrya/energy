@@ -368,7 +368,6 @@ export function SettingsPage() {
                     <StatusItem
                       icon={<Server className="h-4 w-4" />}
                       label="Backend"
-                      status={healthStatus?.status || 'unknown'}
                       statusText={getStatusText(healthStatus?.status || 'unavailable')}
                       statusColor={getStatusColor(healthStatus?.status || 'unavailable')}
                       colors={colors}
@@ -376,7 +375,6 @@ export function SettingsPage() {
                     <StatusItem
                       icon={<Database className="h-4 w-4" />}
                       label="Database"
-                      status={healthStatus?.database?.status || 'unknown'}
                       statusText={getStatusText(healthStatus?.database?.state || healthStatus?.database?.status || 'unavailable')}
                       statusColor={getStatusColor(healthStatus?.database?.status || 'unavailable')}
                       responseTime={healthStatus?.database?.responseTime}
@@ -385,7 +383,6 @@ export function SettingsPage() {
                     <StatusItem
                       icon={<Activity className="h-4 w-4" />}
                       label="IoT Data"
-                      status={iotDataStatus}
                       statusText={getStatusText(iotDataStatus)}
                       statusColor={getStatusColor(iotDataStatus)}
                       colors={colors}
@@ -424,10 +421,10 @@ function InfoItem({ label, value, colors }: { label: string; value: string; colo
   );
 }
 
+
 function StatusItem({
   icon,
   label,
-  status,
   statusText,
   statusColor,
   responseTime,
@@ -435,7 +432,6 @@ function StatusItem({
 }: {
   icon: React.ReactNode;
   label: string;
-  status: string;
   statusText: string;
   statusColor: string;
   responseTime?: number;

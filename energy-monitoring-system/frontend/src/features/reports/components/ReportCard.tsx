@@ -34,6 +34,10 @@ function getReportTypeLabel(type: ReportType): string {
     [ReportType.WEEKLY]: 'Weekly',
     [ReportType.MONTHLY]: 'Monthly',
     [ReportType.CUSTOM]: 'Custom',
+    [ReportType.ENERGY_MONITORING]: 'Energy Monitoring',
+    [ReportType.HISTORICAL_ANALYTICS]: 'Historical Analytics',
+    [ReportType.SYSTEM_DIAGNOSTICS]: 'System Diagnostics',
+    [ReportType.SYSTEM_SUMMARY]: 'System Summary',
   };
   return labels[type];
 }

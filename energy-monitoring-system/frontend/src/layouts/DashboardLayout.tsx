@@ -1,4 +1,4 @@
-﻿import { type ReactNode, useState, useEffect, useRef } from 'react';
+import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FileText, 
@@ -22,7 +22,7 @@ import { showToast } from '@/components/common/Toast';
 import { ROUTES } from '@/routes/routes.config';
 import { getUserRole, getUserPermissions, type UserRole } from '@/lib/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { getThemeColors, SPACING, TYPOGRAPHY, ANIMATION } from '@/lib/theme';
+import { getThemeColors, SPACING, TYPOGRAPHY } from '@/lib/theme';
 
 /**
  * Dashboard Layout Props
@@ -401,7 +401,7 @@ const navigationItems = [
                       color: colors.textSecondary
                     }}
                   >
-                    <span className="text-lg">👁️</span>
+                    <span className="text-lg">???</span>
                   </div>
                   
                   <div className="flex-1 text-left">
@@ -628,7 +628,7 @@ const navigationItems = [
                   color: theme === 'light' ? '#6B7280' : '#9CA3AF'
                 }}
               >
-                <span className="text-lg">👁️</span>
+                <span className="text-lg">???</span>
               </div>
               
               {isExpanded && (
