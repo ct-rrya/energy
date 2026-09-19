@@ -4,6 +4,7 @@ import { EcoCard } from '@/components/common';
 import { User as UserIcon, Mail, Shield, Calendar, Edit2, X, Check } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useUpdateProfile } from '../hooks';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Profile Card Props
@@ -24,10 +25,18 @@ interface ProfileCardProps {
  * - Loading states
  */
 export function ProfileCard({ user }: ProfileCardProps) {
+  const { theme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user.name);
   
   const { mutate: updateProfile, isPending } = useUpdateProfile();
+
+  // Theme-aware colors
+  const colors = {
+    textPrimary: theme === 'light' ? '#1F2937' : '#F9FAFB',
+    textSecondary: theme === 'light' ? '#6B7280' : '#9CA3AF',
+    accent: '#10B981',
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +68,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
       <div className="space-y-6">
         {/* Name Field */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <UserIcon className="inline h-4 w-4 mr-2" />
             Name
           </label>
@@ -94,7 +103,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
             </form>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-[#1A312C] dark:text-[#FFF4E1]">{user.name}</span>
+              <span style={{ color: colors.textPrimary }}>{user.name}</span>
               <button
                 onClick={() => setIsEditing(true)}
                 className="eco-btn-secondary px-3 py-1 text-sm"
@@ -108,24 +117,24 @@ export function ProfileCard({ user }: ProfileCardProps) {
 
         {/* Email Field (Read-only) */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Mail className="inline h-4 w-4 mr-2" />
             Email
           </label>
-          <div className="text-[#1A312C] dark:text-[#FFF4E1]">{user.email}</div>
-          <p className="text-xs mt-1" style={{ color: 'rgba(26, 49, 44, 0.5)' }}>Email cannot be changed</p>
+          <div style={{ color: colors.textPrimary }}>{user.email}</div>
+          <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>Email cannot be changed</p>
         </div>
 
         {/* Role Field (Read-only) */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Shield className="inline h-4 w-4 mr-2" />
             Role
           </label>
           <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium" style={{ 
-            background: 'rgba(137, 215, 183, 0.15)',
-            color: '#428475',
-            border: '1px solid rgba(137, 215, 183, 0.3)'
+            background: theme === 'light' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.15)',
+            color: colors.accent,
+            border: `1px solid ${theme === 'light' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.4)'}`
           }}>
             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
           </div>
@@ -133,21 +142,21 @@ export function ProfileCard({ user }: ProfileCardProps) {
 
         {/* Account Created */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Calendar className="inline h-4 w-4 mr-2" />
             Account Created
           </label>
-          <div className="text-[#1A312C] dark:text-[#FFF4E1]">{formatDate(new Date(user.createdAt))}</div>
+          <div style={{ color: colors.textPrimary }}>{formatDate(new Date(user.createdAt))}</div>
         </div>
 
         {/* Last Login */}
         {user.lastLoginAt && (
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
               <Calendar className="inline h-4 w-4 mr-2" />
               Last Login
             </label>
-            <div className="text-[#1A312C] dark:text-[#FFF4E1]">{formatDate(new Date(user.lastLoginAt))}</div>
+            <div style={{ color: colors.textPrimary }}>{formatDate(new Date(user.lastLoginAt))}</div>
           </div>
         )}
       </div>

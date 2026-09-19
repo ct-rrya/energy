@@ -1,20 +1,20 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
 import { 
   Zap, 
   Activity,
-  Download,
   ChevronDown,
-  Settings,
   Bell
 } from 'lucide-react';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
-import { getThemeColors, SPACING, TYPOGRAPHY } from '@/lib/theme';
+import { StepActivityCard } from '../components/StepActivityCard';
+import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
 
 // Task 9.3: Lazy load ChartsLayoutContainer for performance optimization
 const ChartsLayoutContainer = lazy(() => import('../components/ChartsLayoutContainer').then(module => ({ default: module.ChartsLayoutContainer })));
@@ -26,6 +26,7 @@ const ChartsLayoutContainer = lazy(() => import('../components/ChartsLayoutConta
 export function DashboardPage() {
   const { theme } = useTheme();
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   
   // Determine user role
   const userRole = getUserRole(isAuthenticated, user);
@@ -104,37 +105,10 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Actions - Actual action buttons */}
+          {/* Quick Actions - Alerts button only */}
           <div className="flex items-center gap-2">
             <button
-              disabled={isPublicUser}
-              aria-label="Open settings"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200"
-              style={{
-                backgroundColor: colors.cardBackground,
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-                opacity: isPublicUser ? 0.5 : 1,
-                cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto',
-                fontWeight: TYPOGRAPHY.fontWeight.medium
-              }}
-              onMouseEnter={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBackground;
-                }
-              }}
-              aria-disabled={isPublicUser}
-            >
-              <Settings className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="text-sm font-medium hidden sm:inline">Settings</span>
-            </button>
-            <button
+              onClick={() => navigate('/alerts')}
               disabled={isPublicUser}
               aria-label="View alerts (3 unread)"
               className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200 relative"
@@ -170,34 +144,6 @@ export function DashboardPage() {
                   3
                 </div>
               )}
-            </button>
-            <button
-              disabled={isPublicUser}
-              aria-label="Export data"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200"
-              style={{
-                backgroundColor: colors.cardBackground,
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-                opacity: isPublicUser ? 0.5 : 1,
-                cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto',
-                fontWeight: TYPOGRAPHY.fontWeight.medium
-              }}
-              onMouseEnter={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBackground;
-                }
-              }}
-              aria-disabled={isPublicUser}
-            >
-              <Download className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="text-sm font-medium hidden sm:inline">Export</span>
             </button>
           </div>
         </div>
@@ -357,61 +303,12 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Secondary Metrics - Step Count and Capacitor */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {/* Step Count */}
-          <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
-            style={{
-              backgroundColor: theme === 'light' ? colors.voltageLight : colors.voltageDark,
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
-            >
-              Step Count
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: colors.accent }}
-            >
-              {lastReading?.stepCount !== undefined ? lastReading.stepCount : '—'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>steps</span>
-            </div>
-            {!lastReading?.stepCount && (
-              <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
-                No step data available
-              </p>
-            )}
-          </div>
-
-          {/* Capacitor Voltage */}
-          <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
-            style={{
-              backgroundColor: theme === 'light' ? colors.powerLight : colors.powerDark,
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
-            >
-              Capacitor Voltage
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: '#3B82F6' }}
-            >
-              {lastReading?.capacitorVoltage !== undefined ? lastReading.capacitorVoltage.toFixed(1) : '—'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>V</span>
-            </div>
-            {!lastReading?.capacitorVoltage && (
-              <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
-                No capacitor data available
-              </p>
-            )}
-          </div>
+        {/* Step Activity Card - Supporting Metric */}
+        <div className="max-w-md">
+          <StepActivityCard 
+            stepCount={lastReading?.stepCount}
+            hasData={!!lastReading}
+          />
         </div>
 
         {/* System Status Indicators */}

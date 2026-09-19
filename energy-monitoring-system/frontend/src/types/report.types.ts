@@ -8,10 +8,16 @@
  * Report Type
  */
 export const ReportType = {
+  // Legacy types (kept for backward compatibility)
   DAILY: 'daily',
   WEEKLY: 'weekly',
   MONTHLY: 'monthly',
   CUSTOM: 'custom',
+  // New report types
+  ENERGY_MONITORING: 'energy_monitoring',
+  HISTORICAL_ANALYTICS: 'historical_analytics',
+  SYSTEM_DIAGNOSTICS: 'system_diagnostics',
+  SYSTEM_SUMMARY: 'system_summary',
 } as const;
 
 export type ReportType = typeof ReportType[keyof typeof ReportType];
@@ -70,6 +76,8 @@ export interface GenerateReportDto {
   startDate?: string;
   endDate?: string;
   electricityRate?: number;
+  includeSections?: string[];
+  aggregation?: 'hourly' | 'daily' | 'weekly';
 }
 
 /**

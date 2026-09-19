@@ -5,12 +5,7 @@ import { getUserRole } from '@/lib/permissions';
 import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData';
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 import { Activity, Zap } from 'lucide-react';
-import { 
-  PowerGenerationChart,
-  VoltageCurrentChart,
-  CapacitorVoltageChart,
-  StepsChart
-} from '@/components/dashboard';
+import { HistoricalAnalyticsGrid } from '../components/HistoricalAnalyticsGrid';
 
 /**
  * Energy Monitoring Page
@@ -290,30 +285,17 @@ export function EnergyMonitoringPage() {
           </div>
         </div>
 
-        {/* Time-Series Monitoring Charts */}
+        {/* Historical Analytics - Clean 2×2 Grid */}
         <div className="space-y-6">
           <h2 
             className="text-xl font-semibold"
             style={{ color: colors.text }}
           >
-            Time-Series Monitoring
+            Historical Analytics
           </h2>
 
-          {/* Energy Generated Over Time */}
-          <div className="w-full">
-            <PowerGenerationChart />
-          </div>
-
-          {/* Voltage and Current */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <VoltageCurrentChart />
-          </div>
-
-          {/* Capacitor and Steps */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CapacitorVoltageChart />
-            <StepsChart />
-          </div>
+          {/* 2×2 Grid Layout: Voltage Trend, Current Trend, Energy Period, Cumulative Energy */}
+          <HistoricalAnalyticsGrid />
         </div>
 
       </div>

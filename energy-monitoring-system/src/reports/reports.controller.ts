@@ -34,6 +34,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ReportType, ReportFormat } from './schemas/report.schema';
+import type { UserDocument } from '../users/schemas/user.schema';
 
 /**
  * Reports Controller
@@ -127,11 +128,11 @@ export class ReportsController {
   })
   async generate(
     @Body() generateReportDto: GenerateReportDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserDocument,
   ) {
     const report = await this.reportsService.generate(
       generateReportDto,
-      user.userId,
+      user._id.toString(),
     );
 
     return {
@@ -225,7 +226,7 @@ export class ReportsController {
     description: 'Unauthorized - JWT token required',
   })
   async findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserDocument,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('type') type?: ReportType,
@@ -236,7 +237,7 @@ export class ReportsController {
     const validLimit = Math.min(100, Math.max(1, Number(limit)));
 
     const { data, meta } = await this.reportsService.findAll(
-      user.userId,
+      user._id.toString(),
       validPage,
       validLimit,
       type,
@@ -313,8 +314,8 @@ export class ReportsController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - JWT token required',
   })
-  async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    const report = await this.reportsService.findOne(id, user.userId);
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    const report = await this.reportsService.findOne(id, user._id.toString());
 
     return {
       success: true,
@@ -380,12 +381,12 @@ export class ReportsController {
   })
   async download(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserDocument,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     const { stream, report } = await this.reportsService.download(
       id,
-      user.userId,
+      user._id.toString(),
     );
 
     // Set response headers
@@ -453,8 +454,8 @@ export class ReportsController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - JWT token required',
   })
-  async delete(@Param('id') id: string, @CurrentUser() user: any) {
-    const report = await this.reportsService.delete(id, user.userId);
+  async delete(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    const report = await this.reportsService.delete(id, user._id.toString());
 
     return {
       success: true,
@@ -521,6 +522,30 @@ export class ReportsController {
       success: true,
       data: {
         types: [
+          {
+            value: ReportType.ENERGY_MONITORING,
+            label: 'Energy Monitoring',
+            description: 'Summarize energy generation and electrical measurements',
+            requiredFields: ['startDate', 'endDate'],
+          },
+          {
+            value: ReportType.HISTORICAL_ANALYTICS,
+            label: 'Historical Analytics',
+            description: 'Analyze historical energy and electrical trends',
+            requiredFields: ['startDate', 'endDate', 'aggregation'],
+          },
+          {
+            value: ReportType.SYSTEM_DIAGNOSTICS,
+            label: 'System Diagnostics',
+            description: 'Review standardized system diagnostic tests',
+            requiredFields: ['startDate', 'endDate'],
+          },
+          {
+            value: ReportType.SYSTEM_SUMMARY,
+            label: 'System Summary',
+            description: 'Generate a combined overview of available EcoStep data',
+            requiredFields: ['startDate', 'endDate'],
+          },
           {
             value: ReportType.DAILY,
             label: 'Daily Report',

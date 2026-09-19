@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { EcoPageHeader, EcoCard, EcoEmptyState } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { User } from 'lucide-react';
@@ -12,6 +13,7 @@ import type { UserProfile } from '@/types/user.types';
  * Redesigned with EcoStep design system
  */
 export function ProfilePage() {
+  const { theme } = useTheme();
   const { user: authUser } = useAuth();
   const {
     data: profileData,
@@ -19,6 +21,15 @@ export function ProfilePage() {
     error,
     refetch,
   } = useProfile();
+
+  // Theme-aware colors
+  const colors = {
+    textPrimary: theme === 'light' ? '#1F2937' : '#F9FAFB',
+    textSecondary: theme === 'light' ? '#6B7280' : '#9CA3AF',
+    accent: '#10B981',
+    success: '#10B981',
+    error: '#EF4444',
+  };
 
   // Loading state
   if (isLoading) {
@@ -98,16 +109,15 @@ export function ProfilePage() {
           <h2 className="eco-card-title mb-4">Account Status</h2>
           <div className="flex items-center gap-3">
             <div
-              className={`h-3 w-3 rounded-full ${
-                user.isActive ? 'bg-[#89D7B7]' : 'bg-[rgb(var(--color-error-500))]'
-              }`}
+              className={`h-3 w-3 rounded-full`}
+              style={{ backgroundColor: user.isActive ? colors.success : colors.error }}
             />
-            <span className="text-[#1A312C] dark:text-[#89D7B7] font-medium">
+            <span className="font-medium" style={{ color: user.isActive ? colors.success : colors.error }}>
               {user.isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
           {user.isActive && (
-            <p className="mt-3 text-sm text-[rgb(var(--color-neutral-600))]">
+            <p className="mt-3 text-sm" style={{ color: colors.textSecondary }}>
               Your account is active and all features are available.
             </p>
           )}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EcoCard } from '@/components/common';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useChangePassword } from '../hooks';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Change Password Card Component
@@ -16,6 +17,7 @@ import { useChangePassword } from '../hooks';
  * - Success/error handling
  */
 export function ChangePasswordCard() {
+  const { theme } = useTheme();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,6 +26,13 @@ export function ChangePasswordCard() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutate: changePassword, isPending } = useChangePassword();
+
+  // Theme-aware colors
+  const colors = {
+    textPrimary: theme === 'light' ? '#1F2937' : '#F9FAFB',
+    textSecondary: theme === 'light' ? '#6B7280' : '#9CA3AF',
+    accent: '#10B981',
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +69,7 @@ export function ChangePasswordCard() {
     <EcoCard>
       <div className="mb-6">
         <h2 className="eco-card-title">Change Password</h2>
-        <p className="text-sm mt-1" style={{ color: 'rgba(26, 49, 44, 0.65)' }}>
+        <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
           Update your password to keep your account secure
         </p>
       </div>
@@ -68,7 +77,7 @@ export function ChangePasswordCard() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current Password */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Lock className="inline h-4 w-4 mr-2" />
             Current Password
           </label>
@@ -87,7 +96,7 @@ export function ChangePasswordCard() {
               type="button"
               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-              style={{ color: '#428475' }}
+              style={{ color: colors.accent }}
             >
               {showCurrentPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -100,7 +109,7 @@ export function ChangePasswordCard() {
 
         {/* New Password */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Lock className="inline h-4 w-4 mr-2" />
             New Password
           </label>
@@ -119,7 +128,7 @@ export function ChangePasswordCard() {
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-              style={{ color: '#428475' }}
+              style={{ color: colors.accent }}
             >
               {showNewPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -129,21 +138,21 @@ export function ChangePasswordCard() {
             </button>
           </div>
           <div className="mt-2 space-y-1">
-            <p className="text-xs" style={{ color: 'rgba(26, 49, 44, 0.6)' }}>Password must contain:</p>
-            <ul className="text-xs space-y-0.5 ml-4 list-disc" style={{ color: 'rgba(26, 49, 44, 0.6)' }}>
-              <li className={newPassword.length >= 8 ? 'text-[#428475] font-medium' : ''}>
+            <p className="text-xs" style={{ color: colors.textSecondary }}>Password must contain:</p>
+            <ul className="text-xs space-y-0.5 ml-4 list-disc" style={{ color: colors.textSecondary }}>
+              <li className={newPassword.length >= 8 ? 'font-medium' : ''} style={{ color: newPassword.length >= 8 ? colors.accent : colors.textSecondary }}>
                 At least 8 characters
               </li>
-              <li className={/[A-Z]/.test(newPassword) ? 'text-[#428475] font-medium' : ''}>
+              <li className={/[A-Z]/.test(newPassword) ? 'font-medium' : ''} style={{ color: /[A-Z]/.test(newPassword) ? colors.accent : colors.textSecondary }}>
                 One uppercase letter
               </li>
-              <li className={/[a-z]/.test(newPassword) ? 'text-[#428475] font-medium' : ''}>
+              <li className={/[a-z]/.test(newPassword) ? 'font-medium' : ''} style={{ color: /[a-z]/.test(newPassword) ? colors.accent : colors.textSecondary }}>
                 One lowercase letter
               </li>
-              <li className={/\d/.test(newPassword) ? 'text-[#428475] font-medium' : ''}>
+              <li className={/\d/.test(newPassword) ? 'font-medium' : ''} style={{ color: /\d/.test(newPassword) ? colors.accent : colors.textSecondary }}>
                 One number
               </li>
-              <li className={/[@$!%*?&]/.test(newPassword) ? 'text-[#428475] font-medium' : ''}>
+              <li className={/[@$!%*?&]/.test(newPassword) ? 'font-medium' : ''} style={{ color: /[@$!%*?&]/.test(newPassword) ? colors.accent : colors.textSecondary }}>
                 One special character (@$!%*?&)
               </li>
             </ul>
@@ -152,7 +161,7 @@ export function ChangePasswordCard() {
 
         {/* Confirm Password */}
         <div>
-          <label className="block text-sm font-medium mb-2" style={{ color: '#428475' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.accent }}>
             <Lock className="inline h-4 w-4 mr-2" />
             Confirm New Password
           </label>
@@ -171,7 +180,7 @@ export function ChangePasswordCard() {
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-              style={{ color: '#428475' }}
+              style={{ color: colors.accent }}
             >
               {showConfirmPassword ? (
                 <EyeOff className="h-4 w-4" />

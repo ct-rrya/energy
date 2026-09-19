@@ -106,7 +106,7 @@ export class GenerateReportDto {
    * Year
    *
    * Required for: daily, weekly, monthly
-   * Not used for: custom
+   * Not used for: custom, energy_monitoring, historical_analytics, system_diagnostics, system_summary
    *
    * Range: 1900-2100
    */
@@ -116,7 +116,11 @@ export class GenerateReportDto {
     minimum: 1900,
     maximum: 2100,
   })
-  @ValidateIf((o) => o.type !== ReportType.CUSTOM)
+  @ValidateIf((o) => 
+    o.type === ReportType.DAILY || 
+    o.type === ReportType.WEEKLY || 
+    o.type === ReportType.MONTHLY
+  )
   @IsNumber({}, { message: 'year must be a number' })
   @Min(1900, { message: 'year must be at least 1900' })
   @Max(2100, { message: 'year must be at most 2100' })
@@ -127,7 +131,7 @@ export class GenerateReportDto {
    *
    * Required for: daily, monthly
    * Optional for: weekly (used to determine which week)
-   * Not used for: custom
+   * Not used for: custom, energy_monitoring, historical_analytics, system_diagnostics, system_summary
    *
    * Range: 1-12
    */
@@ -154,7 +158,7 @@ export class GenerateReportDto {
    *
    * Required for: daily
    * Optional for: weekly (any day in the week)
-   * Not used for: monthly, custom
+   * Not used for: monthly, custom, energy_monitoring, historical_analytics, system_diagnostics, system_summary
    *
    * Range: 1-31
    */
@@ -175,24 +179,30 @@ export class GenerateReportDto {
   /**
    * Start Date
    *
-   * Required for: custom
+   * Required for: custom, energy_monitoring, historical_analytics, system_diagnostics, system_summary
    * Not used for: daily, weekly, monthly
    *
    * Format: YYYY-MM-DD
    * Example: 2026-07-01
    */
   @ApiPropertyOptional({
-    description: 'Start date (required for custom reports, format: YYYY-MM-DD)',
+    description: 'Start date (required for custom and new report types, format: YYYY-MM-DD)',
     example: '2026-07-01',
   })
-  @ValidateIf((o) => o.type === ReportType.CUSTOM)
+  @ValidateIf((o) => 
+    o.type === ReportType.CUSTOM ||
+    o.type === ReportType.ENERGY_MONITORING ||
+    o.type === ReportType.HISTORICAL_ANALYTICS ||
+    o.type === ReportType.SYSTEM_DIAGNOSTICS ||
+    o.type === ReportType.SYSTEM_SUMMARY
+  )
   @IsDateString({}, { message: 'startDate must be a valid date (YYYY-MM-DD)' })
   startDate?: string;
 
   /**
    * End Date
    *
-   * Required for: custom
+   * Required for: custom, energy_monitoring, historical_analytics, system_diagnostics, system_summary
    * Not used for: daily, weekly, monthly
    *
    * Format: YYYY-MM-DD
@@ -201,10 +211,16 @@ export class GenerateReportDto {
    * Must be after or equal to startDate.
    */
   @ApiPropertyOptional({
-    description: 'End date (required for custom reports, format: YYYY-MM-DD)',
+    description: 'End date (required for custom and new report types, format: YYYY-MM-DD)',
     example: '2026-07-31',
   })
-  @ValidateIf((o) => o.type === ReportType.CUSTOM)
+  @ValidateIf((o) => 
+    o.type === ReportType.CUSTOM ||
+    o.type === ReportType.ENERGY_MONITORING ||
+    o.type === ReportType.HISTORICAL_ANALYTICS ||
+    o.type === ReportType.SYSTEM_DIAGNOSTICS ||
+    o.type === ReportType.SYSTEM_SUMMARY
+  )
   @IsDateString({}, { message: 'endDate must be a valid date (YYYY-MM-DD)' })
   endDate?: string;
 
@@ -230,4 +246,51 @@ export class GenerateReportDto {
   @Min(0, { message: 'electricityRate must be at least 0' })
   @Max(1, { message: 'electricityRate must be at most 1' })
   electricityRate?: number;
+
+  /**
+   * Include Sections (Optional)
+   *
+   * Array of section names to include in the report.
+   * Used for new report types (energy_monitoring, historical_analytics, system_summary).
+   *
+   * Possible values:
+   * - energySummary
+   * - voltage
+   * - current
+   * - stepActivity
+   * - energyChart
+   * - diagnosticHistory
+   * - performanceResults
+   *
+   * If not provided, all available sections are included.
+   */
+  @ApiPropertyOptional({
+    description: 'Sections to include in the report (optional)',
+    example: ['energySummary', 'voltage', 'current'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsString({ each: true })
+  includeSections?: string[];
+
+  /**
+   * Aggregation Period (Optional)
+   *
+   * Data aggregation period for historical analytics reports.
+   *
+   * Values:
+   * - hourly: Hourly aggregation
+   * - daily: Daily aggregation
+   * - weekly: Weekly aggregation
+   *
+   * Default: daily
+   */
+  @ApiPropertyOptional({
+    description: 'Data aggregation period for historical reports (optional)',
+    example: 'daily',
+    enum: ['hourly', 'daily', 'weekly'],
+  })
+  @IsOptional()
+  @IsString()
+  aggregation?: 'hourly' | 'daily' | 'weekly';
 }

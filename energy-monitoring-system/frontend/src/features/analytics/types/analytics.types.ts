@@ -92,7 +92,6 @@ export type MetricType =
   | 'battery' 
   | 'energy' 
   | 'steps' 
-  | 'capacitorVoltage' 
   | 'temperature' 
   | 'frequency';
 export type Granularity = 'hour' | 'day' | 'week' | 'month';

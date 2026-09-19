@@ -7,10 +7,16 @@ import { Document, Types } from 'mongoose';
  * Defines the types of reports that can be generated.
  */
 export enum ReportType {
+  // Legacy types (kept for backward compatibility)
   DAILY = 'daily',
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
   CUSTOM = 'custom',
+  // New report types
+  ENERGY_MONITORING = 'energy_monitoring',
+  HISTORICAL_ANALYTICS = 'historical_analytics',
+  SYSTEM_DIAGNOSTICS = 'system_diagnostics',
+  SYSTEM_SUMMARY = 'system_summary',
 }
 
 /**

@@ -78,16 +78,33 @@ export const downloadReport = async (id: string, fileName: string): Promise<void
     responseType: 'blob',
   });
 
-  // Create a blob URL and trigger download
-  const blob = new Blob([response.data]);
+  // Determine content type from file extension
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  let mimeType = 'application/octet-stream';
+  
+  if (extension === 'pdf') {
+    mimeType = 'application/pdf';
+  } else if (extension === 'xlsx' || extension === 'xls') {
+    mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  } else if (extension === 'csv') {
+    mimeType = 'text/csv';
+  }
+
+  // Create a blob URL with proper MIME type and trigger download
+  const blob = new Blob([response.data], { type: mimeType });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
+  
+  // Clean up after a short delay to ensure download starts
+  setTimeout(() => {
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }, 100);
 };
 
 /**

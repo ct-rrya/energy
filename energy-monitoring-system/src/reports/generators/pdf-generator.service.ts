@@ -421,10 +421,12 @@ export class PdfGeneratorService {
    * Report metadata and disclaimer.
    */
   private addFooter(doc: typeof PDFDocument): void {
-    const pageCount = doc.bufferedPageRange().count;
-
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
+    const range = doc.bufferedPageRange();
+    
+    // Loop through actual buffered pages using the range
+    for (let i = 0; i < range.count; i++) {
+      const pageNumber = range.start + i;
+      doc.switchToPage(pageNumber);
 
       // Footer line
       doc.moveTo(50, 770).lineTo(545, 770).stroke(this.colors.lightGray);
@@ -439,7 +441,7 @@ export class PdfGeneratorService {
           width: 250,
         });
 
-      doc.text(`Page ${i + 1} of ${pageCount}`, 300, 775, {
+      doc.text(`Page ${i + 1} of ${range.count}`, 300, 775, {
         align: 'right',
         width: 245,
       });

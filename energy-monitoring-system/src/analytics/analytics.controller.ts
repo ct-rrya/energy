@@ -390,31 +390,6 @@ export class AnalyticsController {
   }
 
   /**
-   * Get Capacitor Voltage History
-   *
-   * Returns capacitor voltage measurements over time.
-   *
-   * @param query - Analytics query parameters
-   * @returns Time-series data for capacitor voltage
-   */
-  @Get('capacitor-history')
-  @ApiOperation({
-    summary: 'Get capacitor voltage history',
-    description:
-      'Returns capacitor voltage measurements over time. Shows energy storage level in the capacitor.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Capacitor voltage history retrieved successfully',
-    type: TimeSeriesDto,
-  })
-  async getCapacitorHistory(
-    @Query() query: AnalyticsQueryDto,
-  ): Promise<TimeSeriesDto> {
-    return this.analyticsService.getCapacitorHistory(query);
-  }
-
-  /**
    * Get Steps History
    *
    * Returns step count over time.
