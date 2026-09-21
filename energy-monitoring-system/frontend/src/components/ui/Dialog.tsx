@@ -81,7 +81,7 @@ export function Dialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 backdrop-blur-sm"
+        className="absolute inset-0"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
         onClick={onClose}
         aria-hidden="true"
@@ -96,7 +96,12 @@ export function Dialog({
         )}
         style={{
           backgroundColor: colors.cardBackground,
-          boxShadow: colors.shadowLg
+          boxShadow: theme === 'light' 
+            ? '0 10px 25px rgba(0, 0, 0, 0.15)' 
+            : '0 10px 25px rgba(0, 0, 0, 0.5)',
+          border: theme === 'light'
+            ? '1px solid rgba(26, 49, 44, 0.08)'
+            : '1px solid rgba(137, 215, 183, 0.12)'
         }}
         role="dialog"
         aria-modal="true"

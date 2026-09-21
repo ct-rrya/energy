@@ -129,7 +129,7 @@ export function SensorMonitoringPage() {
               <p className="text-sm font-semibold text-[#1A312C] dark:text-[#89D7B7] mb-1">
                 Real-time Sensor Monitoring
               </p>
-              <p className="text-sm text-[rgb(var(--color-neutral-600))]">
+              <p className="text-sm text-[rgb(var(--color-neutral-600))]" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 Monitoring {sensors.length} sensor{sensors.length !== 1 ? 's' : ''}. 
                 Data updates automatically every 10 seconds and in real-time via WebSocket.
               </p>

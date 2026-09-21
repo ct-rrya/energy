@@ -78,7 +78,7 @@ export function SensorMonitoringCard({
               max={50}
               unit="V"
               label="Voltage"
-              color="#3b82f6"
+              color="#3DDC97"
               size="md"
             />
 
@@ -88,7 +88,7 @@ export function SensorMonitoringCard({
               max={10}
               unit="A"
               label="Current"
-              color="#f59e0b"
+              color="#F59E0B"
               size="md"
             />
 
@@ -98,13 +98,13 @@ export function SensorMonitoringCard({
               max={500}
               unit="W"
               label="Power"
-              color="#10b981"
+              color="#22C55E"
               size="md"
             />
           </div>
 
           {/* Battery and Additional Info */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t border-neutral-200 pt-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t pt-4" style={{ borderColor: 'rgba(26, 49, 44, 0.08)' }}>
             {/* Left Column - Battery */}
             <div className="flex justify-center">
               <BatteryIndicator
@@ -122,7 +122,7 @@ export function SensorMonitoringCard({
                 label="Energy Generated"
                 value={reading.energy}
                 unit="kWh"
-                color="text-secondary-600"
+                color="text-green-600 dark:text-green-400"
                 size="sm"
               />
 
@@ -133,7 +133,7 @@ export function SensorMonitoringCard({
                   label="Temperature"
                   value={reading.temperature}
                   unit="°C"
-                  color="text-red-600"
+                  color="text-amber-600 dark:text-amber-400"
                   size="sm"
                 />
               )}
@@ -145,7 +145,7 @@ export function SensorMonitoringCard({
                   label="Frequency"
                   value={reading.frequency}
                   unit="Hz"
-                  color="text-blue-600"
+                  color="text-blue-600 dark:text-blue-400"
                   size="sm"
                 />
               )}
@@ -153,13 +153,17 @@ export function SensorMonitoringCard({
           </div>
 
           {/* Footer - Timestamp and Source */}
-          <div className="border-t border-neutral-200 pt-3 flex items-center justify-between text-xs text-neutral-500">
-            <span>
+          <div className="border-t pt-3 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400" style={{ borderColor: 'rgba(26, 49, 44, 0.08)' }}>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>
               Last updated: {formatDateTime(reading.timestamp)}
             </span>
             <span className="flex items-center gap-1">
               {reading.source === 'mock' && (
-                <span className="rounded-full bg-accent-100 px-2 py-0.5 text-accent-700 font-medium">
+                <span className="rounded-md border px-2 py-0.5 font-medium" style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                  borderColor: 'rgba(245, 158, 11, 0.2)',
+                  color: '#92400e'
+                }}>
                   Mock Data
                 </span>
               )}

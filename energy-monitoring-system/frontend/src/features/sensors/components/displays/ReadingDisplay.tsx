@@ -11,7 +11,6 @@ interface ReadingDisplayProps {
   unit?: string;
   color?: string;
   size?: 'sm' | 'md' | 'lg';
-  isLive?: boolean;
   className?: string;
 }
 
@@ -27,27 +26,26 @@ export function ReadingDisplay({
   unit,
   color = 'text-primary-600',
   size = 'md',
-  isLive = false,
   className,
 }: ReadingDisplayProps) {
   const sizeConfig = {
     sm: {
       icon: 'h-4 w-4',
-      value: 'text-lg',
-      label: 'text-xs',
-      unit: 'text-xs',
+      value: 'text-xl', // 20px for secondary metrics
+      label: 'text-[13px]',
+      unit: 'text-sm',
     },
     md: {
-      icon: 'h-5 w-5',
+      icon: 'h-4 w-4',
       value: 'text-2xl',
-      label: 'text-sm',
+      label: 'text-[13px]',
       unit: 'text-sm',
     },
     lg: {
-      icon: 'h-6 w-6',
-      value: 'text-3xl',
-      label: 'text-base',
-      unit: 'text-base',
+      icon: 'h-4 w-4', // Icons max 16px
+      value: 'text-4xl', // 36px for primary metrics
+      label: 'text-[13px]',
+      unit: 'text-xl',
     },
   };
 
@@ -56,23 +54,24 @@ export function ReadingDisplay({
   return (
     <div className={cn('flex items-center gap-3', className)}>
       {/* Icon */}
-      <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-50', isLive && 'animate-pulse')}>
-        <Icon className={cn(sizes.icon, color)} />
-      </div>
+      <Icon className={cn(sizes.icon, color)} />
 
       {/* Content */}
       <div className="flex flex-col">
         <div className="flex items-baseline gap-1">
-          <span className={cn('font-bold text-neutral-900', sizes.value)}>
+          <span 
+            className={cn('font-semibold text-neutral-900 dark:text-neutral-50', sizes.value)}
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
             {typeof value === 'number' ? value.toFixed(2) : value}
           </span>
           {unit && (
-            <span className={cn('font-medium text-neutral-500', sizes.unit)}>
+            <span className={cn('font-medium text-neutral-500 dark:text-neutral-400', sizes.unit)}>
               {unit}
             </span>
           )}
         </div>
-        <span className={cn('text-neutral-600', sizes.label)}>{label}</span>
+        <span className={cn('font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400', sizes.label)}>{label}</span>
       </div>
     </div>
   );

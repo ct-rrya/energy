@@ -34,29 +34,33 @@ export function SignalQualityIndicator({
   const config = {
     excellent: {
       icon: SignalHigh,
-      color: 'text-secondary-600',
-      bgColor: 'bg-secondary-50',
+      color: '#15803d', // semantic green dark
+      bgColor: 'rgba(34, 197, 94, 0.1)',
+      borderColor: 'rgba(34, 197, 94, 0.2)',
       bars: 4,
       label: 'Excellent',
     },
     good: {
       icon: Signal,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: '#1e40af', // blue dark
+      bgColor: 'rgba(59, 130, 246, 0.1)',
+      borderColor: 'rgba(59, 130, 246, 0.2)',
       bars: 3,
       label: 'Good',
     },
     fair: {
       icon: SignalMedium,
-      color: 'text-accent-600',
-      bgColor: 'bg-accent-50',
+      color: '#92400e', // amber dark
+      bgColor: 'rgba(245, 158, 11, 0.1)',
+      borderColor: 'rgba(245, 158, 11, 0.2)',
       bars: 2,
       label: 'Fair',
     },
     poor: {
       icon: SignalLow,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
+      color: '#991b1b', // red dark
+      bgColor: 'rgba(239, 68, 68, 0.1)',
+      borderColor: 'rgba(239, 68, 68, 0.2)',
       bars: 1,
       label: 'Poor',
     },
@@ -75,18 +79,29 @@ export function SignalQualityIndicator({
   return (
     <div className={cn('inline-flex items-center gap-2', className)}>
       {/* Icon */}
-      <div className={cn('rounded-full p-1.5', qualityConfig.bgColor)}>
-        <Icon className={cn(sizes.icon, qualityConfig.color)} />
+      <div 
+        className="rounded-full p-1.5 border"
+        style={{
+          backgroundColor: qualityConfig.bgColor,
+          borderColor: qualityConfig.borderColor,
+        }}
+      >
+        <Icon className={sizes.icon} style={{ color: qualityConfig.color }} />
       </div>
 
       {/* Label and Latency */}
       {showLabel && (
         <div className="flex flex-col">
-          <span className={cn('font-medium', qualityConfig.color, sizes.text)}>
+          <span className={cn('font-medium', sizes.text)} style={{ color: qualityConfig.color }}>
             {qualityConfig.label}
           </span>
           {latency !== undefined && (
-            <span className="text-xs text-neutral-500">{latency}ms</span>
+            <span 
+              className="text-xs text-neutral-500"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {latency}ms
+            </span>
           )}
         </div>
       )}

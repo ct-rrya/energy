@@ -196,10 +196,10 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#428475"
+            stroke="#3DDC97"
             strokeWidth={isMobile ? 2 : 3}
             dot={false}
-            activeDot={{ r: 6 }}
+            activeDot={{ r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>

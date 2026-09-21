@@ -13,7 +13,8 @@ interface DeviceStatusBadgeProps {
 /**
  * Device Status Badge Component
  * 
- * Displays online/offline status with animated indicator.
+ * Displays online/offline status with semantic colors and animated indicator.
+ * Uses semantic green (#22C55E) for online status.
  */
 export function DeviceStatusBadge({
   isOnline,
@@ -23,20 +24,34 @@ export function DeviceStatusBadge({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-2 rounded-full px-3 py-1',
-        isOnline ? 'bg-secondary-50 text-secondary-700' : 'bg-neutral-100 text-neutral-600',
+        'inline-flex items-center gap-2 px-3 py-1',
         className
       )}
+      style={
+        isOnline
+          ? {
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              color: '#15803d',
+              border: '1px solid rgba(34, 197, 94, 0.2)',
+              borderRadius: '6px',
+            }
+          : {
+              backgroundColor: 'rgba(115, 115, 115, 0.1)',
+              color: '#525252',
+              border: '1px solid rgba(115, 115, 115, 0.2)',
+              borderRadius: '6px',
+            }
+      }
     >
       {/* Animated dot */}
       <div className="relative flex items-center justify-center">
         {isOnline && (
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary-500 opacity-75" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
         )}
         <Circle
           className={cn(
             'h-2 w-2 fill-current',
-            isOnline ? 'text-secondary-500' : 'text-neutral-400'
+            isOnline ? 'text-green-500' : 'text-neutral-400'
           )}
         />
       </div>
@@ -48,7 +63,7 @@ export function DeviceStatusBadge({
 
       {/* Last seen */}
       {!isOnline && lastSeen && (
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">
           {lastSeen}
         </span>
       )}

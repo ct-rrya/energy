@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { TrendingUp, Zap, DollarSign, Leaf, BarChart3, LineChart, Activity, Sparkles } from 'lucide-react';
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { EcoCard, EcoEmptyState } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { getTimeSeries, analyzeHistorical, type HistoricalAnalysisRequest, type HistoricalAnalysisResponse } from '@/api/services/analytics.service';
@@ -169,9 +169,10 @@ export function HistoricalAnalytics() {
                   onClick={() => handlePeriodChange(option.value)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedPeriod === option.value
-                      ? 'bg-[#428475] text-white'
+                      ? 'bg-[#3DDC97] text-white hover:bg-[#35c27b]'
                       : 'bg-[rgb(var(--color-neutral-100))] text-[rgb(var(--color-neutral-700))] hover:bg-[rgb(var(--color-neutral-200))]'
                   }`}
+                  style={{ borderRadius: '8px' }}
                 >
                   {option.label}
                 </button>
@@ -196,9 +197,10 @@ export function HistoricalAnalytics() {
                   onClick={() => setSelectedAggregation(option.value)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedAggregation === option.value
-                      ? 'bg-[#428475] text-white'
+                      ? 'bg-[#3DDC97] text-white hover:bg-[#35c27b]'
                       : 'bg-[rgb(var(--color-neutral-100))] text-[rgb(var(--color-neutral-700))] hover:bg-[rgb(var(--color-neutral-200))]'
                   }`}
+                  style={{ borderRadius: '8px' }}
                 >
                   {option.label}
                 </button>
@@ -218,7 +220,7 @@ export function HistoricalAnalytics() {
               </div>
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Total Energy</p>
-                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))]">
+                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                   {energyData.summary.total?.toFixed(2) || '0.00'} kWh
                 </p>
               </div>
@@ -232,7 +234,7 @@ export function HistoricalAnalytics() {
               </div>
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Peak Power</p>
-                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))]">
+                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                   {energyData.summary.max.toFixed(2)} kWh
                 </p>
               </div>
@@ -246,7 +248,7 @@ export function HistoricalAnalytics() {
               </div>
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Average</p>
-                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))]">
+                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                   {energyData.summary.avg.toFixed(2)} kWh
                 </p>
               </div>
@@ -260,7 +262,7 @@ export function HistoricalAnalytics() {
               </div>
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Data Points</p>
-                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))]">
+                <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                   {energyData.summary.dataPoints}
                 </p>
               </div>
@@ -298,35 +300,36 @@ export function HistoricalAnalytics() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsLineChart data={energyChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-neutral-200))" />
+              <RechartsLineChart data={energyChartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 49, 44, 0.1)" />
                 <XAxis 
                   dataKey="time" 
-                  stroke="rgb(var(--color-neutral-400))"
+                  stroke="#525252"
                   style={{ fontSize: '12px' }}
+                  label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: '12px', fill: '#525252' } }}
                 />
                 <YAxis 
-                  stroke="rgb(var(--color-neutral-400))"
+                  stroke="#525252"
                   style={{ fontSize: '12px' }}
-                  label={{ value: 'kWh', angle: -90, position: 'insideLeft', style: { fontSize: '12px' } }}
+                  label={{ value: 'Energy (kWh)', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#525252' } }}
                 />
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'white',
-                    border: '1px solid rgb(var(--color-neutral-200))',
+                    border: '1px solid rgba(26, 49, 44, 0.08)',
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
                 />
-                <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#428475" 
+                  stroke="#3DDC97" 
                   strokeWidth={2}
-                  dot={{ fill: '#428475', r: 3 }}
-                  activeDot={{ r: 5 }}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#3DDC97' }}
                   name="Energy (kWh)"
+                  strokeOpacity={0.95}
                 />
               </RechartsLineChart>
             </ResponsiveContainer>
@@ -364,9 +367,10 @@ export function HistoricalAnalytics() {
                   onClick={() => setSelectedElectricalMetric(option.value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     selectedElectricalMetric === option.value
-                      ? 'bg-[#428475] text-white'
+                      ? 'bg-[#3DDC97] text-white hover:bg-[#35c27b]'
                       : 'bg-[rgb(var(--color-neutral-100))] text-[rgb(var(--color-neutral-700))] hover:bg-[rgb(var(--color-neutral-200))]'
                   }`}
+                  style={{ borderRadius: '8px' }}
                 >
                   {option.label}
                 </button>
@@ -388,40 +392,41 @@ export function HistoricalAnalytics() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsLineChart data={electricalChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-neutral-200))" />
+              <RechartsLineChart data={electricalChartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 49, 44, 0.1)" />
                 <XAxis 
                   dataKey="time" 
-                  stroke="rgb(var(--color-neutral-400))"
+                  stroke="#525252"
                   style={{ fontSize: '12px' }}
+                  label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: '12px', fill: '#525252' } }}
                 />
                 <YAxis 
-                  stroke="rgb(var(--color-neutral-400))"
+                  stroke="#525252"
                   style={{ fontSize: '12px' }}
                   label={{ 
-                    value: electricalData?.unit || '', 
+                    value: `${selectedElectricalMetric.charAt(0).toUpperCase() + selectedElectricalMetric.slice(1)} (${electricalData?.unit || ''})`, 
                     angle: -90, 
                     position: 'insideLeft', 
-                    style: { fontSize: '12px' } 
+                    style: { fontSize: '12px', fill: '#525252' } 
                   }}
                 />
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'white',
-                    border: '1px solid rgb(var(--color-neutral-200))',
+                    border: '1px solid rgba(26, 49, 44, 0.08)',
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
                 />
-                <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#89D7B7" 
+                  stroke="#3DDC97" 
                   strokeWidth={2}
-                  dot={{ fill: '#89D7B7', r: 3 }}
-                  activeDot={{ r: 5 }}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#3DDC97' }}
                   name={`${selectedElectricalMetric.charAt(0).toUpperCase() + selectedElectricalMetric.slice(1)} (${electricalData?.unit})`}
+                  strokeOpacity={0.95}
                 />
               </RechartsLineChart>
             </ResponsiveContainer>
@@ -479,7 +484,7 @@ export function HistoricalAnalytics() {
               {/* AI Insights */}
               <div className="bg-[#F0F9F6] border border-[#89D7B7] rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-[#428475] mt-0.5 flex-shrink-0" strokeWidth={2} />
+                  <Sparkles className="h-5 w-5 text-[#3DDC97] mt-0.5 flex-shrink-0" strokeWidth={2} />
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-[rgb(var(--color-neutral-900))] mb-2">
                       AI Insights
@@ -495,27 +500,27 @@ export function HistoricalAnalytics() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-[rgb(var(--color-neutral-50))] rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Leaf className="h-4 w-4 text-[#428475]" strokeWidth={2} />
+                    <Leaf className="h-4 w-4 text-[#3DDC97]" strokeWidth={2} />
                     <p className="text-xs font-medium text-[rgb(var(--color-neutral-600))]">CO₂ Avoided</p>
                   </div>
-                  <p className="text-lg font-bold text-[rgb(var(--color-neutral-900))]">
+                  <p className="text-lg font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                     {aiAnalysis.metrics.co2AvoidedKg.toFixed(2)} kg
                   </p>
                 </div>
 
                 <div className="bg-[rgb(var(--color-neutral-50))] rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="h-4 w-4 text-[#428475]" strokeWidth={2} />
+                    <DollarSign className="h-4 w-4 text-[#3DDC97]" strokeWidth={2} />
                     <p className="text-xs font-medium text-[rgb(var(--color-neutral-600))]">Cost Savings</p>
                   </div>
-                  <p className="text-lg font-bold text-[rgb(var(--color-neutral-900))]">
+                  <p className="text-lg font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
                     ${aiAnalysis.metrics.costSavingsUSD.toFixed(2)}
                   </p>
                 </div>
 
                 <div className="bg-[rgb(var(--color-neutral-50))] rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-[#428475]" strokeWidth={2} />
+                    <TrendingUp className="h-4 w-4 text-[#3DDC97]" strokeWidth={2} />
                     <p className="text-xs font-medium text-[rgb(var(--color-neutral-600))]">Energy Trend</p>
                   </div>
                   <p className="text-lg font-bold text-[rgb(var(--color-neutral-900))] capitalize">

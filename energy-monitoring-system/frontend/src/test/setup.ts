@@ -1,6 +1,11 @@
 ﻿import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+import { toHaveNoViolations } from 'jest-axe';
+import { expect } from 'vitest';
+
+// Extend Vitest's expect with jest-axe matchers
+expect.extend(toHaveNoViolations);
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

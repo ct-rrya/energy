@@ -11,11 +11,14 @@
     /* Accent: #89D7B7 Soft mint green */
     /* Background: #FFF4E1 Warm cream */
 
-    /* EcoStep Design Tokens */
+    /* EcoStep Design Tokens - Production-Grade Refinement */
     --eco-forest: #1A312C;
     --eco-teal: #428475;
     --eco-mint: #89D7B7;
     --eco-cream: #FFF4E1;
+    --eco-green: #3DDC97;          /* EcoStep primary green (flat, no gradients) */
+    --eco-green-hover: #35c27b;    /* Hover state */
+    --eco-green-active: #2cab6c;   /* Active state */
     
     /* Spacing */
     --space-sm: 12px;
@@ -23,14 +26,21 @@
     --space-lg: 32px;
     --space-xl: 40px;
     
-    /* Radius */
-    --radius-sm: 10px;
-    --radius-md: 14px;
-    --radius-lg: 18px;
+    /* Radius - Production-grade (6-12px range, NO 16-20px) */
+    --radius-sm: 6px;   /* Small elements (buttons, inputs, badges) */
+    --radius-md: 8px;   /* Standard cards - OVERRIDE Tailwind default */
+    --radius-lg: 12px;  /* Large containers */
+    --radius-full: 9999px;  /* Pills/badges only */
     
-    /* Shadows */
-    --shadow-soft: 0 8px 30px rgba(26, 49, 44, 0.05);
-    --shadow-medium: 0 12px 40px rgba(26, 49, 44, 0.08);
+    /* Shadows - ONLY for floating elements (modals, dropdowns, tooltips) */
+    /* DEPRECATED: Do not use box-shadow on cards, buttons, or containers */
+    /* Use hairline borders instead for definition */
+    --shadow-floating: 0 8px 30px rgba(26, 49, 44, 0.08);
+    --shadow-floating-large: 0 12px 40px rgba(26, 49, 44, 0.12);
+    
+    /* Hairline Borders - For definition without shadows */
+    --border-hairline: 1px solid rgba(26, 49, 44, 0.08);
+    --border-hairline-hover: 1px solid rgba(26, 49, 44, 0.15);
     
     /* Primary Colors - Deep Forest Green */
     --color-primary-50: 245 248 247;
@@ -43,6 +53,18 @@
     --color-primary-700: 16 29 26;
     --color-primary-800: 10 20 18;
     --color-primary-900: 5 10 9;
+
+    /* EcoStep Green - Primary Action Color (Flat, No Gradients) */
+    --color-eco-green-50: 240 253 250;
+    --color-eco-green-100: 220 252 245;
+    --color-eco-green-200: 187 247 230;
+    --color-eco-green-300: 134 239 206;
+    --color-eco-green-400: 61 220 151;  /* #3DDC97 - Primary */
+    --color-eco-green-500: 53 194 123;  /* #35c27b - Hover */
+    --color-eco-green-600: 44 171 108;  /* #2cab6c - Active */
+    --color-eco-green-700: 35 137 86;
+    --color-eco-green-800: 28 110 69;
+    --color-eco-green-900: 23 82 52;
 
     /* Secondary Colors - Teal Green */
     --color-secondary-50: 240 248 246;
@@ -78,53 +100,53 @@
     --color-surface-elevated: 255 250 240;
     --color-surface-overlay: 255 248 235;
 
-    /* Neutral Colors - For text and borders */
-    --color-neutral-50: 250 250 250;
-    --color-neutral-100: 243 243 243;
-    --color-neutral-200: 229 229 229;
+    /* Neutral Colors - For text and borders (Light Mode) */
+    --color-neutral-50: 250 250 250;   /* #FAFAFA - Subtle background */
+    --color-neutral-100: 245 245 245;  /* #F5F5F5 - Surface */
+    --color-neutral-200: 229 229 229;  /* #E5E5E5 - Border */
     --color-neutral-300: 212 212 212;
     --color-neutral-400: 163 163 163;
     --color-neutral-500: 115 115 115;
-    --color-neutral-600: 82 82 82;
+    --color-neutral-600: 82 82 82;     /* #525252 - Primary text */
     --color-neutral-700: 64 64 64;
     --color-neutral-800: 38 38 38;
-    --color-neutral-900: 23 23 23;
+    --color-neutral-900: 23 23 23;     /* #171717 - Headings */
 
-    /* Semantic Colors */
+    /* Semantic Colors - Flat colors only (NO gradients) */
     --color-success-50: 240 253 244;
     --color-success-100: 220 252 231;
-    --color-success-500: 34 197 94;
+    --color-success-500: 34 197 94;    /* #22C55E - Green for success/healthy */
     --color-success-600: 22 163 74;
     --color-success-700: 21 128 61;
 
     --color-warning-50: 255 251 235;
     --color-warning-100: 254 243 199;
-    --color-warning-500: 234 179 8;
-    --color-warning-600: 202 138 4;
-    --color-warning-700: 161 98 7;
+    --color-warning-500: 245 158 11;   /* #F59E0B - Amber for warnings */
+    --color-warning-600: 217 119 6;
+    --color-warning-700: 180 83 9;
 
     --color-error-50: 254 242 242;
     --color-error-100: 254 226 226;
-    --color-error-500: 239 68 68;
+    --color-error-500: 239 68 68;      /* #EF4444 - Red for errors/alerts */
     --color-error-600: 220 38 38;
     --color-error-700: 185 28 28;
 
     --color-info-50: 240 249 255;
     --color-info-100: 224 242 254;
-    --color-info-500: 59 130 246;
+    --color-info-500: 59 130 246;      /* #3B82F6 - Blue for info (use sparingly) */
     --color-info-600: 37 99 235;
     --color-info-700: 29 78 216;
   }
 
-  /* Dark Mode Theme - Refined EcoStep Design System */
+  /* Dark Mode Theme - Production-Grade EcoStep Design System */
   .dark {
-    /* Page Background - Deep charcoal (not pure black) */
+    /* Page Background - Deep charcoal (not pure black) for production-grade look */
     --color-background: 15 17 22; /* #0F1116 */
     --color-background-subtle: 18 20 26;
     --color-background-muted: 22 25 31;
 
-    /* Surface Colors - Layered hierarchy */
-    --color-surface: 28 31 40; /* #1C1F28 - Cards */
+    /* Surface Colors - Layered hierarchy with solid backgrounds */
+    --color-surface: 28 31 40; /* #1C1F28 - Cards (solid, no glassmorphism) */
     --color-surface-elevated: 35 39 47; /* #23272F - Elevated surfaces */
     --color-surface-overlay: 22 25 47; /* Sidebar: #161921 */
 
@@ -133,7 +155,7 @@
     --color-neutral-100: 64 69 84;
     --color-neutral-200: 82 88 105;
     --color-neutral-300: 107 114 128;
-    --color-neutral-400: 156 163 175; /* #9CA3AF - Inactive nav */
+    --color-neutral-400: 156 163 175; /* #9CA3AF - Inactive nav, secondary text */
     --color-neutral-500: 156 163 175;
     --color-neutral-600: 107 114 128;
     --color-neutral-700: 209 213 219;
@@ -147,10 +169,19 @@
     /* Secondary and Accent - EcoStep brand */
     --color-secondary-500: 47 191 113; /* #2FBF71 */
     --color-accent-500: 137 215 183; /* #89D7B7 - Subtle green */
+    
+    /* EcoStep Green - Dark mode variants */
+    --color-eco-green-400: 61 220 151;  /* #3DDC97 - Primary (same as light) */
+    --color-eco-green-500: 53 194 123;  /* #35c27b - Hover */
+    --color-eco-green-600: 44 171 108;  /* #2cab6c - Active */
 
-    /* Shadows - Deeper for dark mode */
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.4);
+    /* Hairline Borders - Dark mode specific */
+    --border-hairline: 1px solid rgba(137, 215, 183, 0.12);
+    --border-hairline-hover: 1px solid rgba(137, 215, 183, 0.20);
+
+    /* Shadows - Deeper for dark mode floating elements ONLY */
+    --shadow-floating: 0 8px 30px rgba(0, 0, 0, 0.3);
+    --shadow-floating-large: 0 12px 40px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -160,18 +191,8 @@
   }
 
   body {
-    /* Subtle atmospheric background - soft ambient lighting, NOT obvious colorful blobs */
-    background: radial-gradient(
-        circle at 10% 10%,
-        rgba(137, 215, 183, 0.20),
-        transparent 32%
-      ),
-      radial-gradient(
-        circle at 90% 20%,
-        rgba(66, 132, 117, 0.10),
-        transparent 30%
-      ),
-      rgb(var(--color-background));
+    /* Flat background - removed obvious AI-generated colorful gradient blobs */
+    background: rgb(var(--color-background));
     color: rgb(var(--color-primary-500));
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -180,19 +201,9 @@
     transition: background-color 200ms ease, color 200ms ease;
   }
 
-  /* Dark mode background adjustments */
+  /* Dark mode background - flat, production-grade */
   .dark body {
-    background: radial-gradient(
-        circle at 10% 10%,
-        rgba(137, 215, 183, 0.08),
-        transparent 32%
-      ),
-      radial-gradient(
-        circle at 90% 20%,
-        rgba(66, 132, 117, 0.05),
-        transparent 30%
-      ),
-      rgb(var(--color-background));
+    background: rgb(var(--color-background));
   }
 
   /* Custom Scrollbar Styling */
@@ -276,6 +287,49 @@
 }
 
 @layer utilities {
+  /* ═══════════════════════════════════════════════════════════ */
+  /* PRODUCTION-GRADE DESIGN TOKENS - Custom Utilities */
+  /* ═══════════════════════════════════════════════════════════ */
+  
+  /* Tabular Numerals - For numeric data alignment (metrics, timestamps, measurements) */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Hairline Borders - Production-grade definition without shadows */
+  .border-hairline {
+    border: var(--border-hairline);
+  }
+  
+  .border-hairline-hover:hover {
+    border: var(--border-hairline-hover);
+  }
+  
+  .border-t-hairline {
+    border-top: var(--border-hairline);
+  }
+  
+  .border-b-hairline {
+    border-bottom: var(--border-hairline);
+  }
+  
+  .border-l-hairline {
+    border-left: var(--border-hairline);
+  }
+  
+  .border-r-hairline {
+    border-right: var(--border-hairline);
+  }
+
+  /* DEPRECATED: Old hairline utilities (use border-hairline instead) */
+  .hairline-border-light {
+    border: 1px solid rgba(26, 49, 44, 0.08);
+  }
+
+  .hairline-border-dark {
+    border: 1px solid rgba(137, 215, 183, 0.12);
+  }
+
   /* Touch Target Utilities - Responsive Mobile Optimization */
   .min-w-touch {
     min-width: 44px;
@@ -289,6 +343,26 @@
     min-width: 44px;
     min-height: 44px;
   }
+
+  /* ═══════════════════════════════════════════════════════════ */
+  /* DEPRECATED PATTERNS - DO NOT USE */
+  /* ═══════════════════════════════════════════════════════════ */
+  
+  /* 
+   * GRADIENTS: Do not use linear-gradient() or radial-gradient() 
+   * Replace with flat colors (--eco-green: #3DDC97)
+   * 
+   * GLASSMORPHISM: Do not use backdrop-filter: blur() or translucent backgrounds
+   * Use solid backgrounds with hairline borders instead
+   * 
+   * EXCESSIVE SHADOWS: Do not use box-shadow on cards, buttons, containers
+   * Reserve shadows ONLY for floating elements (modals, dropdowns, tooltips)
+   * Use --shadow-floating or --shadow-floating-large
+   * 
+   * LARGE BORDER-RADIUS: Do not use 16-20px border radius
+   * Use production-grade values: 6px (sm), 8px (md), 12px (lg)
+   * Pills/badges only: 9999px (full)
+   */
 
   /* Animations */
   @keyframes spin {
@@ -351,166 +425,192 @@
     animation: fade-in 0.3s ease-out;
   }
 
-  /* Premium Glassmorphic Card - Selective glass effects */
+  /* ═══════════════════════════════════════════════════════════ */
+  /* DEPRECATED GLASSMORPHISM UTILITIES - DO NOT USE */
+  /* Use solid backgrounds with hairline borders instead */
+  /* ═══════════════════════════════════════════════════════════ */
+  
+  /* DEPRECATED: Premium Glassmorphic Card - Use .eco-card instead */
   .glass-card {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 1.25rem;
-    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: 0.75rem;
     padding: 1.5rem;
     transition: all 0.25s ease;
   }
 
   .glass-card-hover:hover {
-    box-shadow: 0 12px 40px rgba(26, 49, 44, 0.08);
     transform: translateY(-2px);
   }
 
   .dark .glass-card {
-    background: rgba(26, 49, 44, 0.6);
+    background: rgb(28, 31, 40);
     border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
-  /* Application Shell - Reduced glassmorphism for structured layout */
+  /* DEPRECATED: Application Shell - Use solid backgrounds */
   .app-shell {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 1.25rem;
-    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: 0.75rem;
   }
 
   .dark .app-shell {
-    background: rgba(26, 49, 44, 0.85);
-    border: 1px solid rgba(137, 215, 183, 0.15);
+    background: rgb(28, 31, 40);
+    border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
-  /* Metric Card - Subtle depth without excessive glass */
+  /* DEPRECATED: Metric Card - Use .eco-card instead */
   .metric-card {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 1.25rem;
-    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: 0.75rem;
     padding: 1.25rem;
     transition: all 0.2s ease;
   }
 
   .metric-card:hover {
-    box-shadow: 0 10px 35px rgba(26, 49, 44, 0.08);
     transform: translateY(-1px);
   }
 
   .dark .metric-card {
-    background: rgba(26, 49, 44, 0.6);
+    background: rgb(28, 31, 40);
     border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
-  /* Chart Container */
+  /* DEPRECATED: Chart Container - Use .eco-card instead */
   .chart-container {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 1.25rem;
-    box-shadow: 0 8px 30px rgba(26, 49, 44, 0.05);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: 0.75rem;
     padding: 1.5rem;
   }
 
   .dark .chart-container {
-    background: rgba(26, 49, 44, 0.6);
+    background: rgb(28, 31, 40);
     border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
-  /* Typography - Data Values */
+  /* Typography - Data Values with Tabular Numerals */
   .metric-value {
-    font-size: 1.75rem;
+    font-size: 2.25rem;  /* 36px - Primary metrics */
     font-weight: 600;
     color: rgb(var(--color-primary-500));
     line-height: 1.2;
     letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
 
   .metric-value-large {
-    font-size: 2rem;
+    font-size: 2.25rem;  /* 36px - Large primary metrics */
     font-weight: 600;
     color: rgb(var(--color-primary-500));
     line-height: 1.2;
     letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-value-secondary {
+    font-size: 1.25rem;  /* 20px - Secondary metrics */
+    font-weight: 600;
+    color: rgb(var(--color-neutral-600));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dark .metric-value-secondary {
+    color: rgb(var(--color-neutral-400));
   }
 
   .metric-label {
-    font-size: 0.8125rem;
+    font-size: 0.8125rem;  /* 13px */
     font-weight: 500;
     color: rgb(var(--color-neutral-600));
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  /* Button Variants - Rounded, Soft */
+  /* Button Variants - Flat colors, restrained hover effects */
   .btn-primary {
     background-color: rgb(var(--color-primary-500));
     color: rgb(var(--color-background));
     font-weight: 500;
     padding: 0.625rem 1.5rem;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;  /* 8px */
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(26, 49, 44, 0.15);
     border: none;
   }
 
   .btn-primary:hover {
     background-color: rgb(var(--color-primary-600));
-    box-shadow: 0 6px 16px rgba(26, 49, 44, 0.2);
-    transform: translateY(-1px);
+    opacity: 0.95;
+    /* Removed: box-shadow and transform effects */
   }
 
+  /* DEPRECATED: backdrop-filter blur - Use solid backgrounds instead */
   .btn-secondary {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px);
+    background: #FFFFFF;
     color: rgb(var(--color-primary-500));
     border: 1px solid rgba(26, 49, 44, 0.08);
     font-weight: 500;
     padding: 0.625rem 1.5rem;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;  /* 8px */
     transition: all 0.2s ease;
   }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgb(var(--color-neutral-50));
     border-color: rgba(26, 49, 44, 0.15);
-    transform: translateY(-1px);
+    /* Removed: transform effect */
+  }
+
+  .dark .btn-secondary {
+    background: rgb(28, 31, 40);
+    color: rgb(var(--color-accent-500));
+    border-color: rgba(137, 215, 183, 0.12);
+  }
+
+  .dark .btn-secondary:hover {
+    background: rgb(35, 39, 47);
+    border-color: rgba(137, 215, 183, 0.2);
   }
 
   .btn-ghost {
     color: rgb(var(--color-primary-500));
     font-weight: 500;
     padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;  /* 8px */
     transition: all 0.2s ease;
   }
 
   .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(26, 49, 44, 0.05);
   }
 
-  /* Badge Styles - Rounded Pills */
+  .dark .btn-ghost:hover {
+    background: rgba(137, 215, 183, 0.08);
+  }
+
+  /* Badge Styles - Semantic colors with visible borders */
   .badge {
     display: inline-flex;
     align-items: center;
     padding: 0.375rem 0.875rem;
-    border-radius: 0.625rem;
+    border-radius: 0.375rem;  /* 6px - not rounded-full unless truly a pill */
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.01em;
   }
 
   .badge-success {
-    background: rgba(137, 215, 183, 0.15);
-    color: rgb(var(--color-accent-700));
-    border: 1px solid rgba(137, 215, 183, 0.3);
+    background: rgba(34, 197, 94, 0.1);
+    color: rgb(var(--color-success-700));
+    border: 1px solid rgba(34, 197, 94, 0.2);
   }
 
   .badge-warning {
-    background: rgba(234, 179, 8, 0.1);
+    background: rgba(245, 158, 11, 0.1);
     color: rgb(var(--color-warning-700));
-    border: 1px solid rgba(234, 179, 8, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.2);
   }
 
   .badge-error {
@@ -520,32 +620,76 @@
   }
 
   .badge-info {
-    background: rgba(66, 132, 117, 0.1);
-    color: rgb(var(--color-secondary-700));
-    border: 1px solid rgba(66, 132, 117, 0.2);
+    background: rgba(59, 130, 246, 0.1);
+    color: rgb(var(--color-info-700));
+    border: 1px solid rgba(59, 130, 246, 0.2);
   }
 
-  /* Navigation Active Pill */
+  /* ═══════════════════════════════════════════════════════════ */
+  /* NAVIGATION STYLES - Production-Grade Interactive States */
+  /* Task 18.2: Flat colors, no transform effects, visible focus states */
+  /* Requirements: 9.3 (no transform), 17.3 (visible focus) */
+  /* ═══════════════════════════════════════════════════════════ */
+  
+  /* Desktop Navigation Links */
+  .nav-link:not(.nav-link-active):hover {
+    background-color: rgba(66, 132, 117, 0.1) !important;
+  }
+  
+  .dark .nav-link:not(.nav-link-active):hover {
+    background-color: rgba(137, 215, 183, 0.1) !important;
+  }
+  
+  .nav-link:focus-visible {
+    outline: 2px solid rgb(var(--color-accent-400));
+    outline-offset: 2px;
+  }
+  
+  /* Mobile Navigation Links */
+  .nav-link-mobile:not(.nav-link-active):hover {
+    background-color: rgba(66, 132, 117, 0.1) !important;
+  }
+  
+  .dark .nav-link-mobile:not(.nav-link-active):hover {
+    background-color: rgba(137, 215, 183, 0.1) !important;
+  }
+  
+  .nav-link-mobile:focus-visible {
+    outline: 2px solid rgb(var(--color-accent-400));
+    outline-offset: 2px;
+  }
+
+  /* Navigation Active Pill (DEPRECATED - use .nav-link-active instead) */
   .nav-pill-active {
     background: rgb(var(--color-secondary-400));
     color: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(66, 132, 117, 0.2);
+    border-radius: 0.5rem;  /* 8px - production-grade border radius */
   }
 
-  /* Subtle Glassmorphism */
+  /* ═══════════════════════════════════════════════════════════ */
+  /* DEPRECATED UTILITIES - DO NOT USE IN NEW CODE */
+  /* ═══════════════════════════════════════════════════════════ */
+
+  /* DEPRECATED: Subtle Glassmorphism - Use solid backgrounds with hairline borders instead */
+  /* backdrop-filter and backdrop-blur are no longer recommended for production-grade UIs */
   .glass {
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+  }
+
+  .dark .glass {
+    background: rgb(28, 31, 40);
+    border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
   .glass-strong {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: #FFFFFF;
+    border: 1px solid rgba(26, 49, 44, 0.08);
+  }
+
+  .dark .glass-strong {
+    background: rgb(28, 31, 40);
+    border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
   /* Login Split Screen Responsive */
@@ -608,39 +752,43 @@
     color: rgba(137, 215, 183, 0.65);
   }
 
-  /* EcoStep Card System - ONE unified style */
+  /* EcoStep Card System - Solid backgrounds with hairline borders */
   .eco-card {
     background: #FFFFFF;
-    border: 1px solid rgb(var(--color-neutral-200));
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: var(--radius-md);  /* 8px */
     padding: 24px;
     transition: all 0.2s ease;
+    /* Removed: box-shadow - use borders for definition */
   }
 
   .eco-card:hover {
-    box-shadow: var(--shadow-medium);
+    border-color: rgba(26, 49, 44, 0.12);
+    /* Removed: box-shadow hover effect */
   }
 
   .dark .eco-card {
-    background: rgba(255, 244, 225, 0.055);
-    border: 1px solid rgba(255, 244, 225, 0.10);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    background: rgb(28, 31, 40);
+    border: 1px solid rgba(137, 215, 183, 0.12);
+  }
+
+  .dark .eco-card:hover {
+    border-color: rgba(137, 215, 183, 0.18);
   }
 
   /* Compact card variant */
   .eco-card-compact {
     background: #FFFFFF;
-    border: 1px solid rgb(var(--color-neutral-200));
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(26, 49, 44, 0.08);
+    border-radius: var(--radius-sm);  /* 6px */
     padding: 16px;
     transition: all 0.2s ease;
+    /* Removed: box-shadow */
   }
 
   .dark .eco-card-compact {
-    background: rgba(255, 244, 225, 0.055);
-    border: 1px solid rgba(255, 244, 225, 0.10);
+    background: rgb(28, 31, 40);
+    border: 1px solid rgba(137, 215, 183, 0.12);
   }
 
   /* Card header */
@@ -665,11 +813,11 @@
     color: #89D7B7;
   }
 
-  /* Icon Container */
+  /* Icon Container - Reduced border radius */
   .eco-icon-container {
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);  /* 6px */
     background: rgba(137, 215, 183, 0.10);
     color: #428475;
     display: flex;
@@ -681,6 +829,7 @@
   .eco-icon-container-lg {
     width: 48px;
     height: 48px;
+    border-radius: var(--radius-md);  /* 8px */
   }
 
   /* EcoStep Table */
@@ -728,64 +877,64 @@
     background: rgba(137, 215, 183, 0.05);
   }
 
-  /* EcoStep Buttons */
+  /* EcoStep Buttons - Flat colors with restrained hover */
   .eco-btn-primary {
     background: #1A312C;
     color: #FFF4E1;
     padding: 10px 20px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md);  /* 8px */
     font-weight: 500;
     font-size: 0.9375rem;
     border: none;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(26, 49, 44, 0.15);
+    /* Removed: box-shadow */
   }
 
   .eco-btn-primary:hover {
     background: #428475;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(26, 49, 44, 0.2);
+    /* Removed: transform and box-shadow effects */
   }
 
   .eco-btn-primary:active {
-    transform: translateY(0);
+    opacity: 0.95;
   }
 
   .eco-btn-secondary {
-    background: rgba(255, 255, 255, 0.6);
+    background: #FFFFFF;
     color: #1A312C;
     padding: 10px 20px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md);  /* 8px */
     font-weight: 500;
     font-size: 0.9375rem;
     border: 1px solid rgba(26, 49, 44, 0.12);
     cursor: pointer;
     transition: all 0.2s ease;
+    /* Removed: glassmorphism rgba background */
   }
 
   .eco-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgb(var(--color-neutral-50));
     border-color: rgba(26, 49, 44, 0.2);
   }
 
   .dark .eco-btn-secondary {
-    background: rgba(255, 244, 225, 0.08);
+    background: rgb(28, 31, 40);
     color: #89D7B7;
     border-color: rgba(137, 215, 183, 0.15);
   }
 
   .dark .eco-btn-secondary:hover {
-    background: rgba(255, 244, 225, 0.12);
+    background: rgb(35, 39, 47);
   }
 
-  /* EcoStep Input */
+  /* EcoStep Input - Reduced glassmorphism */
   .eco-input {
     width: 100%;
     padding: 12px 16px;
     border: 1px solid rgba(66, 132, 117, 0.20);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.45);
+    border-radius: var(--radius-md);  /* 8px */
+    background: #FFFFFF;
     font-size: 0.9375rem;
     color: #1A312C;
     transition: all 0.2s ease;
@@ -794,7 +943,6 @@
   .eco-input:focus {
     outline: none;
     border-color: #428475;
-    background: rgba(255, 255, 255, 0.65);
     box-shadow: 0 0 0 3px rgba(66, 132, 117, 0.1);
   }
 
@@ -803,43 +951,43 @@
   }
 
   .dark .eco-input {
-    background: rgba(255, 244, 225, 0.055);
+    background: rgb(28, 31, 40);
     color: #FFF4E1;
     border-color: rgba(137, 215, 183, 0.15);
   }
 
   .dark .eco-input:focus {
-    background: rgba(255, 244, 225, 0.08);
+    background: rgb(35, 39, 47);
     border-color: #89D7B7;
   }
 
-  /* EcoStep Status Badges */
+  /* EcoStep Status Badges - Semantic colors with visible borders */
   .eco-badge {
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-sm);  /* 6px */
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.01em;
   }
 
   .eco-badge-success {
-    background: rgba(137, 215, 183, 0.15);
-    color: #428475;
-    border: 1px solid rgba(137, 215, 183, 0.3);
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.2);
   }
 
   .eco-badge-warning {
-    background: rgba(251, 191, 36, 0.15);
+    background: rgba(245, 158, 11, 0.1);
     color: rgb(146, 104, 0);
-    border: 1px solid rgba(251, 191, 36, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.2);
   }
 
   .eco-badge-error {
-    background: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.1);
     color: rgb(153, 27, 27);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    border: 1px solid rgba(239, 68, 68, 0.2);
   }
 
   .eco-badge-neutral {
@@ -926,3 +1074,67 @@
     }
   }
 }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* DESIGN SYSTEM DOCUMENTATION */
+/* ═══════════════════════════════════════════════════════════ */
+
+/*
+ * DEPRECATED PATTERNS - DO NOT USE IN NEW CODE
+ * ────────────────────────────────────────────────────────────
+ * 
+ * The following patterns have been removed or deprecated as part
+ * of the EcoStep UI Refinement to create a production-grade interface:
+ * 
+ * 1. GRADIENTS (linear-gradient, radial-gradient)
+ *    ❌ background: linear-gradient(to right, #8B5CF6, #3B82F6);
+ *    ✅ background: #3DDC97; (flat colors)
+ * 
+ * 2. GLASSMORPHISM (backdrop-filter: blur)
+ *    ❌ backdrop-filter: blur(20px);
+ *    ❌ background: rgba(255, 255, 255, 0.72);
+ *    ✅ background: #FFFFFF; border: 1px solid rgba(26, 49, 44, 0.08);
+ * 
+ * 3. EXCESSIVE BORDER-RADIUS (16-20px)
+ *    ❌ border-radius: 1.25rem; (20px)
+ *    ✅ border-radius: 0.5rem; (8px for cards)
+ *    ✅ border-radius: 0.375rem; (6px for small elements)
+ *    ✅ border-radius: 0.75rem; (12px for large containers)
+ * 
+ * 4. UNIVERSAL SHADOWS (on cards, buttons, containers)
+ *    ❌ box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+ *    ✅ Use hairline borders for definition instead
+ *    ✅ box-shadow: Only for floating elements (modals, dropdowns)
+ * 
+ * 5. TRANSFORM HOVER EFFECTS
+ *    ❌ transform: translateY(-2px) scale(1.02);
+ *    ✅ Subtle opacity or color changes only
+ * 
+ * RECOMMENDED PATTERNS
+ * ────────────────────────────────────────────────────────────
+ * 
+ * • Use .hairline-border-light / .hairline-border-dark for subtle borders
+ * • Use .tabular-nums for numeric data alignment
+ * • Use .eco-card for consistent card styling
+ * • Use semantic badge colors: .eco-badge-success, .eco-badge-warning, .eco-badge-error
+ * • Primary metrics: font-size >= 36px with .tabular-nums
+ * • Icons beside labels: max 16-20px, not in large tiles
+ * 
+ * DESIGN TOKENS
+ * ────────────────────────────────────────────────────────────
+ * 
+ * Border Radius:
+ *   --radius-sm: 6px   (buttons, badges, small elements)
+ *   --radius-md: 8px   (standard cards, inputs)
+ *   --radius-lg: 12px  (large containers)
+ * 
+ * Hairline Borders:
+ *   Light: rgba(26, 49, 44, 0.08)
+ *   Dark:  rgba(137, 215, 183, 0.12)
+ * 
+ * Typography for Metrics:
+ *   Primary:   36px, weight 600, tabular-nums
+ *   Secondary: 20px, weight 600, tabular-nums
+ *   Labels:    13px, weight 500, uppercase, letter-spacing 0.05em
+ * 
+ */

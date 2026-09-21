@@ -161,24 +161,22 @@ deleteReport,
       <div className="min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1600px] mx-auto">
           <div 
-            className="rounded-3xl p-8 text-center"
+            className="rounded-lg p-8 text-center"
             style={{
               backgroundColor: colors.cardBackground,
-              boxShadow: theme === 'light' 
-                ? '0 4px 20px rgba(0,0,0,0.05)' 
-                : 'none'
+              border: `1px solid ${colors.border}`,
             }}
           >
             <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
               style={{
                 backgroundColor: theme === 'light' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.2)'
               }}
             >
-              <FileText className="w-8 h-8 text-red-500" />
+              <FileText className="w-6 h-6 text-red-500" />
             </div>
             <h3 
-              className="text-lg font-semibold mb-2"
+              className="text-base font-semibold mb-2"
               style={{ color: colors.textPrimary }}
             >
               Unable to Load Reports
@@ -191,10 +189,16 @@ deleteReport,
             </p>
             <button
               onClick={() => refetchReports()}
-              className="px-6 py-2 rounded-lg font-medium transition-colors duration-200"
+              className="px-5 py-2.5 rounded-lg font-medium transition-colors duration-200"
               style={{
                 backgroundColor: colors.accent,
                 color: 'white',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = colors.accent;
               }}
             >
               Try Again
@@ -210,16 +214,16 @@ deleteReport,
       <div className="max-w-[1600px] mx-auto space-y-6">
         
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
           <div>
             <h1 
-              className="text-2xl sm:text-3xl font-bold mb-2"
+              className="text-[32px] font-bold mb-2"
               style={{ color: colors.textPrimary }}
             >
               Reports
             </h1>
             <p 
-              className="text-sm sm:text-base max-w-2xl"
+              className="text-sm max-w-2xl"
               style={{ color: colors.textSecondary }}
             >
               Generate, view, and export reports from EcoStep monitoring, analytics, and diagnostic data.
@@ -230,10 +234,16 @@ deleteReport,
           {!isPublicUser && (
             <button
               onClick={() => setIsGenerateDialogOpen(true)}
-              className="px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-all duration-200 hover:shadow-lg whitespace-nowrap"
+              className="px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors duration-200 whitespace-nowrap"
               style={{
                 backgroundColor: colors.accent,
                 color: 'white',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = colors.accent;
               }}
             >
               <Plus className="w-5 h-5" strokeWidth={2} />
@@ -244,32 +254,31 @@ deleteReport,
 
         {/* Filters Section */}
         <div 
-          className="rounded-3xl p-6 transition-colors duration-300"
+          className="rounded-lg p-6 transition-colors duration-300"
           style={{
             backgroundColor: colors.cardBackground,
-            boxShadow: theme === 'light' 
-              ? '0 4px 20px rgba(0,0,0,0.05)' 
-              : 'none'
+            border: `1px solid ${colors.border}`,
           }}
         >
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-5">
             <Filter 
               className="w-4 h-4"
               style={{ color: colors.accent }}
               strokeWidth={2}
             />
             <span 
-              className="text-sm font-semibold"
+              className="text-base font-semibold"
               style={{ color: colors.textPrimary }}
             >
               Filters
             </span>
             <div className="ml-auto">
               <span 
-                className="text-sm font-medium px-3 py-1 rounded-full"
+                className="text-sm font-medium px-3 py-1 rounded-md"
                 style={{
                   backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)',
                   color: colors.accent,
+                  border: `1px solid ${theme === 'light' ? 'rgba(66, 132, 117, 0.2)' : 'rgba(137, 215, 183, 0.2)'}`,
                 }}
               >
                 {reportCount} {reportCount === 1 ? 'report' : 'reports'}
@@ -353,27 +362,25 @@ deleteReport,
         {reports.length === 0 ? (
           /* Empty State */
           <div 
-            className="rounded-3xl p-12 text-center transition-colors duration-300"
+            className="rounded-lg p-12 text-center transition-colors duration-300"
             style={{
               backgroundColor: colors.cardBackground,
-              boxShadow: theme === 'light' 
-                ? '0 4px 20px rgba(0,0,0,0.05)' 
-                : 'none'
+              border: `1px solid ${colors.border}`,
             }}
           >
             <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
               style={{
                 backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
               }}
             >
               <FileText 
-                className="w-8 h-8"
+                className="w-6 h-6"
                 style={{ color: colors.accent }}
               />
             </div>
             <h3 
-              className="text-lg font-semibold mb-2"
+              className="text-base font-semibold mb-2"
               style={{ color: colors.textPrimary }}
             >
               {typeFilter !== 'all' || formatFilter !== 'all' || dateFilter !== 'all'
@@ -391,10 +398,16 @@ deleteReport,
             {!isPublicUser && (
               <button
                 onClick={() => setIsGenerateDialogOpen(true)}
-                className="px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2"
+                className="px-5 py-2.5 rounded-lg font-medium transition-colors duration-200 inline-flex items-center gap-2"
                 style={{
                   backgroundColor: colors.accent,
                   color: 'white',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.accent;
                 }}
               >
                 <Plus className="w-5 h-5" strokeWidth={2} />
@@ -406,17 +419,15 @@ deleteReport,
           /* Reports Table/List */
           <>
             <div 
-              className="rounded-3xl overflow-hidden transition-colors duration-300"
+              className="rounded-lg overflow-hidden transition-colors duration-300"
               style={{
                 backgroundColor: colors.cardBackground,
-                boxShadow: theme === 'light' 
-                  ? '0 4px 20px rgba(0,0,0,0.05)' 
-                  : 'none'
+                border: `1px solid ${colors.border}`,
               }}
             >
               <div className="p-6 border-b" style={{ borderColor: colors.border }}>
                 <h2 
-                  className="text-lg font-semibold"
+                  className="text-[20px] font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
                   Generated Reports
@@ -473,7 +484,7 @@ deleteReport,
                         style={{ 
                           borderBottom: index < reports.length - 1 ? `1px solid ${colors.border}` : 'none'
                         }}
-                        className="hover:bg-opacity-50 transition-colors duration-150"
+                        className="transition-colors duration-150"
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = colors.hoverBackground;
                         }}
@@ -502,7 +513,7 @@ deleteReport,
                                 {report.fileName.split('-').slice(0, -1).join(' ').replace(/_/g, ' ')}
                               </div>
                               <div 
-                                className="text-xs"
+                                className="text-xs tabular-nums"
                                 style={{ color: colors.textSecondary }}
                               >
                                 {formatFileSize(report.fileSize)}
@@ -536,10 +547,11 @@ deleteReport,
                         </td>
                         <td className="px-6 py-4">
                           <span 
-                            className="text-xs font-medium px-2 py-1 rounded"
+                            className="text-xs font-medium px-2.5 py-1 rounded-md"
                             style={{
                               backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
                               color: colors.textPrimary,
+                              border: `1px solid ${theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'}`,
                             }}
                           >
                             {report.format.toUpperCase()}
@@ -642,22 +654,29 @@ deleteReport,
                         </div>
                       </div>
                       <span 
-                        className="text-xs font-medium px-2 py-1 rounded"
+                        className="text-xs font-medium px-2.5 py-1 rounded-md"
                         style={{
                           backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
                           color: colors.textPrimary,
+                          border: `1px solid ${theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'}`,
                         }}
                       >
                         {report.format.toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-3">
                       <button
                         onClick={() => handleView(report)}
                         className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
                         style={{
                           backgroundColor: colors.accent,
                           color: 'white',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.accent;
                         }}
                       >
                         View
@@ -668,6 +687,7 @@ deleteReport,
                         style={{
                           backgroundColor: colors.hoverBackground,
                           color: colors.textPrimary,
+                          border: `1px solid ${colors.border}`,
                         }}
                       >
                         Download
@@ -681,12 +701,10 @@ deleteReport,
             {/* Pagination */}
             {meta && meta.totalPages > 1 && (
               <div 
-                className="rounded-3xl p-6 transition-colors duration-300"
+                className="rounded-lg p-6 transition-colors duration-300"
                 style={{
                   backgroundColor: colors.cardBackground,
-                  boxShadow: theme === 'light' 
-                    ? '0 4px 20px rgba(0,0,0,0.05)' 
-                    : 'none'
+                  border: `1px solid ${colors.border}`,
                 }}
               >
                 <div className="flex items-center justify-between">
@@ -704,6 +722,7 @@ deleteReport,
                       style={{
                         backgroundColor: colors.hoverBackground,
                         color: colors.textPrimary,
+                        border: `1px solid ${colors.border}`,
                       }}
                     >
                       Previous
@@ -715,6 +734,7 @@ deleteReport,
                       style={{
                         backgroundColor: colors.hoverBackground,
                         color: colors.textPrimary,
+                        border: `1px solid ${colors.border}`,
                       }}
                     >
                       Next

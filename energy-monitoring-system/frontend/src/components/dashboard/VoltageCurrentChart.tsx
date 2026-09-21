@@ -95,7 +95,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
 
   // Theme-aware colors
   const colors = {
-    voltage: theme === 'light' ? '#428475' : '#3ED98A', // Muted Teal
+    voltage: '#3DDC97', // EcoStep green for primary chart strokes
     current: '#F59E0B', // Amber (same in both themes for contrast)
     gridColor: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : 'rgba(42, 46, 55, 0.3)',
     textColor: theme === 'light' ? '#1A312C' : '#9CA3AF',
@@ -158,7 +158,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               stroke={colors.voltage}
               strokeWidth={isMobile ? 2 : 3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 4 }}
               name="Voltage"
             />
           </LineChart>
@@ -220,7 +220,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               stroke={colors.current}
               strokeWidth={isMobile ? 2 : 3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 4 }}
               name="Current"
             />
           </LineChart>

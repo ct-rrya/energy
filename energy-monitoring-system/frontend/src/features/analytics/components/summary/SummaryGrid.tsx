@@ -32,7 +32,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={today.energyKWh}
         unit="kWh"
         icon={Zap}
-        iconColor="text-green-600"
         trend={yesterday.trend}
         trendValue={yesterday.change}
       />
@@ -43,7 +42,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={today.peakPowerW}
         unit="W"
         icon={TrendingUp}
-        iconColor="text-orange-600"
         subtitle={`Avg: ${today.avgPowerW.toFixed(1)}W`}
       />
 
@@ -53,7 +51,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={week.energyKWh}
         unit="kWh"
         icon={Calendar}
-        iconColor="text-blue-600"
         subtitle={`${week.daysActive} days active`}
       />
 
@@ -63,7 +60,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={month.energyKWh}
         unit="kWh"
         icon={Activity}
-        iconColor="text-purple-600"
         subtitle={`Projected: ${month.projectedKWh.toFixed(1)} kWh`}
       />
 
@@ -73,7 +69,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={month.costSavings}
         unit="USD"
         icon={DollarSign}
-        iconColor="text-green-600"
         subtitle="@$0.12/kWh"
       />
 
@@ -83,7 +78,6 @@ export function SummaryGrid({ analytics }: SummaryGridProps) {
         value={system.systemUptime}
         unit="%"
         icon={Database}
-        iconColor="text-cyan-600"
         subtitle={`${system.activeSensors} sensors active`}
       />
     </div>

@@ -39,23 +39,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variants = {
       default:
-        'bg-gradient-to-br from-[rgb(var(--color-secondary-400))] to-[rgb(var(--color-secondary-500))] text-white hover:from-[rgb(var(--color-secondary-500))] hover:to-[rgb(var(--color-secondary-600))] active:from-[rgb(var(--color-secondary-600))] active:to-[rgb(var(--color-secondary-700))] focus:ring-[rgb(var(--color-secondary-400))]/30 shadow-lg hover:shadow-xl hover:translate-y-[-2px] font-semibold',
+        'bg-[#525252] text-white hover:bg-[#404040] hover:opacity-95 active:bg-[#333333] focus:ring-[#525252]/30 font-medium',
       primary:
-        'bg-[#2FBF71] dark:bg-[#3ED98A] text-white dark:text-[#0B0D12] hover:bg-[#28a863] dark:hover:bg-[#35c27b] active:bg-[#239153] dark:active:bg-[#2cab6c] focus:ring-[#2FBF71]/30 dark:focus:ring-[#3ED98A]/30 shadow-lg hover:shadow-xl hover:translate-y-[-1px] font-semibold transition-all duration-200',
+        'bg-[#3DDC97] text-white hover:bg-[#35c27b] hover:opacity-95 active:bg-[#2cab6c] focus:ring-[#3DDC97]/30 font-medium',
       secondary:
-        'glass text-[rgb(var(--color-primary-500))] border-2 border-[rgb(var(--color-primary-500))]/30 hover:border-[rgb(var(--color-primary-500))] hover:bg-white/60 active:bg-white/80 focus:ring-[rgb(var(--color-primary-500))]/20 font-medium',
+        'bg-[#F5F5F5] dark:bg-[#2A2E37] text-[#525252] dark:text-[#9CA3AF] border border-[rgba(26,49,44,0.08)] dark:border-[rgba(137,215,183,0.12)] hover:bg-[#E5E5E5] dark:hover:bg-[#3A3E47] hover:opacity-95 active:bg-[#D4D4D8] dark:active:bg-[#3A3E47] focus:ring-[#3DDC97]/20 font-medium',
       danger:
-        'bg-gradient-to-br from-[rgb(var(--color-error-500))] to-[rgb(var(--color-error-600))] text-white hover:from-[rgb(var(--color-error-600))] hover:to-[rgb(var(--color-error-700))] active:from-[rgb(var(--color-error-700))] active:to-[rgb(var(--color-error-600))] focus:ring-[rgb(var(--color-error-500))]/30 shadow-lg hover:shadow-xl hover:translate-y-[-2px] font-semibold',
+        'bg-[#EF4444] text-white hover:bg-[#DC2626] hover:opacity-95 active:bg-[#B91C1C] focus:ring-[#EF4444]/30 font-medium',
       outline:
-        'border-2 border-[rgb(var(--color-secondary-400))] text-[rgb(var(--color-secondary-400))] bg-transparent hover:bg-[rgb(var(--color-secondary-50))] active:bg-[rgb(var(--color-secondary-100))] focus:ring-[rgb(var(--color-secondary-400))]/20 font-medium',
+        'border border-[#3DDC97] text-[#3DDC97] bg-transparent hover:bg-[#3DDC97]/10 hover:opacity-95 active:bg-[#3DDC97]/20 focus:ring-[#3DDC97]/20 font-medium',
       ghost:
-        'text-[#6B7280] dark:text-[#9CA3AF] hover:bg-[#F5F6F8] dark:hover:bg-[#2A2E37] hover:text-[#1A1D23] dark:hover:text-[#EDEEF0] active:bg-[#E5E7EB] dark:active:bg-[#2A2E37] focus:ring-[#2FBF71]/20 dark:focus:ring-[#3ED98A]/20 font-medium',
+        'text-[#525252] dark:text-[#9CA3AF] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2E37] hover:opacity-95 hover:text-[#171717] dark:hover:text-[#F9FAFB] active:bg-[#E5E5E5] dark:active:bg-[#2A2E37] focus:ring-[#3DDC97]/20 font-medium',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2.5 text-base',
-      lg: 'px-6 py-3 text-lg',
+      sm: 'px-3 py-1.5 text-sm font-medium',
+      md: 'px-4 py-2.5 text-base font-medium',
+      lg: 'px-6 py-3 text-lg font-medium',
     };
 
     return (
@@ -63,9 +63,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          'relative inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200',
+          'relative inline-flex items-center justify-center gap-2 rounded-lg transition-all duration-200',
           'focus:outline-none focus:ring-2',
-          'disabled:cursor-not-allowed disabled:opacity-60',
+          'disabled:cursor-not-allowed disabled:opacity-50',
           variants[variant],
           sizes[size],
           fullWidth && 'w-full',

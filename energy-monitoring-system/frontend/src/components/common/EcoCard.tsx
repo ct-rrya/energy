@@ -9,7 +9,6 @@ interface EcoCardProps {
   className?: string;
   compact?: boolean;
   onClick?: () => void;
-  hover?: boolean;
 }
 
 /**
@@ -19,14 +18,13 @@ interface EcoCardProps {
  * Usage:
  * <EcoCard>Content</EcoCard>
  * <EcoCard compact>Compact card</EcoCard>
- * <EcoCard onClick={handler} hover>Clickable card</EcoCard>
+ * <EcoCard onClick={handler}>Clickable card</EcoCard>
  */
 export function EcoCard({
   children,
   className,
   compact = false,
   onClick,
-  hover = false,
 }: EcoCardProps) {
   const isClickable = Boolean(onClick);
 
@@ -35,7 +33,6 @@ export function EcoCard({
       className={cn(
         compact ? 'eco-card-compact' : 'eco-card',
         isClickable && 'cursor-pointer',
-        hover && 'hover:transform hover:-translate-y-0.5',
         className
       )}
       onClick={onClick}

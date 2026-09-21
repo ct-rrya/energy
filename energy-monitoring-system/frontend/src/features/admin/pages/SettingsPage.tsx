@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
 import { Server, Database, Activity, Clock, Calendar, RefreshCw } from 'lucide-react';
+import { COLORS, SPACING, TYPOGRAPHY, getTextColor } from '@/styles/design-tokens';
 
 interface SystemPreferences {
   timezone: string;
@@ -34,6 +35,8 @@ interface HealthStatus {
  */
 export function SettingsPage() {
   const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   const [preferences, setPreferences] = useState<SystemPreferences>({
     timezone: 'Asia/Manila',
     timeFormat: '12-hour',
@@ -45,17 +48,19 @@ export function SettingsPage() {
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
   const [iotDataStatus, setIotDataStatus] = useState<string>('checking');
 
-  // Colors
+  // Refined colors using design tokens
   const colors = {
-    cardBg: theme === 'light' ? '#FFFFFF' : '#1C1F28',
-    textPrimary: theme === 'light' ? '#1F2937' : '#F9FAFB',
-    textSecondary: theme === 'light' ? '#6B7280' : '#9CA3AF',
-    border: theme === 'light' ? '#E5E7EB' : '#374151',
-    inputBg: theme === 'light' ? '#F9FAFB' : '#111419',
-    accent: '#10B981',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
+    cardBg: isDark ? COLORS.dark.surface : '#FFFFFF',
+    textPrimary: getTextColor(isDark, 'primary'),
+    textSecondary: getTextColor(isDark, 'secondary'),
+    textMuted: getTextColor(isDark, 'muted'),
+    border: isDark ? COLORS.dark.border : 'rgba(26, 49, 44, 0.08)',
+    borderHover: isDark ? 'rgba(137, 215, 183, 0.20)' : 'rgba(26, 49, 44, 0.15)',
+    inputBg: isDark ? '#111419' : COLORS.neutral[50],
+    accent: COLORS.ecoGreen,
+    success: COLORS.semantic.green,
+    warning: COLORS.semantic.amber,
+    error: COLORS.semantic.red,
   };
 
   // Load preferences from localStorage
@@ -172,7 +177,16 @@ export function SettingsPage() {
         {/* System Preferences */}
         <EcoCard className="mt-6">
           <div className="mb-6">
-            <h2 className="eco-card-title">System Preferences</h2>
+            <h2 
+              className="text-base font-semibold" 
+              style={{ 
+                color: colors.textPrimary,
+                fontSize: TYPOGRAPHY.cardTitle.size,
+                fontWeight: TYPOGRAPHY.cardTitle.weight,
+              }}
+            >
+              System Preferences
+            </h2>
             <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
               Configure general preferences for how EcoStep displays and operates
             </p>
@@ -181,12 +195,12 @@ export function SettingsPage() {
             {/* Timezone */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5" style={{ color: colors.textSecondary }} />
+                <Clock className="h-4 w-4" style={{ color: colors.textMuted }} />
                 <div>
                   <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                     Timezone
                   </p>
-                  <p className="text-xs" style={{ color: colors.textSecondary }}>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     Display timezone for timestamps
                   </p>
                 </div>
@@ -195,11 +209,21 @@ export function SettingsPage() {
                 <select
                   value={preferences.timezone}
                   onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200"
+                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
                   style={{
                     backgroundColor: colors.inputBg,
                     color: colors.textPrimary,
                     border: `1px solid ${colors.border}`,
+                    borderRadius: SPACING.borderRadius.md,
+                    boxShadow: 'none',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.borderHover;
+                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.outline = 'none';
                   }}
                 >
                   <option value="Asia/Manila">Asia/Manila (PHT)</option>
@@ -213,12 +237,12 @@ export function SettingsPage() {
             {/* Time Format */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5" style={{ color: colors.textSecondary }} />
+                <Clock className="h-4 w-4" style={{ color: colors.textMuted }} />
                 <div>
                   <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                     Time Format
                   </p>
-                  <p className="text-xs" style={{ color: colors.textSecondary }}>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     12-hour or 24-hour display
                   </p>
                 </div>
@@ -227,11 +251,21 @@ export function SettingsPage() {
                 <select
                   value={preferences.timeFormat}
                   onChange={(e) => setPreferences({ ...preferences, timeFormat: e.target.value as '12-hour' | '24-hour' })}
-                  className="w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200"
+                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
                   style={{
                     backgroundColor: colors.inputBg,
                     color: colors.textPrimary,
                     border: `1px solid ${colors.border}`,
+                    borderRadius: SPACING.borderRadius.md,
+                    boxShadow: 'none',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.borderHover;
+                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.outline = 'none';
                   }}
                 >
                   <option value="12-hour">12-hour</option>
@@ -243,12 +277,12 @@ export function SettingsPage() {
             {/* Date Format */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5" style={{ color: colors.textSecondary }} />
+                <Calendar className="h-4 w-4" style={{ color: colors.textMuted }} />
                 <div>
                   <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                     Date Format
                   </p>
-                  <p className="text-xs" style={{ color: colors.textSecondary }}>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     Date display preference
                   </p>
                 </div>
@@ -257,11 +291,21 @@ export function SettingsPage() {
                 <select
                   value={preferences.dateFormat}
                   onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value as 'MM/DD/YYYY' | 'DD/MM/YYYY' })}
-                  className="w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200"
+                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
                   style={{
                     backgroundColor: colors.inputBg,
                     color: colors.textPrimary,
                     border: `1px solid ${colors.border}`,
+                    borderRadius: SPACING.borderRadius.md,
+                    boxShadow: 'none',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.borderHover;
+                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.outline = 'none';
                   }}
                 >
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -273,12 +317,12 @@ export function SettingsPage() {
             {/* Dashboard Refresh Interval */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-3">
-                <RefreshCw className="h-5 w-5" style={{ color: colors.textSecondary }} />
+                <RefreshCw className="h-4 w-4" style={{ color: colors.textMuted }} />
                 <div>
                   <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                     Dashboard Refresh
                   </p>
-                  <p className="text-xs" style={{ color: colors.textSecondary }}>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     Auto-refresh interval for live data
                   </p>
                 </div>
@@ -287,11 +331,21 @@ export function SettingsPage() {
                 <select
                   value={preferences.dashboardRefresh}
                   onChange={(e) => setPreferences({ ...preferences, dashboardRefresh: Number(e.target.value) as 5 | 10 | 30 | 60 })}
-                  className="w-full px-3 py-2 rounded-lg text-sm transition-colors duration-200"
+                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
                   style={{
                     backgroundColor: colors.inputBg,
                     color: colors.textPrimary,
                     border: `1px solid ${colors.border}`,
+                    borderRadius: SPACING.borderRadius.md,
+                    boxShadow: 'none',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.borderHover;
+                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.outline = 'none';
                   }}
                 >
                   <option value="5">5 seconds</option>
@@ -308,6 +362,7 @@ export function SettingsPage() {
                 onClick={handleSavePreferences}
                 disabled={isSaving}
                 className="w-full sm:w-auto"
+                variant="primary"
               >
                 {isSaving ? 'Saving...' : 'Save Preferences'}
               </Button>
@@ -318,7 +373,16 @@ export function SettingsPage() {
         {/* System Information */}
         <EcoCard className="mt-6">
           <div className="mb-6">
-            <h2 className="eco-card-title">System Information</h2>
+            <h2 
+              className="text-base font-semibold" 
+              style={{ 
+                color: colors.textPrimary,
+                fontSize: TYPOGRAPHY.cardTitle.size,
+                fontWeight: TYPOGRAPHY.cardTitle.weight,
+              }}
+            >
+              System Information
+            </h2>
             <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
               View EcoStep application and service information
             </p>
@@ -393,7 +457,7 @@ export function SettingsPage() {
                 {/* Last Updated */}
                 {healthStatus?.timestamp && (
                   <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
-                    <p className="text-xs" style={{ color: colors.textSecondary }}>
+                    <p className="text-xs" style={{ color: colors.textMuted }}>
                       Last updated: {new Date(healthStatus.timestamp).toLocaleString()}
                     </p>
                   </div>
@@ -411,7 +475,7 @@ export function SettingsPage() {
 function InfoItem({ label, value, colors }: { label: string; value: string; colors: any }) {
   return (
     <div>
-      <p className="text-xs mb-1" style={{ color: colors.textSecondary }}>
+      <p className="text-xs mb-1" style={{ color: colors.textMuted }}>
         {label}
       </p>
       <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
@@ -440,7 +504,7 @@ function StatusItem({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div style={{ color: colors.textSecondary }}>
+        <div style={{ color: colors.textMuted }}>
           {icon}
         </div>
         <span className="text-sm" style={{ color: colors.textPrimary }}>
@@ -458,7 +522,7 @@ function StatusItem({
           </span>
         </div>
         {responseTime !== undefined && (
-          <span className="text-xs" style={{ color: colors.textSecondary }}>
+          <span className="text-xs" style={{ color: colors.textMuted }}>
             ({responseTime}ms)
           </span>
         )}

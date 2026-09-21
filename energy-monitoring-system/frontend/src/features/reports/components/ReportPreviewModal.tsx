@@ -110,11 +110,14 @@ export function ReportPreviewModal({
         {/* Report Header */}
         <div className="text-center">
           <div 
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            className="w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4"
             style={{
               backgroundColor: theme === 'light' 
                 ? 'rgba(66, 132, 117, 0.1)' 
-                : 'rgba(137, 215, 183, 0.1)'
+                : 'rgba(137, 215, 183, 0.1)',
+              border: theme === 'light'
+                ? '1px solid rgba(26, 49, 44, 0.08)'
+                : '1px solid rgba(137, 215, 183, 0.12)'
             }}
           >
             <Icon 
@@ -128,7 +131,7 @@ export function ReportPreviewModal({
           >
             {getReportTypeLabel(report.type)}
           </h2>
-          <div className="flex items-center justify-center gap-2 text-sm">
+          <div className="flex items-center justify-center gap-2 text-sm font-[tabular-nums]">
             <Calendar 
               className="w-4 h-4"
               style={{ color: colors.textSecondary }}
@@ -160,8 +163,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -171,7 +177,7 @@ export function ReportPreviewModal({
                     Total Energy
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     {report.summary.totalEnergyKWh.toFixed(2)}
@@ -190,8 +196,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -201,7 +210,7 @@ export function ReportPreviewModal({
                     Average Power
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     {report.summary.avgPowerW.toFixed(1)}
@@ -220,8 +229,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -231,7 +243,7 @@ export function ReportPreviewModal({
                     Peak Power
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     {report.summary.peakPowerW.toFixed(1)}
@@ -250,8 +262,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -261,7 +276,7 @@ export function ReportPreviewModal({
                     Data Points
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     {report.summary.readingCount.toLocaleString()}
@@ -274,8 +289,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -285,7 +303,7 @@ export function ReportPreviewModal({
                     CO₂ Avoided
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     {report.summary.co2AvoidedKg.toFixed(2)}
@@ -304,8 +322,11 @@ export function ReportPreviewModal({
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: theme === 'light' 
-                      ? 'rgba(0, 0, 0, 0.02)' 
-                      : 'rgba(255, 255, 255, 0.02)'
+                      ? '#FFFFFF' 
+                      : '#1C1F28',
+                    border: theme === 'light'
+                      ? '1px solid rgba(26, 49, 44, 0.08)'
+                      : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
                   <div 
@@ -315,7 +336,7 @@ export function ReportPreviewModal({
                     Cost Savings
                   </div>
                   <div 
-                    className="text-lg font-bold"
+                    className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
                     ${report.summary.costSavingsUSD.toFixed(2)}
@@ -363,12 +384,15 @@ export function ReportPreviewModal({
                 Format
               </span>
               <span 
-                className="text-xs font-medium px-2 py-1 rounded"
+                className="text-xs font-medium px-2 py-1 rounded-md"
                 style={{
                   backgroundColor: theme === 'light' 
-                    ? 'rgba(0, 0, 0, 0.05)' 
-                    : 'rgba(255, 255, 255, 0.05)',
+                    ? '#F5F5F5' 
+                    : '#2A2E37',
                   color: colors.textPrimary,
+                  border: theme === 'light'
+                    ? '1px solid rgba(26, 49, 44, 0.08)'
+                    : '1px solid rgba(137, 215, 183, 0.12)'
                 }}
               >
                 {report.format.toUpperCase()}
@@ -382,7 +406,7 @@ export function ReportPreviewModal({
                 File Size
               </span>
               <span 
-                className="text-sm font-medium"
+                className="text-sm font-medium font-[tabular-nums]"
                 style={{ color: colors.textPrimary }}
               >
                 {formatFileSize(report.fileSize)}
@@ -396,7 +420,7 @@ export function ReportPreviewModal({
                 Generated
               </span>
               <span 
-                className="text-sm font-medium"
+                className="text-sm font-medium font-[tabular-nums]"
                 style={{ color: colors.textPrimary }}
               >
                 {formatDate(report.createdAt)}
@@ -410,7 +434,7 @@ export function ReportPreviewModal({
                 Downloads
               </span>
               <span 
-                className="text-sm font-medium"
+                className="text-sm font-medium font-[tabular-nums]"
                 style={{ color: colors.textPrimary }}
               >
                 {report.downloadCount}
@@ -424,7 +448,7 @@ export function ReportPreviewModal({
                 Expires
               </span>
               <span 
-                className="text-sm font-medium"
+                className="text-sm font-medium font-[tabular-nums]"
                 style={{ color: colors.textPrimary }}
               >
                 {formatDate(report.expiresAt)}

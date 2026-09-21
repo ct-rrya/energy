@@ -78,7 +78,7 @@ export function EnergyPeriodChart({
 
   // Color system based on theme following EcoStep Design System
   const colors = {
-    barColor: '#89D7B7', // Fresh Mint from EcoStep Design System
+    barColor: '#3DDC97', // EcoStep green for primary chart strokes
     gridColor: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : 'rgba(42, 46, 55, 0.3)',
     textColor: theme === 'light' ? '#1A312C' : '#9CA3AF',
     filterBg: theme === 'light' ? '#F5F6F8' : '#12141A',

@@ -37,29 +37,29 @@ export function BatteryIndicator({
     if (level < 20) {
       return {
         icon: BatteryLow,
-        color: 'text-red-600',
-        bgColor: 'bg-red-50',
+        color: 'text-red-600 dark:text-red-400',
+        bgColor: 'bg-red-50 dark:bg-red-950/20',
         label: 'Critical',
       };
     } else if (level < 50) {
       return {
         icon: BatteryMedium,
-        color: 'text-accent-600',
-        bgColor: 'bg-accent-50',
+        color: 'text-amber-600 dark:text-amber-400',
+        bgColor: 'bg-amber-50 dark:bg-amber-950/20',
         label: 'Low',
       };
     } else if (level < 80) {
       return {
         icon: Battery,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
+        color: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-50 dark:bg-blue-950/20',
         label: 'Medium',
       };
     } else {
       return {
         icon: BatteryFull,
-        color: 'text-secondary-600',
-        bgColor: 'bg-secondary-50',
+        color: 'text-green-600 dark:text-green-400',
+        bgColor: 'bg-green-50 dark:bg-green-950/20',
         label: 'High',
       };
     }
@@ -95,10 +95,13 @@ export function BatteryIndicator({
       {/* Percentage */}
       {showPercentage && (
         <div className="mt-2 flex flex-col items-center">
-          <div className={cn('font-bold', config.color, sizes.text)}>
+          <div 
+            className={cn('font-semibold', config.color, sizes.text)}
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
             {level.toFixed(0)}%
           </div>
-          <div className="text-xs text-neutral-500">Battery</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Battery</div>
         </div>
       )}
     </div>

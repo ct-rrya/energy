@@ -56,8 +56,8 @@ export function CircularGauge({
     { name: 'remaining', value: 100 - percentage },
   ];
 
-  // Colors
-  const COLORS = [color, '#e5e7eb'];
+  // Colors - use restrained background for remaining portion
+  const COLORS = [color, 'rgba(26, 49, 44, 0.08)'];
 
   return (
     <div className={cn('relative flex flex-col items-center', className)}>
@@ -86,16 +86,19 @@ export function CircularGauge({
         {/* Center value */}
         {showValue && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className={cn('font-bold text-neutral-900', config.fontSize)}>
+            <div 
+              className={cn('font-semibold text-neutral-900 dark:text-neutral-50', config.fontSize)}
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
               {value.toFixed(2)}
             </div>
-            <div className="text-xs text-neutral-500">{unit}</div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{unit}</div>
           </div>
         )}
       </div>
 
       {/* Label */}
-      <div className="mt-2 text-center text-sm font-medium text-neutral-700">
+      <div className="mt-2 text-center text-[13px] font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
         {label}
       </div>
     </div>

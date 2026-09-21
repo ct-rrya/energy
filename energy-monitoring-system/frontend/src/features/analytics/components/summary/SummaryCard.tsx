@@ -9,7 +9,6 @@ interface SummaryCardProps {
   value: string | number;
   unit?: string;
   icon: LucideIcon;
-  iconColor?: string;
   trend?: 'up' | 'down' | 'stable';
   trendValue?: number;
   subtitle?: string;
@@ -74,7 +73,7 @@ export function SummaryCard({
       {/* Value */}
       <div>
         <div className="flex items-baseline gap-2">
-          <p className="metric-value-large">{displayValue}</p>
+          <p className="metric-value-large tabular-nums">{displayValue}</p>
           {unit && <span className="text-base font-medium text-[rgb(var(--color-neutral-500))]">{unit}</span>}
         </div>
 

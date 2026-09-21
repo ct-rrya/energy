@@ -23,6 +23,7 @@ import { ROUTES } from '@/routes/routes.config';
 import { getUserRole, getUserPermissions, type UserRole } from '@/lib/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { getThemeColors, SPACING, TYPOGRAPHY } from '@/lib/theme';
+import { COLORS, SPACING as DESIGN_SPACING, getBorderColor } from '@/styles/design-tokens';
 
 /**
  * Dashboard Layout Props
@@ -249,11 +250,13 @@ const navigationItems = [
       {/* Task 10.3: Skip Link for Keyboard Navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:shadow-lg focus:outline-none"
         style={{
+          padding: '8px 16px',
+          borderRadius: DESIGN_SPACING.borderRadius.sm,
           backgroundColor: colors.cardBackground,
           color: colors.textPrimary,
-          border: `3px solid ${colors.accent}`,
+          border: `3px solid ${COLORS.ecoGreen}`,
           fontWeight: TYPOGRAPHY.fontWeight.semibold,
           fontSize: TYPOGRAPHY.fontSize.sm
         }}
@@ -266,8 +269,9 @@ const navigationItems = [
         <button
           ref={hamburgerButtonRef}
           onClick={() => setMobileSidebarOpen(true)}
-          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-200"
+          className="fixed top-4 left-4 z-50 w-12 h-12 flex items-center justify-center transition-colors duration-200"
           style={{
+            borderRadius: DESIGN_SPACING.borderRadius.md,
             backgroundColor: colors.sidebarBackground,
             color: colors.textPrimary
           }}
@@ -292,23 +296,28 @@ const navigationItems = [
           
           {/* Mobile Sidebar */}
           <aside 
-            className={`mobile-sidebar fixed left-0 top-0 bottom-0 z-50 flex flex-col py-6 w-64 ${
+            className={`mobile-sidebar fixed left-0 top-0 bottom-0 z-50 flex flex-col w-64 ${
               prefersReducedMotion ? '' : 'transform transition-transform duration-300'
             }`}
             style={{
+              padding: '24px 0',
               backgroundColor: colors.sidebarBackground,
-              borderTopRightRadius: '20px',
-              borderBottomRightRadius: '20px',
-              boxShadow: colors.shadowLg
+              borderTopRightRadius: DESIGN_SPACING.borderRadius.lg,
+              borderBottomRightRadius: DESIGN_SPACING.borderRadius.lg,
+              boxShadow: colors.shadowLg,
+              borderRight: getBorderColor(theme === 'dark'),
+              borderTop: getBorderColor(theme === 'dark'),
+              borderBottom: getBorderColor(theme === 'dark')
             }}
           >
             {/* Close Button */}
-            <div className="flex items-center justify-between px-4 mb-6">
+            <div className="flex items-center justify-between mb-6" style={{ padding: '0 16px' }}>
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-9 h-9 rounded-lg flex items-center justify-center p-2 flex-shrink-0"
+                  className="w-9 h-9 flex items-center justify-center p-2 flex-shrink-0"
                   style={{
-                    background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accent} 100%)`,
+                    backgroundColor: COLORS.ecoGreen,
+                    borderRadius: DESIGN_SPACING.borderRadius.sm,
                     color: '#FFFFFF'
                   }}
                 >
@@ -330,8 +339,11 @@ const navigationItems = [
                   setMobileSidebarOpen(false);
                   hamburgerButtonRef.current?.focus();
                 }}
-                className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
-                style={{ color: colors.navIconInactive }}
+                className="w-10 h-10 flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
+                style={{ 
+                  color: colors.navIconInactive,
+                  borderRadius: DESIGN_SPACING.borderRadius.sm
+                }}
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" strokeWidth={2} />
@@ -339,10 +351,12 @@ const navigationItems = [
             </div>
 
             {/* Role Indicator Badge - Non-clickable status indicator */}
-            <div className="px-4 mb-5">
+            <div style={{ padding: '0 16px 20px 16px' }}>
               <div 
-                className="px-3 py-2 rounded-lg text-xs font-semibold text-center tracking-wide uppercase"
+                className="text-xs font-semibold text-center tracking-wide uppercase"
                 style={{
+                  padding: '8px 12px',
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   backgroundColor: isAdminUser 
                     ? colors.accentSubtle
                     : 'rgba(168, 85, 247, 0.1)',
@@ -359,7 +373,7 @@ const navigationItems = [
             </div>
 
             {/* Navigation Items */}
-            <nav className="flex-1 flex flex-col gap-1 px-3">
+            <nav className="flex-1 flex flex-col gap-1" style={{ padding: '0 12px' }}>
               {navigationItems.map(({ path, label, icon: Icon }) => {
                 const isActive = isActivePath(path);
                 return (
@@ -370,8 +384,10 @@ const navigationItems = [
                       setMobileSidebarOpen(false);
                       hamburgerButtonRef.current?.focus();
                     }}
-                    className="group relative flex items-center gap-3 rounded-lg transition-all duration-200 px-4 py-3"
+                    className="group relative flex items-center gap-3 transition-all duration-200"
                     style={{
+                      padding: '12px 16px',
+                      borderRadius: DESIGN_SPACING.borderRadius.md,
                       backgroundColor: isActive ? colors.activeBackground : 'transparent',
                       color: isActive ? colors.navTextActive : colors.navText,
                       height: `${SPACING.navItem.height}px`
@@ -390,18 +406,19 @@ const navigationItems = [
             </nav>
 
             {/* Account Section */}
-            <div className="px-3 pt-4 border-t" style={{ borderColor: colors.border }}>
+            <div style={{ padding: '16px 12px 0 12px', borderTop: getBorderColor(theme === 'dark') }}>
               {isPublicUser ? (
                 /* PUBLIC USER - Guest Mode Indicator */
-                <div className="relative w-full flex items-center gap-3 rounded-lg px-4 py-3">
+                <div className="relative w-full flex items-center gap-3" style={{ padding: '12px 16px', borderRadius: DESIGN_SPACING.borderRadius.md }}>
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-10 h-10 flex items-center justify-center flex-shrink-0"
                     style={{
+                      borderRadius: '50%',
                       backgroundColor: colors.inputBackground,
                       color: colors.textSecondary
                     }}
                   >
-                    <span className="text-lg">???</span>
+                    <span className="text-lg">👤</span>
                   </div>
                   
                   <div className="flex-1 text-left">
@@ -432,8 +449,12 @@ const navigationItems = [
                     handleLogout();
                     setMobileSidebarOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-red-500/10"
-                  style={{ color: colors.error }}
+                  className="w-full flex items-center gap-3 transition-all duration-200 hover:bg-red-500/10"
+                  style={{ 
+                    padding: '12px 16px',
+                    borderRadius: DESIGN_SPACING.borderRadius.md,
+                    color: colors.error 
+                  }}
                 >
                   <LogOut className="w-5 h-5" strokeWidth={2} />
                   <span 
@@ -452,22 +473,25 @@ const navigationItems = [
       {/* COLLAPSIBLE FLOATING SIDEBAR - Desktop Only */}
       {isDesktop && (
         <aside 
-          className="fixed left-6 top-6 bottom-6 z-50 flex flex-col py-6 transition-all duration-250"
+          className="fixed left-6 top-6 bottom-6 z-50 flex flex-col transition-all duration-250"
           style={{
             width: `${sidebarWidth}px`,
+            padding: '24px 0',
             backgroundColor: colors.sidebarBackground,
-            borderRadius: '20px',
-            boxShadow: colors.shadowLg
+            borderRadius: DESIGN_SPACING.borderRadius.lg,
+            boxShadow: colors.shadowLg,
+            border: getBorderColor(theme === 'dark')
           }}
         >
         {/* Logo + Toggle Button */}
-        <div className="flex items-center justify-between px-4 mb-6">
+        <div className="flex items-center justify-between mb-6" style={{ padding: '0 16px' }}>
           {isExpanded ? (
             <div className="flex items-center gap-3">
               <div 
-                className="w-9 h-9 rounded-lg flex items-center justify-center p-2 flex-shrink-0"
+                className="w-9 h-9 flex items-center justify-center p-2 flex-shrink-0"
                 style={{
-                  background: colors.accent,
+                  backgroundColor: COLORS.ecoGreen,
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   color: '#FFFFFF'
                 }}
               >
@@ -485,9 +509,10 @@ const navigationItems = [
             </div>
           ) : (
             <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center p-2 mx-auto"
+              className="w-10 h-10 flex items-center justify-center p-2 mx-auto"
               style={{
-                background: colors.accent,
+                backgroundColor: COLORS.ecoGreen,
+                borderRadius: DESIGN_SPACING.borderRadius.sm,
                 color: '#FFFFFF'
               }}
             >
@@ -499,8 +524,11 @@ const navigationItems = [
           {isExpanded && (
             <button
               onClick={() => setIsExpanded(false)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
-              style={{ color: colors.navIconInactive }}
+              className="w-8 h-8 flex items-center justify-center transition-all duration-200 hover:bg-white/5 flex-shrink-0"
+              style={{ 
+                color: colors.navIconInactive,
+                borderRadius: DESIGN_SPACING.borderRadius.sm
+              }}
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -510,10 +538,12 @@ const navigationItems = [
 
         {/* Role Indicator Badge - Non-clickable status indicator */}
         {isExpanded && (
-          <div className="px-4 mb-5">
+          <div style={{ padding: '0 16px 20px 16px' }}>
             <div 
-              className="px-3 py-2 rounded-lg text-xs font-semibold text-center tracking-wide uppercase"
+              className="text-xs font-semibold text-center tracking-wide uppercase"
               style={{
+                padding: '8px 12px',
+                borderRadius: DESIGN_SPACING.borderRadius.sm,
                 backgroundColor: isAdminUser 
                   ? colors.accentSubtle
                   : 'rgba(168, 85, 247, 0.1)',
@@ -531,10 +561,11 @@ const navigationItems = [
         )}
         
         {!isExpanded && (
-          <div className="px-3 mb-5">
+          <div style={{ padding: '0 12px 20px 12px' }}>
             <div 
-              className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center text-xs font-bold"
+              className="w-10 h-10 mx-auto flex items-center justify-center text-xs font-bold"
               style={{
+                borderRadius: DESIGN_SPACING.borderRadius.sm,
                 backgroundColor: isAdminUser 
                   ? colors.accentSubtle
                   : 'rgba(168, 85, 247, 0.1)',
@@ -556,8 +587,11 @@ const navigationItems = [
         {!isExpanded && (
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-10 h-10 mx-auto mb-4 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-white/5"
-            style={{ color: colors.navIconInactive }}
+            className="w-10 h-10 mx-auto mb-4 flex items-center justify-center transition-all duration-200 hover:bg-white/5"
+            style={{ 
+              color: colors.navIconInactive,
+              borderRadius: DESIGN_SPACING.borderRadius.sm
+            }}
             aria-label="Expand sidebar"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={2} />
@@ -565,17 +599,19 @@ const navigationItems = [
         )}
 
         {/* Navigation Items */}
-        <nav className="flex-1 flex flex-col gap-1 px-3">
+        <nav className="flex-1 flex flex-col gap-1" style={{ padding: '0 12px' }}>
           {navigationItems.map(({ path, label, icon: Icon }) => {
             const isActive = isActivePath(path);
             return (
               <Link
                 key={path}
                 to={path}
-                className={`group relative flex items-center gap-3 rounded-lg transition-all duration-200 ${
-                  isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
+                className={`group relative flex items-center gap-3 transition-all duration-200 ${
+                  isExpanded ? '' : 'justify-center'
                 }`}
                 style={{
+                  padding: isExpanded ? '12px 16px' : '12px',
+                  borderRadius: DESIGN_SPACING.borderRadius.md,
                   backgroundColor: isActive ? colors.activeBackground : 'transparent',
                   color: isActive ? colors.navTextActive : colors.navText,
                   height: !isExpanded ? `${SPACING.navItem.height}px` : 'auto'
@@ -595,8 +631,10 @@ const navigationItems = [
                 
                 {/* Tooltip for collapsed mode */}
                 {!isExpanded && (
-                  <div className="absolute left-full ml-4 px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+                  <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
                     style={{
+                      padding: '8px 12px',
+                      borderRadius: DESIGN_SPACING.borderRadius.sm,
                       backgroundColor: colors.elevatedBackground,
                       color: colors.textPrimary,
                       fontSize: TYPOGRAPHY.fontSize.sm,
@@ -613,22 +651,27 @@ const navigationItems = [
         </nav>
 
         {/* Account Section with Menu - Different for public vs admin */}
-        <div className="px-3 pt-4 border-t account-menu-container relative" style={{ borderColor: '#2A2E37' }}>
+        <div className="account-menu-container relative" style={{ padding: '16px 12px 0 12px', borderTop: getBorderColor(theme === 'dark') }}>
           {isPublicUser ? (
             /* PUBLIC USER - Guest Mode Indicator */
             <div
-              className={`relative w-full flex items-center gap-3 rounded-xl ${
-                isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
+              className={`relative w-full flex items-center gap-3 ${
+                isExpanded ? '' : 'justify-center'
               }`}
+              style={{
+                padding: isExpanded ? '12px 16px' : '12px',
+                borderRadius: DESIGN_SPACING.borderRadius.md
+              }}
             >
               <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 flex items-center justify-center flex-shrink-0"
                 style={{
+                  borderRadius: '50%',
                   backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37',
                   color: theme === 'light' ? '#6B7280' : '#9CA3AF'
                 }}
               >
-                <span className="text-lg">???</span>
+                <span className="text-lg">👤</span>
               </div>
               
               {isExpanded && (
@@ -649,14 +692,19 @@ const navigationItems = [
                 e.stopPropagation();
                 setShowAccountMenu(!showAccountMenu);
               }}
-              className={`relative w-full flex items-center gap-3 rounded-lg transition-all duration-200 hover:bg-white/5 ${
-                isExpanded ? 'px-4 py-3' : 'p-3 justify-center'
+              className={`relative w-full flex items-center gap-3 transition-all duration-200 hover:bg-white/5 ${
+                isExpanded ? '' : 'justify-center'
               }`}
+              style={{
+                padding: isExpanded ? '12px 16px' : '12px',
+                borderRadius: DESIGN_SPACING.borderRadius.md
+              }}
             >
             <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center font-semibold text-sm flex-shrink-0"
               style={{
-                background: colors.accent,
+                borderRadius: '50%',
+                backgroundColor: COLORS.ecoGreen,
                 color: '#FFFFFF',
                 fontWeight: TYPOGRAPHY.fontWeight.semibold
               }}
@@ -692,11 +740,13 @@ const navigationItems = [
           {/* Account Menu Popover - Only for admin users */}
           {isAdminUser && showAccountMenu && (
             <div 
-              className="fixed rounded-xl p-2 min-w-[200px] z-[100]"
+              className="fixed min-w-[200px] z-[100]"
               style={{
+                padding: '8px',
+                borderRadius: DESIGN_SPACING.borderRadius.md,
                 backgroundColor: colors.elevatedBackground,
                 boxShadow: colors.shadowLg,
-                border: `1px solid ${colors.border}`,
+                border: getBorderColor(theme === 'dark'),
                 left: isExpanded ? `${24 + 12}px` : `${24 + sidebarWidth + 8}px`,
                 bottom: '32px',
               }}
@@ -708,8 +758,10 @@ const navigationItems = [
                   navigate(ROUTES.PROFILE);
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                className="w-full flex items-center gap-3 transition-all duration-200"
                 style={{ 
+                  padding: '12px 16px',
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   color: colors.textPrimary,
                   fontWeight: TYPOGRAPHY.fontWeight.medium
                 }}
@@ -726,8 +778,10 @@ const navigationItems = [
                   navigate(ROUTES.SETTINGS);
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                className="w-full flex items-center gap-3 transition-all duration-200"
                 style={{ 
+                  padding: '12px 16px',
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   color: colors.textPrimary,
                   fontWeight: TYPOGRAPHY.fontWeight.medium
                 }}
@@ -744,8 +798,10 @@ const navigationItems = [
                   toggleTheme();
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                className="w-full flex items-center gap-3 transition-all duration-200"
                 style={{ 
+                  padding: '12px 16px',
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   color: colors.textPrimary,
                   fontWeight: TYPOGRAPHY.fontWeight.medium
                 }}
@@ -766,7 +822,7 @@ const navigationItems = [
               </button>
 
               {/* Divider */}
-              <div className="my-2 h-px" style={{ backgroundColor: colors.border }} />
+              <div style={{ margin: '8px 0', height: '1px', backgroundColor: theme === 'dark' ? 'rgba(137, 215, 183, 0.12)' : 'rgba(26, 49, 44, 0.08)' }} />
 
               {/* Logout */}
               <button
@@ -774,8 +830,10 @@ const navigationItems = [
                   handleLogout();
                   setShowAccountMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+                className="w-full flex items-center gap-3 transition-all duration-200"
                 style={{ 
+                  padding: '12px 16px',
+                  borderRadius: DESIGN_SPACING.borderRadius.sm,
                   color: colors.error,
                   fontWeight: TYPOGRAPHY.fontWeight.medium
                 }}

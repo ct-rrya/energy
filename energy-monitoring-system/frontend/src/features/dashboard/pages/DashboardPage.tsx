@@ -216,20 +216,27 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Voltage */}
           <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
             style={{
               backgroundColor: colors.surfaceMuted,
+              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.95';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
+              className="text-xs sm:text-sm font-medium mb-2 uppercase"
+              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
             >
               Voltage
             </div>
             <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: colors.accent }}
+              className="text-2xl sm:text-3xl font-bold tabular-nums"
+              style={{ color: colors.accent, fontVariantNumeric: 'tabular-nums' }}
             >
               {lastReading?.voltage?.toFixed(1) || '0.0'}
               <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>V</span>
@@ -238,20 +245,27 @@ export function DashboardPage() {
 
           {/* Current */}
           <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
             style={{
               backgroundColor: colors.surfaceMuted,
+              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.95';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
+              className="text-xs sm:text-sm font-medium mb-2 uppercase"
+              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
             >
               Current
             </div>
             <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: '#F59E0B' }}
+              className="text-2xl sm:text-3xl font-bold tabular-nums"
+              style={{ color: '#F59E0B', fontVariantNumeric: 'tabular-nums' }}
             >
               {lastReading?.current?.toFixed(2) || '0.00'}
               <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>A</span>
@@ -260,20 +274,27 @@ export function DashboardPage() {
 
           {/* Power */}
           <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
             style={{
               backgroundColor: colors.surfaceMuted,
+              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.95';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
+              className="text-xs sm:text-sm font-medium mb-2 uppercase"
+              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
             >
               Power
             </div>
             <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: '#3B82F6' }}
+              className="text-2xl sm:text-3xl font-bold tabular-nums"
+              style={{ color: '#3B82F6', fontVariantNumeric: 'tabular-nums' }}
             >
               {lastReading?.power?.toFixed(1) || '0.0'}
               <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>W</span>
@@ -282,20 +303,27 @@ export function DashboardPage() {
 
           {/* Energy */}
           <div 
-            className="rounded-3xl p-4 sm:p-6 transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
             style={{
               backgroundColor: colors.surfaceMuted,
+              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.95';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             <div 
-              className="text-xs sm:text-sm font-medium mb-2"
-              style={{ color: colors.textSecondary }}
+              className="text-xs sm:text-sm font-medium mb-2 uppercase"
+              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
             >
               Energy Today
             </div>
             <div 
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: '#F59E0B' }}
+              className="text-2xl sm:text-3xl font-bold tabular-nums"
+              style={{ color: '#F59E0B', fontVariantNumeric: 'tabular-nums' }}
             >
               {metrics?.dailyEnergy?.toFixed(2) || '0.00'}
               <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>kWh</span>
@@ -313,12 +341,10 @@ export function DashboardPage() {
 
         {/* System Status Indicators */}
         <div 
-          className="rounded-3xl p-6 transition-colors duration-300"
+          className="rounded-lg p-6 transition-colors duration-300"
           style={{
             backgroundColor: colors.cardBackground,
-            boxShadow: theme === 'light' 
-              ? '0 4px 20px rgba(0,0,0,0.05)' 
-              : 'none'
+            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
           }}
         >
           <h3 
@@ -431,12 +457,10 @@ export function DashboardPage() {
 
         {/* Featured Power Output Card - Real-time data only, no placeholder sparkline */}
         <div 
-          className="rounded-3xl p-6 transition-all duration-300"
+          className="rounded-lg p-6 transition-all duration-300"
           style={{
             backgroundColor: colors.cardBackground,
-            boxShadow: theme === 'light' 
-              ? '0 8px 30px rgba(0,0,0,0.08)' 
-              : '0 8px 30px rgba(0,0,0,0.4)',
+            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
           }}
         >
           <div className="flex items-start justify-between mb-4">
@@ -456,7 +480,7 @@ export function DashboardPage() {
               </div>
             </div>
             <div 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center"
+              className="w-14 h-14 rounded-lg flex items-center justify-center"
               style={{
                 backgroundColor: colors.surfaceMuted,
                 color: colors.accent
@@ -483,12 +507,10 @@ export function DashboardPage() {
         {/* Task 9.3: Lazy-loaded charts with Suspense boundary for performance */}
         <Suspense fallback={
           <div 
-            className="rounded-3xl p-6 animate-pulse"
+            className="rounded-lg p-6 animate-pulse"
             style={{
               backgroundColor: colors.cardBackground,
-              boxShadow: theme === 'light' 
-                ? '0 8px 30px rgba(0,0,0,0.08)' 
-                : '0 8px 30px rgba(0,0,0,0.4)',
+              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
               height: '400px',
             }}
           >
@@ -512,12 +534,10 @@ export function DashboardPage() {
         {/* Sensor Nodes / Recent Readings Section - Removed hard-coded data */}
         {/* Real sensor data will be displayed when sensors are connected and transmitting */}
         <div 
-          className="rounded-3xl p-6 transition-colors duration-300"
+          className="rounded-lg p-6 transition-colors duration-300"
           style={{
             backgroundColor: colors.cardBackground,
-            boxShadow: theme === 'light' 
-              ? '0 4px 20px rgba(0,0,0,0.05)' 
-              : 'none'
+            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
           }}
         >
           <h3 

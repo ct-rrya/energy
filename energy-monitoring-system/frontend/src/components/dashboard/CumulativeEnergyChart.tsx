@@ -154,8 +154,8 @@ export function CumulativeEnergyChart({
           {/* Define linear gradient for area fill */}
           <defs>
             <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#89D7B7" stopOpacity={0.8} />
-              <stop offset="100%" stopColor="#89D7B7" stopOpacity={0.1} />
+              <stop offset="0%" stopColor="#3DDC97" stopOpacity={0.15} />
+              <stop offset="100%" stopColor="#3DDC97" stopOpacity={0} />
             </linearGradient>
           </defs>
 
@@ -200,10 +200,12 @@ export function CumulativeEnergyChart({
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#89D7B7"
+            stroke="#3DDC97"
             strokeWidth={isMobile ? 2 : 3}
             fill="url(#energyGradient)"
             fillOpacity={1}
+            dot={false}
+            activeDot={{ r: 4 }}
           />
         </AreaChart>
       </ResponsiveContainer>
