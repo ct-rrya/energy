@@ -358,10 +358,14 @@ const navigationItems = [
                   padding: '8px 12px',
                   borderRadius: DESIGN_SPACING.borderRadius.sm,
                   backgroundColor: isAdminUser 
-                    ? colors.accentSubtle
+                    ? 'rgba(57, 255, 136, 0.1)'
                     : 'rgba(168, 85, 247, 0.1)',
-                  color: isAdminUser ? colors.accent : '#C084FC',
-                  border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                  color: isAdminUser 
+                    ? '#39FF88'
+                    : '#C084FC',
+                  border: `1px solid ${isAdminUser 
+                    ? 'rgba(57, 255, 136, 0.3)'
+                    : 'rgba(168, 85, 247, 0.2)'}`,
                   fontWeight: TYPOGRAPHY.fontWeight.semibold,
                   fontSize: TYPOGRAPHY.fontSize.xs
                 }}
@@ -425,7 +429,7 @@ const navigationItems = [
                     <div 
                       className="text-sm font-medium" 
                       style={{ 
-                        color: colors.textSecondary,
+                        color: '#F5F7FA',
                         fontWeight: TYPOGRAPHY.fontWeight.medium 
                       }}
                     >
@@ -434,7 +438,7 @@ const navigationItems = [
                     <div 
                       className="text-xs" 
                       style={{ 
-                        color: colors.textTertiary,
+                        color: '#9CA3AF',
                         fontSize: TYPOGRAPHY.fontSize.xs 
                       }}
                     >
@@ -545,10 +549,14 @@ const navigationItems = [
                 padding: '8px 12px',
                 borderRadius: DESIGN_SPACING.borderRadius.sm,
                 backgroundColor: isAdminUser 
-                  ? colors.accentSubtle
+                  ? 'rgba(57, 255, 136, 0.1)'
                   : 'rgba(168, 85, 247, 0.1)',
-                color: isAdminUser ? colors.accent : '#C084FC',
-                border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                color: isAdminUser 
+                  ? '#39FF88'
+                  : '#C084FC',
+                border: `1px solid ${isAdminUser 
+                  ? 'rgba(57, 255, 136, 0.3)'
+                  : 'rgba(168, 85, 247, 0.2)'}`,
                 fontWeight: TYPOGRAPHY.fontWeight.semibold,
                 fontSize: TYPOGRAPHY.fontSize.xs
               }}
@@ -567,10 +575,14 @@ const navigationItems = [
               style={{
                 borderRadius: DESIGN_SPACING.borderRadius.sm,
                 backgroundColor: isAdminUser 
-                  ? colors.accentSubtle
+                  ? 'rgba(57, 255, 136, 0.1)'
                   : 'rgba(168, 85, 247, 0.1)',
-                color: isAdminUser ? colors.accent : '#C084FC',
-                border: `1px solid ${isAdminUser ? colors.accent + '30' : 'rgba(168, 85, 247, 0.2)'}`,
+                color: isAdminUser 
+                  ? '#39FF88'
+                  : '#C084FC',
+                border: `1px solid ${isAdminUser 
+                  ? 'rgba(57, 255, 136, 0.3)'
+                  : 'rgba(168, 85, 247, 0.2)'}`,
                 fontWeight: TYPOGRAPHY.fontWeight.bold,
                 fontSize: TYPOGRAPHY.fontSize.xs
               }}
@@ -717,7 +729,7 @@ const navigationItems = [
                 <div 
                   className="text-sm font-medium truncate" 
                   style={{ 
-                    color: colors.textPrimary,
+                    color: '#F5F7FA',
                     fontWeight: TYPOGRAPHY.fontWeight.medium
                   }}
                 >
@@ -726,7 +738,7 @@ const navigationItems = [
                 <div 
                   className="text-xs truncate" 
                   style={{ 
-                    color: colors.textSecondary,
+                    color: '#9CA3AF',
                     fontSize: TYPOGRAPHY.fontSize.xs
                   }}
                 >

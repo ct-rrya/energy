@@ -1,7 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/common/Toast';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -126,7 +125,7 @@ export function ReferenceConfigForm() {
           className="text-sm"
           style={{ color: colors.textSecondary }}
         >
-          Set baseline values for diagnostic tests. Contact hardware team for expected values.
+          Configure the reference values used to evaluate EcoStep's energy output.
         </p>
       </div>
 
@@ -210,44 +209,149 @@ export function ReferenceConfigForm() {
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Applied Weight */}
-        <Input
-          id="appliedWeightKg"
-          type="number"
-          step="0.1"
-          label="Applied Weight (kg)"
-          placeholder="70"
-          error={errors.appliedWeightKg?.message}
-          disabled={createMutation.isPending}
-          required
-          {...register('appliedWeightKg', { valueAsNumber: true })}
-        />
+        {/* Horizontal Layout for Form Fields - All inputs perfectly aligned */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ alignItems: 'start' }}>
+          {/* Applied Weight */}
+          <div className="w-full">
+            <label
+              htmlFor="appliedWeightKg"
+              className="mb-2 block text-sm font-medium"
+              style={{ 
+                color: colors.textPrimary,
+                minHeight: '40px', // Fixed height for label area to keep all inputs aligned
+                display: 'flex',
+                alignItems: 'flex-start'
+              }}
+            >
+              Applied Weight (kg)
+              <span className="ml-1" style={{ color: colors.error }}>*</span>
+            </label>
+            <input
+              id="appliedWeightKg"
+              type="number"
+              step="0.1"
+              placeholder="70"
+              disabled={createMutation.isPending}
+              className="w-full rounded-lg border-2 px-4 py-2.5 transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                backgroundColor: colors.inputBackground,
+                color: colors.textPrimary,
+                borderColor: errors.appliedWeightKg ? colors.error : colors.border,
+                height: '44px' // Fixed input height
+              }}
+              {...register('appliedWeightKg', { 
+                valueAsNumber: true,
+                onBlur: (e) => {
+                  e.target.style.borderColor = errors.appliedWeightKg ? colors.error : colors.border;
+                  e.target.style.boxShadow = 'none';
+                }
+              })}
+              onFocus={(e) => {
+                e.target.style.borderColor = errors.appliedWeightKg ? colors.error : colors.accent;
+                e.target.style.boxShadow = `0 0 0 3px ${errors.appliedWeightKg ? colors.error : colors.accent}20`;
+              }}
+            />
+            {errors.appliedWeightKg && (
+              <p className="mt-2 text-sm font-medium" style={{ color: colors.error }} role="alert">
+                {errors.appliedWeightKg.message}
+              </p>
+            )}
+          </div>
 
-        {/* Expected Energy */}
-        <Input
-          id="expectedEnergyWh"
-          type="number"
-          step="0.001"
-          label="Expected Energy (Wh)"
-          placeholder="2.5"
-          error={errors.expectedEnergyWh?.message}
-          disabled={createMutation.isPending}
-          required
-          {...register('expectedEnergyWh', { valueAsNumber: true })}
-        />
+          {/* Expected Energy */}
+          <div className="w-full">
+            <label
+              htmlFor="expectedEnergyWh"
+              className="mb-2 block text-sm font-medium"
+              style={{ 
+                color: colors.textPrimary,
+                minHeight: '40px', // Fixed height for label area to keep all inputs aligned
+                display: 'flex',
+                alignItems: 'flex-start'
+              }}
+            >
+              Expected Energy (Wh)
+              <span className="ml-1" style={{ color: colors.error }}>*</span>
+            </label>
+            <input
+              id="expectedEnergyWh"
+              type="number"
+              step="0.001"
+              placeholder="2.5"
+              disabled={createMutation.isPending}
+              className="w-full rounded-lg border-2 px-4 py-2.5 transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                backgroundColor: colors.inputBackground,
+                color: colors.textPrimary,
+                borderColor: errors.expectedEnergyWh ? colors.error : colors.border,
+                height: '44px' // Fixed input height
+              }}
+              {...register('expectedEnergyWh', { 
+                valueAsNumber: true,
+                onBlur: (e) => {
+                  e.target.style.borderColor = errors.expectedEnergyWh ? colors.error : colors.border;
+                  e.target.style.boxShadow = 'none';
+                }
+              })}
+              onFocus={(e) => {
+                e.target.style.borderColor = errors.expectedEnergyWh ? colors.error : colors.accent;
+                e.target.style.boxShadow = `0 0 0 3px ${errors.expectedEnergyWh ? colors.error : colors.accent}20`;
+              }}
+            />
+            {errors.expectedEnergyWh && (
+              <p className="mt-2 text-sm font-medium" style={{ color: colors.error }} role="alert">
+                {errors.expectedEnergyWh.message}
+              </p>
+            )}
+          </div>
 
-        {/* Tolerance */}
-        <Input
-          id="tolerancePercent"
-          type="number"
-          step="0.1"
-          label="Tolerance (%)"
-          placeholder="10"
-          error={errors.tolerancePercent?.message}
-          disabled={createMutation.isPending}
-          required
-          {...register('tolerancePercent', { valueAsNumber: true })}
-        />
+          {/* Tolerance */}
+          <div className="w-full">
+            <label
+              htmlFor="tolerancePercent"
+              className="mb-2 block text-sm font-medium"
+              style={{ 
+                color: colors.textPrimary,
+                minHeight: '40px', // Fixed height for label area to keep all inputs aligned
+                display: 'flex',
+                alignItems: 'flex-start'
+              }}
+            >
+              Tolerance (%)
+              <span className="ml-1" style={{ color: colors.error }}>*</span>
+            </label>
+            <input
+              id="tolerancePercent"
+              type="number"
+              step="0.1"
+              placeholder="10"
+              disabled={createMutation.isPending}
+              className="w-full rounded-lg border-2 px-4 py-2.5 transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                backgroundColor: colors.inputBackground,
+                color: colors.textPrimary,
+                borderColor: errors.tolerancePercent ? colors.error : colors.border,
+                height: '44px' // Fixed input height
+              }}
+              {...register('tolerancePercent', { 
+                valueAsNumber: true,
+                onBlur: (e) => {
+                  e.target.style.borderColor = errors.tolerancePercent ? colors.error : colors.border;
+                  e.target.style.boxShadow = 'none';
+                }
+              })}
+              onFocus={(e) => {
+                e.target.style.borderColor = errors.tolerancePercent ? colors.error : colors.accent;
+                e.target.style.boxShadow = `0 0 0 3px ${errors.tolerancePercent ? colors.error : colors.accent}20`;
+              }}
+            />
+            {errors.tolerancePercent && (
+              <p className="mt-2 text-sm font-medium" style={{ color: colors.error }} role="alert">
+                {errors.tolerancePercent.message}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Submit Button */}
         <Button

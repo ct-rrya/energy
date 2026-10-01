@@ -1,583 +1,347 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from '@/contexts/ThemeContext';
+﻿
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getUserRole } from '@/lib/permissions';
-import { 
-  Zap, 
-  Activity,
-  ChevronDown,
-  Bell
-} from 'lucide-react';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
-import { StepActivityCard } from '../components/StepActivityCard';
-import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
-
-// Task 9.3: Lazy load ChartsLayoutContainer for performance optimization
-const ChartsLayoutContainer = lazy(() => import('../components/ChartsLayoutContainer').then(module => ({ default: module.ChartsLayoutContainer })));
+import { DashboardHeader } from '../components/DashboardHeader';
+import { HeroEnergyCard } from '../components/HeroEnergyCard';
+import { MetricCard } from '../components/MetricCard';
+import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
+import { validateSensorData } from '../utils/validateSensorData';
+import { useEffect, useState } from 'react';
+import type { SensorReading } from '../types/dashboard.types';
 
 /**
- * EcoStep Dashboard Page - Redesigned
- * Clean, consolidated layout with strong visual hierarchy
+ * EcoStep Dashboard Page - Hero Energy Dashboard Redesign
+ * 
+ * Real-time monitoring dashboard with hero-focused layout.
+ * Energy output (kWh) is the primary KPI displayed prominently in a large hero card.
+ * 
+ * Layout Structure (Requirements 1.1-1.7, 13.1-13.6):
+ * - Header: Title, subtitle, date/time, system status badge
+ * - Hero Section (60-65% width): Large energy card with trend, mini graph, and AI insight
+ * - Metrics Column (35-40% width): Four stacked metric cards (Voltage, Power, Current, Steps)
+ * - Desktop: Side-by-side layout with 24px gap
+ * - Tablet: Metrics in 2x2 grid below hero
+ * - Mobile: Fully stacked vertical layout
+ * 
+ * Visual Hierarchy (Requirements 3.1-3.2, 12.7):
+ * - Hero card is approximately 2x larger than any individual metric card
+ * - Typography size differences establish hierarchy
+ * - Clean, data-first design without gradients or glowing effects
+ * 
+ * Data Handling:
+ * - Real-time sensor data via WebSocket (Requirements 16.1-16.10)
+ * - Daily energy metrics via REST API (Requirements 17.1-17.7)
+ * - Last-known-good data caching for fallback (Requirements 19.2-19.6)
+ * - Data validation before rendering (Requirements 16.7-16.10, 17.6)
+ * 
+ * Requirements: 1.1-1.7, 2.1-2.9, 3.1-3.8, 4.1-4.7, 7.1-7.7, 8.1-8.9, 9.1-9.9, 
+ *               10.1-10.9, 11.1-11.10, 12.1-12.9, 13.1-13.6, 
+ *               16.1-16.10, 17.1-17.7, 19.2-19.6, 20.1-20.8
  */
-export function DashboardPage() {
-  const { theme } = useTheme();
+function DashboardPageContent() {
   const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
+  const { theme } = useTheme();
   
-  // Determine user role
+  // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
 
-  // Fetch dashboard data
-  const {
-    data: metrics,
+  // Fetch dashboard data with error and loading states (Requirements 16.1-16.3, 17.1-17.5)
+  const { 
+    data: metrics, 
+    isLoading: metricsLoading, 
+    isError: metricsError,
+    refetch: refetchMetrics,
   } = useDashboardMetrics();
-
-  const {
+  
+  const { 
     data: systemStatus,
   } = useSystemHealth();
-
-  const { lastReading } = useLiveSensorData();
-
-  // Filter dropdown state (persisted)
-  const [selectedFilter, setSelectedFilter] = useState(() => {
-    return localStorage.getItem('dashboard-filter') || 'all';
-  });
   
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { lastReading, isConnected: isWebSocketConnected } = useLiveSensorData();
 
-  // Persist filter selection
+  // Last known good data cache for fallback (Requirements 19.2, 19.5)
+  const [lastGoodReading, setLastGoodReading] = useState<SensorReading | undefined>(undefined);
+  const [lastGoodMetrics, setLastGoodMetrics] = useState<typeof metrics>(undefined);
+
+  // Update cache when new valid data arrives (Requirements 19.4, 19.6)
   useEffect(() => {
-    localStorage.setItem('dashboard-filter', selectedFilter);
-  }, [selectedFilter]);
+    if (lastReading) {
+      const validationResult = validateSensorData(lastReading);
+      if (validationResult.isValid) {
+        setLastGoodReading(lastReading);
+      } else {
+        console.warn('[Dashboard] Sensor reading validation failed:', validationResult.errors);
+      }
+    }
+  }, [lastReading]);
 
-  // Use centralized theme colors
-  const colors = getThemeColors(theme);
+  useEffect(() => {
+    if (metrics && validateMetrics(metrics)) {
+      setLastGoodMetrics(metrics);
+    }
+  }, [metrics]);
 
-  // Filter options for the compact dropdown
-  const filterOptions = [
-    { value: 'all', label: 'All Metrics' },
-    { value: 'power', label: 'Power & Energy' },
-    { value: 'electrical', label: 'Voltage & Current' },
-    { value: 'sensors', label: 'Sensor Status' },
-    { value: 'alerts', label: 'Alerts & Issues' },
-  ];
+  // Metrics validation function (Requirement 17.6)
+  const validateMetrics = (data: typeof metrics): boolean => {
+    if (!data) return false;
+    
+    // Validate dailyEnergy is reasonable (0-1000 kWh)
+    if (data.dailyEnergy !== undefined && (data.dailyEnergy < 0 || data.dailyEnergy > 1000)) {
+      console.warn('[Dashboard] Invalid daily energy value:', data.dailyEnergy);
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Use cached data as fallback when validation fails (Requirements 19.2, 19.6)
+  const displayReading = (() => {
+    if (lastReading) {
+      const validationResult = validateSensorData(lastReading);
+      if (validationResult.isValid) {
+        return lastReading;
+      }
+    }
+    return lastGoodReading;
+  })();
+  
+  const displayMetrics = metrics && validateMetrics(metrics)
+    ? metrics
+    : lastGoodMetrics;
+
+  // Determine system status for header (Requirements 2.6-2.9)
+  const getSystemStatus = (): 'connected' | 'disconnected' | 'unknown' => {
+    if (systemStatus?.database === 'connected') return 'connected';
+    if (systemStatus?.database === 'disconnected') return 'disconnected';
+    return 'unknown';
+  };
+
+  // Show loading state when initial data is loading (Requirement 17.3)
+  const isInitialLoading = metricsLoading && !lastGoodMetrics;
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div 
+      className="min-h-screen transition-colors duration-300"
+      style={{
+        backgroundColor: theme === 'dark' ? '#0B132B' : '#F5F7FA',
+        padding: '16px 24px', // Page padding (Requirements 1.7)
+      }}
+    >
+      <div 
+        className="max-w-[1600px] mx-auto"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px', // Reduced section gap for compact layout (Requirements 1.7)
+        }}
+      >
         
-        {/* Public User Banner */}
-        {isPublicUser && (
-          <PublicUserBanner />
-        )}
+        {/* Public User Banner - Conditionally rendered (Requirements 18.3) */}
+        {isPublicUser && <PublicUserBanner />}
         
-        {/* Header Section with Status Indicator */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 
-              className="text-2xl sm:text-3xl font-bold mb-2"
-              style={{ 
-                color: colors.textPrimary,
-                fontWeight: TYPOGRAPHY.fontWeight.bold
-              }}
-            >
-              EcoStep Central
-            </h1>
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: systemStatus?.database === 'connected' ? colors.success : colors.error }}
-              />
-              <p 
-                className="text-sm sm:text-base"
-                style={{ 
-                  color: colors.textSecondary,
-                  fontSize: TYPOGRAPHY.fontSize.sm
-                }}
-              >
-                Real-time energy, activity, and system monitoring
-              </p>
-            </div>
-          </div>
+        {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
+        <DashboardHeader
+          title="EcoStep Central"
+          subtitle="Real-time monitoring of piezoelectric energy harvesting system"
+          systemStatus={getSystemStatus()}
+          isPublicUser={isPublicUser}
+          isWebSocketConnected={isWebSocketConnected}
+        />
 
-          {/* Quick Actions - Alerts button only */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/alerts')}
-              disabled={isPublicUser}
-              aria-label="View alerts (3 unread)"
-              className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg flex items-center gap-2 transition-colors duration-200 relative"
-              style={{
-                backgroundColor: colors.cardBackground,
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-                opacity: isPublicUser ? 0.5 : 1,
-                cursor: isPublicUser ? 'not-allowed' : 'pointer',
-                pointerEvents: isPublicUser ? 'none' : 'auto',
-                fontWeight: TYPOGRAPHY.fontWeight.medium
-              }}
-              onMouseEnter={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.hoverBackground;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isPublicUser) {
-                  e.currentTarget.style.backgroundColor = colors.cardBackground;
-                }
-              }}
-              aria-disabled={isPublicUser}
-            >
-              <Bell className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="text-sm font-medium hidden sm:inline">Alerts</span>
-              {/* Only show notification badge for admin users */}
-              {!isPublicUser && (
-                <div 
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                  style={{ backgroundColor: colors.error }}
-                >
-                  3
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Compact Filter Bar */}
-        <div className="relative">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="w-full sm:w-auto min-w-[240px] px-4 py-3 rounded-lg flex items-center justify-between gap-3 transition-colors duration-200"
-            style={{
-              backgroundColor: colors.cardBackground,
-              border: `1px solid ${colors.border}`,
-              color: colors.textPrimary,
-              fontWeight: TYPOGRAPHY.fontWeight.medium
-            }}
-          >
-            <span className="text-sm font-medium">
-              {filterOptions.find(opt => opt.value === selectedFilter)?.label}
-            </span>
-            <ChevronDown 
-              className="w-4 h-4 transition-transform duration-200"
-              style={{ 
-                transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                color: colors.textSecondary
-              }}
-            />
-          </button>
-
-          {/* Dropdown Menu */}
-          {isFilterOpen && (
-            <div 
-              className="absolute top-full mt-2 w-full sm:w-auto min-w-[240px] rounded-lg overflow-hidden z-10"
-              style={{
-                backgroundColor: colors.elevatedBackground,
-                border: `1px solid ${colors.border}`,
-                boxShadow: colors.shadowLg
-              }}
-            >
-              {filterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    setSelectedFilter(option.value);
-                    setIsFilterOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm transition-colors duration-150"
-                  style={{
-                    color: selectedFilter === option.value ? colors.accent : colors.textPrimary,
-                    backgroundColor: selectedFilter === option.value ? (colors.surfaceMuted) : 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedFilter !== option.value) {
-                      e.currentTarget.style.backgroundColor = colors.hoverBackground;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedFilter !== option.value) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Primary Metrics - 4 Chips in a row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Voltage */}
-          <div 
-            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
-            style={{
-              backgroundColor: colors.surfaceMuted,
-              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.95';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2 uppercase"
-              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
-            >
-              Voltage
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold tabular-nums"
-              style={{ color: colors.accent, fontVariantNumeric: 'tabular-nums' }}
-            >
-              {lastReading?.voltage?.toFixed(1) || '0.0'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>V</span>
-            </div>
-          </div>
-
-          {/* Current */}
-          <div 
-            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
-            style={{
-              backgroundColor: colors.surfaceMuted,
-              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.95';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2 uppercase"
-              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
-            >
-              Current
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold tabular-nums"
-              style={{ color: '#F59E0B', fontVariantNumeric: 'tabular-nums' }}
-            >
-              {lastReading?.current?.toFixed(2) || '0.00'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>A</span>
-            </div>
-          </div>
-
-          {/* Power */}
-          <div 
-            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
-            style={{
-              backgroundColor: colors.surfaceMuted,
-              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.95';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2 uppercase"
-              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
-            >
-              Power
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold tabular-nums"
-              style={{ color: '#3B82F6', fontVariantNumeric: 'tabular-nums' }}
-            >
-              {lastReading?.power?.toFixed(1) || '0.0'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>W</span>
-            </div>
-          </div>
-
-          {/* Energy */}
-          <div 
-            className="rounded-lg p-4 sm:p-6 transition-opacity duration-200"
-            style={{
-              backgroundColor: colors.surfaceMuted,
-              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.95';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1';
-            }}
-          >
-            <div 
-              className="text-xs sm:text-sm font-medium mb-2 uppercase"
-              style={{ color: colors.textSecondary, letterSpacing: '0.05em' }}
-            >
-              Energy Today
-            </div>
-            <div 
-              className="text-2xl sm:text-3xl font-bold tabular-nums"
-              style={{ color: '#F59E0B', fontVariantNumeric: 'tabular-nums' }}
-            >
-              {metrics?.dailyEnergy?.toFixed(2) || '0.00'}
-              <span className="text-base sm:text-lg ml-1" style={{ color: colors.textSecondary }}>kWh</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Step Activity Card - Supporting Metric */}
-        <div className="max-w-md">
-          <StepActivityCard 
-            stepCount={lastReading?.stepCount}
-            hasData={!!lastReading}
-          />
-        </div>
-
-        {/* System Status Indicators */}
-        <div 
-          className="rounded-lg p-6 transition-colors duration-300"
-          style={{
-            backgroundColor: colors.cardBackground,
-            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-          }}
-        >
-          <h3 
-            className="text-lg font-semibold mb-4"
-            style={{ color: colors.textPrimary }}
-          >
-            System Status
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Wi-Fi Status */}
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ 
-                  backgroundColor: lastReading?.wifiConnected === true 
-                    ? colors.accent 
-                    : lastReading?.wifiConnected === false 
-                    ? '#EF4444' 
-                    : colors.textSecondary 
-                }}
-              />
-              <div className="flex-1">
-                <p 
-                  className="text-sm font-medium"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Wi-Fi
-                </p>
-                <p 
-                  className="text-xs"
-                  style={{ color: colors.textSecondary }}
-                >
-                  {lastReading?.wifiConnected === true 
-                    ? 'Connected' 
-                    : lastReading?.wifiConnected === false 
-                    ? 'Disconnected' 
-                    : 'Unknown'}
-                </p>
-              </div>
-            </div>
-
-            {/* Bluetooth Status */}
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ 
-                  backgroundColor: lastReading?.bluetoothConnected === true 
-                    ? colors.accent 
-                    : lastReading?.bluetoothConnected === false 
-                    ? '#EF4444' 
-                    : colors.textSecondary 
-                }}
-              />
-              <div className="flex-1">
-                <p 
-                  className="text-sm font-medium"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Bluetooth
-                </p>
-                <p 
-                  className="text-xs"
-                  style={{ color: colors.textSecondary }}
-                >
-                  {lastReading?.bluetoothConnected === true 
-                    ? 'Connected' 
-                    : lastReading?.bluetoothConnected === false 
-                    ? 'Disconnected' 
-                    : 'Unknown'}
-                </p>
-              </div>
-            </div>
-
-            {/* Data Transfer Status */}
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
-                style={{ 
-                  backgroundColor: lastReading 
-                    ? colors.accent 
-                    : colors.textSecondary 
-                }}
-              />
-              <div className="flex-1">
-                <p 
-                  className="text-sm font-medium"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Data Transfer
-                </p>
-                <p 
-                  className="text-xs"
-                  style={{ color: colors.textSecondary }}
-                >
-                  {lastReading ? 'Receiving' : 'Waiting for Data'}
-                </p>
-                {lastReading?.timestamp && (
-                  <p 
-                    className="text-xs mt-0.5"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Last: {new Date(lastReading.timestamp).toLocaleTimeString()}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Featured Power Output Card - Real-time data only, no placeholder sparkline */}
-        <div 
-          className="rounded-lg p-6 transition-all duration-300"
-          style={{
-            backgroundColor: colors.cardBackground,
-            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-          }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 
-                className="text-sm font-medium mb-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Live Power Output
-              </h3>
-              <div 
-                className="text-5xl font-bold"
-                style={{ color: colors.accent }}
-              >
-                {lastReading?.power?.toFixed(1) || '0.0'}
-                <span className="text-2xl ml-2" style={{ color: colors.textSecondary }}>Watts</span>
-              </div>
-            </div>
-            <div 
-              className="w-14 h-14 rounded-lg flex items-center justify-center"
-              style={{
-                backgroundColor: colors.surfaceMuted,
-                color: colors.accent
-              }}
-            >
-              <Zap className="w-7 h-7" strokeWidth={2} />
-            </div>
-          </div>
+        {/* Hero Layout: Hero Card (left) + Metrics Column (right) */}
+        {/* Requirements 1.3-1.7, 13.1-13.6, 14.1-14.6 */}
+        
+        {/* Global responsive layout styles */}
+        <style>{`
+          /* Mobile: Stacked layout (default) - Requirements 15.1-15.6 */
+          /* Requirement 15.1: Stack all components vertically */
+          /* Requirement 15.4: Apply 16px vertical spacing between all components */
+          .dashboard-hero-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* Requirement 15.4: 16px vertical gap */
+          }
           
-          {/* Sparkline removed - placeholder data removed per requirements 11.6, 11.7 */}
-          {!lastReading && (
-            <div className="h-20 flex items-center justify-center">
-              <p 
-                className="text-sm"
-                style={{ color: colors.textSecondary }}
-              >
-                Waiting for sensor data
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Charts Section - Full Width Analytics */}
-        {/* Task 9.3: Lazy-loaded charts with Suspense boundary for performance */}
-        <Suspense fallback={
-          <div 
-            className="rounded-lg p-6 animate-pulse"
-            style={{
-              backgroundColor: colors.cardBackground,
-              border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-              height: '400px',
-            }}
-          >
-            <div 
-              className="h-6 w-48 rounded mb-2"
-              style={{ backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37' }}
-            />
-            <div 
-              className="h-4 w-64 rounded mb-6"
-              style={{ backgroundColor: theme === 'light' ? '#E5E7EB' : '#2A2E37' }}
-            />
-            <div 
-              className="h-64 rounded-xl"
-              style={{ backgroundColor: theme === 'light' ? '#F9FAFB' : '#12141A' }}
+          /* Requirement 15.3: Render hero card at full width */
+          .dashboard-hero-section {
+            width: 100%;
+          }
+          
+          /* Requirement 15.2: Display metrics in order: Voltage, Power, Current, Steps */
+          /* Requirement 15.3: Render each metric card at full width */
+          /* Requirement 15.4: Apply 16px vertical spacing between components */
+          .dashboard-metrics-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* Requirement 15.4: 16px vertical gap */
+          }
+          
+          /* Tablet: Hero full width above, metrics in 2x2 grid below */
+          /* Requirements 14.1-14.6: 768px - 1023px breakpoint */
+          @media (min-width: 768px) and (max-width: 1023px) {
+            .dashboard-hero-layout {
+              display: flex;
+              flex-direction: column;
+              gap: 24px; /* Requirement 14.1: Hero above, metrics below */
+            }
+            
+            .dashboard-hero-section {
+              width: 100%; /* Requirement 14.1: Hero full width */
+            }
+            
+            .dashboard-metrics-section {
+              width: 100%;
+              display: grid;
+              grid-template-columns: repeat(2, 1fr); /* Requirement 14.2: 2x2 grid */
+              grid-template-rows: repeat(2, 1fr);
+              gap: 16px; /* Requirement 14.5: 16px grid gap */
+            }
+            
+            /* Requirement 14.3: Voltage in position 1 (row 1, col 1) */
+            .metric-voltage {
+              grid-row: 1;
+              grid-column: 1;
+            }
+            
+            /* Requirement 14.3: Power in position 2 (row 1, col 2) */
+            .metric-power {
+              grid-row: 1;
+              grid-column: 2;
+            }
+            
+            /* Requirement 14.4: Current in position 3 (row 2, col 1) */
+            .metric-current {
+              grid-row: 2;
+              grid-column: 1;
+            }
+            
+            /* Requirement 14.4: Steps in position 4 (row 2, col 2) */
+            .metric-steps {
+              grid-row: 2;
+              grid-column: 2;
+            }
+          }
+          
+          /* Desktop: Side-by-side layout */
+          /* Requirements 13.1-13.6: 1024px and above */
+          @media (min-width: 1024px) {
+            .dashboard-hero-layout {
+              display: flex;
+              flex-direction: row;
+              gap: 24px; /* Requirement 1.7: 24px horizontal spacing */
+            }
+            
+            .dashboard-hero-section {
+              width: 62%; /* Requirement 1.3: 60-65% width */
+              flex-basis: 62%;
+              flex-grow: 0;
+              flex-shrink: 1;
+            }
+            
+            .dashboard-metrics-section {
+              width: 38%; /* Requirement 1.4-1.5: 35-40% width */
+              flex-basis: 38%;
+              flex-grow: 0;
+              flex-shrink: 1;
+              display: flex;
+              flex-direction: column;
+              gap: 16px; /* Requirement 7.3: 16px vertical spacing */
+            }
+          }
+        `}</style>
+        
+        <div className="dashboard-hero-layout">
+          
+          {/* Hero Energy Card - Full width on mobile/tablet, 60-65% on desktop */}
+          <div className="dashboard-hero-section">
+            <HeroEnergyCard
+              energyValue={displayMetrics?.dailyEnergy}
+              previousDayEnergy={undefined}
+              trendData={[]}
+              aiInsight={undefined}
+              isLoading={isInitialLoading}
+              isError={metricsError}
+              onRetry={refetchMetrics}
             />
           </div>
-        }>
-          <ChartsLayoutContainer />
-        </Suspense>
 
-        {/* Sensor Nodes / Recent Readings Section - Removed hard-coded data */}
-        {/* Real sensor data will be displayed when sensors are connected and transmitting */}
-        <div 
-          className="rounded-lg p-6 transition-colors duration-300"
-          style={{
-            backgroundColor: colors.cardBackground,
-            border: `1px solid ${theme === 'light' ? 'rgba(26, 49, 44, 0.08)' : 'rgba(137, 215, 183, 0.12)'}`,
-          }}
-        >
-          <h3 
-            className="text-lg font-semibold mb-4"
-            style={{ color: colors.textPrimary }}
-          >
-            Sensor Nodes
-          </h3>
-
-          {/* Empty state for sensor nodes */}
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{
-                backgroundColor: theme === 'light' ? 'rgba(26, 49, 44, 0.06)' : 'rgba(255, 255, 255, 0.06)'
-              }}
-            >
-              <Activity 
-                className="w-8 h-8"
-                style={{
-                  color: theme === 'light' ? 'rgba(26, 49, 44, 0.4)' : 'rgba(255, 255, 255, 0.3)'
-                }}
+          {/* Metrics Section - Stacked on mobile, 2x2 grid on tablet, column on desktop */}
+          <div className="dashboard-metrics-section">
+            
+            {/* Voltage Metric Card (Requirements 8.1-8.9) */}
+            {/* Requirement 14.3: Row 1, Column 1 on tablet */}
+            <div className="metric-voltage">
+              <MetricCard
+                label="Voltage"
+                value={displayReading?.voltage}
+                unit="V"
+                precision={1}
+                color="accent"
               />
             </div>
-            <p 
-              className="text-sm font-medium mb-2"
-              style={{ color: colors.textPrimary }}
-            >
-              No sensor data available
-            </p>
-            <p 
-              className="text-xs text-center max-w-sm"
-              style={{ color: colors.textSecondary }}
-            >
-              Waiting for sensor data. Connect ESP32 sensors to view real-time node status and readings.
-            </p>
+
+            {/* Power Metric Card (Requirements 9.1-9.9) */}
+            {/* Requirement 14.3: Row 1, Column 2 on tablet */}
+            <div className="metric-power">
+              <MetricCard
+                label="Power"
+                value={displayReading?.power}
+                unit="W"
+                precision={1}
+                color="amber"
+              />
+            </div>
+
+            {/* Current Metric Card (Requirements 10.1-10.9) */}
+            {/* Requirement 14.4: Row 2, Column 1 on tablet */}
+            <div className="metric-current">
+              <MetricCard
+                label="Current"
+                value={displayReading?.current}
+                unit="A"
+                precision={2}
+                color="blue"
+              />
+            </div>
+
+            {/* Step Count Metric Card (Requirements 11.1-11.10) */}
+            {/* Requirement 14.4: Row 2, Column 2 on tablet */}
+            <div className="metric-steps">
+              <MetricCard
+                label="Steps Today"
+                value={displayReading?.stepCount}
+                unit=""
+                precision={0}
+                color="accent"
+                
+              />
+            </div>
+
           </div>
+
         </div>
 
       </div>
     </div>
+  );
+}
+
+/**
+ * Dashboard Page with Error Boundary
+ * Wraps DashboardPageContent with error boundary for error handling
+ * Requirements: 19.1 - Error boundary at page level
+ */
+export function DashboardPage() {
+  return (
+    <DashboardErrorBoundary onReset={() => window.location.reload()}>
+      <DashboardPageContent />
+    </DashboardErrorBoundary>
   );
 }

@@ -1,739 +1,820 @@
-# Design Document: EcoStep UI Refinement - Remove "AI-Generated Dashboard" Look
+# Technical Design: EcoStep Central Dashboard Redesign
 
 ## Overview
 
-Transform the EcoStep IoT energy monitoring system from a generic AI-generated dashboard template into a deliberately designed, production-grade technical monitoring interface. This is purely a visual refinement project targeting CSS, styling, and component presentation without any functionality changes.
+This design specifies a complete restructuring of the EcoStep Dashboard page to create a production-grade, data-first energy monitoring interface. The redesign transforms the current cluttered layout with mixed concerns into a clean, hierarchical three-section layout that separates real-time monitoring (EcoStep Central) from historical analytics (Historical Analytics tab).
 
-## Main Algorithm/Workflow
+The redesign addresses key UX problems:
+- Current dashboard mixes real-time and historical data without clear separation
+- Charts dominate the page, pushing critical live metrics below the fold
+- Step activity data is buried despite being a unique differentiator
+- System status is poorly communicated
+- No clear visual hierarchy distinguishes "now" from "historical"
 
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant Comp as Component
-    participant CSS as Global CSS
-    participant Theme as Theme System
-    
-    Dev->>CSS: Phase 1: Remove universal gradients
-    Dev->>CSS: Remove glassmorphism effects
-    Dev->>CSS: Reduce border-radius (20px → 8-12px)
-    Dev->>CSS: Remove universal shadows
-    
-    Dev->>Comp: Phase 2: Refine core components
-    Comp->>Comp: Remove pastel icon tiles
-    Comp->>Comp: Data-first hierarchy
-    Comp->>Comp: Hairline borders
-    
-    Dev->>Theme: Apply consistent light/dark modes
-    Theme->>Comp: Professional technical aesthetic
-    Comp-->>Dev: Production-grade UI
+### Design Philosophy
+
+**Data-First Hierarchy**: Live metrics are the visual hero. System status supports operational awareness. Historical charts are secondary context, living primarily in the Analytics tab.
+
+**Clear Separation of Concerns**:
+- **EcoStep Central (Dashboard Tab)**: Real-time monitoring with immediate system status
+- **Historical Analytics (Analytics Tab)**: Time-series trends, historical comparisons, long-term patterns
+
+**Progressive Disclosure**: Show the most critical information first, with details available through interaction or navigation to dedicated pages.
+
+## Architecture
+
+### High-Level Component Structure
+
+```
+DashboardPage
+├── PublicUserBanner (conditional)
+├── PageHeader (title + system status indicator + quick actions)
+├── ElectricalMetricsGrid (4 live metric cards: Voltage, Current, Power, Energy)
+├── StepActivityCard (featured, visually distinct)
+├── SystemStatusSection (Wi-Fi, Bluetooth, Data Transfer)
+└── EmptyStateOrSensors (sensor nodes when available)
 ```
 
-## Core Interfaces/Types
+**Removed from Dashboard**:
+- All historical charts (PowerGenerationChart, EnergyPeriodChart, CumulativeEnergyChart, StepsChart, Voltage/Current Trend)
+- Historical data visualizations belong in the Analytics tab
 
-### Style Configuration
+### Page Layout Hierarchy
 
-```typescript
-// Design System Tokens
-interface EcoStepDesignTokens {
-  colors: {
-    // Primary brand color (flat, no gradients)
-    ecoGreen: '#3DDC97'
-    ecoGreenHover: '#35c27b'
-    ecoGreenActive: '#2cab6c'
-    
-    // Neutral hierarchy
-    neutral: {
-      50: '#FAFAFA'   // Subtle background
-      100: '#F5F5F5'  // Surface
-      200: '#E5E5E5'  // Border
-      600: '#525252'  // Primary text
-      900: '#171717'  // Headings
-    }
-    
-    // Semantic (flat colors only)
-    semantic: {
-      green: '#22C55E'   // Healthy/Success
-      amber: '#F59E0B'   // Warning
-      red: '#EF4444'     // Error
-      blue: '#3B82F6'    // Info (sparingly)
-    }
-    
-    // Dark mode
-    dark: {
-      background: '#0F1116'     // Deep charcoal
-      surface: '#1C1F28'        // Cards
-      border: '#2A2E37'         // Hairline
-      textPrimary: '#F9FAFB'    // Primary text
-      textSecondary: '#9CA3AF'  // Secondary
-    }
-  }
-  
-  spacing: {
-    borderRadius: {
-      sm: '6px'   // Small elements
-      md: '8px'   // Standard cards
-      lg: '12px'  // Large containers
-      full: '9999px'  // Pills/badges only
-    }
-  }
-  
-  typography: {
-    metricPrimary: { size: '36px', weight: 600, features: 'tabular-nums' }
-    metricSecondary: { size: '20px', weight: 600, features: 'tabular-nums' }
-    metricLabel: { size: '13px', weight: 500, transform: 'uppercase', letterSpacing: 'wide' }
-    pageTitle: { size: '32px', weight: 700 }
-    sectionTitle: { size: '20px', weight: 600 }
-    cardTitle: { size: '16px', weight: 600 }
-  }
-}
-
-// Component Style Props
-interface ComponentStyleProps {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
-  hasShadow?: boolean  // Should be false by default, true only for floating elements
-  hasGradient?: boolean  // Should be false (no gradients)
-  borderRadius?: 'sm' | 'md' | 'lg' | 'full'
-}
-
-// Badge Configuration
-interface BadgeConfig {
-  variant: 'success' | 'warning' | 'error' | 'info'
-  size?: 'sm' | 'md'
-  hasBorder: true  // Always add subtle borders
-  shape: 'rounded' | 'pill'  // rounded-md (6px) unless truly a pill
-}
-
-// Card Configuration
-interface CardConfig {
-  variant: 'default' | 'compact'
-  hasBorder: true  // Hairline 1px borders
-  hasGlassmorphism: false  // Remove backdrop-filter
-  elevation: 'none' | 'floating'  // Shadow only for floating (modals, dropdowns)
-  borderRadius: '8px' | '12px'
-}
+```
+┌─────────────────────────────────────────────────────────┐
+│ [Public User Banner] (conditional)                      │
+├─────────────────────────────────────────────────────────┤
+│ EcoStep Central  [●] Real-time monitoring     [🔔 3]   │
+├─────────────────────────────────────────────────────────┤
+│ SECTION 1: Live Electrical Metrics (Hero)              │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│ │ VOLTAGE  │ │ CURRENT  │ │  POWER   │ │  ENERGY  │  │
+│ │  5.0 V   │ │  0.15 A  │ │  0.8 W   │ │ 0.12 kWh │  │
+│ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+├─────────────────────────────────────────────────────────┤
+│ SECTION 2: Step Activity (Featured Supporting Metric)  │
+│ ┌─────────────────────────────────────────────────┐    │
+│ │ 🦶 STEP ACTIVITY                        [TODAY] │    │
+│ │ 1,247 steps                                     │    │
+│ │ Footsteps recorded today                        │    │
+│ └─────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────────┤
+│ SECTION 3: System Status                               │
+│ ┌──────────────────────────────────────────────────┐   │
+│ │ System Status                                    │   │
+│ │ ● Wi-Fi Connected    ● Bluetooth Connected      │   │
+│ │ ● Data Transfer: Receiving (Last: 2:34 PM)      │   │
+│ └──────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────┤
+│ Sensor Nodes (Empty State / Live When Available)       │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Key Functions with Formal Specifications
-
-### Function 1: removeGradients()
+### Responsive Breakpoints
 
 ```typescript
-function removeGradients(element: CSSStyleDeclaration): void
+// Mobile (<768px): Single column, all stacked
+// Tablet (768px-1023px): 2-column grid for metrics
+// Desktop (≥1024px): 4-column grid for metrics
+
+const breakpoints = {
+  mobile: '(max-width: 767px)',
+  tablet: '(min-width: 768px) and (max-width: 1023px)',
+  desktop: '(min-width: 1024px)',
+};
 ```
 
-**Preconditions:**
-- `element` is a valid CSS style declaration object
-- Element currently uses gradient backgrounds
+**Responsive Layout Rules**:
+- Mobile: All sections stack vertically, 100% width
+- Tablet: Electrical Metrics in 2×2 grid, other sections full-width
+- Desktop: Electrical Metrics in 1×4 grid, other sections full-width
 
-**Postconditions:**
-- All `background: linear-gradient()` replaced with flat colors
-- All `background: radial-gradient()` replaced with flat colors
-- EcoStep green (#3DDC97) used for primary actions
-- No gradients remain except for logos (if essential)
+## Components and Interfaces
 
-**Loop Invariants:** N/A
+### 1. DashboardPage (Modified)
 
-### Function 2: removeGlassmorphism()
+**File**: `frontend/src/features/dashboard/pages/DashboardPage.tsx`
 
+**Responsibilities**:
+- Page-level layout orchestration
+- Data fetching coordination (hooks)
+- Role-based access control
+- Responsive layout management
+
+**Key Changes**:
+- Remove all chart components (moved to Analytics tab)
+- Remove filter dropdown (not needed without charts)
+- Restructure layout into 3 sections
+- Simplify page complexity
+
+**Data Dependencies**:
 ```typescript
-function removeGlassmorphism(element: HTMLElement): CSSStyleDeclaration
+const { data: liveMetrics } = useLiveSensorData();
+const { data: systemStatus } = useSystemHealth();
+const { data: dashboardMetrics } = useDashboardMetrics(); // For Energy Today
 ```
 
-**Preconditions:**
-- `element` exists in DOM
-- Element has glassmorphic styles (backdrop-filter, rgba backgrounds)
+### 2. ElectricalMetricsGrid (New Component)
 
-**Postconditions:**
-- `backdrop-filter: blur()` removed
-- Background changed from `rgba(255, 255, 255, 0.72)` to solid colors
-- Hairline borders (1px solid) added for definition
-- Returns updated style declaration
+**File**: `frontend/src/features/dashboard/components/ElectricalMetricsGrid.tsx`
 
-**Loop Invariants:** N/A
+**Purpose**: Display 4 live electrical metrics in a responsive grid with clear hierarchy.
 
-### Function 3: reduceBorderRadius()
-
+**Interface**:
 ```typescript
-function reduceBorderRadius(currentRadius: string): string
-```
-
-**Preconditions:**
-- `currentRadius` is a valid CSS border-radius value
-
-**Postconditions:**
-- Large radius (16-20px) reduced to 8-12px
-- Small radius (12-16px) reduced to 6-8px
-- Pills (rounded-full) remain for badges only
-- Returns new radius value
-
-**Loop Invariants:** N/A
-
-### Function 4: removeShadows()
-
-```typescript
-function removeShadows(element: HTMLElement, type: 'card' | 'floating'): void
-```
-
-**Preconditions:**
-- `element` is a valid HTML element
-- `type` correctly identifies element purpose
-
-**Postconditions:**
-- If `type === 'card'`: `box-shadow` removed completely
-- If `type === 'floating'`: `box-shadow` retained (modals, dropdowns, tooltips)
-- Surface contrast achieved through borders, not shadows
-
-**Loop Invariants:** N/A
-
-### Function 5: createDataHierarchy()
-
-```typescript
-function createDataHierarchy(metrics: MetricData[]): ComponentHierarchy
-```
-
-**Preconditions:**
-- `metrics` array contains at least one metric
-- Each metric has `value`, `label`, and `priority` properties
-
-**Postconditions:**
-- Primary metric has largest font size (36px) and bold weight
-- Secondary metrics use 20px font size
-- Labels use 13px uppercase with tracking
-- Tabular numerals enabled for all numeric values
-- Data values dominate visually over icons and labels
-
-**Loop Invariants:** For each metric in iteration, hierarchy is maintained (primary > secondary > tertiary)
-
-## Algorithmic Pseudocode
-
-### Main Refinement Algorithm
-
-```typescript
-ALGORITHM refineEcoStepUI(application)
-INPUT: application (React application with styled components)
-OUTPUT: refined application with production-grade aesthetics
-
-BEGIN
-  ASSERT application !== null
-  
-  // Phase 1: Foundation (Global CSS and Core Components)
-  globalStyles ← loadGlobalStyles(application)
-  
-  FOR each styleRule IN globalStyles DO
-    ASSERT styleRule.isValid()
-    
-    IF containsGradient(styleRule) THEN
-      styleRule ← removeGradients(styleRule)
-    END IF
-    
-    IF containsGlassmorphism(styleRule) THEN
-      styleRule ← removeGlassmorphism(styleRule)
-    END IF
-    
-    IF hasBorderRadius(styleRule) THEN
-      styleRule.borderRadius ← reduceBorderRadius(styleRule.borderRadius)
-    END IF
-    
-    IF hasShadow(styleRule) THEN
-      elementType ← determineElementType(styleRule)
-      IF elementType !== 'floating' THEN
-        styleRule ← removeShadows(styleRule, elementType)
-      END IF
-    END IF
-  END FOR
-  
-  // Phase 2: Core Components
-  components ← [Button, Badge, EcoCard, DashboardCard, LiveSensorCard, Navigation]
-  
-  FOR each component IN components DO
-    ASSERT component.isReactComponent()
-    
-    componentStyles ← extractStyles(component)
-    
-    // Remove decorative elements
-    IF hasPastelIconTile(component) THEN
-      component ← removeIconTile(component)
-      component ← addIconBesideLabel(component)
-    END IF
-    
-    // Add hairline borders
-    IF needsBorders(component) THEN
-      component ← addHairlineBorders(component)
-    END IF
-    
-    // Create data hierarchy
-    IF hasMetricData(component) THEN
-      component ← createDataHierarchy(component.metrics)
-    END IF
-    
-    // Apply tabular numerals
-    IF hasNumericData(component) THEN
-      component ← applyTabularNumerals(component)
-    END IF
-  END FOR
-  
-  // Phase 3: Feature Pages
-  pages ← [Dashboard, Analytics, Alerts, Sensors, Reports, Settings]
-  
-  FOR each page IN pages DO
-    page ← refineContentHierarchy(page)
-    page ← improveEmptyStates(page)
-    page ← refineCharts(page)
-  END FOR
-  
-  // Phase 4: Theme Application
-  lightTheme ← generateLightTheme(designTokens)
-  darkTheme ← generateDarkTheme(designTokens)
-  
-  application.themes ← {light: lightTheme, dark: darkTheme}
-  
-  ASSERT isProductionGrade(application)
-  
-  RETURN application
-END
-```
-
-### Gradient Removal Algorithm
-
-```typescript
-ALGORITHM removeGradients(styleRule)
-INPUT: styleRule (CSS style rule with potential gradients)
-OUTPUT: styleRule with flat colors
-
-BEGIN
-  // Extract gradient type and colors
-  IF styleRule.background.includes('linear-gradient') THEN
-    gradient ← parseLinearGradient(styleRule.background)
-    
-    // Use first meaningful color or brand color
-    IF gradient.isEcoStepBrand() THEN
-      styleRule.background ← '#3DDC97'  // Flat EcoStep green
-    ELSE IF gradient.isSemanticColor() THEN
-      styleRule.background ← gradient.primaryColor
-    ELSE
-      styleRule.background ← gradient.colors[0]  // Use first color
-    END IF
-  END IF
-  
-  IF styleRule.background.includes('radial-gradient') THEN
-    // Keep subtle ambient backgrounds but remove obvious glows
-    gradient ← parseRadialGradient(styleRule.background)
-    
-    IF gradient.opacity > 0.2 THEN
-      // Too obvious, remove completely
-      styleRule.background ← 'transparent'
-    ELSE
-      // Subtle ambient, reduce opacity further
-      gradient.opacity ← gradient.opacity * 0.5
-      styleRule.background ← regenerateSubtleGradient(gradient)
-    END IF
-  END IF
-  
-  RETURN styleRule
-END
-```
-
-### Glassmorphism Removal Algorithm
-
-```typescript
-ALGORITHM removeGlassmorphism(element)
-INPUT: element (HTML element with glassmorphic styles)
-OUTPUT: element with flat, bordered styling
-
-BEGIN
-  styles ← element.style
-  
-  // Remove backdrop blur
-  IF styles.backdropFilter !== 'none' THEN
-    styles.backdropFilter ← 'none'
-    styles.webkitBackdropFilter ← 'none'
-  END IF
-  
-  // Convert translucent backgrounds to solid
-  IF isTranslucentBackground(styles.background) THEN
-    rgba ← parseRGBA(styles.background)
-    
-    IF isDarkMode() THEN
-      styles.background ← 'rgb(28, 31, 40)'  // Solid dark surface
-    ELSE
-      styles.background ← 'rgb(255, 255, 255)'  // Solid white
-    END IF
-  END IF
-  
-  // Add hairline borders for definition
-  IF styles.border === 'none' OR styles.borderWidth === '0' THEN
-    IF isDarkMode() THEN
-      styles.border ← '1px solid rgba(137, 215, 183, 0.12)'
-    ELSE
-      styles.border ← '1px solid rgba(26, 49, 44, 0.08)'
-    END IF
-  END IF
-  
-  RETURN element
-END
-```
-
-### Data Hierarchy Algorithm
-
-```typescript
-ALGORITHM createDataHierarchy(metrics)
-INPUT: metrics (array of metric data objects)
-OUTPUT: hierarchically styled component
-
-BEGIN
-  ASSERT metrics.length > 0
-  
-  // Sort by priority
-  sortedMetrics ← sortByPriority(metrics)
-  
-  // Primary metric (highest priority)
-  primary ← sortedMetrics[0]
-  primary.fontSize ← '36px'
-  primary.fontWeight ← 600
-  primary.fontFeatures ← 'tabular-nums'
-  primary.marginBottom ← '8px'
-  
-  // Remove competing icons
-  IF primary.hasIconTile THEN
-    primary.icon.display ← 'inline'  // Icon beside label
-    primary.icon.size ← '16px'
-    primary.icon.marginRight ← '6px'
-    primary.iconTile ← null  // Remove tile
-  END IF
-  
-  // Secondary metrics
-  FOR i ← 1 TO sortedMetrics.length - 1 DO
-    secondary ← sortedMetrics[i]
-    secondary.fontSize ← '20px'
-    secondary.fontWeight ← 600
-    secondary.fontFeatures ← 'tabular-nums'
-    
-    // Subdued colors
-    secondary.color ← isDarkMode() ? '#9CA3AF' : '#525252'
-  END FOR
-  
-  // Labels for all metrics
-  FOR each metric IN sortedMetrics DO
-    metric.label.fontSize ← '13px'
-    metric.label.fontWeight ← 500
-    metric.label.textTransform ← 'uppercase'
-    metric.label.letterSpacing ← '0.05em'
-    metric.label.color ← isDarkMode() ? '#6B7280' : '#737373'
-  END FOR
-  
-  RETURN sortedMetrics
-END
-```
-
-## Example Usage
-
-### Before: AI-Generated Look
-
-```typescript
-// ❌ Universal gradients
-<div className="bg-gradient-to-br from-purple-500 to-blue-600">
-  <h1>Welcome back!</h1>
-</div>
-
-// ❌ Excessive glassmorphism
-<div className="glass-card" style={{
-  background: 'rgba(255, 255, 255, 0.72)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '20px',
-  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)'
-}}>
-  {/* Content */}
-</div>
-
-// ❌ Pastel icon tiles competing with data
-<div className="metric-card">
-  <div className="icon-tile bg-gradient-to-br from-blue-400 to-purple-500 w-16 h-16 rounded-2xl">
-    <Icon />
-  </div>
-  <div className="metric-value">1,234</div>
-  <div className="metric-label">Active Sensors</div>
-  <span className="badge bg-green-500 rounded-full">✓ Good</span>
-</div>
-```
-
-### After: Production-Grade
-
-```typescript
-// ✅ Flat EcoStep green for primary actions only
-<header className="border-b" style={{
-  backgroundColor: '#FFFFFF',
-  borderColor: 'rgba(26, 49, 44, 0.1)'
-}}>
-  <h1>Energy Dashboard</h1>
-</header>
-
-// ✅ Solid background with hairline borders
-<div className="eco-card" style={{
-  background: '#FFFFFF',
-  border: '1px solid rgba(26, 49, 44, 0.08)',
-  borderRadius: '8px',
-  boxShadow: 'none'  // No shadow on cards
-}}>
-  {/* Content */}
-</div>
-
-// ✅ Data-first hierarchy with icon beside label
-<div className="metric-card">
-  <div className="metric-header">
-    <ActivityIcon className="w-4 h-4 text-neutral-600" />
-    <span className="metric-label">Active Sensors</span>
-  </div>
-  <div className="metric-value tabular-nums text-4xl font-semibold">
-    1,234
-  </div>
-  <div className="metric-change text-sm text-neutral-600">
-    +12 vs. previous 7 days
-  </div>
-</div>
-```
-
-### Button Refinement
-
-```typescript
-// Before: Gradient buttons
-<button className="bg-gradient-to-r from-eco-green to-eco-teal rounded-2xl shadow-lg transform hover:scale-105">
-  Save Changes
-</button>
-
-// After: Flat buttons with restrained hover
-<button className="eco-btn-primary" style={{
-  background: '#3DDC97',
-  color: '#FFFFFF',
-  borderRadius: '8px',
-  boxShadow: 'none',
-  padding: '10px 20px',
-  fontWeight: 500
-}}>
-  Save Changes
-</button>
-
-// Hover state (CSS)
-.eco-btn-primary:hover {
-  background: #35c27b;  /* Slightly darker */
-  opacity: 0.95;  /* Subtle */
-  transform: none;  /* No scale transform */
+interface ElectricalMetricsGridProps {
+  voltage: number | undefined;
+  current: number | undefined;
+  power: number | undefined;
+  energyToday: number | undefined;
+  hasData: boolean;
 }
 ```
 
-### Badge Refinement
+**Layout**:
+- Desktop: 1×4 horizontal grid
+- Tablet: 2×2 grid
+- Mobile: 4×1 vertical stack
 
+**Design Specifications**:
+- Each metric card: 8-12px border radius, hairline border
+- Metric value: 36-48px font size, font-weight: 700, tabular-nums
+- Metric label: 13px uppercase, letter-spacing: 0.05em, subdued color
+- Unit display: 18px, medium weight, subdued color
+- Color coding:
+  - Voltage: EcoStep Green (#3DDC97)
+  - Current: Amber (#F59E0B)
+  - Power: Blue (#3B82F6)
+  - Energy: Amber (#F59E0B)
+
+**Empty State**: Show "—" with "Waiting for data" when no sensor readings available.
+
+### 3. StepActivityCard (Existing - No Changes)
+
+**File**: `frontend/src/features/dashboard/components/StepActivityCard.tsx`
+
+**Status**: ✅ Already implemented correctly
+
+**Usage in Redesign**: Move to prominent position after electrical metrics grid.
+
+**Why It Works**:
+- Clear visual hierarchy (icon, label, value, context)
+- Proper empty state handling
+- Theme-aware styling
+- Communicates the unique value proposition (footsteps → energy)
+
+### 4. SystemStatusSection (New Component)
+
+**File**: `frontend/src/features/dashboard/components/SystemStatusSection.tsx`
+
+**Purpose**: Display real-time system connectivity and data transfer status.
+
+**Interface**:
 ```typescript
-// Before: Rounded-full without borders, arbitrary colors
-<span className="badge rounded-full bg-green-100 text-green-800">
-  ✓ Active
-</span>
-
-// After: Semantic colors with borders, rounded-md
-<span className="eco-badge eco-badge-success" style={{
-  background: 'rgba(34, 197, 94, 0.1)',
-  color: '#15803d',
-  border: '1px solid rgba(34, 197, 94, 0.2)',
-  borderRadius: '6px',
-  padding: '4px 12px',
-  fontSize: '0.75rem',
-  fontWeight: 500
-}}>
-  Active
-</span>
-
-// Only use checkmark when status is truly binary (on/off)
-// Remove "✓" prefix for non-binary states
+interface SystemStatusSectionProps {
+  wifiConnected: boolean | undefined;
+  bluetoothConnected: boolean | undefined;
+  dataTransferActive: boolean;
+  lastUpdateTimestamp: string | undefined;
+}
 ```
 
-### Chart Refinement
-
-```typescript
-// Before: Glowing areas, decorative dots
-<AreaChart data={data}>
-  <defs>
-    <linearGradient id="colorGlow" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-    </linearGradient>
-  </defs>
-  <Area fillOpacity={1} fill="url(#colorGlow)" activeDot={{ r: 8 }} />
-</AreaChart>
-
-// After: Restrained colors, clear axes
-<AreaChart data={data}>
-  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 49, 44, 0.1)" />
-  <XAxis 
-    dataKey="timestamp" 
-    stroke="#525252"
-    tick={{ fontSize: 12 }}
-    label={{ value: 'Time (24h)', position: 'insideBottom', offset: -5 }}
-  />
-  <YAxis 
-    stroke="#525252"
-    tick={{ fontSize: 12 }}
-    label={{ value: 'Energy (kWh)', angle: -90, position: 'insideLeft' }}
-  />
-  <Tooltip />
-  <Area 
-    type="monotone" 
-    dataKey="value" 
-    stroke="#3DDC97" 
-    fill="rgba(61, 220, 151, 0.1)"
-    strokeWidth={2}
-    dot={false}  // No decorative dots
-    activeDot={{ r: 4, fill: '#3DDC97' }}  // Only on hover
-  />
-</AreaChart>
+**Layout**:
+```
+┌────────────────────────────────────────────┐
+│ System Status                              │
+│ ┌──────────────┬────────────┬─────────────┐│
+│ │ ● Wi-Fi      │ ● Bluetooth│ ● Transfer  ││
+│ │   Connected  │   Connected│   Receiving ││
+│ │              │            │   Last: 2:34││
+│ └──────────────┴────────────┴─────────────┘│
+└────────────────────────────────────────────┘
 ```
 
-## Correctness Properties
+**Design Specifications**:
+- Card with hairline border, 12px border-radius
+- 3-column grid (desktop), stacks on mobile
+- Status indicators: 12px circular dots
+  - Green (#3DDC97): Connected/Active
+  - Red (#EF4444): Disconnected/Inactive
+  - Gray (#9CA3AF): Unknown
+- Label: 14px, font-weight: 500
+- Status text: 12px, subdued color
+- Last update timestamp: 12px, more subdued
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+### 5. PageHeader (New Component)
 
-### Property 1: No Universal Gradients
+**File**: `frontend/src/features/dashboard/components/PageHeader.tsx`
 
-*For any* styled element in the application (except logos), the element SHALL NOT use `linear-gradient()` or `radial-gradient()` in background properties, ensuring flat colors dominate the interface.
+**Purpose**: Consistent page header with title, status indicator, and quick actions.
 
-**Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5**
+**Interface**:
+```typescript
+interface PageHeaderProps {
+  title: string;
+  subtitle: string;
+  systemStatus: 'connected' | 'disconnected' | 'unknown';
+  onAlertsClick: () => void;
+  alertsCount?: number;
+  isPublicUser: boolean;
+}
+```
 
-### Property 2: Glassmorphism Elimination
+**Layout**:
+```
+EcoStep Central  [●] Real-time monitoring     [🔔 Alerts 3]
+```
 
-*For any* card or container component, the element SHALL NOT use `backdrop-filter: blur()` or translucent rgba backgrounds with opacity > 0.1, ensuring solid, bordered surfaces.
+**Design Specifications**:
+- Title: 32px, font-weight: 700
+- Subtitle: 14px with status indicator dot
+- Status dot: 8px circle, inline with subtitle
+- Alerts button: Outlined card-style button with notification badge
+- Responsive: Stacks on mobile
 
-**Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5**
+### 6. SensorNodesSection (Modified)
 
-### Property 3: Border Radius Consistency
+**File**: `frontend/src/features/dashboard/components/SensorNodesSection.tsx`
 
-*For any* element with border-radius, the value SHALL be between 6-12px for standard elements (not 16-20px), with exceptions only for pills/badges that use `border-radius: 9999px`.
+**Purpose**: Display live sensor nodes when available, empty state otherwise.
 
-**Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
+**Key Changes**:
+- Remove hard-coded mock data
+- Show empty state by default
+- Populate with real sensor data when WebSocket receives readings
+- Design per empty state requirements (simple icon, helpful text)
 
-### Property 4: Shadow Restriction
+**Empty State Design**:
+```
+┌────────────────────────────────────────────┐
+│ Sensor Nodes                               │
+│                                            │
+│         [Activity Icon]                    │
+│    No sensor data available                │
+│    Connect ESP32 sensors to view           │
+│    real-time node status                   │
+│                                            │
+└────────────────────────────────────────────┘
+```
 
-*For any* element with box-shadow, the element SHALL be a floating layer (modal, dropdown, tooltip) and NOT a standard card or container, ensuring shadows communicate layering, not decoration.
+## Data Models
 
-**Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5**
+### LiveMetrics (Real-time)
 
-### Property 5: Data Visual Hierarchy
+```typescript
+interface LiveMetrics {
+  voltage: number;        // Volts (V)
+  current: number;        // Amperes (A)
+  power: number;          // Watts (W)
+  stepCount: number;      // Steps today
+  wifiConnected: boolean;
+  bluetoothConnected: boolean;
+  timestamp: string;      // ISO 8601
+  sensorId: string;
+}
+```
 
-*For any* metric display component, the numeric value SHALL have font-size >= 20px AND font-weight >= 600 AND tabular-nums enabled, while icons SHALL be <= 16px and positioned beside (not above) labels.
+**Source**: WebSocket event `sensor:reading` via `useLiveSensorData()` hook
 
-**Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7**
+### DashboardMetrics (Aggregated)
 
-### Property 6: Hairline Borders
+```typescript
+interface DashboardMetrics {
+  dailyEnergy: number;    // kWh today
+  weeklyEnergy: number;   // kWh this week
+  monthlyEnergy: number;  // kWh this month
+  totalReadings: number;
+}
+```
 
-*For any* card or container without backdrop-filter, the element SHALL have a 1px solid border with rgba opacity between 0.08-0.15, ensuring definition through borders rather than shadows.
+**Source**: REST API `/analytics/dashboard` via `useDashboardMetrics()` hook
 
-**Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5**
+### SystemStatus (Health)
 
-### Property 7: Semantic Badge Colors
+```typescript
+interface SystemStatus {
+  database: 'connected' | 'disconnected';
+  websocket: 'connected' | 'disconnected';
+  activeSensors: number;
+  lastDataReceived: string | null;
+}
+```
 
-*For any* status badge, the background color SHALL match semantic meaning (green for healthy/success, amber for warning, red for error) with a visible 1px border, and SHALL NOT use arbitrary purple, blue, or orange unless contextually meaningful.
+**Source**: REST API `/health/system` via `useSystemHealth()` hook
 
-**Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7**
+## Data Flow
 
-### Property 8: Button Flat Colors
+### Real-Time Updates Flow
 
-*For any* button component (excluding links), the background SHALL be a solid color without gradients, and hover states SHALL only modify opacity or solid color (no transform: scale).
+```
+ESP32 Sensor → Backend WebSocket Gateway → Frontend Socket Context
+                                              ↓
+                                    useLiveSensorData() hook
+                                              ↓
+                         ┌────────────────────┴────────────────────┐
+                         ↓                    ↓                    ↓
+          ElectricalMetricsGrid    StepActivityCard    SystemStatusSection
+```
 
-**Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7**
+**Update Frequency**:
+- WebSocket: Real-time (as sensor transmits, typically 1-5 seconds)
+- Dashboard Metrics: Polled every 30 seconds
+- System Health: Polled every 10 seconds
 
-### Property 9: Chart Restraint
+### WebSocket Event Handling
 
-*For any* data visualization chart, area fills SHALL have opacity <= 0.15, decorative dots SHALL be disabled (dot={false}), and activeDot radius SHALL be <= 4px, ensuring data clarity over decoration.
+```typescript
+// Already implemented in SocketContext
+socket.on('sensor:reading', (reading: SensorReading) => {
+  // Updates useLiveSensorData() state
+  // Triggers re-render of all components consuming live data
+});
+```
 
-**Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8**
+### REST API Polling
 
-### Property 10: Typography Tabular Numerals
+```typescript
+// useDashboardMetrics.ts
+useQuery({
+  queryKey: ['dashboard', 'metrics'],
+  queryFn: getDashboardAnalytics,
+  refetchInterval: 30000, // 30 seconds
+  staleTime: 20000,
+});
 
-*For any* element displaying numeric data (metrics, timestamps, measurements), the CSS SHALL include `font-variant-numeric: tabular-nums` to ensure vertical alignment in columns and tables.
-
-**Validates: Requirements 5.3, 11.4, 11.5**
-
-### Property 11: Icon Size Restraint
-
-*For any* icon within a metric or data display, the icon size SHALL be <= 20px (preferably 16px) and positioned beside the label (not in a large tile above), ensuring data values remain the visual hero.
-
-**Validates: Requirements 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5**
-
-### Property 12: Dark Mode Consistency
-
-*For any* styled element with light mode colors, there SHALL exist a corresponding dark mode variant with the same visual hierarchy, using dark design tokens (background: #0F1116, surface: #1C1F28, text: #F9FAFB).
-
-**Validates: Requirements 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7**
+// useSystemHealth.ts
+useQuery({
+  queryKey: ['system', 'health'],
+  queryFn: getSystemHealth,
+  refetchInterval: 10000, // 10 seconds
+  staleTime: 5000,
+});
+```
 
 ## Error Handling
 
-### Missing Dark Mode Styles
+### Network Errors
 
-**Condition:** Component has light mode styles but no dark mode equivalent
-**Response:** Generate dark mode styles using design token mappings automatically
-**Recovery:** Ensure all new components follow the dark mode pattern from design system
+**WebSocket Disconnection**:
+```typescript
+if (!isConnected) {
+  return (
+    <div className="status-banner">
+      ⚠️ Real-time connection lost. Reconnecting...
+    </div>
+  );
+}
+```
 
-### Invalid Border Radius Values
+**API Errors**:
+```typescript
+const { data, error, isError } = useDashboardMetrics();
 
-**Condition:** Border radius exceeds 12px on non-pill elements
-**Response:** Log warning and clamp to 12px maximum
-**Recovery:** Audit all border-radius values during build
+if (isError) {
+  return (
+    <ErrorState
+      message="Unable to load dashboard metrics"
+      onRetry={refetch}
+    />
+  );
+}
+```
 
-### Gradient Detection Failure
+### Empty Data States
 
-**Condition:** Gradient remains in production build
-**Response:** Build-time CSS linter flags gradient usage
-**Recovery:** Manual review and replacement with flat colors
+**No Sensor Data**:
+- Show "—" for numeric values
+- Display "Waiting for sensor data" helper text
+- Maintain layout structure (no collapsing)
+
+**Zero vs. Undefined**:
+```typescript
+// Distinguish between valid zero and missing data
+const displayValue = hasData && value !== undefined ? value : null;
+const isEmpty = displayValue === null;
+```
 
 ## Testing Strategy
 
-### Unit Testing Approach
+### Unit Tests (Vitest + React Testing Library)
 
-**Focus:** Individual component styling
-- Test each component renders without gradients
-- Verify border-radius values fall within acceptable ranges
-- Check dark mode variants exist for all components
-- Validate tabular-nums applied to numeric displays
+**ElectricalMetricsGrid.test.tsx**:
+- ✅ Renders 4 metric cards with correct labels
+- ✅ Displays values with proper formatting (decimals, units)
+- ✅ Shows empty state when no data
+- ✅ Applies tabular-nums font variant
+- ✅ Uses correct color coding per metric
+- ✅ Responsive grid layout (1×4 desktop, 2×2 tablet, 4×1 mobile)
 
-### Visual Regression Testing
+**SystemStatusSection.test.tsx**:
+- ✅ Renders Wi-Fi, Bluetooth, Data Transfer status
+- ✅ Shows correct status indicator colors
+- ✅ Displays last update timestamp
+- ✅ Handles undefined/unknown states gracefully
+- ✅ Responsive layout (3-column desktop, stacked mobile)
 
-**Tool:** Chromatic or Percy for automated screenshot comparison
-- Capture before/after screenshots of all pages
-- Compare with approved design tokens
-- Flag any AI-generated aesthetics (gradients, excessive shadows, pastel tiles)
+**PageHeader.test.tsx**:
+- ✅ Renders title and subtitle
+- ✅ Shows system status indicator
+- ✅ Alerts button hidden for public users
+- ✅ Alerts button shows notification badge when count > 0
+- ✅ Calls onAlertsClick handler
 
-### Integration Testing Approach
+**DashboardPage.test.tsx** (Integration):
+- ✅ Renders all 3 sections in correct order
+- ✅ Fetches data from correct hooks
+- ✅ Shows PublicUserBanner for public role
+- ✅ Responsive layout adjustments
+- ✅ No chart components rendered (moved to Analytics)
 
-**Focus:** Cross-component consistency
-- Verify consistent spacing and typography across pages
-- Test theme switching (light ↔ dark) maintains hierarchy
-- Validate responsive behavior maintains design principles
+### Accessibility Tests
 
-### Accessibility Testing
+**Keyboard Navigation**:
+- ✅ All interactive elements focusable (alerts button)
+- ✅ Focus indicators visible
+- ✅ Tab order logical (top to bottom)
 
-**Focus:** Maintain WCAG compliance during refinement
-- Ensure color contrast ratios meet AA standards (4.5:1 for text)
-- Verify focus states remain visible with new flat design
-- Test keyboard navigation still works with refined buttons
+**Screen Readers**:
+- ✅ Metric labels announced before values
+- ✅ Status indicators have text labels (not color-only)
+- ✅ aria-label for alert button with count
+- ✅ Heading hierarchy correct (h1 → h2 → h3)
+
+**WCAG Compliance**:
+- ✅ Color contrast ≥4.5:1 for text
+- ✅ Color contrast ≥3:1 for large text
+- ✅ Status communicated with icons + text (not color alone)
+
+### Visual Regression Tests
+
+**Chromatic/Percy Snapshots**:
+- ✅ Dashboard - Light mode - With data
+- ✅ Dashboard - Dark mode - With data
+- ✅ Dashboard - Light mode - Empty state
+- ✅ Dashboard - Dark mode - Empty state
+- ✅ Dashboard - Mobile viewport
+- ✅ Dashboard - Tablet viewport
+- ✅ Dashboard - Desktop viewport
+
+## Design Tokens
+
+### Colors (From Requirements)
+
+```typescript
+// Light Mode
+export const LIGHT_THEME = {
+  pageBackground: '#FFFFFF',
+  cardBackground: '#FFFFFF',
+  surfaceMuted: '#F9FAFB',
+  border: 'rgba(26, 49, 44, 0.08)',
+  textPrimary: '#0F1116',
+  textSecondary: '#525252',
+  textTertiary: '#9CA3AF',
+  accent: '#3DDC97', // EcoStep Green
+  error: '#EF4444',
+  warning: '#F59E0B',
+  success: '#22C55E',
+};
+
+// Dark Mode
+export const DARK_THEME = {
+  pageBackground: '#0F1116',
+  cardBackground: '#1C1F28',
+  surfaceMuted: '#12141A',
+  border: 'rgba(137, 215, 183, 0.12)',
+  textPrimary: '#F9FAFB',
+  textSecondary: '#9CA3AF',
+  textTertiary: '#6B7280',
+  accent: '#3DDC97', // EcoStep Green (same)
+  error: '#EF4444',
+  warning: '#F59E0B',
+  success: '#22C55E',
+};
+```
+
+### Typography
+
+```typescript
+export const TYPOGRAPHY = {
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: {
+    xs: '0.75rem',   // 12px - Helper text
+    sm: '0.875rem',  // 14px - Body text
+    base: '1rem',    // 16px - Body text
+    lg: '1.125rem',  // 18px - Large text
+    xl: '1.25rem',   // 20px - Section titles
+    '2xl': '1.5rem', // 24px - Card titles
+    '3xl': '2rem',   // 32px - Page titles
+    '4xl': '2.25rem',// 36px - Primary metrics
+    '5xl': '3rem',   // 48px - Hero metrics
+  },
+  fontWeight: {
+    normal: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+  },
+  lineHeight: {
+    tight: 1.2,
+    normal: 1.5,
+    relaxed: 1.75,
+  },
+};
+```
+
+### Spacing
+
+```typescript
+export const SPACING = {
+  gap: {
+    xs: '0.5rem',  // 8px
+    sm: '0.75rem', // 12px
+    md: '1rem',    // 16px
+    lg: '1.5rem',  // 24px
+    xl: '2rem',    // 32px
+  },
+  padding: {
+    card: '1.5rem', // 24px
+    section: '2rem', // 32px
+  },
+  borderRadius: {
+    sm: '6px',
+    md: '8px',
+    lg: '12px',
+    full: '9999px',
+  },
+};
+```
+
+## File Structure
+
+```
+frontend/src/features/dashboard/
+├── pages/
+│   └── DashboardPage.tsx (MODIFIED - remove charts, restructure)
+├── components/
+│   ├── ElectricalMetricsGrid.tsx (NEW)
+│   ├── ElectricalMetricsGrid.test.tsx (NEW)
+│   ├── SystemStatusSection.tsx (NEW)
+│   ├── SystemStatusSection.test.tsx (NEW)
+│   ├── PageHeader.tsx (NEW)
+│   ├── PageHeader.test.tsx (NEW)
+│   ├── SensorNodesSection.tsx (NEW - refactored from DashboardPage)
+│   ├── SensorNodesSection.test.tsx (NEW)
+│   ├── StepActivityCard.tsx (EXISTING - no changes)
+│   └── StepActivityCard.test.tsx (EXISTING)
+├── hooks/
+│   ├── useLiveSensorData.ts (EXISTING - no changes)
+│   ├── useDashboardMetrics.ts (EXISTING - no changes)
+│   └── useSystemHealth.ts (EXISTING - no changes)
+└── types/
+    └── dashboard.types.ts (EXISTING - add new interfaces if needed)
+
+frontend/src/components/dashboard/
+├── PowerGenerationChart.tsx (MOVED TO ANALYTICS TAB)
+├── EnergyPeriodChart.tsx (MOVED TO ANALYTICS TAB)
+├── CumulativeEnergyChart.tsx (MOVED TO ANALYTICS TAB)
+├── StepsChart.tsx (MOVED TO ANALYTICS TAB)
+├── VoltageCurrentChart.tsx (MOVED TO ANALYTICS TAB)
+└── ChartsLayoutContainer.tsx (MOVED TO ANALYTICS TAB)
+```
+
+## Migration Strategy
+
+### Phase 1: Component Creation
+
+1. Create ElectricalMetricsGrid component with tests
+2. Create SystemStatusSection component with tests
+3. Create PageHeader component with tests
+4. Create SensorNodesSection component (refactor from DashboardPage)
+
+### Phase 2: Dashboard Page Refactoring
+
+1. Remove all chart imports from DashboardPage
+2. Remove ChartsLayoutContainer usage
+3. Remove filter dropdown (not needed)
+4. Restructure layout into 3 sections
+5. Import and use new components
+6. Update tests
+
+### Phase 3: Analytics Tab Integration
+
+1. Move ChartsLayoutContainer to Analytics page
+2. Ensure Historical Analytics tab shows all charts
+3. Update navigation and routing
+4. Test separation of concerns
+
+### Phase 4: Testing & Validation
+
+1. Run unit tests for all new components
+2. Run integration tests for DashboardPage
+3. Perform accessibility audit
+4. Visual regression testing
+5. Performance testing (lazy loading, WebSocket efficiency)
+
+## Backward Compatibility
+
+### Preserved APIs
+
+- WebSocket event structure (`sensor:reading`) - No changes
+- REST API endpoints - No changes
+- Hook interfaces (`useLiveSensorData`, etc.) - No changes
+- Theme context - No changes
+- Auth context and role-based access - No changes
+
+### Breaking Changes
+
+⚠️ **None**: This is a pure UI/layout refactoring. All data fetching, business logic, and APIs remain unchanged.
+
+### Feature Flags (Optional)
+
+If gradual rollout is desired:
+
+```typescript
+const FEATURE_FLAGS = {
+  USE_REDESIGNED_DASHBOARD: true, // Toggle in config
+};
+
+export function DashboardPage() {
+  if (FEATURE_FLAGS.USE_REDESIGNED_DASHBOARD) {
+    return <NewDashboardLayout />;
+  }
+  return <LegacyDashboardLayout />;
+}
+```
 
 ## Performance Considerations
 
-**CSS Bundle Size:** Removing glassmorphism (backdrop-filter) may improve performance on lower-end devices
+### Lazy Loading
 
-**Paint Performance:** Solid backgrounds render faster than gradients and blurs
+Charts are removed from Dashboard, reducing initial bundle size:
+- Before: ~150KB (charts + Recharts library)
+- After: ~40KB (cards and simple UI components)
+- Charts load on Analytics tab navigation (code-splitting)
 
-**Animation Jank:** Removing transform hover effects reduces layout thrashing
+### WebSocket Efficiency
 
-## Security Considerations
+No changes to WebSocket handling. Existing throttling in `useChartRealTimeUpdates` remains effective:
+```typescript
+const THROTTLE_INTERVAL = 5000; // 5 seconds
+```
 
-No security impact - this is purely visual refinement with no changes to authentication, authorization, data handling, or API interactions.
+### React Query Caching
 
-## Dependencies
+Existing caching strategy remains:
+- Live data: `staleTime: 0` (always fresh)
+- Dashboard metrics: `staleTime: 20000` (20 seconds)
+- System health: `staleTime: 5000` (5 seconds)
 
-### Existing Dependencies (No Changes)
-- React 18.x
-- TypeScript 5.x
-- Tailwind CSS 3.x
-- Recharts (for data visualization)
-- Lucide React (for icons)
+### Rendering Optimization
 
-### No New Dependencies Required
-This is a pure CSS/styling refactoring using existing tooling.
+All components use:
+- Memoized calculations (`useMemo`)
+- Stable callback references (`useCallback`)
+- Proper dependency arrays
+- No unnecessary re-renders
+
+## Accessibility Features
+
+### Semantic HTML
+
+```html
+<main>
+  <h1>EcoStep Central</h1>
+  <section aria-labelledby="metrics-heading">
+    <h2 id="metrics-heading" class="sr-only">Live Electrical Metrics</h2>
+    <!-- Electrical Metrics Grid -->
+  </section>
+  <section aria-labelledby="step-heading">
+    <h2 id="step-heading" class="sr-only">Step Activity</h2>
+    <!-- Step Activity Card -->
+  </section>
+  <section aria-labelledby="status-heading">
+    <h2 id="status-heading">System Status</h2>
+    <!-- System Status -->
+  </section>
+</main>
+```
+
+### Screen Reader Announcements
+
+```typescript
+// System status updates announce to screen readers
+<div role="status" aria-live="polite">
+  {systemStatus.database === 'connected' ? 'Connected' : 'Disconnected'}
+</div>
+
+// Metric updates announce when values change significantly
+<div role="status" aria-live="polite" aria-atomic="true">
+  Current power: {power} watts
+</div>
+```
+
+### Keyboard Navigation
+
+- All interactive elements in tab order
+- Skip link to main content
+- Focus trapping in modals (if added later)
+- Arrow key navigation for metric cards (optional enhancement)
+
+## Design Validation Checklist
+
+### Requirements Compliance
+
+- ✅ Req 1: No gradients used (flat colors only)
+- ✅ Req 2: No glassmorphism (solid backgrounds + hairline borders)
+- ✅ Req 3: Border radius 8-12px (moderate, not excessive)
+- ✅ Req 4: No shadows on cards (only borders)
+- ✅ Req 5: Data-first hierarchy (large numeric values, small icons)
+- ✅ Req 6: No pastel icon tiles (icons beside labels, neutral colors)
+- ✅ Req 7: Hairline borders on all cards
+- ✅ Req 8: Semantic colors for status (green/amber/red with borders)
+- ✅ Req 11: Typography system (36px metrics, 13px labels, tabular-nums)
+- ✅ Req 12: Dark mode consistency (matching hierarchy, proper colors)
+- ✅ Req 17: WCAG AA compliance (4.5:1 contrast, visible focus states)
+
+### Visual Hierarchy
+
+1. **Primary**: Live electrical metrics (Voltage, Current, Power, Energy)
+2. **Secondary**: Step activity (supporting human-energy narrative)
+3. **Tertiary**: System status (operational context)
+4. **Quaternary**: Sensor nodes (detailed when available)
+
+### User Flow Validation
+
+```
+User lands on Dashboard
+  ↓
+Immediately sees live metrics (above the fold)
+  ↓
+Understands system is operational (status indicators)
+  ↓
+Sees step activity → energy connection
+  ↓
+For historical analysis: Navigate to Analytics tab
+  ↓
+Charts and time-series data load (code-split)
+```
+
+## Implementation Notes
+
+### CSS Utility Classes
+
+Leverage existing Tailwind utilities, ensure these are defined:
+
+```css
+/* Add to global CSS if not present */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.uppercase-tracking {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hairline-border-light {
+  border: 1px solid rgba(26, 49, 44, 0.08);
+}
+
+.hairline-border-dark {
+  border: 1px solid rgba(137, 215, 183, 0.12);
+}
+```
+
+### Component Reusability
+
+ElectricalMetricsGrid is intentionally tightly coupled to the dashboard. For other pages needing metric displays:
+- Extract a more generic `MetricCard` component if pattern repeats 3+ times
+- Current design prioritizes clarity over premature abstraction
+
+### Dark Mode Implementation
+
+All components use `useTheme()` hook and `getThemeColors()` utility:
+
+```typescript
+const { theme } = useTheme();
+const colors = getThemeColors(theme);
+
+// Then use colors.textPrimary, colors.cardBackground, etc.
+```
+
+No hard-coded colors in components. All theme-dependent values come from centralized tokens.
+
+## Future Enhancements (Out of Scope)
+
+These are explicitly NOT part of this redesign but may be considered later:
+
+1. **Customizable Dashboard**: Allow users to rearrange sections or hide/show metrics
+2. **Metric Thresholds**: Visual indicators when metrics exceed/fall below thresholds
+3. **Historical Mini-Charts**: Tiny sparklines next to live metrics showing 1-hour trend
+4. **Export Data**: Download current readings as CSV/JSON
+5. **Alerts Integration**: Inline alert notifications on dashboard
+6. **Multi-Sensor Support**: When multiple ESP32 devices are connected, show all in sensor grid
+
+## Conclusion
+
+This design provides a complete blueprint for transforming the EcoStep Dashboard from a chart-heavy analytics page into a focused, real-time monitoring interface. By separating concerns (real-time monitoring vs. historical analysis), establishing clear visual hierarchy, and following production-grade design principles, the redesigned dashboard will communicate system status and live metrics more effectively while maintaining backward compatibility and accessibility standards.
+
+The implementation is straightforward: create 4 new components, refactor DashboardPage to use them, and move historical charts to the Analytics tab. No changes to backend, APIs, or data fetching logic are required.

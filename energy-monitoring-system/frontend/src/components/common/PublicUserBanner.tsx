@@ -22,8 +22,8 @@ export function PublicUserBanner({
 
   const colors = {
     bg: theme === 'light' ? '#EAF6FF' : '#1A2332',
-    text: theme === 'light' ? '#1A1D23' : '#EDEEF0',
-    subtext: theme === 'light' ? '#4B5563' : '#9CA3AF',
+    text: theme === 'light' ? '#1A312C' : '#F9FAFB',
+    subtext: theme === 'light' ? '#6B7280' : '#9CA3AF',
     accent: theme === 'light' ? '#2563EB' : '#60A5FA',
     buttonBg: theme === 'light' ? '#2563EB' : '#3B82F6',
     buttonText: '#FFFFFF',
@@ -32,16 +32,22 @@ export function PublicUserBanner({
 
   return (
     <div
-      className={`rounded-2xl p-4 flex items-start gap-4 ${className}`}
+      className={`flex items-start gap-4 ${className}`}
       style={{
         backgroundColor: colors.bg,
         border: `1px solid ${colors.border}`,
+        borderRadius: '12px', // Design system: 12px border-radius
+        padding: '16px', // Card padding adjusted for banner
+        transition: 'all 200ms ease', // Design system: 200ms transitions
       }}
     >
       {/* Icon */}
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        className="flex items-center justify-center flex-shrink-0"
         style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '8px', // Design system: 8px for smaller elements
           backgroundColor: colors.accent + '20',
           color: colors.accent,
         }}
@@ -52,12 +58,22 @@ export function PublicUserBanner({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <h3
-          className="text-sm font-semibold mb-1"
-          style={{ color: colors.text }}
+          className="font-semibold"
+          style={{ 
+            color: colors.text,
+            fontSize: '14px',
+            marginBottom: '4px',
+          }}
         >
           Guest Mode
         </h3>
-        <p className="text-sm" style={{ color: colors.subtext }}>
+        <p 
+          style={{ 
+            color: colors.subtext,
+            fontSize: '14px',
+            lineHeight: '1.5',
+          }}
+        >
           {message}
         </p>
       </div>

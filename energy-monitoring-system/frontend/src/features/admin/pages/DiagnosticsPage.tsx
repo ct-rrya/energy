@@ -98,15 +98,15 @@ export function DiagnosticsPage() {
 
         {/* Content Grid */}
         <div className="space-y-6 lg:space-y-8">
-          {/* Reference Configuration & Diagnostic Test - Side by side on desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Reference Configuration & Diagnostic Test - Side by side on desktop, equal height */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {/* Reference Configuration Section */}
-            <div>
+            <div className="h-full">
               <ReferenceConfigForm />
             </div>
 
             {/* Diagnostic Test Section */}
-            <div>
+            <div className="h-full">
               <DiagnosticTestForm />
             </div>
           </div>

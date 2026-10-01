@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import api from '../../../lib/api';
 import SuggestedActions from './SuggestedActions';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/lib/theme';
 
 /**
  * CSS Animations for message slide-in and typing indicator
@@ -234,13 +235,13 @@ function TypingIndicator({ theme }: { theme: 'light' | 'dark' }) {
       <div
         className="message-bubble"
         style={{
-          padding: '12px 16px',
-          borderRadius: '16px',
-          // Bot message background: #428475 for both themes (Requirement 12.2)
-          backgroundColor: '#428475',
+          padding: '14px 18px',
+          borderRadius: '18px 18px 18px 4px',
+          // Bot message background: Teal/green
+          backgroundColor: '#1E6F5C',
           boxShadow: theme === 'light'
-            ? '0 2px 4px rgba(0, 0, 0, 0.1)'
-            : '0 2px 4px rgba(0, 0, 0, 0.3)',
+            ? '0 2px 8px rgba(0, 0, 0, 0.1)'
+            : '0 2px 8px rgba(0, 0, 0, 0.4)',
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
@@ -255,7 +256,7 @@ function TypingIndicator({ theme }: { theme: 'light' | 'dark' }) {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: '#F5F7FA',
               animation: 'typingDotBounce 1.4s infinite ease-in-out',
               animationDelay: `${index * 0.2}s`,
             }}
@@ -333,19 +334,19 @@ function Message({ message, theme }: { message: ChatMessage; theme: 'light' | 'd
         className="message-bubble"
         style={{
           maxWidth: '70%',
-          padding: '12px 16px', // Requirement 12.6: Appropriate padding
-          borderRadius: '16px', // Requirement 12.6: Rounded message bubbles
-          // User messages: #1A312C (Requirement 12.1)
-          // Bot messages: #428475 (Requirement 12.2)
-          backgroundColor: isUser ? '#1A312C' : '#428475',
-          color: '#FFFFFF',
-          fontSize: '15px', // Requirement 12.4: EcoStep font sizes
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", // Requirement 12.4: EcoStep font family
+          padding: '14px 18px', // Slightly increased padding
+          borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px', // Asymmetric rounded corners for chat feel
+          // User messages: Navy with neon green text
+          // Bot messages: Teal/green with light text
+          backgroundColor: isUser ? '#0B132B' : '#1E6F5C',
+          color: isUser ? '#39FF88' : '#F5F7FA',
+          fontSize: '15px',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           lineHeight: '1.5',
           wordWrap: 'break-word',
           boxShadow: theme === 'light'
-            ? '0 1px 3px rgba(0, 0, 0, 0.1)' // Subtle shadow
-            : '0 1px 3px rgba(0, 0, 0, 0.3)',
+            ? '0 2px 8px rgba(0, 0, 0, 0.1)'
+            : '0 2px 8px rgba(0, 0, 0, 0.4)',
         }}
       >
         {renderMessageContent()}
@@ -395,6 +396,7 @@ function ChatInput({ onSendMessage, disabled, value: externalValue, setValue: ex
   const [isDebouncing, setIsDebouncing] = useState(false);
   const debounceTimerRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const colors = getThemeColors(theme);
 
   // Detect reduced motion preference - Requirement 18.9
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -487,9 +489,9 @@ function ChatInput({ onSendMessage, disabled, value: externalValue, setValue: ex
     <div
       className="chat-input"
       style={{
-        padding: '16px',
-        borderTop: theme === 'light' ? '1px solid #E5E7EB' : '1px solid #2A2E37',
-        backgroundColor: theme === 'light' ? '#F9FAFB' : '#1C1F26',
+        padding: '16px 20px',
+        borderTop: `1px solid ${colors.border}`,
+        backgroundColor: colors.cardBackground,
         display: 'flex',
         gap: '12px',
         alignItems: 'flex-end',
@@ -513,34 +515,33 @@ function ChatInput({ onSendMessage, disabled, value: externalValue, setValue: ex
         aria-describedby="chat-input-description"
         style={{
           flex: 1,
-          padding: '12px',
+          padding: '12px 16px',
           fontSize: '14px',
           lineHeight: '1.5',
-          borderRadius: '8px',
-          border: theme === 'light' ? '1px solid #D1D5DB' : '1px solid #2A2E37',
+          borderRadius: '12px',
+          border: `1px solid ${colors.border}`,
           backgroundColor: isDisabled 
-            ? (theme === 'light' ? '#F3F4F6' : '#12141A')
-            : (theme === 'light' ? '#FFFFFF' : '#12141A'),
+            ? colors.surfaceMuted
+            : colors.inputBackground,
           color: isDisabled 
-            ? (theme === 'light' ? '#9CA3AF' : '#6B7280')
-            : (theme === 'light' ? '#1F2937' : '#EDEEF0'),
+            ? colors.textMuted
+            : colors.textPrimary,
           resize: 'none',
           maxHeight: '120px',
           overflowY: 'auto',
           fontFamily: 'inherit',
           outline: 'none',
-          transition: 'border-color 0.2s, background-color 0.2s',
+          transition: 'border-color 0.2s, background-color 0.2s, box-shadow 0.2s',
           cursor: isDisabled ? 'not-allowed' : 'text',
         }}
         onFocus={(e) => {
           if (!isDisabled) {
-            // Improved focus indicator with better contrast - Requirement 18.5
-            e.target.style.borderColor = '#428475'; // Higher contrast (3.02:1)
-            e.target.style.boxShadow = '0 0 0 3px rgba(137, 215, 183, 0.4)'; // Additional visual emphasis
+            e.target.style.borderColor = '#39FF88';
+            e.target.style.boxShadow = '0 0 0 3px rgba(57, 255, 136, 0.15)';
           }
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = theme === 'light' ? '#D1D5DB' : '#2A2E37';
+          e.target.style.borderColor = colors.border;
           e.target.style.boxShadow = 'none';
         }}
       />
@@ -557,29 +558,33 @@ function ChatInput({ onSendMessage, disabled, value: externalValue, setValue: ex
           fontSize: '14px',
           fontWeight: '600',
           color: isDisabled || !currentValue.trim() 
-            ? (theme === 'light' ? '#9CA3AF' : '#6B7280')
-            : '#1A312C',  // Dark text for better contrast (5.24:1) - Requirement 18.5
-          // Send button uses accent color #89D7B7 (Requirement 12.3)
+            ? colors.textMuted
+            : '#0B132B',
           backgroundColor: isDisabled || !currentValue.trim() 
-            ? (theme === 'light' ? '#E5E7EB' : '#2A2E37')
-            : '#89D7B7',
+            ? colors.surfaceMuted
+            : '#39FF88', // Neon green
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '12px',
           cursor: isDisabled || !currentValue.trim() ? 'not-allowed' : 'pointer',
-          transition: prefersReducedMotion ? 'none' : 'background-color 0.2s, transform 0.1s',
+          transition: prefersReducedMotion ? 'none' : 'background-color 0.2s, transform 0.1s, box-shadow 0.2s',
           whiteSpace: 'nowrap',
+          boxShadow: isDisabled || !currentValue.trim() 
+            ? 'none'
+            : '0 2px 8px rgba(57, 255, 136, 0.3)',
         }}
         onMouseEnter={(e) => {
           if (!isDisabled && currentValue.trim()) {
-            e.currentTarget.style.backgroundColor = '#6FC5A0';
+            e.currentTarget.style.backgroundColor = '#2EE577';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(57, 255, 136, 0.4)';
             if (!prefersReducedMotion) {
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
             }
           }
         }}
         onMouseLeave={(e) => {
           if (!isDisabled && currentValue.trim()) {
-            e.currentTarget.style.backgroundColor = '#89D7B7';
+            e.currentTarget.style.backgroundColor = '#39FF88';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(57, 255, 136, 0.3)';
             if (!prefersReducedMotion) {
               e.currentTarget.style.transform = 'translateY(0)';
             }
@@ -704,6 +709,7 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   // Get theme from context (Requirement 12.10)
   const { theme } = useTheme();
+  const colors = getThemeColors(theme);
   
   // Session storage key for persisting sessionId
   const SESSION_STORAGE_KEY = 'ecostep_chat_session_id';
@@ -902,13 +908,11 @@ export default function ChatInterface({
           flexDirection: 'column',
           height: className.includes('floating-chat-interface') ? '100%' : '600px',
           maxHeight: className.includes('floating-chat-interface') ? '100%' : '80vh',
-          backgroundColor: theme === 'light' ? '#FFFFFF' : '#1C1F26',
-          borderRadius: className.includes('floating-chat-interface') ? '0' : '16px', // No border radius when inside floating panel
+          backgroundColor: colors.pageBackground,
+          borderRadius: className.includes('floating-chat-interface') ? '0' : '16px',
           boxShadow: className.includes('floating-chat-interface') 
-            ? 'none' // No shadow when inside floating panel
-            : (theme === 'light'
-              ? '0 8px 24px rgba(0, 0, 0, 0.08)'
-              : '0 8px 24px rgba(0, 0, 0, 0.4)'),
+            ? 'none'
+            : colors.shadow,
           overflow: 'hidden',
           transition: 'background-color 0.3s, box-shadow 0.3s',
           outline: 'none',
@@ -921,14 +925,14 @@ export default function ChatInterface({
             className="chat-header"
             role="banner"
             style={{
-              padding: '18px 24px',
-              // Header uses user message color #1A312C (Requirement 12.1)
-              backgroundColor: '#1A312C',
-              color: '#FFFFFF',
+              padding: '20px 24px',
+              // Use navy background (#0B132B) to match app theme
+              backgroundColor: '#0B132B',
+              color: '#F5F7FA',
               fontWeight: '600',
-              fontSize: '16px',
+              fontSize: '17px',
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", // Requirement 12.4: EcoStep font family
-              borderBottom: '1px solid rgba(137, 215, 183, 0.2)',
+              borderBottom: '1px solid rgba(57, 255, 136, 0.15)',
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
@@ -938,22 +942,23 @@ export default function ChatInterface({
             <div
               aria-hidden="true"
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                backgroundColor: '#89D7B7', // Accent color
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                backgroundColor: '#39FF88', // Neon green accent color
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
+                fontSize: '20px',
                 fontWeight: '700',
-                color: '#1A312C',
+                color: '#0B132B',
                 flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)',
               }}
             >
               🌱
             </div>
-            <span>EcoStep Chat Assistant</span>
+            <span>EcoChat</span>
           </div>
         )}
 

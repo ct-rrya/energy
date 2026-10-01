@@ -87,10 +87,9 @@ export function Navigation() {
 
   return (
     <header 
-      className="border-b dark:bg-[#1C1F28] dark:border-[rgba(137,215,183,0.12)]" 
+      className="border-b bg-[#0B132B] dark:bg-[#0B132B]" 
       style={{ 
-        borderColor: 'rgba(26, 49, 44, 0.08)',
-        backgroundColor: '#FFFFFF'
+        borderColor: 'rgba(57, 255, 136, 0.12)',
       }}
       role="banner"
     >
@@ -102,7 +101,7 @@ export function Navigation() {
               to={ROUTES.HOME} 
               className="flex items-center gap-3 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:rounded-lg"
               style={{ 
-                '--tw-ring-color': '#89D7B7' 
+                '--tw-ring-color': '#39FF88' 
               } as React.CSSProperties}
               aria-label="EcoStep home"
             >
@@ -110,8 +109,8 @@ export function Navigation() {
                 <Logo className="h-full w-full" aria-hidden="true" />
               </div>
               <div>
-                <h1 className="text-xl font-bold dark:text-[#F9FAFB]" style={{ color: '#1A312C' }}>EcoStep</h1>
-                <p className="text-xs dark:text-[#9CA3AF]" style={{ color: '#428475' }}>Energy Monitoring System</p>
+                <h1 className="text-xl font-bold text-[#F5F7FA]">EcoStep</h1>
+                <p className="text-xs text-[#39FF88]">Energy Monitoring System</p>
               </div>
             </Link>
           </div>
@@ -130,13 +129,12 @@ export function Navigation() {
                 rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.HOME) 
-                  ? 'nav-link-active text-white dark:text-white' 
-                  : 'nav-link-inactive text-[#1A312C] dark:text-[#F9FAFB]'
+                  ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
+                  : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
                 }
               `}
               style={{
-                backgroundColor: isActivePath(ROUTES.HOME) ? '#428475' : 'transparent',
-                '--tw-ring-color': '#89D7B7'
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to home page"
               aria-current={isActivePath(ROUTES.HOME) ? 'page' : undefined}
@@ -144,7 +142,7 @@ export function Navigation() {
               Home
             </button>
 
-            {/* Dashboard Link */}
+            {/* Monitoring Link (was EcoStep Central) */}
             <button
               onClick={() => handleNavigate(ROUTES.DASHBOARD)}
               className={`
@@ -152,56 +150,56 @@ export function Navigation() {
                 rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.DASHBOARD) 
-                  ? 'nav-link-active text-white dark:text-white' 
-                  : 'nav-link-inactive text-[#1A312C] dark:text-[#F9FAFB]'
+                  ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
+                  : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
                 }
               `}
               style={{
-                backgroundColor: isActivePath(ROUTES.DASHBOARD) ? '#428475' : 'transparent',
-                '--tw-ring-color': '#89D7B7'
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
-              aria-label={isAuthenticated ? "Navigate to dashboard" : "Navigate to login to access dashboard"}
+              aria-label="Navigate to monitoring dashboard"
               aria-current={isActivePath(ROUTES.DASHBOARD) ? 'page' : undefined}
             >
-              Dashboard
+              Monitoring
             </button>
 
-            {/* Login/User Button */}
-            {isAuthenticated && user ? (
-              <div 
-                className="ml-2 flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white border"
-                style={{
-                  backgroundColor: '#3DDC97',
-                  borderColor: 'rgba(61, 220, 151, 0.2)',
-                }}
-                role="img"
-                aria-label={`User: ${user.name || user.email}`}
-                title={user.name || user.email}
-              >
-                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
-              </div>
-            ) : (
+            {/* Login Button - Visually Emphasized */}
+            {!isAuthenticated ? (
               <button
                 onClick={() => navigate(ROUTES.LOGIN)}
-                className="ml-2 rounded-lg px-6 py-2 text-sm font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#35c27b]"
+                className="ml-2 rounded-lg px-6 py-2 text-sm font-semibold text-[#0B132B] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#2FD670]"
                 style={{ 
-                  backgroundColor: '#3DDC97',
-                  '--tw-ring-color': '#89D7B7'
+                  backgroundColor: '#39FF88',
+                  '--tw-ring-color': '#39FF88',
+                  boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
                 } as React.CSSProperties}
                 aria-label="Login to your account"
               >
                 Login
               </button>
+            ) : (
+              <div 
+                className="ml-2 flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-[#0B132B] border"
+                style={{
+                  backgroundColor: '#39FF88',
+                  borderColor: 'rgba(57, 255, 136, 0.3)',
+                }}
+                role="img"
+                aria-label={`User: ${user?.name || user?.email}`}
+                title={user?.name || user?.email}
+              >
+                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+              </div>
             )}
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="ml-2 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border dark:border-[rgba(137,215,183,0.12)] hover:bg-[rgba(66,132,117,0.15)] dark:hover:bg-[rgba(137,215,183,0.1)]"
+              className="ml-2 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border hover:bg-[rgba(57,255,136,0.15)]"
               style={{
-                color: '#1A312C',
-                backgroundColor: 'rgba(66, 132, 117, 0.08)',
-                borderColor: 'rgba(26, 49, 44, 0.12)',
-                '--tw-ring-color': '#89D7B7'
+                color: '#F5F7FA',
+                backgroundColor: 'rgba(57, 255, 136, 0.08)',
+                borderColor: 'rgba(57, 255, 136, 0.15)',
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
               title={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
@@ -209,7 +207,7 @@ export function Navigation() {
               {theme === 'light' ? (
                 <Moon className="h-5 w-5" />
               ) : (
-                <Sun className="h-5 w-5 text-[#F9FAFB]" />
+                <Sun className="h-5 w-5 text-[#39FF88]" />
               )}
             </button>
           </nav>
@@ -217,10 +215,10 @@ export function Navigation() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex items-center justify-center rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 md:hidden hover:bg-[rgba(66,132,117,0.1)] dark:hover:bg-[rgba(137,215,183,0.1)]"
+            className="flex items-center justify-center rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 md:hidden hover:bg-[rgba(57,255,136,0.1)]"
             style={{
-              color: '#1A312C',
-              '--tw-ring-color': '#89D7B7'
+              color: '#F5F7FA',
+              '--tw-ring-color': '#39FF88'
             } as React.CSSProperties}
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
@@ -229,7 +227,7 @@ export function Navigation() {
             {isMobileMenuOpen ? (
               // Close icon
               <svg 
-                className="h-6 w-6 dark:text-[#F9FAFB]" 
+                className="h-6 w-6 text-[#F5F7FA]" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
@@ -240,7 +238,7 @@ export function Navigation() {
             ) : (
               // Hamburger icon
               <svg 
-                className="h-6 w-6 dark:text-[#F9FAFB]" 
+                className="h-6 w-6 text-[#F5F7FA]" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
@@ -256,8 +254,8 @@ export function Navigation() {
         {isMobileMenuOpen && (
           <nav
             id="mobile-menu"
-            className="mt-4 flex flex-col gap-2 border-t pt-4 md:hidden dark:border-[rgba(137,215,183,0.12)]"
-            style={{ borderColor: 'rgba(26, 49, 44, 0.1)' }}
+            className="mt-4 flex flex-col gap-2 border-t pt-4 md:hidden"
+            style={{ borderColor: 'rgba(57, 255, 136, 0.12)' }}
             aria-label="Mobile navigation"
             role="navigation"
           >
@@ -269,13 +267,12 @@ export function Navigation() {
                 rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.HOME) 
-                  ? 'text-white dark:text-white' 
-                  : 'text-[#1A312C] dark:text-[#F9FAFB]'
+                  ? 'text-[#0B132B] bg-[#39FF88]' 
+                  : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
                 }
               `}
               style={{
-                backgroundColor: isActivePath(ROUTES.HOME) ? '#428475' : 'transparent',
-                '--tw-ring-color': '#89D7B7'
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to home page"
               aria-current={isActivePath(ROUTES.HOME) ? 'page' : undefined}
@@ -283,7 +280,7 @@ export function Navigation() {
               Home
             </button>
 
-            {/* Dashboard Link */}
+            {/* Monitoring Link (was EcoStep Central) */}
             <button
               onClick={() => handleNavigate(ROUTES.DASHBOARD)}
               className={`
@@ -291,22 +288,38 @@ export function Navigation() {
                 rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.DASHBOARD) 
-                  ? 'text-white dark:text-white' 
-                  : 'text-[#1A312C] dark:text-[#F9FAFB]'
+                  ? 'text-[#0B132B] bg-[#39FF88]' 
+                  : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
                 }
               `}
               style={{
-                backgroundColor: isActivePath(ROUTES.DASHBOARD) ? '#428475' : 'transparent',
-                '--tw-ring-color': '#89D7B7'
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
-              aria-label={isAuthenticated ? "Navigate to dashboard" : "Navigate to login to access dashboard"}
+              aria-label="Navigate to monitoring dashboard"
               aria-current={isActivePath(ROUTES.DASHBOARD) ? 'page' : undefined}
             >
-              Dashboard
+              Monitoring
             </button>
 
             {/* Login/User Info */}
-            {isAuthenticated && user ? (
+            {!isAuthenticated ? (
+              <button
+                onClick={() => {
+                  navigate(ROUTES.LOGIN);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{ 
+                  backgroundColor: '#39FF88',
+                  color: '#0B132B',
+                  '--tw-ring-color': '#39FF88',
+                  boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
+                } as React.CSSProperties}
+                aria-label="Login to your account"
+              >
+                Login
+              </button>
+            ) : user ? (
               <div 
                 className="flex items-center gap-3 rounded-lg px-4 py-3 border dark:border-[rgba(137,215,183,0.12)]"
                 style={{ 

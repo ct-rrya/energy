@@ -112,10 +112,10 @@ export function LoginPage() {
                 <EcoStepLogo className="h-full w-full" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-[#FFF4E1] tracking-tight">
+                <h1 style={{ color: '#FFF4E1' }} className="text-4xl font-bold tracking-tight">
                   {APP_NAME}
                 </h1>
-                <p className="text-xs font-medium text-[#89D7B7] uppercase tracking-wider mt-0.5">
+                <p style={{ color: '#89D7B7' }} className="text-xs font-medium uppercase tracking-wider mt-0.5">
                   SUSTAINABILITY & ENERGY MONITORING
                 </p>
               </div>
@@ -123,12 +123,12 @@ export function LoginPage() {
           </div>
 
           {/* Large Heading */}
-          <h2 className="text-4xl xl:text-5xl font-bold text-[#FFF4E1] mb-6 leading-tight">
+          <h2 style={{ color: '#FFF4E1' }} className="text-4xl xl:text-5xl font-bold mb-6 leading-tight">
             Make Every Step<br />More Sustainable.
           </h2>
 
           {/* Description */}
-          <p className="text-lg text-[#89D7B7]/90 mb-10 leading-relaxed max-w-md">
+          <p style={{ color: 'rgba(137, 215, 183, 0.9)' }} className="text-lg mb-10 leading-relaxed max-w-md">
             Lorem ipsum dolor sit amet dubidubidapdap mamaaaaaaaaaaaaaaaa
             pwede nang mangawat lorem ipsum dolor sit amet dubidubidapdap.
           </p>
@@ -142,32 +142,32 @@ export function LoginPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-[#FFF4E1] font-semibold text-base">Monitor</h3>
-                <p className="text-[#89D7B7]/75 text-sm">Track energy consumption</p>
+                <h3 style={{ color: '#FFF4E1' }} className="font-semibold text-base">Monitor</h3>
+                <p style={{ color: 'rgba(137, 215, 183, 0.75)' }} className="text-sm">Track energy consumption</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#428475]/30 mt-0.5">
-                <svg className="h-5 w-5 text-[#89D7B7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg style={{ color: '#89D7B7' }} className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-[#FFF4E1] font-semibold text-base">Understand</h3>
-                <p className="text-[#89D7B7]/75 text-sm">Discover usage patterns</p>
+                <h3 style={{ color: '#FFF4E1' }} className="font-semibold text-base">Understand</h3>
+                <p style={{ color: 'rgba(137, 215, 183, 0.75)' }} className="text-sm">Discover usage patterns</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#428475]/30 mt-0.5">
-                <svg className="h-5 w-5 text-[#89D7B7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg style={{ color: '#89D7B7' }} className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-[#FFF4E1] font-semibold text-base">Improve</h3>
-                <p className="text-[#89D7B7]/75 text-sm">Make sustainable decisions</p>
+                <h3 style={{ color: '#FFF4E1' }} className="font-semibold text-base">Improve</h3>
+                <p style={{ color: 'rgba(137, 215, 183, 0.75)' }} className="text-sm">Make sustainable decisions</p>
               </div>
             </div>
           </div>
@@ -182,7 +182,7 @@ export function LoginPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1A312C] to-[#428475] shadow-lg p-2">
                 <EcoStepLogo className="h-full w-full" />
               </div>
-              <h1 className="text-2xl font-bold text-[#1A312C] dark:text-[#FFF4E1]">
+              <h1 style={{ color: theme === 'dark' ? '#FFF4E1' : '#0B132B' }} className="text-2xl font-bold">
                 {APP_NAME}
               </h1>
             </div>
@@ -190,13 +190,13 @@ export function LoginPage() {
 
           {/* Form Header */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-[#1A312C] dark:text-[#FFF4E1] mb-2">
+            <h2 style={{ color: theme === 'dark' ? '#FFF4E1' : '#0B132B' }} className="text-3xl font-bold mb-2">
               Welcome back
             </h2>
-            <h3 className="text-xl font-semibold text-[#428475] dark:text-[#89D7B7] mb-3">
+            <h3 style={{ color: theme === 'dark' ? '#89D7B7' : '#1FA35C' }} className="text-xl font-semibold mb-3">
               Sign in to EcoStep
             </h3>
-            <p className="text-sm text-[#1A312C]/70 dark:text-[#FFF4E1]/70">
+            <p style={{ color: theme === 'dark' ? 'rgba(255, 244, 225, 0.7)' : 'rgba(11, 19, 43, 0.7)' }} className="text-sm">
               Monitor your energy. Make every step count.
             </p>
           </div>
@@ -207,7 +207,8 @@ export function LoginPage() {
             <div>
               <label 
                 htmlFor="email" 
-                className="block text-sm font-medium text-[#1A312C] dark:text-[#FFF4E1] mb-2"
+                style={{ color: theme === 'dark' ? '#FFF4E1' : '#0B132B' }}
+                className="block text-sm font-medium mb-2"
               >
                 Email
               </label>
@@ -217,7 +218,12 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 dark:border-[#89D7B7]/30 bg-white/80 dark:bg-[#1A312C]/50 text-[#1A312C] dark:text-[#FFF4E1] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all"
+                style={{
+                  color: theme === 'dark' ? '#FFF4E1' : '#0B132B',
+                  backgroundColor: theme === 'dark' ? 'rgba(26, 49, 44, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                  borderColor: theme === 'dark' ? 'rgba(137, 215, 183, 0.3)' : 'rgba(11, 19, 43, 0.2)'
+                }}
+                className="w-full px-4 py-3 rounded-xl border placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#39FF88] focus:border-transparent transition-all"
                 required
               />
             </div>
@@ -226,7 +232,8 @@ export function LoginPage() {
             <div>
               <label 
                 htmlFor="password" 
-                className="block text-sm font-medium text-[#1A312C] dark:text-[#FFF4E1] mb-2"
+                style={{ color: theme === 'dark' ? '#FFF4E1' : '#0B132B' }}
+                className="block text-sm font-medium mb-2"
               >
                 Password
               </label>
@@ -237,13 +244,19 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 rounded-xl border border-[#1A312C]/20 dark:border-[#89D7B7]/30 bg-white/80 dark:bg-[#1A312C]/50 text-[#1A312C] dark:text-[#FFF4E1] placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#428475] focus:border-transparent transition-all pr-12"
+                  style={{
+                    color: theme === 'dark' ? '#FFF4E1' : '#0B132B',
+                    backgroundColor: theme === 'dark' ? 'rgba(26, 49, 44, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+                    borderColor: theme === 'dark' ? 'rgba(137, 215, 183, 0.3)' : 'rgba(11, 19, 43, 0.2)'
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border placeholder:text-[rgb(var(--color-neutral-400))] focus:outline-none focus:ring-2 focus:ring-[#39FF88] focus:border-transparent transition-all pr-12"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--color-neutral-500))] hover:text-[#428475] transition-colors"
+                  style={{ color: theme === 'dark' ? '#89D7B7' : '#1FA35C' }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80 transition-opacity"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />

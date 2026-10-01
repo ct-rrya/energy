@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ClipboardCheck, TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
@@ -119,14 +119,94 @@ export function DiagnosticTestForm() {
           className="text-sm"
           style={{ color: colors.textSecondary }}
         >
-          Record actual measured energy from a diagnostic test to compare against expected values.
+          Record measured energy and compare it with the configured reference.
         </p>
       </div>
 
+      {/* Reference Values Display - Always show when available */}
+      {referenceConfig && (
+        <div 
+          className="mb-4 p-4 rounded-lg"
+          style={{ backgroundColor: colors.surfaceMuted }}
+        >
+          <p 
+            className="text-xs font-medium mb-3"
+            style={{ 
+              color: colors.textSecondary,
+              fontWeight: TYPOGRAPHY.fontWeight.medium
+            }}
+          >
+            Reference Values
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p 
+                className="text-lg font-semibold"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
+                {referenceConfig.appliedWeightKg} kg
+              </p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Applied Weight
+              </p>
+            </div>
+            <div>
+              <p 
+                className="text-lg font-semibold"
+                style={{ 
+                  color: colors.accent,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
+                {referenceConfig.expectedEnergyWh} Wh
+              </p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Expected Energy
+              </p>
+            </div>
+            <div>
+              <p 
+                className="text-lg font-semibold"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontWeight: TYPOGRAPHY.fontWeight.semibold
+                }}
+              >
+                ±{referenceConfig.tolerancePercent}%
+              </p>
+              <p 
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Tolerance
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Run Test Button */}
       {!referenceConfig && (
-        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+        <div 
+          className="p-4 rounded-lg mb-4"
+          style={{
+            backgroundColor: theme === 'light' ? '#FEF2F2' : 'rgba(127, 29, 29, 0.2)',
+            border: `1px solid ${theme === 'light' ? '#FCA5A5' : '#991B1B'}`
+          }}
+        >
+          <p 
+            className="text-sm"
+            style={{ color: theme === 'light' ? '#991B1B' : '#FCA5A5' }}
+          >
             Reference configuration must be set before running diagnostic tests.
           </p>
         </div>
@@ -137,9 +217,7 @@ export function DiagnosticTestForm() {
         disabled={!referenceConfig}
         variant="primary"
         fullWidth
-        className="flex items-center justify-center gap-2"
       >
-        <ClipboardCheck className="h-5 w-5" />
         Run Diagnostic Test
       </Button>
 
@@ -258,7 +336,7 @@ export function DiagnosticTestForm() {
             <div className="grid grid-cols-2 gap-4">
               {/* Expected Energy */}
               <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-1">
+                <p className="text-xs font-medium text-[#374151] dark:text-[#9CA3AF] mb-1">
                   Expected Energy
                 </p>
                 <p className="text-xl font-bold text-[#1A1D23] dark:text-[#EDEEF0]">
@@ -268,7 +346,7 @@ export function DiagnosticTestForm() {
 
               {/* Actual Energy */}
               <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-1">
+                <p className="text-xs font-medium text-[#374151] dark:text-[#9CA3AF] mb-1">
                   Actual Energy
                 </p>
                 <p className="text-xl font-bold text-[#1A1D23] dark:text-[#EDEEF0]">
@@ -278,7 +356,7 @@ export function DiagnosticTestForm() {
 
               {/* Difference */}
               <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-1">
+                <p className="text-xs font-medium text-[#374151] dark:text-[#9CA3AF] mb-1">
                   Difference
                 </p>
                 <p className={`text-xl font-bold ${
@@ -292,7 +370,7 @@ export function DiagnosticTestForm() {
 
               {/* Performance */}
               <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-1">
+                <p className="text-xs font-medium text-[#374151] dark:text-[#9CA3AF] mb-1">
                   Performance
                 </p>
                 <p className="text-xl font-bold text-[#1A1D23] dark:text-[#EDEEF0]">
@@ -304,7 +382,7 @@ export function DiagnosticTestForm() {
             {/* Notes Display */}
             {testResult.notes && (
               <div className="p-4 rounded-lg bg-[#F5F6F8] dark:bg-[#2A2E37]">
-                <p className="text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF] mb-2">
+                <p className="text-xs font-medium text-[#374151] dark:text-[#9CA3AF] mb-2">
                   Notes
                 </p>
                 <p className="text-sm text-[#1A1D23] dark:text-[#EDEEF0]">

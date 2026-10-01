@@ -81,45 +81,45 @@ export function getThemeColors(theme: ThemeMode) {
   
   return {
     // Page & Layout
-    pageBackground: isLight ? BRAND_COLORS.warmCream : ECOSTEP_COLORS.dark.page,
-    sidebarBackground: isLight ? '#FFFFFF' : ECOSTEP_COLORS.dark.sidebar,
+    pageBackground: isLight ? '#F5F7FA' : '#0B132B',
+    sidebarBackground: '#0B132B', // Navy in BOTH modes per spec
     
     // Surface Hierarchy
-    cardBackground: isLight ? '#FFFFFF' : ECOSTEP_COLORS.dark.card,
-    cardHover: isLight ? ECOSTEP_COLORS.gray[50] : ECOSTEP_COLORS.dark.cardHover,
-    inputBackground: isLight ? '#FFFFFF' : ECOSTEP_COLORS.dark.input,
-    elevatedBackground: isLight ? '#FFFFFF' : ECOSTEP_COLORS.dark.elevated,
-    surfaceMuted: isLight ? '#F8FFFE' : ECOSTEP_COLORS.dark.input,  // Nested panels
+    cardBackground: isLight ? '#FFFFFF' : '#080E22',
+    cardHover: isLight ? ECOSTEP_COLORS.gray[50] : '#0D1528',
+    inputBackground: isLight ? '#FFFFFF' : '#080E22',
+    elevatedBackground: isLight ? '#FFFFFF' : '#0B132B',
+    surfaceMuted: isLight ? '#F8FFFE' : '#070D1E',
     
     // Borders
-    border: isLight ? ECOSTEP_COLORS.gray[200] : ECOSTEP_COLORS.dark.border,
-    borderSubtle: isLight ? ECOSTEP_COLORS.gray[100] : '#1F232B',
-    borderStrong: isLight ? ECOSTEP_COLORS.gray[300] : '#33374',
+    border: isLight ? 'rgba(11, 19, 43, 0.08)' : 'rgba(57, 255, 136, 0.12)',
+    borderSubtle: isLight ? 'rgba(11, 19, 43, 0.05)' : 'rgba(57, 255, 136, 0.08)',
+    borderStrong: isLight ? 'rgba(11, 19, 43, 0.15)' : 'rgba(57, 255, 136, 0.20)',
     
     // Typography
-    textPrimary: isLight ? BRAND_COLORS.darkGreen : '#F9FAFB',
-    textSecondary: isLight ? ECOSTEP_COLORS.gray[600] : ECOSTEP_COLORS.gray[400],
-    textTertiary: isLight ? ECOSTEP_COLORS.gray[500] : ECOSTEP_COLORS.gray[500],
-    textMuted: isLight ? ECOSTEP_COLORS.gray[400] : ECOSTEP_COLORS.gray[600],
+    textPrimary: isLight ? '#0B132B' : '#F5F7FA',
+    textSecondary: isLight ? '#6B7280' : '#9CA3AF',
+    textTertiary: isLight ? '#9CA3AF' : '#6B7280',
+    textMuted: isLight ? '#D1D5DB' : '#4B5563',
     
-    // Navigation (Light mode needs dark text, dark mode needs light text)
-    navText: isLight ? BRAND_COLORS.darkGreen : ECOSTEP_COLORS.gray[400],
-    navTextHover: isLight ? BRAND_COLORS.mediumGreen : ECOSTEP_COLORS.gray[300],
-    navTextActive: '#FFFFFF',
-    navIcon: isLight ? BRAND_COLORS.darkGreen : ECOSTEP_COLORS.gray[400],
-    navIconActive: '#FFFFFF',
-    navIconInactive: isLight ? ECOSTEP_COLORS.gray[500] : ECOSTEP_COLORS.gray[500],
+    // Navigation (Navy sidebar needs light text in both modes!)
+    navText: '#F5F7FA', // Light text on navy sidebar in BOTH modes
+    navTextHover: '#FFFFFF',
+    navTextActive: '#0B132B', // Navy text on neon green active state
+    navIcon: '#F5F7FA',
+    navIconActive: '#0B132B',
+    navIconInactive: '#9CA3AF',
     
     // Accent Colors
-    accent: isLight ? BRAND_COLORS.mediumGreen : ECOSTEP_COLORS.green.light,
-    accentHover: isLight ? ECOSTEP_COLORS.green.dark : ECOSTEP_COLORS.green.primary,
-    accentSubtle: isLight ? 'rgba(137, 215, 183, 0.15)' : 'rgba(62, 217, 138, 0.15)',
-    accentLight: isLight ? '#E6F7F0' : 'rgba(62, 217, 138, 0.1)',
+    accent: isLight ? '#1FA35C' : '#39FF88', // Darkened in light, neon in dark
+    accentHover: isLight ? '#188A4D' : '#2FD670',
+    accentSubtle: isLight ? 'rgba(31, 163, 92, 0.10)' : 'rgba(57, 255, 136, 0.10)',
+    accentLight: isLight ? 'rgba(31, 163, 92, 0.05)' : 'rgba(57, 255, 136, 0.05)',
     
     // Interactive States
-    hoverBackground: isLight ? ECOSTEP_COLORS.gray[50] : 'rgba(255, 255, 255, 0.05)',
-    activeBackground: isLight ? BRAND_COLORS.mediumGreen : ECOSTEP_COLORS.green.light,
-    focusRing: isLight ? BRAND_COLORS.mediumGreen : ECOSTEP_COLORS.green.light,
+    hoverBackground: isLight ? ECOSTEP_COLORS.gray[50] : 'rgba(57, 255, 136, 0.05)',
+    activeBackground: isLight ? '#39FF88' : '#39FF88', // Neon green in both modes
+    focusRing: isLight ? '#39FF88' : '#39FF88',
     
     // Semantic
     success: ECOSTEP_COLORS.success,

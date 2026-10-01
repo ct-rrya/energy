@@ -10,6 +10,8 @@
  * Requirements: 10.10, 12.3, 4.12 - Touch-friendly responsive design
  */
 
+import { getThemeColors } from '@/lib/theme';
+
 interface SuggestedActionsProps {
   /**
    * Array of suggestion strings to display
@@ -104,15 +106,17 @@ export default function SuggestedActions({
     return null;
   }
 
+  const colors = getThemeColors(theme);
+
   return (
     <div
       className={`suggested-actions ${className}`}
       role="region"
       aria-label="Suggested actions"
       style={{
-        padding: '12px 16px',
-        backgroundColor: theme === 'light' ? '#F9FAFB' : '#1C1F26',
-        borderTop: theme === 'light' ? '1px solid #E5E7EB' : '1px solid #2A2E37',
+        padding: '12px 20px',
+        backgroundColor: colors.cardBackground,
+        borderTop: `1px solid ${colors.border}`,
         display: 'flex',
         flexWrap: 'wrap',
         gap: '8px',
@@ -125,7 +129,7 @@ export default function SuggestedActions({
         id="suggestions-label"
         style={{
           fontSize: '12px',
-          color: theme === 'light' ? '#6B7280' : '#9CA3AF',
+          color: colors.textSecondary,
           fontWeight: '500',
           marginRight: '4px',
         }}
@@ -133,7 +137,7 @@ export default function SuggestedActions({
         Suggestions:
       </span>
 
-      {/* Render each suggestion as a clickable button - Uses EcoStep accent color #89D7B7 (Requirements: 12.3, 18.1) */}
+      {/* Render each suggestion as a clickable button - Uses neon green accent */}
       {suggestions.map((suggestion, index) => (
         <button
           key={`${suggestion}-${index}`}
@@ -141,26 +145,26 @@ export default function SuggestedActions({
           onClick={() => onSuggestionClick(suggestion)}
           aria-label={`Suggested action: ${suggestion}`}
           style={{
-            padding: '8px 14px',
+            padding: '8px 16px',
             fontSize: '13px',
             fontWeight: '500',
-            color: '#1A312C',
-            backgroundColor: theme === 'light' ? '#FFFFFF' : '#12141A',
-            border: '1.5px solid #89D7B7', // Accent color (Requirement 12.3)
-            borderRadius: '16px',
+            color: '#0B132B',
+            backgroundColor: colors.inputBackground,
+            border: '1.5px solid #39FF88', // Neon green border
+            borderRadius: '20px',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             whiteSpace: 'nowrap',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#89D7B7'; // Accent color (Requirement 12.3)
-            e.currentTarget.style.color = '#FFFFFF';
+            e.currentTarget.style.backgroundColor = '#39FF88';
+            e.currentTarget.style.color = '#0B132B';
             e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 2px 6px rgba(137, 215, 183, 0.3)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(57, 255, 136, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = theme === 'light' ? '#FFFFFF' : '#12141A';
-            e.currentTarget.style.color = '#1A312C';
+            e.currentTarget.style.backgroundColor = colors.inputBackground;
+            e.currentTarget.style.color = '#0B132B';
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = 'none';
           }}

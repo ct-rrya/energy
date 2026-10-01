@@ -115,3 +115,8 @@ export function isTokenExpired(token: string): boolean {
     return true;
   }
 }
+
+/**
+ * Re-export calculateTrend utilities for convenience
+ */
+export { calculateTrend, type TrendCalculation, type TrendDirection } from './calculateTrend';
