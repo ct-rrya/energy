@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon, Shield, ShieldCheck, LogOut, RefreshCw } from 'lucide-react';
-import Logo from '@/assets/logo/1.svg?react';
+import { Sun, Moon, Shield, ShieldCheck, LogOut, RefreshCw, Footprints } from 'lucide-react';
 import { ROUTES } from '@/routes/routes.config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -9,14 +8,19 @@ import { useTheme } from '@/contexts/ThemeContext';
 /**
  * Navigation Component
  * 
- * Main navigation bar for EcoStep application with production-grade styling
+ * Refined navigation bar for EcoStep application
  * 
- * Design Refinements (Task 18.2):
- * - Flat colors for active/hover states (no gradients)
- * - No transform: scale effects on hover (Req 9.3)
- * - Visible focus states with outline/border (Req 17.3)
- * - Consistent typography (font-weight: 600)
- * - EcoStep green used sparingly for primary actions only
+ * Design Specifications:
+ * - Translucent background with backdrop-blur and sticky positioning
+ * - Footprints icon on dark tile with faint green border
+ * - Minimal use of green accent (#39FF88) - only active links and login button
+ * - Muted gray inactive links that turn white on hover
+ * - Compact, borderless circular theme toggle
+ * - 64px height with hairline bottom border
+ * 
+ * Accent Discipline:
+ * - Green (#39FF88) appears only in: active nav link and Admin Login button
+ * - All other elements use neutral grays and whites
  * 
  * Requirements: 
  * - 9.3: No transform effects on button/nav hover
@@ -88,9 +92,10 @@ export function Navigation() {
 
   return (
     <header 
-      className="border-b bg-[#0B132B] dark:bg-[#0B132B]" 
+      className="sticky top-0 z-50 border-b backdrop-blur-md" 
       style={{ 
-        borderColor: 'rgba(57, 255, 136, 0.12)',
+        backgroundColor: 'rgba(11, 19, 43, 0.85)',
+        borderColor: 'rgba(255, 255, 255, 0.06)',
       }}
       role="banner"
     >
@@ -106,19 +111,38 @@ export function Navigation() {
               } as React.CSSProperties}
               aria-label="EcoStep home"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1.5">
-                <Logo className="h-full w-full" aria-hidden="true" />
+              {/* Logo Icon with dark tile and faint green border */}
+              <div 
+                className="flex h-10 w-10 items-center justify-center rounded-lg border"
+                style={{
+                  backgroundColor: 'rgba(11, 19, 43, 0.6)',
+                  borderColor: 'rgba(57, 255, 136, 0.2)',
+                }}
+              >
+                <Footprints 
+                  className="h-6 w-6" 
+                  style={{ color: '#39FF88' }}
+                  aria-hidden="true" 
+                />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-[#F5F7FA]">EcoStep</h1>
-                <p className="text-xs text-[#39FF88]">Energy Monitoring System</p>
+                <h1 className="text-xl font-semibold text-[#F5F7FA]">EcoStep</h1>
+                <p 
+                  className="text-xs" 
+                  style={{ 
+                    color: '#8B92A8',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  Energy Monitoring System
+                </p>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation Links */}
           <nav 
-            className="hidden items-center gap-2 md:flex"
+            className="hidden items-center gap-1 md:flex"
             aria-label="Main navigation"
             role="navigation"
           >
@@ -127,14 +151,15 @@ export function Navigation() {
               onClick={() => handleNavigate(ROUTES.HOME)}
               className={`
                 nav-link
-                rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
+                rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.HOME) 
-                  ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
-                  : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  ? 'text-[#39FF88]' 
+                  : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                 }
               `}
               style={{
+                backgroundColor: isActivePath(ROUTES.HOME) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                 '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to home page"
@@ -143,19 +168,20 @@ export function Navigation() {
               Home
             </button>
 
-            {/* Monitoring Link (was EcoStep Central) */}
+            {/* Monitoring Link */}
             <button
               onClick={() => handleNavigate(ROUTES.DASHBOARD)}
               className={`
                 nav-link
-                rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
+                rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.DASHBOARD) 
-                  ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
-                  : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  ? 'text-[#39FF88]' 
+                  : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                 }
               `}
               style={{
+                backgroundColor: isActivePath(ROUTES.DASHBOARD) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                 '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to monitoring dashboard"
@@ -170,14 +196,15 @@ export function Navigation() {
                 onClick={() => handleNavigate(ROUTES.ADMIN_MANAGEMENT)}
                 className={`
                   nav-link
-                  rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
+                  rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200
                   focus:outline-none focus:ring-2 focus:ring-offset-2
                   ${isActivePath(ROUTES.ADMIN_MANAGEMENT) 
-                    ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
-                    : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                    ? 'text-[#39FF88]' 
+                    : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                   }
                 `}
                 style={{
+                  backgroundColor: isActivePath(ROUTES.ADMIN_MANAGEMENT) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                   '--tw-ring-color': '#39FF88'
                 } as React.CSSProperties}
                 aria-label="Navigate to administrator management"
@@ -190,31 +217,29 @@ export function Navigation() {
             {!isAuthenticated ? (
               <button
                 onClick={() => navigate(ROUTES.ADMIN_LOGIN)}
-                className="ml-2 rounded-lg px-6 py-2 text-sm font-semibold text-[#0B132B] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#2FD670]"
+                className="ml-3 rounded-lg px-4 py-1.5 text-sm font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#16a34a]"
                 style={{ 
-                  backgroundColor: '#39FF88',
-                  '--tw-ring-color': '#39FF88',
-                  boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
+                  backgroundColor: '#22c55e',
+                  '--tw-ring-color': '#22c55e',
                 } as React.CSSProperties}
                 aria-label="Administrator login"
               >
                 Admin Login
               </button>
             ) : (
-              <div className="ml-2 relative">
+              <div className="ml-3 relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[rgba(57,255,136,0.1)]"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[rgba(255,255,255,0.05)]"
                   style={{
-                    backgroundColor: 'rgba(57, 255, 136, 0.08)',
-                    borderColor: 'rgba(57, 255, 136, 0.15)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
                     '--tw-ring-color': '#39FF88'
                   } as React.CSSProperties}
                   aria-label="User menu"
                 >
                   <div 
                     className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-[#0B132B]"
-                    style={{ backgroundColor: '#39FF88' }}
+                    style={{ backgroundColor: '#9CA3AF' }}
                   >
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
                   </div>
@@ -228,7 +253,7 @@ export function Navigation() {
                       ) : user?.role === 'SYSTEM_ADMIN' ? (
                         <Shield className="w-3 h-3 text-blue-400" />
                       ) : null}
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-[#9CA3AF]">
                         {user?.role?.replace('_', ' ')}
                       </p>
                     </div>
@@ -273,14 +298,13 @@ export function Navigation() {
                 )}
               </div>
             )}
-            {/* Theme Toggle Button */}
+
+            {/* Theme Toggle Button - Circular, borderless */}
             <button
               onClick={toggleTheme}
-              className="ml-2 flex items-center justify-center rounded-lg p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 border hover:bg-[rgba(57,255,136,0.15)]"
+              className="ml-2 flex items-center justify-center rounded-full p-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[rgba(255,255,255,0.1)]"
               style={{
                 color: '#F5F7FA',
-                backgroundColor: 'rgba(57, 255, 136, 0.08)',
-                borderColor: 'rgba(57, 255, 136, 0.15)',
                 '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
@@ -289,7 +313,7 @@ export function Navigation() {
               {theme === 'light' ? (
                 <Moon className="h-5 w-5" />
               ) : (
-                <Sun className="h-5 w-5 text-[#39FF88]" />
+                <Sun className="h-5 w-5" />
               )}
             </button>
           </nav>
@@ -337,7 +361,7 @@ export function Navigation() {
           <nav
             id="mobile-menu"
             className="mt-4 flex flex-col gap-2 border-t pt-4 md:hidden"
-            style={{ borderColor: 'rgba(57, 255, 136, 0.12)' }}
+            style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
             aria-label="Mobile navigation"
             role="navigation"
           >
@@ -346,14 +370,15 @@ export function Navigation() {
               onClick={() => handleNavigate(ROUTES.HOME)}
               className={`
                 nav-link-mobile
-                rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
+                rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.HOME) 
-                  ? 'text-[#0B132B] bg-[#39FF88]' 
-                  : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  ? 'text-[#39FF88]' 
+                  : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                 }
               `}
               style={{
+                backgroundColor: isActivePath(ROUTES.HOME) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                 '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to home page"
@@ -362,19 +387,20 @@ export function Navigation() {
               Home
             </button>
 
-            {/* Monitoring Link (was EcoStep Central) */}
+            {/* Monitoring Link */}
             <button
               onClick={() => handleNavigate(ROUTES.DASHBOARD)}
               className={`
                 nav-link-mobile
-                rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
+                rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isActivePath(ROUTES.DASHBOARD) 
-                  ? 'text-[#0B132B] bg-[#39FF88]' 
-                  : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  ? 'text-[#39FF88]' 
+                  : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                 }
               `}
               style={{
+                backgroundColor: isActivePath(ROUTES.DASHBOARD) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                 '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label="Navigate to monitoring dashboard"
@@ -389,14 +415,15 @@ export function Navigation() {
                 onClick={() => handleNavigate(ROUTES.ADMIN_MANAGEMENT)}
                 className={`
                   nav-link-mobile
-                  rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
+                  rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200
                   focus:outline-none focus:ring-2 focus:ring-offset-2
                   ${isActivePath(ROUTES.ADMIN_MANAGEMENT) 
-                    ? 'text-[#0B132B] bg-[#39FF88]' 
-                    : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                    ? 'text-[#39FF88]' 
+                    : 'text-[#9CA3AF] hover:text-[#F5F7FA]'
                   }
                 `}
                 style={{
+                  backgroundColor: isActivePath(ROUTES.ADMIN_MANAGEMENT) ? 'rgba(57, 255, 136, 0.12)' : 'transparent',
                   '--tw-ring-color': '#39FF88'
                 } as React.CSSProperties}
                 aria-label="Navigate to administrator management"
@@ -412,12 +439,10 @@ export function Navigation() {
                   navigate(ROUTES.ADMIN_LOGIN);
                   setIsMobileMenuOpen(false);
                 }}
-                className="rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#16a34a]"
                 style={{ 
-                  backgroundColor: '#39FF88',
-                  color: '#0B132B',
-                  '--tw-ring-color': '#39FF88',
-                  boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
+                  backgroundColor: '#22c55e',
+                  '--tw-ring-color': '#22c55e',
                 } as React.CSSProperties}
                 aria-label="Administrator login"
               >
@@ -426,15 +451,14 @@ export function Navigation() {
             ) : user ? (
               <div className="space-y-2">
                 <div 
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 border"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3"
                   style={{ 
-                    backgroundColor: 'rgba(57, 255, 136, 0.08)',
-                    borderColor: 'rgba(57, 255, 136, 0.15)'
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
                   }}
                 >
                   <div 
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-[#0B132B]"
-                    style={{ backgroundColor: '#39FF88' }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
+                    style={{ backgroundColor: '#9CA3AF' }}
                   >
                     {user.name?.charAt(0).toUpperCase() || 'A'}
                   </div>
@@ -448,7 +472,7 @@ export function Navigation() {
                       ) : user.role === 'SYSTEM_ADMIN' ? (
                         <Shield className="w-3 h-3 text-blue-400" />
                       ) : null}
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-[#9CA3AF]">
                         {user.role?.replace('_', ' ')}
                       </p>
                     </div>
@@ -460,7 +484,7 @@ export function Navigation() {
                       switchAdministrator();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-semibold text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)] transition-colors duration-200"
+                    className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-medium text-[#F5F7FA] hover:bg-[rgba(255,255,255,0.05)] transition-colors duration-200"
                   >
                     <RefreshCw className="w-4 h-4" />
                     Switch Administrator
@@ -471,7 +495,7 @@ export function Navigation() {
                     logout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-semibold text-red-400 hover:bg-red-900/20 transition-colors duration-200"
+                  className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-medium text-red-400 hover:bg-red-900/20 transition-colors duration-200"
                 >
                   <LogOut className="w-4 h-4" />
                   Logout
@@ -484,12 +508,10 @@ export function Navigation() {
                 toggleTheme();
                 setIsMobileMenuOpen(false);
               }}
-              className="rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-3 border dark:border-[rgba(137,215,183,0.12)] hover:bg-[rgba(66,132,117,0.15)] dark:hover:bg-[rgba(137,215,183,0.1)]"
+              className="rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-3 hover:bg-[rgba(255,255,255,0.05)]"
               style={{
-                color: '#1A312C',
-                backgroundColor: 'rgba(66, 132, 117, 0.08)',
-                borderColor: 'rgba(26, 49, 44, 0.12)',
-                '--tw-ring-color': '#89D7B7'
+                color: '#F5F7FA',
+                '--tw-ring-color': '#39FF88'
               } as React.CSSProperties}
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
             >
@@ -500,8 +522,8 @@ export function Navigation() {
                 </>
               ) : (
                 <>
-                  <Sun className="h-5 w-5 text-[#F9FAFB]" />
-                  <span className="text-[#F9FAFB]">Light Mode</span>
+                  <Sun className="h-5 w-5" />
+                  <span>Light Mode</span>
                 </>
               )}
             </button>
