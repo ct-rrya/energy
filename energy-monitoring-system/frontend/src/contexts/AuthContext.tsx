@@ -10,7 +10,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/api/services';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { isTokenExpired } from '@/lib/utils';
-import type { AuthContextState, LoginCredentials, User } from '@/types';
+import type {
+  AuthContextState,
+  LoginCredentials,
+  AccessCodeLoginCredentials,
+  User,
+} from '@/types';
 
 /**
  * Auth Context
@@ -98,6 +103,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
+   * Login with access code (administrator)
+   */
+  const loginWithAccessCode = useCallback(
+    async (credentials: AccessCodeLoginCredentials): Promise<User> => {
+      try {
+        const response = await authService.loginWithAccessCode(credentials);
+        const { token: newToken, user: newUser } = response.data;
+
+        // Store in localStorage
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
+        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(newUser));
+
+        // Update state
+        setToken(newToken);
+        setUser(newUser);
+        
+        // Return user for immediate use
+        return newUser;
+      } catch (error) {
+        console.error('Access code login error:', error);
+        // Re-throw error for component to handle
+        throw error;
+      }
+    },
+    [],
+  );
+
+  /**
    * Logout function
    */
   const logout = useCallback(() => {
@@ -113,13 +146,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     queryClient.clear();
   }, [queryClient]);
 
+  /**
+   * Switch administrator (logout and redirect to admin login)
+   */
+  const switchAdministrator = useCallback(() => {
+    // Clear auth
+    logout();
+
+    // Redirect to admin access code login
+    window.location.href = '/admin/login';
+  }, [logout]);
+
   const value: AuthContextState = {
     user,
     token,
     isAuthenticated: !!user && !!token,
     isLoading,
     login,
+    loginWithAccessCode,
     logout,
+    switchAdministrator,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

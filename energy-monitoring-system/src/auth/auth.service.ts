@@ -162,6 +162,134 @@ export class AuthService {
   }
 
   /**
+   * Validate administrator access code
+   *
+   * @param accessCode - Plain text access code
+   * @returns User document (without sensitive fields) or null if invalid
+   *
+   * Process:
+   * 1. Find admin users by role (SYSTEM_ADMIN or SUPER_ADMIN)
+   * 2. Check each user's access code hash
+   * 3. Compare access code with bcrypt (constant-time)
+   * 4. Verify account is active
+   * 5. Return matching user without sensitive fields
+   *
+   * Security:
+   * - Returns null for all failure cases (generic response)
+   * - Uses bcrypt.compare for constant-time comparison
+   * - Checks account status (isActive)
+   * - Never exposes which admin accounts exist
+   * - Access codes must be exact match (case-sensitive)
+   *
+   * Usage:
+   *   const user = await authService.validateAccessCode('ABC123DEF456');
+   *   if (!user) {
+   *     throw new UnauthorizedException('Invalid access code');
+   *   }
+   */
+  async validateAccessCode(accessCode: string): Promise<UserDocument | null> {
+    // Find all admin users (SYSTEM_ADMIN and SUPER_ADMIN) with access code hash
+    const adminUsers = await this.usersService.findAllAdmins(true);
+
+    // Check each admin's access code
+    for (const user of adminUsers) {
+      // Skip if account is inactive
+      if (!user.isActive) {
+        continue;
+      }
+
+      // Skip if no access code hash
+      if (!user.accessCodeHash) {
+        continue;
+      }
+
+      // Compare access code using bcrypt (constant-time comparison)
+      const isAccessCodeValid = await user.compareAccessCode(accessCode);
+
+      if (isAccessCodeValid) {
+        // Valid access code found - return user
+        return user;
+      }
+    }
+
+    // No matching access code - return null
+    return null;
+  }
+
+  /**
+   * Handle administrator login with access code
+   *
+   * @param accessCode - Plain text access code
+   * @returns Authentication response with JWT token and user data
+   * @throws UnauthorizedException if access code is invalid
+   *
+   * Process:
+   * 1. Validate access code
+   * 2. Generate JWT access token with session ID
+   * 3. Update last login and activity timestamps
+   * 4. Return standardized response with token and user data
+   *
+   * Security:
+   * - Generic error message (doesn't reveal why login failed)
+   * - JWT token includes session ID (jti) for session tracking
+   * - JWT token has expiration (configured in .env)
+   * - Access code never included in response or logs
+   *
+   * Usage:
+   *   const response = await authService.loginWithAccessCode('ABC123DEF456');
+   *   // Response: { success: true, data: { token, user } }
+   */
+  async loginWithAccessCode(accessCode: string): Promise<AuthResponseDto> {
+    // Validate access code
+    const user = await this.validateAccessCode(accessCode);
+
+    if (!user) {
+      // Generic error message for security
+      // Doesn't reveal whether access code exists or which admin account
+      throw new UnauthorizedException('Invalid access code');
+    }
+
+    // Generate unique session ID for tracking
+    const sessionId = `${user._id.toString()}_${Date.now()}`;
+
+    // Generate JWT access token
+    const payload = {
+      sub: user._id.toString(), // Subject (user ID)
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      jti: sessionId, // JWT ID (session identifier)
+    };
+
+    const token = this.jwtService.sign(payload);
+
+    // Update last login and activity timestamps
+    await this.usersService.updateLastLoginAndActivity(user._id.toString());
+
+    // Map user document to response DTO
+    const userResponse: UserResponseDto = {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive,
+      lastLoginAt: new Date(), // Just logged in
+      createdAt: (user as any).createdAt,
+      updatedAt: (user as any).updatedAt,
+    };
+
+    // Return standardized response
+    return {
+      success: true,
+      message: 'Access code verified',
+      data: {
+        token,
+        user: userResponse,
+      },
+    };
+  }
+
+  /**
    * Hash password with bcrypt
    *
    * @param password - Plain text password
@@ -190,5 +318,22 @@ export class AuthService {
   async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(this.SALT_ROUNDS);
     return bcrypt.hash(password, salt);
+  }
+
+  /**
+   * Hash access code with bcrypt
+   *
+   * @param accessCode - Plain text access code
+   * @returns Hashed access code
+   *
+   * Same security properties as hashPassword.
+   * Access codes and passwords use same hashing algorithm.
+   *
+   * Usage:
+   *   const hashedCode = await authService.hashAccessCode('ABC123DEF456');
+   */
+  async hashAccessCode(accessCode: string): Promise<string> {
+    const salt = await bcrypt.genSalt(this.SALT_ROUNDS);
+    return bcrypt.hash(accessCode, salt);
   }
 }

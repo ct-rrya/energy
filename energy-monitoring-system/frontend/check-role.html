@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check User Role</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Role Diagnostic</h1>
+    
+    <div id="result">Checking...</div>
+    
+    <script>
+        // Check localStorage for user data
+        const token = localStorage.getItem('auth_token');
+        const userStr = localStorage.getItem('auth_user');
+        
+        const resultDiv = document.getElementById('result');
+        
+        if (!token || !userStr) {
+            resultDiv.innerHTML = `
+                <div class="warning">
+                    <h3>⚠️ Not Logged In</h3>
+                    <p>No authentication data found in localStorage.</p>
+                    <p>Please login at <a href="http://localhost:5173/admin/login">http://localhost:5173/admin/login</a></p>
+                </div>
+            `;
+        } else {
+            try {
+                const user = JSON.parse(userStr);
+                
+                let roleClass = 'info';
+                let roleIcon = 'ℹ️';
+                let roleInfo = '';
+                
+                if (user.role === 'SUPER_ADMIN') {
+                    roleClass = 'success';
+                    roleIcon = '✅';
+                    roleInfo = `
+                        <h4>Expected Features:</h4>
+                        <ul>
+                            <li>✓ Can access Admin Management page (/admin-management)</li>
+                            <li>✓ Can create/manage administrators</li>
+                            <li>✓ Can reset access codes</li>
+                            <li>✗ Cannot access Analytics, Reports, Settings</li>
+                        </ul>
+                    `;
+                } else if (user.role === 'SYSTEM_ADMIN') {
+                    roleClass = 'info';
+                    roleIcon = '👤';
+                    roleInfo = `
+                        <h4>Expected Features:</h4>
+                        <ul>
+                            <li>✓ Can access all operational features</li>
+                            <li>✓ Can access Analytics, Reports, Settings</li>
+                            <li>✗ Cannot access Admin Management</li>
+                        </ul>
+                    `;
+                } else {
+                    roleClass = 'warning';
+                    roleIcon = '⚠️';
+                    roleInfo = `
+                        <p><strong>This role is not configured correctly!</strong></p>
+                        <p>Expected: 'SUPER_ADMIN' or 'SYSTEM_ADMIN'</p>
+                    `;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="${roleClass}">
+                        <h3>${roleIcon} Current User Information</h3>
+                        <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+                        <p><strong>Role:</strong> ${user.role || 'N/A'}</p>
+                        <p><strong>Active:</strong> ${user.isActive ? 'Yes' : 'No'}</p>
+                        ${roleInfo}
+                    </div>
+                    
+                    <h3>Full User Object:</h3>
+                    <pre>${JSON.stringify(user, null, 2)}</pre>
+                    
+                    <h3>JWT Token (first 50 chars):</h3>
+                    <pre>${token.substring(0, 50)}...</pre>
+                `;
+                
+                // Decode JWT
+                try {
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    
+                    const payload = JSON.parse(jsonPayload);
+                    
+                    resultDiv.innerHTML += `
+                        <h3>JWT Payload:</h3>
+                        <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    `;
+                } catch (e) {
+                    resultDiv.innerHTML += `
+                        <div class="warning">
+                            <p>Could not decode JWT token: ${e.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="warning">
+                        <h3>⚠️ Error</h3>
+                        <p>Could not parse user data: ${error.message}</p>
+                        <pre>${userStr}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

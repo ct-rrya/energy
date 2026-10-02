@@ -12,6 +12,8 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 // Core pages (loaded immediately for landing/auth experience only)
 import { LandingPage } from '@/features/landing/pages/LandingPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import AdminAccessCodePage from '@/features/auth/pages/AdminAccessCodePage';
+import AdminManagementPage from '@/features/admin-management/pages/AdminManagementPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
 import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 
@@ -77,6 +79,28 @@ export const router = createBrowserRouter([
           <LoginPage />
         </AuthLayout>
       </FlexibleRoute>
+    ),
+  },
+
+  // Admin Access Code Login
+  {
+    path: ROUTES.ADMIN_LOGIN,
+    element: (
+      <FlexibleRoute redirectIfAuth={true}>
+        <AdminAccessCodePage />
+      </FlexibleRoute>
+    ),
+  },
+
+  // Admin Management (SUPER_ADMIN only)
+  {
+    path: ROUTES.ADMIN_MANAGEMENT,
+    element: (
+      <AdminRoute>
+        <DashboardLayout>
+          <AdminManagementPage />
+        </DashboardLayout>
+      </AdminRoute>
     ),
   },
 

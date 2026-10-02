@@ -11,6 +11,7 @@ export const HEALTH_ENDPOINTS = {
 // Authentication Endpoints
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
+  ADMIN_ACCESS_CODE: '/auth/admin/access-code',
   PROFILE: '/users/profile',
 } as const;
 

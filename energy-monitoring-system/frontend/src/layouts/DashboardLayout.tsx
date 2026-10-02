@@ -195,45 +195,53 @@ const navigationItems = [
     isBackButton: true
   }] : []),
   
-  // EcoStep Central - the single central monitoring hub (combines Dashboard + Energy Monitoring)
-  {
+  // Admin Management - SUPER_ADMIN only
+  ...(user?.role === 'SUPER_ADMIN' ? [{
+    path: ROUTES.ADMIN_MANAGEMENT,
+    label: 'Admin Management',
+    icon: Settings,
+    visible: true
+  }] : []),
+  
+  // EcoStep Central - SYSTEM_ADMIN and PUBLIC only (not SUPER_ADMIN)
+  ...(user?.role !== 'SUPER_ADMIN' ? [{
     path: ROUTES.DASHBOARD,
     label: 'EcoStep Central',
     icon: Activity,
     visible: permissions.canAccessDashboard
-  },
+  }] : []),
   
-  // Historical Analytics - past data and trends
-  {
+  // Historical Analytics - SYSTEM_ADMIN and PUBLIC only (not SUPER_ADMIN)
+  ...(user?.role !== 'SUPER_ADMIN' ? [{
     path: ROUTES.ANALYTICS,
     label: 'Historical Analytics',
     icon: TrendingUp,
     visible: true // Public access per requirements
-  },
+  }] : []),
   
-  // System Diagnostics - admin only
-  ...(isAdminUser ? [{
+  // System Diagnostics - SYSTEM_ADMIN only
+  ...(user?.role === 'SYSTEM_ADMIN' ? [{
     path: ROUTES.ADMIN_DIAGNOSTICS,
     label: 'System Diagnostics',
     icon: Activity,
     visible: permissions.canAccessReports // Using as proxy for admin-only
   }] : []),
   
-  // Reports - admin only
-  {
+  // Reports - SYSTEM_ADMIN only
+  ...(user?.role === 'SYSTEM_ADMIN' ? [{
     path: ROUTES.REPORTS,
     label: 'Reports',
     icon: FileText,
     visible: permissions.canAccessReports
-  },
+  }] : []),
   
-  // Settings - admin only
-  {
+  // Settings - SYSTEM_ADMIN only
+  ...(user?.role === 'SYSTEM_ADMIN' ? [{
     path: ROUTES.SETTINGS,
     label: 'Settings',
     icon: Settings,
     visible: permissions.canAccessSettings
-  },
+  }] : []),
 ].filter(item => item.visible);
 
   const colors = getThemeColors(theme);

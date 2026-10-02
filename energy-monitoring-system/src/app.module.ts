@@ -18,6 +18,8 @@ import {
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { AuditModule } from './audit/audit.module';
+import { AdminManagementModule } from './admin-management/admin-management.module';
 import { SensorsModule } from './sensors/sensors.module';
 import { IotModule } from './iot/iot.module';
 import { EnergyModule } from './energy/energy.module';
@@ -100,6 +102,8 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     // Feature modules
     UsersModule,
     AuthModule,
+    AuditModule, // Audit logging for administrator actions
+    AdminManagementModule, // SUPER_ADMIN account management
     SensorsModule,
     IotModule,
     EnergyModule,

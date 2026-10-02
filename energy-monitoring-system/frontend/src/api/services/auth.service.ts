@@ -1,6 +1,12 @@
 import apiClient from '../client';
 import { AUTH_ENDPOINTS } from '../constants';
-import type { ApiResponse, LoginCredentials, LoginResponse, User } from '@/types';
+import type {
+  ApiResponse,
+  LoginCredentials,
+  AccessCodeLoginCredentials,
+  LoginResponse,
+  User,
+} from '@/types';
 
 /**
  * Authentication Service
@@ -10,10 +16,25 @@ export const authService = {
   /**
    * Login user
    */
-  login: async (credentials: LoginCredentials): Promise<ApiResponse<LoginResponse>> => {
+  login: async (
+    credentials: LoginCredentials,
+  ): Promise<ApiResponse<LoginResponse>> => {
     const response = await apiClient.post<ApiResponse<LoginResponse>>(
       AUTH_ENDPOINTS.LOGIN,
-      credentials
+      credentials,
+    );
+    return response.data;
+  },
+
+  /**
+   * Login administrator with access code
+   */
+  loginWithAccessCode: async (
+    credentials: AccessCodeLoginCredentials,
+  ): Promise<ApiResponse<LoginResponse>> => {
+    const response = await apiClient.post<ApiResponse<LoginResponse>>(
+      AUTH_ENDPOINTS.ADMIN_ACCESS_CODE,
+      credentials,
     );
     return response.data;
   },
@@ -22,7 +43,9 @@ export const authService = {
    * Get current user profile
    */
   getProfile: async (): Promise<ApiResponse<User>> => {
-    const response = await apiClient.get<ApiResponse<User>>(AUTH_ENDPOINTS.PROFILE);
+    const response = await apiClient.get<ApiResponse<User>>(
+      AUTH_ENDPOINTS.PROFILE,
+    );
     return response.data;
   },
 };

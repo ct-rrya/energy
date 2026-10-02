@@ -2,6 +2,10 @@
  * User Role
  */
 export const UserRole = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  SYSTEM_ADMIN: 'SYSTEM_ADMIN',
+  PUBLIC_USER: 'PUBLIC_USER',
+  // Legacy support
   ADMIN: 'admin',
   USER: 'user',
 } as const;
@@ -29,6 +33,13 @@ export interface LoginCredentials {
 }
 
 /**
+ * Admin Access Code Login
+ */
+export interface AccessCodeLoginCredentials {
+  accessCode: string;
+}
+
+/**
  * Login Response
  */
 export interface LoginResponse {
@@ -45,5 +56,7 @@ export interface AuthContextState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithAccessCode: (credentials: AccessCodeLoginCredentials) => Promise<User>;
   logout: () => void;
+  switchAdministrator: () => void;
 }

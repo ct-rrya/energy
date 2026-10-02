@@ -106,6 +106,123 @@ export class UsersService {
   }
 
   /**
+   * Update user's last login and activity timestamps
+   *
+   * @param id - User ID
+   * @returns void
+   *
+   * Usage:
+   *   await usersService.updateLastLoginAndActivity(user.id);
+   *
+   * Note:
+   * - Used for access code authentication
+   * - Updates both login and activity timestamps
+   * - Fire and forget operation
+   */
+  async updateLastLoginAndActivity(id: string): Promise<void> {
+    const now = new Date();
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        lastLoginAt: now,
+        lastActivityAt: now,
+      })
+      .exec();
+  }
+
+  /**
+   * Update user's last activity timestamp
+   *
+   * @param id - User ID
+   * @returns void
+   *
+   * Usage:
+   *   await usersService.updateLastActivity(user.id);
+   *
+   * Note:
+   * - Used to track administrator activity for inactivity timeout
+   * - Called on each authenticated request
+   * - Fire and forget operation
+   */
+  async updateLastActivity(id: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        lastActivityAt: new Date(),
+      })
+      .exec();
+  }
+
+  /**
+   * Find all administrator users
+   *
+   * @param includeAccessCodeHash - Whether to include accessCodeHash field (default: false)
+   * @returns Array of admin user documents
+   *
+   * Usage:
+   *   // For listing admins
+   *   const admins = await usersService.findAllAdmins();
+   *
+   *   // For access code validation
+   *   const admins = await usersService.findAllAdmins(true);
+   *
+   * Security:
+   * - accessCodeHash is only included when explicitly requested
+   * - Use includeAccessCodeHash=true ONLY during access code validation
+   * - Password is never included
+   */
+  async findAllAdmins(
+    includeAccessCodeHash = false,
+  ): Promise<UserDocument[]> {
+    const query = this.userModel.find({
+      role: { $in: ['SYSTEM_ADMIN', 'SUPER_ADMIN'] },
+    });
+
+    if (includeAccessCodeHash) {
+      query.select('+accessCodeHash');
+    }
+
+    return query.exec();
+  }
+
+  /**
+   * Update user's access code
+   *
+   * @param id - User ID
+   * @param accessCodeHash - Hashed access code
+   * @returns Updated user document
+   *
+   * Usage:
+   *   const hashedCode = await authService.hashAccessCode('ABC123DEF456');
+   *   await usersService.updateAccessCode(userId, hashedCode);
+   *
+   * Security:
+   * - accessCodeHash must be hashed BEFORE calling this method
+   * - Never pass plain text access codes
+   * - Only SUPER_ADMIN should call this
+   *
+   * Note:
+   * - Used for resetting access codes
+   * - Returns user without password or accessCodeHash
+   */
+  async updateAccessCode(
+    id: string,
+    accessCodeHash: string,
+  ): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { accessCodeHash },
+        { new: true }, // Return updated document
+      )
+      .exec();
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
+  }
+
+  /**
    * Create a new user
    *
    * @param createUserData - User data to create

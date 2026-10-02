@@ -13,6 +13,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
     "seed": "ts-node -r tsconfig-paths/register src/seed/admin-seeder.ts",
+    "seed:super-admin": "ts-node -r tsconfig-paths/register src/seed/super-admin-seeder.ts",
+    "reset-access-code": "ts-node -r tsconfig-paths/register src/seed/reset-access-code.ts",
     "cleanup:demo": "ts-node -r tsconfig-paths/register scripts/cleanup-demo-data.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

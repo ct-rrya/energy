@@ -2,7 +2,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { FullPageLoading } from '@/components/common/LoadingSpinner';
 import { ROUTES } from './routes.config';
-import { UserRole } from '@/types';
 
 /**
  * Admin Route Props
@@ -13,9 +12,9 @@ interface AdminRouteProps {
 
 /**
  * Admin Route Component
- * Ensures user is authenticated AND has admin role before rendering children
+ * Ensures user is authenticated AND has SUPER_ADMIN role before rendering children
  * Redirects to login if not authenticated
- * Redirects to dashboard if authenticated but not admin
+ * Redirects to dashboard if authenticated but not SUPER_ADMIN
  */
 export function AdminRoute({ children }: AdminRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -31,8 +30,8 @@ export function AdminRoute({ children }: AdminRouteProps) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // Redirect to dashboard if authenticated but not admin
-  if (user?.role !== UserRole.ADMIN) {
+  // Redirect to dashboard if authenticated but not SUPER_ADMIN
+  if (user?.role !== 'SUPER_ADMIN') {
     return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 

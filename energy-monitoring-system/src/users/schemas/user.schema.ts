@@ -78,14 +78,16 @@ export class User {
 
   /**
    * User role
-   * - Currently only 'admin' is supported
+   * - SUPER_ADMIN: Can manage administrator accounts/access codes (no operational access)
+   * - SYSTEM_ADMIN: Can perform operational dashboard functions (no account management)
+   * - PUBLIC_USER: Public monitoring access only (no admin functions)
    * - Enum ensures type safety
-   * - Defaults to 'admin'
+   * - Defaults to 'PUBLIC_USER'
    */
   @Prop({
     type: String,
-    enum: ['admin'],
-    default: 'admin',
+    enum: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PUBLIC_USER'],
+    default: 'PUBLIC_USER',
   })
   role: string;
 
@@ -111,6 +113,31 @@ export class User {
   lastLoginAt?: Date;
 
   /**
+   * Administrator Access Code (hashed)
+   * - Used for shared-workstation authentication
+   * - Stored as bcrypt hash (same as password)
+   * - Never selected by default (must explicitly request)
+   * - Never included in API responses
+   * - Optional: Only SYSTEM_ADMIN and SUPER_ADMIN users have access codes
+   */
+  @Prop({
+    required: false,
+    select: false, // Don't include in queries by default
+  })
+  accessCodeHash?: string;
+
+  /**
+   * Last activity timestamp
+   * - Updated on each authenticated user action
+   * - Used for inactivity timeout tracking
+   * - Optional (null for PUBLIC_USER accounts)
+   */
+  @Prop({
+    required: false,
+  })
+  lastActivityAt?: Date;
+
+  /**
    * Compare plain password with hashed password
    *
    * @param plainPassword - The plain text password to check
@@ -121,6 +148,22 @@ export class User {
    */
   async comparePassword(plainPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, this.password);
+  }
+
+  /**
+   * Compare plain access code with hashed access code
+   *
+   * @param plainAccessCode - The plain text access code to check
+   * @returns Promise<boolean> - true if access code matches
+   *
+   * Usage:
+   *   const isMatch = await user.compareAccessCode('ABC123DEF456');
+   */
+  async compareAccessCode(plainAccessCode: string): Promise<boolean> {
+    if (!this.accessCodeHash) {
+      return false;
+    }
+    return bcrypt.compare(plainAccessCode, this.accessCodeHash);
   }
 }
 
@@ -144,4 +187,17 @@ UserSchema.methods.comparePassword = async function (
   plainPassword: string,
 ): Promise<boolean> {
   return bcrypt.compare(plainPassword, this.password);
+};
+
+/**
+ * Add compareAccessCode method to schema
+ * This makes the method available on user instances
+ */
+UserSchema.methods.compareAccessCode = async function (
+  plainAccessCode: string,
+): Promise<boolean> {
+  if (!this.accessCodeHash) {
+    return false;
+  }
+  return bcrypt.compare(plainAccessCode, this.accessCodeHash);
 };

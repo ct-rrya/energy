@@ -4,7 +4,11 @@
 export const ROUTES = {
   // Public routes
   HOME: '/',
-  LOGIN: '/login',
+  LOGIN: '/login', // DEPRECATED: Use ADMIN_LOGIN for administrators
+
+  // Admin routes
+  ADMIN_LOGIN: '/admin/login',
+  ADMIN_MANAGEMENT: '/admin-management',
 
   // Protected routes
   DASHBOARD: '/dashboard',

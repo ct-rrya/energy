@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { AuditModule } from '../audit/audit.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
@@ -36,6 +37,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     // Import UsersModule to access UsersService
     UsersModule,
+
+    // Import AuditModule to access AuditService
+    AuditModule,
 
     // Register Passport module
     PassportModule,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Shield, ShieldCheck, LogOut, RefreshCw } from 'lucide-react';
 import Logo from '@/assets/logo/1.svg?react';
 import { ROUTES } from '@/routes/routes.config';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,9 +28,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout, switchAdministrator } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isActivePath = (path: string) => {
     if (path === ROUTES.HOME) {
@@ -163,32 +164,113 @@ export function Navigation() {
               Monitoring
             </button>
 
-            {/* Login Button - Visually Emphasized */}
+            {/* Admin Management (SUPER_ADMIN only) */}
+            {user?.role === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => handleNavigate(ROUTES.ADMIN_MANAGEMENT)}
+                className={`
+                  nav-link
+                  rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200
+                  focus:outline-none focus:ring-2 focus:ring-offset-2
+                  ${isActivePath(ROUTES.ADMIN_MANAGEMENT) 
+                    ? 'nav-link-active text-[#0B132B] bg-[#39FF88]' 
+                    : 'nav-link-inactive text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  }
+                `}
+                style={{
+                  '--tw-ring-color': '#39FF88'
+                } as React.CSSProperties}
+                aria-label="Navigate to administrator management"
+                aria-current={isActivePath(ROUTES.ADMIN_MANAGEMENT) ? 'page' : undefined}
+              >
+                Admin Management
+              </button>
+            )}
+            {/* Login / Admin Identity */}
             {!isAuthenticated ? (
               <button
-                onClick={() => navigate(ROUTES.LOGIN)}
+                onClick={() => navigate(ROUTES.ADMIN_LOGIN)}
                 className="ml-2 rounded-lg px-6 py-2 text-sm font-semibold text-[#0B132B] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#2FD670]"
                 style={{ 
                   backgroundColor: '#39FF88',
                   '--tw-ring-color': '#39FF88',
                   boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
                 } as React.CSSProperties}
-                aria-label="Login to your account"
+                aria-label="Administrator login"
               >
-                Login
+                Admin Login
               </button>
             ) : (
-              <div 
-                className="ml-2 flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-[#0B132B] border"
-                style={{
-                  backgroundColor: '#39FF88',
-                  borderColor: 'rgba(57, 255, 136, 0.3)',
-                }}
-                role="img"
-                aria-label={`User: ${user?.name || user?.email}`}
-                title={user?.name || user?.email}
-              >
-                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+              <div className="ml-2 relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[rgba(57,255,136,0.1)]"
+                  style={{
+                    backgroundColor: 'rgba(57, 255, 136, 0.08)',
+                    borderColor: 'rgba(57, 255, 136, 0.15)',
+                    '--tw-ring-color': '#39FF88'
+                  } as React.CSSProperties}
+                  aria-label="User menu"
+                >
+                  <div 
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-[#0B132B]"
+                    style={{ backgroundColor: '#39FF88' }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-[#F5F7FA]">
+                      {user?.name || 'Administrator'}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      {user?.role === 'SUPER_ADMIN' ? (
+                        <ShieldCheck className="w-3 h-3 text-purple-400" />
+                      ) : user?.role === 'SYSTEM_ADMIN' ? (
+                        <Shield className="w-3 h-3 text-blue-400" />
+                      ) : null}
+                      <p className="text-xs text-gray-400">
+                        {user?.role?.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* User Dropdown Menu */}
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20">
+                      {(user?.role === 'SUPER_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+                        <>
+                          <button
+                            onClick={() => {
+                              switchAdministrator();
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Switch Administrator
+                          </button>
+                          <div className="border-t border-gray-200 my-1" />
+                        </>
+                      )}
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             {/* Theme Toggle Button */}
@@ -301,11 +383,33 @@ export function Navigation() {
               Monitoring
             </button>
 
+            {/* Admin Management (SUPER_ADMIN only) */}
+            {user?.role === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => handleNavigate(ROUTES.ADMIN_MANAGEMENT)}
+                className={`
+                  nav-link-mobile
+                  rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200
+                  focus:outline-none focus:ring-2 focus:ring-offset-2
+                  ${isActivePath(ROUTES.ADMIN_MANAGEMENT) 
+                    ? 'text-[#0B132B] bg-[#39FF88]' 
+                    : 'text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)]'
+                  }
+                `}
+                style={{
+                  '--tw-ring-color': '#39FF88'
+                } as React.CSSProperties}
+                aria-label="Navigate to administrator management"
+                aria-current={isActivePath(ROUTES.ADMIN_MANAGEMENT) ? 'page' : undefined}
+              >
+                Admin Management
+              </button>
+            )}
             {/* Login/User Info */}
             {!isAuthenticated ? (
               <button
                 onClick={() => {
-                  navigate(ROUTES.LOGIN);
+                  navigate(ROUTES.ADMIN_LOGIN);
                   setIsMobileMenuOpen(false);
                 }}
                 className="rounded-lg px-4 py-3 text-left text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
@@ -315,54 +419,65 @@ export function Navigation() {
                   '--tw-ring-color': '#39FF88',
                   boxShadow: '0 2px 8px rgba(57, 255, 136, 0.3)'
                 } as React.CSSProperties}
-                aria-label="Login to your account"
+                aria-label="Administrator login"
               >
-                Login
+                Admin Login
               </button>
             ) : user ? (
-              <div 
-                className="flex items-center gap-3 rounded-lg px-4 py-3 border dark:border-[rgba(137,215,183,0.12)]"
-                style={{ 
-                  backgroundColor: 'rgba(61, 220, 151, 0.05)',
-                  borderColor: 'rgba(61, 220, 151, 0.15)'
-                }}
-              >
+              <div className="space-y-2">
                 <div 
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white border"
-                  style={{
-                    backgroundColor: '#3DDC97',
-                    borderColor: 'rgba(61, 220, 151, 0.2)',
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 border"
+                  style={{ 
+                    backgroundColor: 'rgba(57, 255, 136, 0.08)',
+                    borderColor: 'rgba(57, 255, 136, 0.15)'
                   }}
-                  role="img"
-                  aria-label={`User: ${user.name || user.email}`}
                 >
-                  {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                  <div 
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-[#0B132B]"
+                    style={{ backgroundColor: '#39FF88' }}
+                  >
+                    {user.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#F5F7FA]">
+                      {user.name || 'Administrator'}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      {user.role === 'SUPER_ADMIN' ? (
+                        <ShieldCheck className="w-3 h-3 text-purple-400" />
+                      ) : user.role === 'SYSTEM_ADMIN' ? (
+                        <Shield className="w-3 h-3 text-blue-400" />
+                      ) : null}
+                      <p className="text-xs text-gray-400">
+                        {user.role?.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold dark:text-[#F9FAFB]" style={{ color: '#1A312C' }}>
-                    {user.name || 'User'}
-                  </p>
-                  <p className="text-xs dark:text-[#9CA3AF]" style={{ color: '#428475' }}>
-                    {user.email}
-                  </p>
-                </div>
+                {(user.role === 'SUPER_ADMIN' || user.role === 'SYSTEM_ADMIN') && (
+                  <button
+                    onClick={() => {
+                      switchAdministrator();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-semibold text-[#F5F7FA] hover:bg-[rgba(57,255,136,0.1)] transition-colors duration-200"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Switch Administrator
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 rounded-lg px-4 py-3 text-left text-sm font-semibold text-red-400 hover:bg-red-900/20 transition-colors duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
               </div>
-            ) : (
-              <button
-                onClick={() => {
-                  navigate(ROUTES.LOGIN);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="rounded-lg px-4 py-3 text-left text-sm font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-[#35c27b]"
-                style={{ 
-                  backgroundColor: '#3DDC97',
-                  '--tw-ring-color': '#89D7B7'
-                } as React.CSSProperties}
-                aria-label="Login to your account"
-              >
-                Login
-              </button>
-            )}
+            ) : null}
             {/* Theme Toggle Button - Mobile */}
             <button
               onClick={() => {
