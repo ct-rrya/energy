@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Zap, Activity, LineChart, MessageSquare } from 'lucide-react';
+import { ArrowRight, Zap, Activity, LineChart, MessageSquare, Footprints, Plug2, BarChart3, Wifi, Monitor } from 'lucide-react';
 import { ROUTES } from '@/routes/routes.config';
 import { Navigation } from '@/components/layout';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -213,35 +213,38 @@ export function LandingPage() {
             <div className="flex items-center">
               <div className="w-full space-y-6">
                 {[
-                  { icon: '👣', label: 'FOOTSTEP', desc: 'Physical pressure applied' },
-                  { icon: '⚡', label: 'PIEZOELECTRIC TILE', desc: 'Converts mechanical to electrical' },
-                  { icon: '📊', label: 'ENERGY MEASUREMENT', desc: 'Voltage, current, power data' },
-                  { icon: '📡', label: 'IoT TRANSMISSION', desc: 'ESP32 microcontroller' },
-                  { icon: '💻', label: 'WEB MONITORING', desc: 'Real-time dashboard access' }
-                ].map((step, index) => (
-                  <div key={index} className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-2xl"
-                      style={{ backgroundColor: 'rgba(57, 255, 136, 0.1)' }}
-                    >
-                      {step.icon}
-                    </div>
-                    <div>
-                      <div className="mb-1 text-sm font-bold uppercase tracking-wide"
-                        style={{ color: '#39FF88' }}
+                  { icon: Footprints, label: 'FOOTSTEP', desc: 'Physical pressure applied' },
+                  { icon: Plug2, label: 'PIEZOELECTRIC TILE', desc: 'Converts mechanical to electrical' },
+                  { icon: BarChart3, label: 'ENERGY MEASUREMENT', desc: 'Voltage, current, power data' },
+                  { icon: Wifi, label: 'IoT TRANSMISSION', desc: 'ESP32 microcontroller' },
+                  { icon: Monitor, label: 'WEB MONITORING', desc: 'Real-time dashboard access' }
+                ].map((step, index) => {
+                  const IconComponent = step.icon;
+                  return (
+                    <div key={index} className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: 'rgba(57, 255, 136, 0.1)' }}
                       >
-                        {step.label}
+                        <IconComponent className="h-6 w-6" style={{ color: '#39FF88' }} />
                       </div>
-                      <div className="text-sm"
-                        style={{ color: theme === 'light' ? '#6B7280' : '#6B7280' }}
-                      >
-                        {step.desc}
+                      <div>
+                        <div className="mb-1 text-sm font-bold uppercase tracking-wide"
+                          style={{ color: '#39FF88' }}
+                        >
+                          {step.label}
+                        </div>
+                        <div className="text-sm"
+                          style={{ color: theme === 'light' ? '#6B7280' : '#6B7280' }}
+                        >
+                          {step.desc}
+                        </div>
                       </div>
+                      {index < 4 && (
+                        <div className="ml-6 flex-shrink-0" style={{ color: '#39FF88' }}>↓</div>
+                      )}
                     </div>
-                    {index < 4 && (
-                      <div className="ml-6 flex-shrink-0" style={{ color: '#39FF88' }}>↓</div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
