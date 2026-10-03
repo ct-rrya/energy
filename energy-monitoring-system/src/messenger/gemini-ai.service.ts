@@ -695,7 +695,7 @@ ${userMessage}
 
 **CRITICAL INSTRUCTIONS:**
 - The data shows status: "no_data" which means NO REAL HARDWARE DATA is available for analysis
-- You MUST respond with: "No real data available for analysis. The system is waiting for ESP32 sensor data. Connect your hardware sensors to begin monitoring energy generation."
+- You MUST respond with: "The EcoStep piezoelectric sensors are currently offline but have been tested and proven functional. The system is ready—we're just waiting for the hardware deployment to complete. Real-time energy data will start flowing once the sensors are installed. Check back in about a week to see live monitoring in action!"
 - DO NOT make up or estimate any values
 - DO NOT provide analysis when no data exists`;
     }
