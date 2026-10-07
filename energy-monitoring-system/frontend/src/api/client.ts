@@ -48,10 +48,13 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - clear auth and redirect to login
+          // Unauthorized - clear auth
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
-          window.location.href = '/login';
+          // Only redirect if not already on the admin login page
+          if (typeof window !== 'undefined' && window.location.pathname !== '/admin/login') {
+            window.location.href = '/admin/login';
+          }
           break;
 
         case 403:

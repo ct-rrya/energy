@@ -141,7 +141,7 @@ async function bootstrap() {
 
     // Step 4: Create SUPER_ADMIN account
     logger.log('👤 Creating SUPER_ADMIN account...');
-    const result = await adminManagementService.createAdmin({
+    const result = await adminManagementService.createAdminWithCode({
       email: superAdminEmail,
       name: superAdminName,
       role: 'SUPER_ADMIN',

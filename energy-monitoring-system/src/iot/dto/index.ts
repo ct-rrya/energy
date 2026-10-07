@@ -5,5 +5,6 @@
  */
 
 export * from './create-reading.dto';
+export * from './create-piezo-reading.dto';
 export * from './reading-response.dto';
 export * from './reading-query.dto';

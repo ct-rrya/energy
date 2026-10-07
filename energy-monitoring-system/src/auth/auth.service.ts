@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -28,6 +28,7 @@ import { UserDocument } from '../users/schemas/user.schema';
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly SALT_ROUNDS = 10;
 
   constructor(
@@ -75,6 +76,13 @@ export class AuthService {
 
     // Account is inactive - return null
     if (!user.isActive) {
+      return null;
+    }
+
+    // SECURITY: Block admin roles from password login
+    // Administrators MUST use access code authentication
+    // This enforces individual accountability through personal access codes
+    if (user.role === 'SYSTEM_ADMIN' || user.role === 'SUPER_ADMIN') {
       return null;
     }
 
@@ -188,31 +196,53 @@ export class AuthService {
    *   }
    */
   async validateAccessCode(accessCode: string): Promise<UserDocument | null> {
+    // DIAGNOSTIC LOGGING
+    this.logger.log(
+      `[VALIDATE] Checking access code (length: ${accessCode.length})`,
+    );
+    this.logger.log(
+      `[VALIDATE] First 2 chars: ${accessCode.substring(0, 2)}..., Last 2: ...${accessCode.substring(10, 12)}`,
+    );
+
     // Find all admin users (SYSTEM_ADMIN and SUPER_ADMIN) with access code hash
     const adminUsers = await this.usersService.findAllAdmins(true);
 
+    this.logger.log(`[VALIDATE] Found ${adminUsers.length} admin users to check`);
+
     // Check each admin's access code
     for (const user of adminUsers) {
+      this.logger.log(
+        `[VALIDATE] Checking user: ${user.email}, Role: ${user.role}, Active: ${user.isActive}, Has hash: ${!!user.accessCodeHash}`,
+      );
+
       // Skip if account is inactive
       if (!user.isActive) {
+        this.logger.log(`[VALIDATE] Skipping ${user.email} - inactive`);
         continue;
       }
 
       // Skip if no access code hash
       if (!user.accessCodeHash) {
+        this.logger.log(`[VALIDATE] Skipping ${user.email} - no hash`);
         continue;
       }
 
       // Compare access code using bcrypt (constant-time comparison)
       const isAccessCodeValid = await user.compareAccessCode(accessCode);
 
+      this.logger.log(
+        `[VALIDATE] Comparison for ${user.email}: ${isAccessCodeValid ? 'MATCH' : 'NO MATCH'}`,
+      );
+
       if (isAccessCodeValid) {
         // Valid access code found - return user
+        this.logger.log(`[VALIDATE] ✅ Valid access code for ${user.email}`);
         return user;
       }
     }
 
     // No matching access code - return null
+    this.logger.log('[VALIDATE] ❌ No matching access code found');
     return null;
   }
 

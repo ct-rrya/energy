@@ -1,25 +1,27 @@
-﻿/**
+/**
  * Route path constants
  */
 export const ROUTES = {
   // Public routes
   HOME: '/',
-  LOGIN: '/login', // DEPRECATED: Use ADMIN_LOGIN for administrators
-
+  LOGIN: '/admin/login', // Redirect old login references to admin login
+  
   // Admin routes
   ADMIN_LOGIN: '/admin/login',
   ADMIN_MANAGEMENT: '/admin-management',
 
-  // Protected routes
+  // Dashboard and monitoring routes
   DASHBOARD: '/dashboard',
+  ENERGY: '/energy',
+  ANALYTICS: '/analytics',
+
+  // Admin-only routes (auth required)
   SENSORS: '/sensors',
   SENSORS_MONITORING: '/sensors/monitoring',
   SENSORS_CREATE: '/sensors/create',
   SENSOR_DETAILS: (id: string) => `/sensors/${id}`,
-  ENERGY: '/energy',
-  ANALYTICS: '/analytics',
-  REPORTS: '/reports',
   ALERTS: '/alerts',
+  REPORTS: '/reports',
   ADMIN_DIAGNOSTICS: '/admin/diagnostics',
   SETTINGS: '/settings',
   PROFILE: '/profile',

@@ -609,7 +609,7 @@ export function LandingPage() {
                   { label: 'About', action: () => scrollToSection('about') },
                   { label: 'How It Works', action: () => scrollToSection('how-it-works') },
                   { label: 'Monitoring', path: ROUTES.DASHBOARD },
-                  { label: 'Login', path: ROUTES.LOGIN }
+                  { label: 'Admin Login', path: ROUTES.ADMIN_LOGIN }
                 ].map((item, index) => (
                   <div key={index}>
                     {item.path ? (

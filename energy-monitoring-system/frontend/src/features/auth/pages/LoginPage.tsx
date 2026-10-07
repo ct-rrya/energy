@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -201,7 +201,27 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Login Form */}
+          {/* Administrator Notice */}
+          <div 
+            style={{
+              backgroundColor: theme === 'dark' ? 'rgba(137, 215, 183, 0.1)' : 'rgba(66, 132, 117, 0.1)',
+              borderColor: theme === 'dark' ? 'rgba(137, 215, 183, 0.3)' : 'rgba(66, 132, 117, 0.3)'
+            }}
+            className="mb-6 p-4 rounded-xl border"
+          >
+            <p style={{ color: theme === 'dark' ? 'rgba(255, 244, 225, 0.9)' : 'rgba(11, 19, 43, 0.9)' }} className="text-sm leading-relaxed">
+              <strong>System Administrators:</strong> This login is for public users only.
+              {' '}
+              <Link
+                to={ROUTES.ADMIN_LOGIN}
+                className="font-semibold text-[#428475] hover:text-[#1A312C] dark:text-[#89D7B7] dark:hover:text-[#FFF4E1] underline transition-colors"
+              >
+                Use Administrator Access Code Login →
+              </Link>
+            </p>
+          </div>
+
+          {/* Login Form */}{/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div>

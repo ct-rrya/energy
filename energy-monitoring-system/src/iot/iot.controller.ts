@@ -23,6 +23,7 @@ import {
 import { IotService } from './iot.service';
 import {
   CreateReadingDto,
+  CreatePiezoReadingDto,
   CreateReadingResponseDto,
   ReadingResponseDto,
   ReadingQueryDto,
@@ -197,6 +198,76 @@ export class IotController {
     // Delegate all business logic to service
     // Controller only handles HTTP concerns
     return this.iotService.receiveReading(apiKey, readingDto);
+  }
+
+  /**
+   * Receive Piezo Reading from ESP32
+   *
+   * Dedicated endpoint for piezoelectric sensor readings.
+   * Validates piezo-specific fields (capacitorVoltage and stepCount are required).
+   *
+   * @param apiKey - Sensor API key (extracted by ApiKeyGuard)
+   * @param readingDto - Piezo reading data from ESP32
+   * @returns Lightweight confirmation response
+   *
+   * Hardware: ESP32 with LTC3588-1 energy harvester and 2200µF capacitor
+   */
+  @Post('piezo/readings')
+  @UseGuards(ApiKeyGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Submit piezoelectric sensor reading from ESP32',
+    description:
+      'Dedicated endpoint for ESP32 piezoelectric footstep energy harvesting sensors. ' +
+      'Requires capacitorVoltage and stepCount fields. ' +
+      'Detects footstep triggers and emits real-time events.',
+  })
+  @ApiHeader({
+    name: 'X-API-Key',
+    description: 'Sensor API key for authentication',
+    required: true,
+    example: 'esp32_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Piezo reading received and stored successfully',
+    type: CreateReadingResponseDto,
+    schema: {
+      example: {
+        success: true,
+        readingId: '6a5a40f1e7b0307577942940',
+        receivedAt: '2026-10-07T14:30:01.234Z',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Validation error - missing required piezo fields or invalid data',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: [
+          'Capacitor voltage is required for piezo sensors',
+          'Step count is required for piezo sensors',
+        ],
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid API key, sensor not found, or sensor not active',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  async receivePiezoReading(
+    @ApiKey() apiKey: string,
+    @Body() readingDto: CreatePiezoReadingDto,
+  ): Promise<CreateReadingResponseDto> {
+    return this.iotService.receivePiezoReading(apiKey, readingDto);
   }
 
   /**

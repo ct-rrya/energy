@@ -70,15 +70,22 @@ export class AdminManagementController {
    */
   @Get('administrators')
   async listAdministrators(@Req() req: any) {
+    console.log('[AdminManagement] listAdministrators called');
+    console.log('[AdminManagement] req.user:', req.user);
+    console.log('[AdminManagement] req.user._id:', req.user._id);
+    try {
     const administrators =
       await this.adminManagementService.listAdministrators();
 
+    console.log('[AdminManagement] Retrieved administrators count:', administrators.length);
+    console.log('[AdminManagement] First admin:', administrators[0]);
+
     // Audit the access
     await this.auditService.logSuccess({
-      administratorId: req.user.userId,
+      administratorId: req.user._id.toString(),
       administratorName: req.user.name || 'Unknown',
       administratorRole: req.user.role,
-      action: 'VIEW_AUDIT_LOGS',
+      action: 'LIST_ADMINISTRATORS',
       details: {
         view: 'admin_list',
         count: administrators.length,
@@ -88,7 +95,46 @@ export class AdminManagementController {
       sessionId: req.user.jti,
     });
 
-    return { administrators };
+    const result = {
+      success: true,
+      message: 'Administrators retrieved successfully',
+      data: {
+        administrators: administrators.map(admin => {
+          const adminDoc = admin as any; // Mongoose timestamps are not in UserDocument type
+          
+          console.log('[AdminManagement] Mapping admin:', {
+            _id: admin._id,
+            email: admin.email,
+            name: admin.name,
+            role: admin.role,
+            isActive: admin.isActive,
+            createdAt: adminDoc.createdAt,
+            updatedAt: adminDoc.updatedAt,
+          });
+          
+          return {
+            id: admin._id.toString(),
+            email: admin.email,
+            name: admin.name,
+            role: admin.role,
+            isActive: admin.isActive,
+            lastLoginAt: admin.lastLoginAt ? admin.lastLoginAt.toISOString() : null,
+            lastActivityAt: admin.lastActivityAt ? admin.lastActivityAt.toISOString() : null,
+            createdAt: adminDoc.createdAt ? adminDoc.createdAt.toISOString() : new Date().toISOString(),
+            updatedAt: adminDoc.updatedAt ? adminDoc.updatedAt.toISOString() : new Date().toISOString(),
+          };
+        })
+      }
+    };
+
+    console.log('[AdminManagement] Mapped administrators:', result.data.administrators);
+    console.log('[AdminManagement] Returning response with', result.data.administrators.length, 'administrators');
+
+    return result;
+    } catch (error) {
+      console.error('[AdminManagement] Error in listAdministrators:', error);
+      throw error;
+    }
   }
 
   /**
@@ -112,10 +158,14 @@ export class AdminManagementController {
     const counts = await this.adminManagementService.countByRole();
 
     return {
-      stats: {
-        SUPER_ADMIN: counts.SUPER_ADMIN,
-        SYSTEM_ADMIN: counts.SYSTEM_ADMIN,
-        total: counts.SUPER_ADMIN + counts.SYSTEM_ADMIN,
+      success: true,
+      message: 'Statistics retrieved successfully',
+      data: {
+        stats: {
+          SUPER_ADMIN: counts.SUPER_ADMIN,
+          SYSTEM_ADMIN: counts.SYSTEM_ADMIN,
+          total: counts.SUPER_ADMIN + counts.SYSTEM_ADMIN,
+        },
       },
     };
   }
@@ -160,44 +210,50 @@ export class AdminManagementController {
     @Req() req: any,
   ) {
     try {
-      const result =
-        await this.adminManagementService.createAdmin(createAdminDto);
+      const { admin, emailSent } = await this.adminManagementService.createAdmin(createAdminDto);
 
       // Audit successful creation
       await this.auditService.logSuccess({
-        administratorId: req.user.userId,
+        administratorId: req.user._id.toString(),
         administratorName: req.user.name || 'Unknown',
         administratorRole: req.user.role,
         action: 'CREATE_ADMIN_ACCOUNT',
-        target: result.admin._id.toString(),
+        target: admin._id.toString(),
         targetType: 'user',
         details: {
-          email: result.admin.email,
-          name: result.admin.name,
-          role: result.admin.role,
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          emailSent,
         },
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
         sessionId: req.user.jti,
       });
 
+      // Return appropriate message based on email delivery status
+      const message = emailSent
+        ? `Administrator created successfully. Access code has been sent to ${admin.email}`
+        : `Administrator created successfully, but email delivery failed. Please provide the access code manually.`;
+
       return {
-        message: 'Administrator created successfully',
+        message,
         administrator: {
-          id: result.admin._id.toString(),
-          email: result.admin.email,
-          name: result.admin.name,
-          role: result.admin.role,
-          isActive: result.admin.isActive,
-          createdAt: (result.admin as any).createdAt,
+          id: admin._id.toString(),
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          isActive: admin.isActive,
+          createdAt: (admin as any).createdAt,
         },
-        accessCode: result.accessCode, // Shown only once!
+        emailSent,
+        // NO accessCode in response - security requirement!
       };
     } catch (error) {
       // Audit failed creation
       await this.auditService.logFailure(
         {
-          administratorId: req.user.userId,
+          administratorId: req.user._id.toString(),
           administratorName: req.user.name || 'Unknown',
           administratorRole: req.user.role,
           action: 'CREATE_ADMIN_ACCOUNT',
@@ -274,12 +330,11 @@ export class AdminManagementController {
         await this.adminManagementService.getAdministratorById(id);
 
       // Reset access code
-      const newAccessCode =
-        await this.adminManagementService.resetAccessCode(id);
+      const emailSent = await this.adminManagementService.resetAccessCode(id);
 
       // Audit successful reset
       await this.auditService.logSuccess({
-        administratorId: req.user.userId,
+        administratorId: req.user._id.toString(),
         administratorName: req.user.name || 'Unknown',
         administratorRole: req.user.role,
         action: 'RESET_ACCESS_CODE',
@@ -289,21 +344,37 @@ export class AdminManagementController {
           targetEmail: admin.email,
           targetName: admin.name,
           targetRole: admin.role,
+          emailSent,
         },
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
         sessionId: req.user.jti,
       });
 
-      return {
-        message: 'Access code reset successfully',
-        accessCode: newAccessCode, // Shown only once!
-      };
+      // Return appropriate message based on email delivery status
+      if (emailSent) {
+        return {
+          success: true,
+          message: `Access code has been reset and sent to ${admin.email}`,
+          data: {
+            emailSent: true,
+          }
+        };
+      } else {
+        return {
+          success: true,
+          message: `Access code has been reset, but email delivery failed. Please contact the administrator directly.`,
+          data: {
+            emailSent: false,
+            warning: 'Email service is unavailable or misconfigured',
+          }
+        };
+      }
     } catch (error) {
       // Audit failed reset
       await this.auditService.logFailure(
         {
-          administratorId: req.user.userId,
+          administratorId: req.user._id.toString(),
           administratorName: req.user.name || 'Unknown',
           administratorRole: req.user.role,
           action: 'RESET_ACCESS_CODE',
@@ -367,7 +438,7 @@ export class AdminManagementController {
         : 'DEACTIVATE_ADMIN_ACCOUNT';
 
       await this.auditService.logSuccess({
-        administratorId: req.user.userId,
+        administratorId: req.user._id.toString(),
         administratorName: req.user.name || 'Unknown',
         administratorRole: req.user.role,
         action,
@@ -399,7 +470,7 @@ export class AdminManagementController {
       // Audit failed status change
       await this.auditService.logFailure(
         {
-          administratorId: req.user.userId,
+          administratorId: req.user._id.toString(),
           administratorName: req.user.name || 'Unknown',
           administratorRole: req.user.role,
           action: updateStatusDto.isActive
@@ -449,7 +520,7 @@ export class AdminManagementController {
 
       // Audit successful deletion
       await this.auditService.logSuccess({
-        administratorId: req.user.userId,
+        administratorId: req.user._id.toString(),
         administratorName: req.user.name || 'Unknown',
         administratorRole: req.user.role,
         action: 'DELETE_ADMIN_ACCOUNT',
@@ -472,7 +543,7 @@ export class AdminManagementController {
       // Audit failed deletion
       await this.auditService.logFailure(
         {
-          administratorId: req.user.userId,
+          administratorId: req.user._id.toString(),
           administratorName: req.user.name || 'Unknown',
           administratorRole: req.user.role,
           action: 'DELETE_ADMIN_ACCOUNT',

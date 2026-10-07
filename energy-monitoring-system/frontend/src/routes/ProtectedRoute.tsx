@@ -12,9 +12,8 @@ interface ProtectedRouteProps {
 
 /**
  * Protected Route Component
- * Ensures user is authenticated before rendering children
- * Redirects to login if not authenticated
- * Preserves intended destination for post-login redirect
+ * Ensures user is authenticated (SYSTEM_ADMIN or SUPER_ADMIN) before rendering children.
+ * Redirects unauthenticated users to admin login (/admin/login).
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,10 +24,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <FullPageLoading />;
   }
 
-  // Redirect to login if not authenticated
-  // Save the current location to redirect back after login
+  // Redirect to admin login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.ADMIN_LOGIN} state={{ from: location }} replace />;
   }
 
   // User is authenticated, render children

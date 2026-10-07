@@ -1,0 +1,125 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": "HIGH-1",
+      "severity": "HIGH",
+      "title": "Unverified Method — sensorsService.updateLastSeen()",
+      "location": "Section 2.3 (IoT Service)",
+      "problem": "The design claims to call sensorsService.updateLastSeen() method in multiple places. Verification Result: This method does NOT exist in the actual sensors.service.ts file. Grep search returned zero matches.",
+      "impact": "Implementation will fail with 'method does not exist' error.",
+      "fix": "Implement updateLastSeen() in SensorsService or remove all calls to it and document that lastSeen tracking is not implemented. Design must specify which option."
+    },
+    {
+      "id": "HIGH-2",
+      "severity": "HIGH",
+      "title": "Missing Dependency — ScheduleModule Not Imported",
+      "location": "Section 2.3 (IoT Service), @Cron decorator usage",
+      "problem": "The design requires @Cron decorator for daily cache cleanup job. Verification Result: ScheduleModule is NOT imported in src/iot/iot.module.ts.",
+      "impact": "Cron job will not execute. TypeScript compilation may succeed but runtime will fail silently.",
+      "fix": "Add explicit import instruction: import { ScheduleModule } from '@nestjs/schedule' and add ScheduleModule.forRoot() to IotModule imports array."
+    },
+    {
+      "id": "HIGH-3",
+      "severity": "HIGH",
+      "title": "Ambiguous — AnalyticsService Not Injected in DashboardService",
+      "location": "Section 4 (Dashboard Gateway)",
+      "problem": "The design adds a cron job in DashboardService that calls this.analyticsService.getPiezoStatistics(). Verification Result: AnalyticsService is NOT injected in DashboardService constructor.",
+      "impact": "broadcastPiezoStatistics() method will fail with 'this.analyticsService is undefined' error.",
+      "fix": "Provide explicit constructor injection code and verify that DashboardModule imports AnalyticsModule."
+    },
+    {
+      "id": "MEDIUM-4",
+      "severity": "MEDIUM",
+      "title": "Unspecified Behavior — Frontend TanStack Query Retry Logic",
+      "location": "Section 5.6 (Frontend API Service)",
+      "problem": "The design assumes TanStack Query is configured with retry logic. Verification Result: No QueryClient configuration with retry settings was found in frontend code.",
+      "impact": "If retry is not configured, API failures will not retry, contradicting the design's error handling strategy.",
+      "fix": "Provide QueryClient configuration or verify existing setup with retry: 3 and appropriate retryDelay."
+    },
+    {
+      "id": "MEDIUM-5",
+      "severity": "MEDIUM",
+      "title": "Missing Specification — ESP32 Global Variables Initialization",
+      "location": "Section 1.4 (HTTP POST to Backend)",
+      "problem": "The design introduces three new global variables (previousCapVoltage, previousTriggerTime, cumulativeStepCount) but does not specify where to declare them or how to initialize them in setup().",
+      "impact": "Variables declared inside functions will lose state between calls. Uninitialized variables will cause incorrect power/energy calculations on first reading.",
+      "fix": "Add explicit declaration in global variables section and initialization code in setup() after initial voltage reading."
+    },
+    {
+      "id": "MEDIUM-6",
+      "severity": "MEDIUM",
+      "title": "Ambiguous Signature — getPiezoStatistics() Query Parameters",
+      "location": "Section 3 (Analytics Service)",
+      "problem": "The parameters are optional but the design doesn't specify: (1) Default behavior when parameters are omitted, (2) Whether sensorId is a string or ObjectId, (3) Whether startDate/endDate are ISO strings or Date objects.",
+      "impact": "Frontend and backend may have mismatched assumptions about parameter types and defaults.",
+      "fix": "Provide explicit signature with types: async getPiezoStatistics(sensorId?: string, startDate?: string, endDate?: string): Promise<PiezoStatisticsDto> and document default behavior."
+    },
+    {
+      "id": "MEDIUM-7",
+      "severity": "MEDIUM",
+      "title": "Unspecified — Power Validation Skip Logic",
+      "location": "Section 1.4 (HTTP POST), note about backend validation",
+      "problem": "The design states backend must skip P=V×I validation for piezo, but doesn't specify HOW to detect piezo readings. The note suggests checking source === 'hardware' OR using dedicated piezo endpoint, but these are two different approaches.",
+      "impact": "If power validation is enabled globally, piezo readings (with current=0) will fail validation even though the design explicitly sends current=0.",
+      "fix": "Choose ONE approach and specify exactly where to implement it: either skip validation in dedicated piezo endpoint or modify validateReadingData() to accept isPiezo parameter."
+    },
+    {
+      "id": "MEDIUM-8",
+      "severity": "MEDIUM",
+      "title": "Missing Error Handling — ESP32 Buffer Overflow",
+      "location": "Section 1.5 (HTTP Retry Logic)",
+      "problem": "The design declares a buffer for 10 readings but doesn't specify what happens when buffer is full (11th reading arrives). The comment 'Buffer current reading' has no implementation.",
+      "impact": "Buffer overflow could cause memory corruption or silent data loss.",
+      "fix": "Provide complete buffer insertion code with overflow handling: either discard oldest (shift array) or discard new reading. Design must specify which."
+    },
+    {
+      "id": "MEDIUM-9",
+      "severity": "MEDIUM",
+      "title": "Ambiguous — Step Milestone Cache Key Format",
+      "location": "Section 2.3 (IoT Service), checkStepMilestones()",
+      "problem": "The cache key uses template literal syntax but sensorId is an ObjectId (MongoDB type). The design doesn't specify whether to convert to string or use .toString().",
+      "impact": "JavaScript will convert ObjectId to '[object Object]', causing all sensors to share the same cache entry.",
+      "fix": "Use explicit conversion: const cacheKey = `piezo_steps_${sensorId.toString()}`; or document that sensorId parameter is already a string."
+    },
+    {
+      "id": "NIT-1",
+      "severity": "NIT",
+      "title": "Inconsistent Terminology — 'Trigger' vs 'Footstep'",
+      "location": "Throughout design",
+      "problem": "The design uses 'trigger' (technical term) and 'footstep' (user-facing term) interchangeably.",
+      "fix": "Standardize terminology: Internal/Technical use 'trigger', User-Facing use 'footstep'. Keep piezo:trigger event name but add message: 'Footstep detected' for clarity."
+    },
+    {
+      "id": "NIT-2",
+      "severity": "NIT",
+      "title": "Potential Performance Issue — Milestone Check Every Reading",
+      "location": "Section 2.3, checkStepMilestones() called in receivePiezoReading() flow",
+      "problem": "Milestone checking happens synchronously for every reading. If sensor sends readings at high frequency (>1 Hz), this could add latency.",
+      "fix": "Add note acknowledging this was considered: 'Performance: Milestone check is O(1) Map lookup. If >10 readings/sec become common, consider batching or async queue.'"
+    },
+    {
+      "id": "NIT-3",
+      "severity": "NIT",
+      "title": "Magic Number — Capacitor 90% Threshold",
+      "location": "Section 2.3, checkCapacitorFull()",
+      "problem": "Hardcoded 90% threshold. Could be made configurable like other thresholds.",
+      "fix": "Add to .env: PIEZO_CAPACITOR_FULL_THRESHOLD=0.9 or document why 90% is a fixed hardware constraint."
+    },
+    {
+      "id": "NIT-4",
+      "severity": "NIT",
+      "title": "Incomplete Documentation — WebSocket Event Payload Schema",
+      "location": "Section 4 (Dashboard Gateway)",
+      "problem": "Design shows example payloads in TypeScript interfaces but doesn't document all fields completely. For example, piezo:trigger event has sensorLocation but doesn't specify if this is string or nested object.",
+      "fix": "Add complete TypeScript interface definitions with field types and descriptions for all WebSocket event payloads."
+    }
+  ],
+  "summary": {
+    "highCount": 3,
+    "mediumCount": 6,
+    "nitCount": 4,
+    "totalFindings": 13
+  },
+  "reviewDoc": "c:\\Users\\Merry Apple Edano\\OneDrive\\Desktop\\another\\energy-monitoring-system\\.agents\\tasks\\design-review.md"
+}

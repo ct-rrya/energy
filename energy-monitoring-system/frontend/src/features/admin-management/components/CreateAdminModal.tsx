@@ -5,7 +5,7 @@ import { adminManagementService, type CreateAdministratorDto } from '@/api/servi
 
 interface CreateAdminModalProps {
   onClose: () => void;
-  onSuccess: (accessCode: string, adminName: string) => void;
+  onSuccess: (message: string) => void;
 }
 
 /**
@@ -24,7 +24,7 @@ export function CreateAdminModal({ onClose, onSuccess }: CreateAdminModalProps) 
     mutationFn: (data: CreateAdministratorDto) =>
       adminManagementService.createAdministrator(data),
     onSuccess: (response) => {
-      onSuccess(response.data.accessCode, response.data.administrator.name);
+      onSuccess(response.data.message);
     },
   });
 
@@ -147,11 +147,11 @@ export function CreateAdminModal({ onClose, onSuccess }: CreateAdminModalProps) 
             )}
 
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> A secure 12-character access code will be
-                automatically generated. You'll need to provide this code to the
-                administrator.
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-900">
+                <strong>⚠️ Important:</strong> The access code will be sent directly
+                to the administrator's email address. You will NOT see the access
+                code for security reasons.
               </p>
             </div>
 

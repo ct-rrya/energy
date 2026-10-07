@@ -8,15 +8,15 @@ import { ROUTES } from './routes.config';
  */
 interface AdminRouteProps {
   children: React.ReactNode;
+  requireSuperAdmin?: boolean;
 }
 
 /**
  * Admin Route Component
- * Ensures user is authenticated AND has SUPER_ADMIN role before rendering children
- * Redirects to login if not authenticated
- * Redirects to dashboard if authenticated but not SUPER_ADMIN
+ * Ensures user is authenticated (redirects to admin login if not)
+ * If requireSuperAdmin is true, ensures user has SUPER_ADMIN role (redirects non-SUPER_ADMIN to dashboard)
  */
-export function AdminRoute({ children }: AdminRouteProps) {
+export function AdminRoute({ children, requireSuperAdmin = true }: AdminRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -25,16 +25,16 @@ export function AdminRoute({ children }: AdminRouteProps) {
     return <FullPageLoading />;
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to admin login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.ADMIN_LOGIN} state={{ from: location }} replace />;
   }
 
   // Redirect to dashboard if authenticated but not SUPER_ADMIN
-  if (user?.role !== 'SUPER_ADMIN') {
+  if (requireSuperAdmin && user?.role !== 'SUPER_ADMIN') {
     return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 
-  // User is authenticated and has admin role, render children
+  // User is authenticated and authorized, render children
   return <>{children}</>;
 }

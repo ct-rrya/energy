@@ -20,6 +20,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { AdminManagementModule } from './admin-management/admin-management.module';
+import { EmailModule } from './email/email.module';
 import { SensorsModule } from './sensors/sensors.module';
 import { IotModule } from './iot/iot.module';
 import { EnergyModule } from './energy/energy.module';
@@ -86,6 +87,11 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     // Configure rate limiting for public APIs
     ThrottlerModule.forRoot([
       {
+        name: 'auth',
+        ttl: 900000, // 15 minutes
+        limit: 10, // 10 requests per 15 minutes for auth endpoints
+      },
+      {
         name: 'chat',
         ttl: 60000, // 1 minute
         limit: 10, // 10 requests per minute
@@ -104,6 +110,7 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     AuthModule,
     AuditModule, // Audit logging for administrator actions
     AdminManagementModule, // SUPER_ADMIN account management
+    EmailModule, // Email service for access code delivery
     SensorsModule,
     IotModule,
     EnergyModule,

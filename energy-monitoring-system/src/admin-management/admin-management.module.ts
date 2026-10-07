@@ -5,6 +5,7 @@ import { AdminManagementController } from './admin-management.controller';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
+import { EmailModule } from '../email/email.module';
 
 /**
  * AdminManagementModule
@@ -30,6 +31,7 @@ import { AuditModule } from '../audit/audit.module';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     AuthModule, // For AuthService (access code hashing)
     AuditModule, // For audit logging
+    EmailModule, // For sending access codes via email
   ],
   controllers: [AdminManagementController],
   providers: [AdminManagementService],

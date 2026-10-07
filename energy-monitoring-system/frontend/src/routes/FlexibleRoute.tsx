@@ -18,7 +18,7 @@ interface FlexibleRouteProps {
  * 
  * Use Cases:
  * - requireAuth=false (default): Accessible by both public and authenticated users
- * - requireAuth=true: Only authenticated users (redirects to login)
+ * - requireAuth=true: Only authenticated users (redirects to admin login)
  * - redirectIfAuth=true: Only unauthenticated users (redirects authenticated to dashboard)
  */
 export function FlexibleRoute({
@@ -34,15 +34,16 @@ export function FlexibleRoute({
     return <FullPageLoading />;
   }
 
-  // Redirect authenticated users away (e.g., from login page)
+  // Redirect authenticated users away (e.g., from admin login page to dashboard)
   if (redirectIfAuth && isAuthenticated) {
     const from = (location.state as { from?: Location })?.from?.pathname;
-    return <Navigate to={from || ROUTES.DASHBOARD} replace />;
+    const target = from && from !== ROUTES.ADMIN_LOGIN ? from : ROUTES.DASHBOARD;
+    return <Navigate to={target} replace />;
   }
 
-  // Require authentication
+  // Require authentication - redirect to admin login
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.ADMIN_LOGIN} state={{ from: location }} replace />;
   }
 
   // Allow access

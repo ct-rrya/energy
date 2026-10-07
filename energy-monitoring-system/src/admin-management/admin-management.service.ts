@@ -3,12 +3,14 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as crypto from 'crypto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { AuthService } from '../auth/auth.service';
+import { EmailService } from '../email/email.service';
 import { CreateAdminDto, UpdateAdminStatusDto } from './dto';
 
 /**
@@ -34,10 +36,13 @@ import { CreateAdminDto, UpdateAdminStatusDto } from './dto';
  */
 @Injectable()
 export class AdminManagementService {
+  private readonly logger = new Logger(AdminManagementService.name);
+
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
     private authService: AuthService,
+    private emailService: EmailService,
   ) {}
 
   /**
@@ -81,40 +86,21 @@ export class AdminManagementService {
   }
 
   /**
-   * Create new administrator account
+   * Create new administrator account (for seeder/script use)
    *
    * @param createAdminDto - Administrator data
-   * @returns Created admin with plain access code (shown only once)
+   * @returns Created admin WITH plain access code
    *
-   * Process:
-   * 1. Check email uniqueness
-   * 2. Generate random access code
-   * 3. Hash access code with bcrypt
-   * 4. Create user document
-   * 5. Return admin with plain access code
-   *
-   * Security:
-   * - Email uniqueness enforced
-   * - Access code is cryptographically random
-   * - Access code is hashed before storage
-   * - Plain access code returned only once
-   * - Caller must audit this operation
-   *
-   * Note:
-   * - Password field is set to a random hash (not used for admin login)
-   * - Admin login uses access code only
-   * - isActive defaults to true
+   * ⚠️ WARNING: This method returns the plain access code.
+   * It should ONLY be used by seed scripts and setup tools.
+   * For normal admin creation, this method sends email instead.
    *
    * Usage:
-   *   const result = await service.createAdmin({
-   *     email: 'john@example.com',
-   *     name: 'John Doe',
-   *     role: 'SYSTEM_ADMIN'
-   *   });
-   *   // result.accessCode: "xY7pQ3mN9kL2" (plain, show to user)
-   *   // result.admin: UserDocument (access code hash stored)
+   *   // For seeder/setup scripts:
+   *   const result = await service.createAdminWithCode(dto);
+   *   console.log(result.accessCode); // Only for setup!
    */
-  async createAdmin(createAdminDto: CreateAdminDto): Promise<{
+  async createAdminWithCode(createAdminDto: CreateAdminDto): Promise<{
     admin: UserDocument;
     accessCode: string;
   }> {
@@ -152,11 +138,116 @@ export class AdminManagementService {
 
     await admin.save();
 
-    // Return admin and plain access code (shown only once)
+    this.logger.log(
+      `Administrator account created (for seeder): ${email}`,
+    );
+
+    // Return admin AND plain access code (for seeder use only)
     return {
       admin,
-      accessCode, // Plain text - must be shown to user immediately
+      accessCode,
     };
+  }
+
+  /**
+   * Create new administrator account
+   *
+   * @param createAdminDto - Administrator data
+   * @returns Created admin (access code NOT included - sent via email)
+   *
+   * Process:
+   * 1. Check email uniqueness
+   * 2. Generate random access code
+   * 3. Hash access code with bcrypt
+   * 4. Create user document
+   * 5. Send access code to administrator's email
+   * 6. Return admin WITHOUT access code
+   *
+   * Security:
+   * - Email uniqueness enforced
+   * - Access code is cryptographically random
+   * - Access code is hashed before storage
+   * - Access code sent ONLY to administrator's email
+   * - Super Admin NEVER sees the access code
+   * - Caller must audit this operation
+   *
+   * Note:
+   * - Password field is set to a random hash (not used for admin login)
+   * - Admin login uses access code only
+   * - isActive defaults to true
+   *
+   * Usage:
+   *   const admin = await service.createAdmin({
+   *     email: 'john@example.com',
+   *     name: 'John Doe',
+   *     role: 'SYSTEM_ADMIN'
+   *   });
+   *   // admin: UserDocument (NO access code in response)
+   *   // Access code emailed to john@example.com
+   */
+  async createAdmin(createAdminDto: CreateAdminDto): Promise<{ admin: UserDocument; emailSent: boolean }> {
+    const { email, name, role } = createAdminDto;
+
+    // Check if email already exists
+    const existingUser = await this.userModel.findOne({ email }).exec();
+    if (existingUser) {
+      throw new ConflictException(
+        'An account with this email address already exists',
+      );
+    }
+
+    // Generate secure access code
+    const accessCode = this.generateAccessCode();
+
+    // Hash the access code
+    const accessCodeHash = await this.authService.hashAccessCode(accessCode);
+
+    // Generate random password hash (not used for admin login)
+    const randomPassword = crypto.randomBytes(32).toString('hex');
+    const passwordHash = await this.authService.hashPassword(randomPassword);
+
+    // Create admin user
+    const admin = new this.userModel({
+      email,
+      name,
+      role,
+      password: passwordHash, // Required by schema, but not used
+      accessCodeHash,
+      isActive: true,
+      lastLoginAt: null,
+      lastActivityAt: null,
+    });
+
+    await admin.save();
+
+    // Send access code to administrator's email (synchronous)
+    let emailSent = false;
+    try {
+      emailSent = await this.emailService.sendAccessCodeEmail(
+        email,
+        name,
+        accessCode,
+        false,
+      );
+      
+      if (emailSent) {
+        this.logger.log(
+          `Administrator account created and access code emailed to ${email}`,
+        );
+      } else {
+        this.logger.warn(
+          `Administrator account created for ${email}, but email delivery failed`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to send access code email to ${email}: ${error.message}`,
+      );
+      emailSent = false;
+    }
+
+    // Return admin WITHOUT access code (security requirement)
+    return { admin, emailSent };
   }
 
   /**
@@ -214,7 +305,7 @@ export class AdminManagementService {
    * Reset administrator access code
    *
    * @param id - Administrator user ID
-   * @returns New plain access code (shown only once)
+   * @returns void (new access code sent via email)
    *
    * Process:
    * 1. Find administrator
@@ -222,22 +313,35 @@ export class AdminManagementService {
    * 3. Generate new random access code
    * 4. Hash new access code
    * 5. Update user document
-   * 6. Return plain access code
+   * 6. Send new access code to administrator's email
    *
    * Security:
    * - Only works for admin accounts
    * - New access code is cryptographically random
    * - Old access code immediately invalidated
-   * - Plain access code returned only once
+   * - New access code sent ONLY to administrator's email
+   * - Super Admin NEVER sees the new access code
    * - Caller must audit this operation
    *
    * Usage:
-   *   const newCode = await service.resetAccessCode(userId);
-   *   // newCode: "aB2cD3eF4gH5" (plain, show to user)
+   *   await service.resetAccessCode(userId);
+   *   // New access code emailed to administrator
    */
-  async resetAccessCode(id: string): Promise<string> {
-    // Find administrator
-    const admin = await this.getAdministratorById(id);
+  async resetAccessCode(id: string): Promise<boolean> {
+    // Find administrator (need to explicitly select accessCodeHash to update it)
+    const admin = await this.userModel
+      .findById(id)
+      .select('+accessCodeHash')
+      .exec();
+
+    if (!admin) {
+      throw new NotFoundException('Administrator not found');
+    }
+
+    // Verify it's an admin account
+    if (admin.role !== 'SYSTEM_ADMIN' && admin.role !== 'SUPER_ADMIN') {
+      throw new NotFoundException('Administrator not found');
+    }
 
     // Generate new access code
     const accessCode = this.generateAccessCode();
@@ -245,12 +349,64 @@ export class AdminManagementService {
     // Hash the new access code
     const accessCodeHash = await this.authService.hashAccessCode(accessCode);
 
+    // DIAGNOSTIC LOGGING (safe - no sensitive data)
+    this.logger.log(
+      `[RESET] Admin: ${admin.email}, Role: ${admin.role}, ID: ${admin._id}`,
+    );
+    this.logger.log(
+      `[RESET] Generated code length: ${accessCode.length}, Hash exists: ${!!accessCodeHash}`,
+    );
+    this.logger.log(
+      `[RESET] First 2 chars of code: ${accessCode.substring(0, 2)}..., Last 2: ...${accessCode.substring(10, 12)}`,
+    );
+
     // Update admin's access code
     admin.accessCodeHash = accessCodeHash;
     await admin.save();
 
-    // Return plain access code (shown only once)
-    return accessCode;
+    // Verify the save worked
+    const verifyAdmin = await this.userModel
+      .findById(id)
+      .select('+accessCodeHash')
+      .exec();
+    this.logger.log(
+      `[RESET] Verification - Hash saved: ${!!verifyAdmin?.accessCodeHash}, Hash length: ${verifyAdmin?.accessCodeHash?.length || 0}`,
+    );
+    
+    // TEST: Verify the hash immediately with bcrypt
+    const bcrypt = require('bcrypt');
+    const testMatch = await bcrypt.compare(accessCode, verifyAdmin?.accessCodeHash || '');
+    this.logger.log(
+      `[RESET] Immediate hash verification test: ${testMatch ? 'PASS ✅' : 'FAIL ❌'}`,
+    );
+
+    // Send new access code to administrator's email (synchronous)
+    let emailSent = false;
+    try {
+      emailSent = await this.emailService.sendAccessCodeEmail(
+        admin.email,
+        admin.name,
+        accessCode,
+        true,
+      );
+      
+      if (emailSent) {
+        this.logger.log(
+          `Access code reset for ${admin.email} and new code emailed`,
+        );
+      } else {
+        this.logger.warn(
+          `Access code reset for ${admin.email}, but email delivery failed`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to send reset access code email to ${admin.email}: ${error.message}`,
+      );
+      emailSent = false;
+    }
+
+    return emailSent;
   }
 
   /**

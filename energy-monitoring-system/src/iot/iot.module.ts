@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   EnergyReading,
   EnergyReadingSchema,
@@ -50,6 +51,9 @@ import { DashboardModule } from '../dashboard/dashboard.module';
  */
 @Module({
   imports: [
+    // Enable cron jobs for scheduled tasks (daily cleanup)
+    ScheduleModule.forRoot(),
+
     // Register EnergyReading schema with Mongoose
     MongooseModule.forFeature([
       {

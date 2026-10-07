@@ -24,6 +24,14 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function AdminAccessCodePage() {
   const navigate = useNavigate();
   const { loginWithAccessCode } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Access code state (4 parts of 3 characters each)
   const [codeParts, setCodeParts] = useState(['', '', '', '']);
@@ -49,8 +57,8 @@ export default function AdminAccessCodePage() {
    * Handle input change
    */
   const handleChange = (index: number, value: string) => {
-    // Only allow alphanumeric characters
-    const sanitized = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    // Only allow alphanumeric characters (PRESERVE CASE - access codes are case-sensitive)
+    const sanitized = value.replace(/[^A-Za-z0-9]/g, '');
 
     // Take only first 3 characters
     const truncated = sanitized.slice(0, 3);
@@ -78,8 +86,7 @@ export default function AdminAccessCodePage() {
     e.preventDefault();
     const pastedText = e.clipboardData
       .getData('text')
-      .replace(/[^A-Za-z0-9]/g, '')
-      .toUpperCase();
+      .replace(/[^A-Za-z0-9]/g, ''); // Strip dashes and special chars but PRESERVE CASE
 
     // Distribute pasted text across boxes (3 chars each)
     const newCodeParts = [
@@ -131,16 +138,8 @@ export default function AdminAccessCodePage() {
     setError('');
 
     try {
-      const user = await loginWithAccessCode({ accessCode });
-      
-      // Redirect based on role
-      if (user.role === 'SUPER_ADMIN') {
-        navigate('/admin-management', { replace: true });
-      } else if (user.role === 'SYSTEM_ADMIN') {
-        navigate('/dashboard', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      await loginWithAccessCode({ accessCode });
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       console.error('Access code login failed:', err);
       setError(
@@ -191,7 +190,7 @@ export default function AdminAccessCodePage() {
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     maxLength={3}
-                    className={`w-20 h-16 text-center text-2xl font-mono font-bold uppercase tracking-wider border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 ${
+                    className={`w-20 h-16 text-center text-2xl font-mono font-bold tracking-wider border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 ${
                       error
                         ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200'
                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
@@ -237,7 +236,7 @@ export default function AdminAccessCodePage() {
             <div className="space-y-3">
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                 <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                  🔐 Security Note
+                  ðŸ” Security Note
                 </h3>
                 <p className="text-xs text-blue-800 leading-relaxed">
                   Your session will automatically expire after 10 minutes of
@@ -251,7 +250,7 @@ export default function AdminAccessCodePage() {
                   onClick={() => navigate('/')}
                   className="text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
                 >
-                  ← Back to Public Monitoring
+                  â† Back to Public Monitoring
                 </button>
               </div>
             </div>

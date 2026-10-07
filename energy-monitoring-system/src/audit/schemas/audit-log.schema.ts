@@ -96,6 +96,7 @@ export class AuditLog {
       
       // Account management (SUPER_ADMIN only)
       'CREATE_ADMIN_ACCOUNT',
+      'LIST_ADMINISTRATORS',
       'RESET_ACCESS_CODE',
       'ACTIVATE_ADMIN_ACCOUNT',
       'DEACTIVATE_ADMIN_ACCOUNT',

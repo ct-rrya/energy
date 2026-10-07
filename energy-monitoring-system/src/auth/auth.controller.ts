@@ -6,6 +6,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto, AuthResponseDto, AccessCodeLoginDto } from './dto';
 import { AuditService } from '../audit/audit.service';
@@ -114,6 +115,7 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
+  @Throttle({ auth: { limit: 10, ttl: 900000 } }) // 10 attempts per 15 minutes
   @ApiOperation({
     summary: 'User login',
     description:
@@ -215,6 +217,7 @@ export class AuthController {
    */
   @Post('admin/access-code')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { limit: 5, ttl: 900000 } }) // 5 attempts per 15 minutes (stricter for access codes)
   @ApiOperation({
     summary: 'Administrator access code login',
     description:

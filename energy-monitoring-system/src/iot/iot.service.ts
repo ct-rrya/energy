@@ -5,9 +5,11 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Cron } from '@nestjs/schedule';
 import {
   EnergyReading,
   EnergyReadingDocument,
@@ -15,6 +17,7 @@ import {
 } from './schemas/energy-reading.schema';
 import {
   CreateReadingDto,
+  CreatePiezoReadingDto,
   CreateReadingResponseDto,
   ReadingResponseDto,
   ReadingQueryDto,
@@ -60,8 +63,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
  */
 @Injectable()
 export class IotService {
+  private readonly logger = new Logger(IotService.name);
   private dailyEnergyCache: Map<string, number> = new Map(); // Track daily energy for milestones
   private batteryAlertCache: Map<string, number> = new Map(); // Track last battery alert time
+  private stepCountCache = new Map<string, number>(); // Track step milestones per sensor
 
   constructor(
     @InjectModel(EnergyReading.name)
@@ -934,5 +939,295 @@ export class IotService {
         this.dailyEnergyCache.delete(key);
       }
     }
+  }
+
+  // ============================================================
+  // PIEZOELECTRIC SENSOR SUPPORT
+  // ============================================================
+
+  /**
+   * Receive Piezo Reading
+   *
+   * Handles piezoelectric sensor readings with trigger detection.
+   *
+   * @param apiKey - Sensor API key for authentication
+   * @param readingDto - Piezo reading data with required capacitorVoltage and stepCount
+   * @returns Response with reading ID and timestamp
+   */
+  async receivePiezoReading(
+    apiKey: string,
+    readingDto: CreatePiezoReadingDto,
+  ): Promise<CreateReadingResponseDto> {
+    // Step 1: Validate API key
+    const sensor = await this.validateApiKey(apiKey);
+
+    // Step 2: Validate piezo-specific data
+    this.validatePiezoData(readingDto);
+
+    // Step 3: Store reading
+    const reading = await this.storeReading(sensor._id.toString(), readingDto);
+
+    // Step 4: Detect piezo trigger (async, don't await)
+    this.detectPiezoTrigger(reading, sensor).catch((error) => {
+      this.logger.error('Failed to detect piezo trigger:', error);
+    });
+
+    // Step 5: Check step milestones (async, don't await)
+    this.checkStepMilestones(sensor._id, readingDto.stepCount).catch(
+      (error) => {
+        this.logger.error('Failed to check step milestones:', error);
+      },
+    );
+
+    // Step 6: Check capacitor full (async, don't await)
+    this.checkCapacitorFull(reading, sensor).catch((error) => {
+      this.logger.error('Failed to check capacitor full:', error);
+    });
+
+    // Step 7: Update sensor lastSeen (fire and forget)
+    this.sensorsService
+      .updateLastSeen(sensor._id.toString())
+      .catch((error) => {
+        this.logger.error('Failed to update sensor lastSeen:', error);
+      });
+
+    // Step 8: Return lightweight response
+    return {
+      success: true,
+      readingId: reading._id.toString(),
+      receivedAt: reading.receivedAt,
+    };
+  }
+
+  /**
+   * Validate Piezo Data
+   *
+   * Additional validation for piezo-specific fields.
+   *
+   * @param readingDto - Piezo reading DTO
+   * @throws BadRequestException if validation fails
+   */
+  private validatePiezoData(readingDto: CreatePiezoReadingDto): void {
+    // Capacitor voltage required (enforced by DTO, double-check here)
+    if (
+      readingDto.capacitorVoltage === undefined ||
+      readingDto.capacitorVoltage === null
+    ) {
+      throw new BadRequestException(
+        'Capacitor voltage is required for piezo sensors',
+      );
+    }
+
+    // Step count required
+    if (readingDto.stepCount === undefined || readingDto.stepCount === null) {
+      throw new BadRequestException(
+        'Step count is required for piezo sensors',
+      );
+    }
+
+    // Timestamp validation (timestamp cannot be in future)
+    const readingTime = new Date(readingDto.timestamp);
+    const now = new Date();
+    if (readingTime > now) {
+      throw new BadRequestException('Timestamp cannot be in the future');
+    }
+  }
+
+  /**
+   * Detect Piezo Trigger
+   *
+   * Detects footstep trigger by comparing with previous reading.
+   * Emits 'piezo:trigger' WebSocket event.
+   *
+   * @param reading - Current energy reading
+   * @param sensor - Sensor document
+   */
+  private async detectPiezoTrigger(
+    reading: EnergyReadingDocument,
+    sensor: any,
+  ): Promise<void> {
+    try {
+      const sensorId = sensor._id.toString();
+
+      // Get previous reading
+      const previousReading = await this.readingModel
+        .findOne({ sensorId })
+        .sort({ timestamp: -1 })
+        .skip(1) // Skip current reading
+        .limit(1)
+        .exec();
+
+      if (!previousReading) {
+        // First reading, no comparison possible
+        return;
+      }
+
+      const currentVoltage = reading.capacitorVoltage || 0;
+      const previousVoltage = previousReading.capacitorVoltage || 0;
+      const deltaVoltage = currentVoltage - previousVoltage;
+
+      // Get threshold from config (default: 0.030V = 30mV)
+      const threshold =
+        this.configService.get<number>('PIEZO_VOLTAGE_THRESHOLD') || 0.030;
+      const maxCredibleChange =
+        this.configService.get<number>('PIEZO_MAX_VOLTAGE_CHANGE') || 1.5;
+
+      // Detect trigger
+      const detected =
+        deltaVoltage >= threshold && deltaVoltage <= maxCredibleChange;
+
+      if (detected) {
+        // Calculate energy (clamp to 0 to handle voltage drops)
+        const capacitance =
+          this.configService.get<number>('PIEZO_CAPACITANCE') || 0.0022;
+        const energy = Math.max(
+          0,
+          0.5 * capacitance * (currentVoltage ** 2 - previousVoltage ** 2),
+        );
+
+        // Broadcast trigger event
+        const gateway = this.dashboardService.getGateway();
+        gateway.server.to('dashboard').emit('piezo:trigger', {
+          sensorId,
+          sensorName: sensor.name,
+          sensorLocation: sensor.location,
+          capacitorVoltage: currentVoltage,
+          deltaVoltage,
+          energy,
+          stepCount: reading.stepCount,
+          timestamp: reading.timestamp,
+        });
+
+        this.logger.debug(
+          `Piezo trigger detected for sensor ${sensorId}: ΔV=${deltaVoltage.toFixed(3)}V, E=${energy.toFixed(6)}J`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error detecting piezo trigger:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check Step Milestones
+   *
+   * Checks if step count crossed a milestone and emits event.
+   * Milestones: 100, 500, 1000, 5000, 10000 steps.
+   *
+   * Detects step count resets and clears cache.
+   *
+   * @param sensorId - Sensor ObjectId
+   * @param currentSteps - Current step count
+   */
+  private async checkStepMilestones(
+    sensorId: any,
+    currentSteps: number,
+  ): Promise<void> {
+    try {
+      // Explicit .toString() conversion
+      const cacheKey = `piezo_steps_${sensorId.toString()}`;
+      const previousSteps = this.stepCountCache.get(cacheKey) || 0;
+
+      // Detect step count reset
+      if (currentSteps < previousSteps) {
+        this.logger.warn(
+          `Step count reset detected for sensor ${sensorId}: ${previousSteps} -> ${currentSteps}`,
+        );
+        this.stepCountCache.delete(cacheKey);
+        return; // Skip milestone checks on reset
+      }
+
+      // Get milestones from config
+      const milestones = [
+        { value: 100, key: 'PIEZO_STEP_MILESTONE_100' },
+        { value: 500, key: 'PIEZO_STEP_MILESTONE_500' },
+        { value: 1000, key: 'PIEZO_STEP_MILESTONE_1000' },
+        { value: 5000, key: 'PIEZO_STEP_MILESTONE_5000' },
+        { value: 10000, key: 'PIEZO_STEP_MILESTONE_10000' },
+      ];
+
+      // Check each milestone
+      for (const milestone of milestones) {
+        const enabled =
+          this.configService.get<string>(milestone.key) !== 'false'; // Default enabled
+
+        if (
+          enabled &&
+          previousSteps < milestone.value &&
+          currentSteps >= milestone.value
+        ) {
+          // Milestone crossed!
+          const gateway = this.dashboardService.getGateway();
+          gateway.server.to('dashboard').emit('piezo:milestone', {
+            sensorId: sensorId.toString(),
+            milestone: milestone.value,
+            totalSteps: currentSteps,
+            message: `🎉 Milestone reached: ${milestone.value} steps!`,
+            timestamp: new Date(),
+          });
+
+          this.logger.log(
+            `Piezo milestone reached: ${milestone.value} steps for sensor ${sensorId}`,
+          );
+          break; // Only emit once per reading
+        }
+      }
+
+      // Update cache
+      this.stepCountCache.set(cacheKey, currentSteps);
+    } catch (error) {
+      this.logger.error('Error checking step milestones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check Capacitor Full
+   *
+   * Checks if capacitor voltage is at 90% or higher and emits alert.
+   *
+   * @param reading - Energy reading document
+   * @param sensor - Sensor document
+   */
+  private async checkCapacitorFull(
+    reading: EnergyReadingDocument,
+    sensor: any,
+  ): Promise<void> {
+    try {
+      const maxVoltage =
+        this.configService.get<number>('PIEZO_MAX_VOLTAGE') || 50;
+      const thresholdPercent =
+        this.configService.get<number>('PIEZO_CAPACITOR_FULL_THRESHOLD') ||
+        0.9;
+      const threshold = maxVoltage * thresholdPercent; // Default: 90%
+
+      if (reading.capacitorVoltage && reading.capacitorVoltage >= threshold) {
+        const gateway = this.dashboardService.getGateway();
+        gateway.server.to('dashboard').emit('capacitor:full', {
+          sensorId: sensor._id.toString(),
+          sensorName: sensor.name,
+          capacitorVoltage: reading.capacitorVoltage,
+          maxVoltage,
+          percentage: (reading.capacitorVoltage / maxVoltage) * 100,
+          message: '⚡ Capacitor at 90% capacity!',
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error checking capacitor full:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Daily Step Cache Cleanup
+   *
+   * Clears step count cache daily at midnight to prevent memory leaks.
+   * Runs via @nestjs/schedule cron decorator.
+   */
+  @Cron('0 0 * * *') // Daily at midnight
+  cleanupStepCache() {
+    this.stepCountCache.clear();
+    this.logger.log('Step count cache cleared (daily cleanup)');
   }
 }
