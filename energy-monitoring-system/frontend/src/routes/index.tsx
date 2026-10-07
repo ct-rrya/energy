@@ -90,16 +90,14 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Dashboard - Protected for System Administrators
+  // Dashboard - Public access (read-only for public users, full access for admins)
   {
     path: ROUTES.DASHBOARD,
     element: (
       <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <DashboardPage />
-          </DashboardLayout>
-        </ProtectedRoute>
+        <DashboardLayout>
+          <DashboardPage />
+        </DashboardLayout>
       </LazyRoute>
     ),
   },
