@@ -8,7 +8,7 @@ import { SocketProvider } from '@/contexts/SocketContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SessionWarningModal } from '@/components/common/SessionWarningModal';
 import { router } from '@/routes';
-import FloatingChatButton from '@/components/FloatingChatButton';
+import { ChatLauncher, ChatPanel } from '@/features/chat';
 
 /**
  * TanStack Query Client Configuration
@@ -55,12 +55,13 @@ function App() {
                 <RouterProvider router={router} />
                 <ToastContainer />
                 {/* 
-                  FloatingChatButton rendered outside routing container
+                  ChatLauncher and ChatPanel rendered outside routing container
                   to appear globally across all routes.
-                  z-index: 9999+ ensures it stays above other content.
+                  z-index: 9999+ (launcher) and 10000+ (panel) ensures proper stacking.
                   Requirements: 4.1
                 */}
-                <FloatingChatButton />
+                <ChatLauncher />
+                <ChatPanel />
                 {/* 
                   SessionWarningModal for admin inactivity timeout
                   Shows at 9 minutes (1 minute before auto-logout)

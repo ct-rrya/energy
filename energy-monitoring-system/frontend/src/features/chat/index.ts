@@ -1,4 +1,8 @@
 /**
- * Chat feature exports
+ * EcoChat Widget Barrel Export
  */
-export { default as ChatInterface } from './components/ChatInterface';
+
+export { ChatLauncher } from './components/ChatLauncher';
+export { ChatPanel } from './components/ChatPanel';
+export { useChat } from './useChat';
+export * from './chat.types';
