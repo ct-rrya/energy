@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
+import { FocusTrap } from 'focus-trap-react';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
@@ -80,37 +81,45 @@ export function ChatPanel() {
       {/* Backdrop */}
       <div className="chat-backdrop" onClick={handleClose} />
 
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        className="chat-panel"
-        role="dialog"
-        aria-label="EcoChat"
-        aria-modal="true"
+      {/* Panel with Focus Trap */}
+      <FocusTrap
+        focusTrapOptions={{
+          initialFocus: false,
+          allowOutsideClick: true,
+          escapeDeactivates: false, // We handle Escape manually
+        }}
       >
-        <ChatHeader onClose={handleClose} onNewChat={handleNewChat} />
-        
-        <MessageList
-          messages={messages}
-          isLoading={isLoading}
-          onSuggestionClick={sendMessage}
-        />
+        <div
+          ref={panelRef}
+          className="chat-panel"
+          role="dialog"
+          aria-label="EcoChat"
+          aria-modal="true"
+        >
+          <ChatHeader onClose={handleClose} onNewChat={handleNewChat} />
+          
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            onSuggestionClick={sendMessage}
+          />
 
-        {error && (
-          <div className="chat-error">
-            <p>{error}</p>
-            <button
-              className="chat-error-retry"
-              onClick={retryLastMessage}
-              type="button"
-            >
-              Retry
-            </button>
-          </div>
-        )}
+          {error && (
+            <div className="chat-error">
+              <p>{error}</p>
+              <button
+                className="chat-error-retry"
+                onClick={retryLastMessage}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
-        <ChatInput onSend={sendMessage} disabled={isLoading} />
-      </div>
+          <ChatInput onSend={sendMessage} disabled={isLoading} />
+        </div>
+      </FocusTrap>
     </>
   );
 }

@@ -9,7 +9,9 @@ import { useState, useRef, useCallback } from 'react';
 import type { ChatMessage } from './chat.types';
 import api from '@/lib/api';
 
-const SESSION_ID_KEY = 'ecostep_chat_session_id';
+// Generate unique tab ID to scope sessionStorage per tab
+const TAB_ID = crypto.randomUUID();
+const SESSION_ID_KEY = `ecostep_chat_session_id_${TAB_ID}`;
 const RATE_LIMIT_MS = 1500; // 1.5 seconds between messages
 
 interface UseChatReturn {
