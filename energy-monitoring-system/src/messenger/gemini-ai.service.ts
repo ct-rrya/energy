@@ -752,4 +752,262 @@ Type "help" to see all available commands.`;
   isAIEnabled(): boolean {
     return this.isEnabled;
   }
+
+  /**
+   * Generate Report Analysis
+   *
+   * Analyzes structured report data and generates professional analysis.
+   * This is SEPARATE from EcoChat - it's for report generation only.
+   *
+   * CRITICAL RULES:
+   * - Receives ONLY structured report data (no database access)
+   * - Read-only analysis
+   * - Never invents measurements, trends, dates, or conclusions
+   * - States when data is insufficient
+   * - Adapts output to report type
+   *
+   * @param reportType - Type of report being generated
+   * @param reportData - Structured report data (not raw database)
+   * @returns AI-generated analysis or null if unavailable/failed
+   */
+  async generateReportAnalysis(
+    reportType: string,
+    reportData: any,
+  ): Promise<string | null> {
+    // Check if AI is enabled
+    if (!this.isEnabled) {
+      this.logger.warn(
+        '[REPORT ANALYSIS] AI service not enabled - skipping analysis',
+      );
+      return null;
+    }
+
+    // Check if data is available
+    if (!reportData.hasData) {
+      this.logger.warn(
+        '[REPORT ANALYSIS] No data available - skipping AI analysis',
+      );
+      return null;
+    }
+
+    try {
+      this.logger.log(`[REPORT ANALYSIS] Generating analysis for ${reportType}`);
+
+      // Get report-specific system prompt
+      const systemPrompt = this.getReportAnalysisPrompt(reportType);
+
+      // Build analysis prompt with structured data
+      const prompt = this.buildReportAnalysisPrompt(reportType, reportData);
+
+      // Create temporary model with report-specific instructions
+      const reportModel = this.genAI.getGenerativeModel({
+        model: 'gemini-3.6-flash',
+        systemInstruction: systemPrompt,
+      });
+
+      // Generate analysis with timeout
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('AI analysis timeout')), 10000);
+      });
+
+      const generationPromise = reportModel.generateContent(prompt);
+
+      const result = await Promise.race([generationPromise, timeoutPromise]);
+
+      const analysis = result.response.text();
+
+      this.logger.log(
+        `[REPORT ANALYSIS] ✅ Analysis generated successfully (${analysis.length} characters)`,
+      );
+
+      return analysis;
+    } catch (error) {
+      this.logger.error('[REPORT ANALYSIS] ❌ Failed to generate analysis');
+      this.logger.error(`[REPORT ANALYSIS]    Error: ${error.message}`);
+      // Return null - report will be generated without AI section
+      return null;
+    }
+  }
+
+  /**
+   * Get Report Analysis System Prompt
+   *
+   * Returns report-type-specific system instructions for AI analysis.
+   */
+  private getReportAnalysisPrompt(reportType: string): string {
+    const baseInstructions = `You are an analytical assistant for EcoStep piezoelectric energy monitoring reports.
+
+Your role is to provide professional, data-driven analysis of report data.
+
+CRITICAL RULES:
+- Analyze ONLY the data provided
+- Do NOT invent measurements, dates, or trends
+- Clearly distinguish between observed data and interpretations
+- State when data is insufficient for conclusions
+- Use professional, technical language (not conversational)
+- Be concise and focused`;
+
+    switch (reportType) {
+      case 'energy_monitoring':
+        return `${baseInstructions}
+
+REPORT TYPE: Energy Generation Report
+
+ANALYZE:
+- Total energy generated during period
+- Voltage and current measurements
+- Step activity patterns
+- Electrical measurement observations
+
+OUTPUT STRUCTURE:
+## Overview
+[Brief summary of energy generation during the period]
+
+## Energy Generation Observations
+[Data-driven observations about energy harvested]
+
+## Electrical Measurements
+[Observations about voltage/current patterns if present]
+
+## Data Limitations
+[What the data cannot tell us]`;
+
+      case 'historical_analytics':
+        return `${baseInstructions}
+
+REPORT TYPE: Energy Trends Report
+
+ANALYZE:
+- Historical energy metrics over time
+- Observable trends in the data
+- Period-to-period comparisons
+
+OUTPUT STRUCTURE:
+## Overview
+[Brief summary of trends observed]
+
+## Trends Analysis
+[Observable patterns in the data]
+
+## Period Comparisons
+[How periods compare if data supports it]
+
+## Data Limitations
+[What the data cannot tell us]`;
+
+      case 'system_diagnostics':
+        return `${baseInstructions}
+
+REPORT TYPE: System Performance Report
+
+ANALYZE:
+- Diagnostic test results
+- Expected vs actual energy measurements
+- System performance metrics
+
+OUTPUT STRUCTURE:
+## Overview
+[Brief summary of diagnostic results]
+
+## Performance Observations
+[Data-driven observations about system performance]
+
+## Notable Results
+[Any significant findings in test data]
+
+## Data Limitations
+[What the data cannot tell us]`;
+
+      case 'system_summary':
+        return `${baseInstructions}
+
+REPORT TYPE: System Overview Report
+
+ANALYZE:
+- Combined summary across all data sources
+- Overall system state
+
+OUTPUT STRUCTURE:
+## Overview
+[Concise overall system observation]
+
+## Key Observations
+[Notable findings across all data sources]
+
+## Data Limitations
+[What the data cannot tell us]
+
+Keep this CONCISE - system overview should be brief.`;
+
+      default:
+        return baseInstructions;
+    }
+  }
+
+  /**
+   * Build Report Analysis Prompt
+   *
+   * Constructs the analysis prompt with structured report data.
+   */
+  private buildReportAnalysisPrompt(
+    reportType: string,
+    reportData: any,
+  ): string {
+    const { period, periodDays, energySummary, summary } = reportData;
+
+    return `**ECOSTEP REPORT DATA FOR ANALYSIS:**
+
+**Report Type:** ${this.getReportTypeLabel(reportType)}
+
+**Reporting Period:** ${period.startDate} to ${period.endDate} (${periodDays} days)
+
+**Data Summary:**
+\`\`\`json
+${JSON.stringify(
+  {
+    period: period,
+    periodDays: periodDays,
+    summary: summary || {},
+    energySummary: energySummary
+      ? {
+          totalEnergyKWh: energySummary.totalEnergyKWh,
+          avgPowerW: energySummary.avgPowerW,
+          peakPowerW: energySummary.peakPowerW,
+          readingCount: energySummary.readingCount,
+        }
+      : null,
+  },
+  null,
+  2,
+)}
+\`\`\`
+
+**INSTRUCTIONS:**
+- Analyze ONLY the data provided above
+- Do NOT invent any values not present in the data
+- State "insufficient data" if the dataset is sparse or limited
+- Focus your analysis on what the data actually shows
+- Adapt your analysis to the report type
+- Be professional and concise`;
+  }
+
+  /**
+   * Get Report Type Label
+   *
+   * Converts internal report type to user-facing name.
+   */
+  private getReportTypeLabel(reportType: string): string {
+    switch (reportType) {
+      case 'energy_monitoring':
+        return 'Energy Generation Report';
+      case 'historical_analytics':
+        return 'Energy Trends Report';
+      case 'system_diagnostics':
+        return 'System Performance Report';
+      case 'system_summary':
+        return 'System Overview Report';
+      default:
+        return reportType;
+    }
+  }
 }

@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-002",
+  "type": "refactor",
+  "description": "Redesign DashboardLayout to use MonitoringNav for public users (replacing the heavy sidebar) and restyle the sidebar for admin users with landing page tokens, 28px radius, soft active highlight, and a small role chip. Remove redundant guest messaging (purple badge, info banner, footer card).",
+  "status": "pending",
+  "steps": [
+    "Open frontend/src/layouts/DashboardLayout.tsx and import MonitoringNav from '@/components/layout/MonitoringNav'",
+    "At top of DashboardLayout component body, compute: const userRole = getUserRole(isAuthenticated, user); const isPublicUser = userRole === 'public'; const isAdminUser = userRole === 'admin' || user?.role === 'SYSTEM_ADMIN' || user?.role === 'SUPER_ADMIN'; (keep existing role detection logic)",
+    "Add conditional rendering: if (isPublicUser) { return (<div className='min-h-screen transition-colors duration-300' style={{ backgroundColor: 'var(--landing-bg)' }}><MonitoringNav /><main id='main-content' style={{ paddingTop: '80px' }}>{children}</main></div>); }",
+    "For admin layout (existing sidebar code path), update sidebar styling: change background from colors.sidebarBackground to 'var(--landing-surface)', border from getBorderColor() to '1px solid var(--landing-line)', borderRadius from DESIGN_SPACING.borderRadius.lg to '28px'",
+    "Replace solid green active background (colors.activeBackground) with 'var(--landing-soft)' for active nav items",
+    "Replace the uppercase role badge (purple for PUBLIC_VIEWER, green for Administrator) with a small chip: 14px text, color 'var(--landing-mute)', border '1px solid var(--landing-line)', borderRadius '999px', padding '4px 12px', background 'rgba(255,255,255,0.05)' or transparent, no uppercase transform",
+    "Apply same styling changes to mobile sidebar (the .mobile-sidebar overlay section)",
+    "Remove any inline references to purple (#C084FC) or neon green (#39FF88) solid backgrounds for badges — replace with subtle chip styling"
+  ],
+  "acceptance_criteria": [
+    "Public users (not logged in) see MonitoringNav at top, no sidebar, no purple 'PUBLIC VIEWER' badge",
+    "Admin users (SYSTEM_ADMIN, SUPER_ADMIN) see restyled sidebar with var(--landing-surface) background, 28px border-radius, 1px solid var(--landing-line) border",
+    "Admin sidebar active link has var(--landing-soft) background (soft green highlight), not solid neon green",
+    "Admin role badge is a small subtle chip (14px text, muted color, pill shape), not an uppercase card",
+    "Mobile sidebar (< 1024px) has same styling as desktop sidebar",
+    "Collapsible sidebar still works for admins (expand/collapse button functions correctly)",
+    "No purple badge, no uppercase 'PUBLIC VIEWER' or 'ADMINISTRATOR' cards"
+  ],
+  "verification": [
+    "Run 'npm run build' — build succeeds with no TypeScript errors",
+    "Start dev server, open http://localhost:5173/dashboard in incognito mode (not logged in) — MonitoringNav renders at top, no sidebar visible",
+    "Log in as SYSTEM_ADMIN (use /admin/login), navigate to /dashboard — sidebar renders on left with new styling (soft green highlight on active link, small role chip, 28px radius)",
+    "Click collapse button in admin sidebar — sidebar collapses to icon-only, role chip shows single letter or icon",
+    "Resize browser to < 1024px — hamburger menu appears, click it, mobile sidebar slides in with same styling",
+    "Check with DevTools Elements inspector: sidebar has style='background: var(--landing-surface); border: 1px solid var(--landing-line); borderRadius: 28px'",
+    "Active nav link in sidebar has background: var(--landing-soft), NOT a solid green color"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

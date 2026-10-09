@@ -69,41 +69,49 @@ export class ReportsController {
   /**
    * Generate Report
    *
-   * Generates a new energy report in PDF or Excel format.
+   * Generates a new EcoStep energy report in PDF or Excel format.
    *
    * Process:
    * 1. Validate request parameters
    * 2. Fetch data from AnalyticsService
-   * 3. Generate report file (PDF or Excel)
-   * 4. Save file and metadata
-   * 5. Return metadata with download URL
+   * 3. Optionally generate AI analysis (if requested and data available)
+   * 4. Generate report file (PDF or Excel)
+   * 5. Save file and metadata
+   * 6. Return metadata with download URL
    *
    * Report Types:
-   * - Daily: Single day report
-   * - Weekly: Monday to Sunday report
-   * - Monthly: Full month report
-   * - Custom: User-specified date range
+   * - Energy Generation Report (energy_monitoring)
+   * - Energy Trends Report (historical_analytics)
+   * - System Performance Report (system_diagnostics)
+   * - System Overview Report (system_summary)
    *
    * Formats:
-   * - PDF: Professional PDF document
+   * - PDF: Professional PDF document with EcoStep branding
    * - Excel: Excel spreadsheet (.xlsx)
    *
-   * Example Request (Monthly PDF):
+   * AI Analysis (Optional):
+   * - Set includeAIAnalysis: true to include AI-generated analysis
+   * - AI analyzes only structured report data (no database access)
+   * - If AI fails, report is still generated without AI section
+   *
+   * Example Request (Energy Generation with AI):
    * POST /api/reports/generate
    * {
-   *   "type": "monthly",
+   *   "type": "energy_monitoring",
    *   "format": "pdf",
-   *   "year": 2026,
-   *   "month": 7
+   *   "startDate": "2026-10-01",
+   *   "endDate": "2026-10-18",
+   *   "includeAIAnalysis": true
    * }
    *
-   * Example Request (Custom Excel):
+   * Example Request (System Performance without AI):
    * POST /api/reports/generate
    * {
-   *   "type": "custom",
+   *   "type": "system_diagnostics",
    *   "format": "excel",
-   *   "startDate": "2026-07-01",
-   *   "endDate": "2026-07-15"
+   *   "startDate": "2026-09-01",
+   *   "endDate": "2026-09-30",
+   *   "includeAIAnalysis": false
    * }
    */
   @Post('generate')
@@ -524,25 +532,25 @@ export class ReportsController {
         types: [
           {
             value: ReportType.ENERGY_MONITORING,
-            label: 'Energy Monitoring',
+            label: 'Energy Generation Report',
             description: 'Summarize energy generation and electrical measurements',
             requiredFields: ['startDate', 'endDate'],
           },
           {
             value: ReportType.HISTORICAL_ANALYTICS,
-            label: 'Historical Analytics',
+            label: 'Energy Trends Report',
             description: 'Analyze historical energy and electrical trends',
             requiredFields: ['startDate', 'endDate', 'aggregation'],
           },
           {
             value: ReportType.SYSTEM_DIAGNOSTICS,
-            label: 'System Diagnostics',
+            label: 'System Performance Report',
             description: 'Review standardized system diagnostic tests',
             requiredFields: ['startDate', 'endDate'],
           },
           {
             value: ReportType.SYSTEM_SUMMARY,
-            label: 'System Summary',
+            label: 'System Overview Report',
             description: 'Generate a combined overview of available EcoStep data',
             requiredFields: ['startDate', 'endDate'],
           },

@@ -25,6 +25,7 @@ const AlertsPage = lazy(() => import('@/features/alerts/pages/AlertsPage').then(
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
 
 /**
  * Loading fallback component for lazy-loaded routes
@@ -208,18 +209,17 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Sensors placeholder (Admin only)
+  // Sensors Management (SYSTEM_ADMIN only)
   {
     path: ROUTES.SENSORS,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-primary-500">Sensors</h1>
-            <p className="mt-2 text-neutral-600">Coming soon</p>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
+      <LazyRoute>
+        <AdminRoute>
+          <DashboardLayout>
+            <SensorsManagementPage />
+          </DashboardLayout>
+        </AdminRoute>
+      </LazyRoute>
     ),
   },
 

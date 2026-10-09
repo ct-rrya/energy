@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { Shield, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /**
  * Admin Access Code Login Page
@@ -15,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * - Clear error messaging
  * - Loading state during authentication
  * - Redirects to appropriate page based on role
+ * - Light/Dark mode support with EcoStep theme
  *
  * Security:
  * - Access code never shown or logged
@@ -25,6 +27,7 @@ export default function AdminAccessCodePage() {
   const navigate = useNavigate();
   const { loginWithAccessCode } = useAuth();
   const { isAuthenticated, user } = useAuth();
+  const { theme } = useTheme();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -155,19 +158,43 @@ export default function AdminAccessCodePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: theme === 'light' 
+          ? 'linear-gradient(135deg, #F5F7FA 0%, #E8EFF7 50%, #F5F7FA 100%)'
+          : 'linear-gradient(135deg, #0B132B 0%, #0F1621 50%, #0B132B 100%)'
+      }}
+    >
       <div className="w-full max-w-lg">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div 
+          className="rounded-2xl shadow-2xl p-8 border transition-colors duration-200"
+          style={{
+            backgroundColor: theme === 'light' ? '#FFFFFF' : '#0F1621',
+            borderColor: theme === 'light' ? 'rgba(11, 19, 43, 0.08)' : 'rgba(57, 255, 136, 0.12)'
+          }}
+        >
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
+            <div 
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #0B132B 0%, #1C2541 100%)',
+              }}
+            >
+              <Shield className="w-10 h-10" style={{ color: '#39FF88' }} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 
+              className="text-3xl font-bold mb-2"
+              style={{ color: theme === 'light' ? '#0B132B' : '#F5F7FA' }}
+            >
               Administrator Access
             </h1>
-            <p className="text-sm text-gray-600">
+            <p 
+              className="text-sm"
+              style={{ color: theme === 'light' ? '#6B7280' : '#9CA3AF' }}
+            >
               Enter your personal 12-character access code
             </p>
           </div>
@@ -175,8 +202,11 @@ export default function AdminAccessCodePage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Access Code Inputs */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+            <div className="space-y-3">
+              <label 
+                className="block text-sm font-medium"
+                style={{ color: theme === 'light' ? '#374151' : '#D1D5DB' }}
+              >
                 Access Code
               </label>
               <div className="flex gap-2 justify-center">
@@ -190,27 +220,61 @@ export default function AdminAccessCodePage() {
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     maxLength={3}
-                    className={`w-20 h-16 text-center text-2xl font-mono font-bold tracking-wider border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 ${
-                      error
-                        ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
-                    }`}
+                    className="w-20 h-16 text-center text-2xl font-mono font-bold tracking-wider border-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4"
+                    style={{
+                      backgroundColor: error 
+                        ? (theme === 'light' ? '#FEF2F2' : 'rgba(220, 38, 38, 0.1)')
+                        : (theme === 'light' ? '#FFFFFF' : '#0B132B'),
+                      borderColor: error
+                        ? '#EF4444'
+                        : (theme === 'light' ? '#E5E7EB' : 'rgba(57, 255, 136, 0.2)'),
+                      color: theme === 'light' ? '#0B132B' : '#F5F7FA',
+                    }}
+                    onFocus={(e) => {
+                      if (!error) {
+                        e.currentTarget.style.borderColor = '#39FF88';
+                        e.currentTarget.style.boxShadow = '0 0 0 4px rgba(57, 255, 136, 0.2)';
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!error) {
+                        e.currentTarget.style.borderColor = theme === 'light' ? '#E5E7EB' : 'rgba(57, 255, 136, 0.2)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
                     disabled={isLoading}
                     autoComplete="off"
                     spellCheck={false}
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500 text-center mt-2">
+              <p 
+                className="text-xs text-center mt-2"
+                style={{ color: theme === 'light' ? '#9CA3AF' : '#6B7280' }}
+              >
                 Format: ABC-123-DEF-456 (12 alphanumeric characters)
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
+              <div 
+                className="flex items-start gap-2 p-3 rounded-lg border"
+                style={{
+                  backgroundColor: theme === 'light' ? '#FEF2F2' : 'rgba(220, 38, 38, 0.1)',
+                  borderColor: theme === 'light' ? '#FCA5A5' : 'rgba(220, 38, 38, 0.3)'
+                }}
+              >
+                <AlertCircle 
+                  className="w-5 h-5 flex-shrink-0 mt-0.5" 
+                  style={{ color: '#EF4444' }} 
+                />
+                <p 
+                  className="text-sm"
+                  style={{ color: theme === 'light' ? '#991B1B' : '#FCA5A5' }}
+                >
+                  {error}
+                </p>
               </div>
             )}
 
@@ -218,7 +282,30 @@ export default function AdminAccessCodePage() {
             <button
               type="submit"
               disabled={isLoading || codeParts.join('').length !== 12}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:shadow-none transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: (isLoading || codeParts.join('').length !== 12) 
+                  ? (theme === 'light' ? '#D1D5DB' : '#374151')
+                  : '#39FF88',
+                color: (isLoading || codeParts.join('').length !== 12)
+                  ? (theme === 'light' ? '#9CA3AF' : '#6B7280')
+                  : '#0B132B',
+                cursor: (isLoading || codeParts.join('').length !== 12) ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading && codeParts.join('').length === 12) {
+                  e.currentTarget.style.backgroundColor = '#2FD670';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(57, 255, 136, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading && codeParts.join('').length === 12) {
+                  e.currentTarget.style.backgroundColor = '#39FF88';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                }
+              }}
             >
               {isLoading ? (
                 <>
@@ -232,13 +319,30 @@ export default function AdminAccessCodePage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div 
+            className="mt-6 pt-6 border-t"
+            style={{
+              borderColor: theme === 'light' ? 'rgba(11, 19, 43, 0.08)' : 'rgba(57, 255, 136, 0.12)'
+            }}
+          >
             <div className="space-y-3">
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                  ðŸ” Security Note
+              <div 
+                className="rounded-lg p-3 border"
+                style={{
+                  backgroundColor: theme === 'light' ? '#EFF6FF' : 'rgba(57, 255, 136, 0.05)',
+                  borderColor: theme === 'light' ? '#DBEAFE' : 'rgba(57, 255, 136, 0.15)'
+                }}
+              >
+                <h3 
+                  className="text-sm font-semibold mb-1"
+                  style={{ color: theme === 'light' ? '#1E3A8A' : '#39FF88' }}
+                >
+                  🔒 Security Note
                 </h3>
-                <p className="text-xs text-blue-800 leading-relaxed">
+                <p 
+                  className="text-xs leading-relaxed"
+                  style={{ color: theme === 'light' ? '#1E40AF' : '#9CA3AF' }}
+                >
                   Your session will automatically expire after 10 minutes of
                   inactivity. You'll receive a warning at 9 minutes.
                 </p>
@@ -248,9 +352,17 @@ export default function AdminAccessCodePage() {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                  className="inline-flex items-center gap-2 text-sm font-medium transition-colors duration-200"
+                  style={{ color: theme === 'light' ? '#6B7280' : '#9CA3AF' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#39FF88';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = theme === 'light' ? '#6B7280' : '#9CA3AF';
+                  }}
                 >
-                  â† Back to Public Monitoring
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Public Monitoring
                 </button>
               </div>
             </div>
@@ -259,7 +371,10 @@ export default function AdminAccessCodePage() {
 
         {/* Additional Info */}
         <div className="mt-4 text-center">
-          <p className="text-xs text-gray-600">
+          <p 
+            className="text-xs"
+            style={{ color: theme === 'light' ? '#9CA3AF' : '#6B7280' }}
+          >
             Lost your access code? Contact your system administrator.
           </p>
         </div>

@@ -40,25 +40,25 @@ interface ReportTypeOption {
 const REPORT_TYPE_OPTIONS: ReportTypeOption[] = [
   {
     value: ReportType.ENERGY_MONITORING,
-    label: 'Energy Monitoring',
+    label: 'Energy Generation Report',
     description: 'Summarize energy generation and electrical measurements.',
     icon: FileText,
   },
   {
     value: ReportType.HISTORICAL_ANALYTICS,
-    label: 'Historical Analytics',
+    label: 'Energy Trends Report',
     description: 'Analyze historical energy and electrical trends.',
     icon: TrendingUp,
   },
   {
     value: ReportType.SYSTEM_DIAGNOSTICS,
-    label: 'System Diagnostics',
+    label: 'System Performance Report',
     description: 'Review standardized system diagnostic tests.',
     icon: Activity,
   },
   {
     value: ReportType.SYSTEM_SUMMARY,
-    label: 'System Summary',
+    label: 'System Overview Report',
     description: 'Generate a combined overview of available EcoStep data.',
     icon: FileBarChart,
   },
@@ -101,6 +101,7 @@ export function GenerateReportDialog({
   const [endDate, setEndDate] = useState('');
   const [format, setFormat] = useState<ReportFormat>(ReportFormat.PDF);
   const [aggregation, setAggregation] = useState<'hourly' | 'daily' | 'weekly'>('daily');
+  const [includeAI, setIncludeAI] = useState(false);
   
   // Sections for different report types
   const [energySections, setEnergySections] = useState({
@@ -141,6 +142,7 @@ export function GenerateReportDialog({
         setEndDate('');
         setFormat(ReportFormat.PDF);
         setAggregation('daily');
+        setIncludeAI(false);
       }, 300); // Wait for dialog close animation
     }
   }, [open]);
@@ -190,6 +192,7 @@ export function GenerateReportDialog({
       format,
       startDate,
       endDate,
+      includeAIAnalysis: includeAI,
     };
 
     // Only include sections if there are any selected
@@ -507,9 +510,42 @@ export function GenerateReportDialog({
                   onChange={(value) => setFormat(value as ReportFormat)}
                   options={[
                     { value: ReportFormat.PDF, label: 'PDF' },
-                    { value: ReportFormat.EXCEL, label: 'CSV' },
+                    { value: ReportFormat.EXCEL, label: 'Excel' },
                   ]}
                 />
+              </div>
+
+              {/* AI Analysis Option */}
+              <div 
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.05)' : 'rgba(137, 215, 183, 0.05)',
+                  border: `1px solid ${theme === 'light' ? 'rgba(66, 132, 117, 0.2)' : 'rgba(137, 215, 183, 0.2)'}`,
+                }}
+              >
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeAI}
+                    onChange={(e) => setIncludeAI(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#428475] mt-1"
+                    disabled={isGenerating}
+                  />
+                  <div className="flex-1">
+                    <div 
+                      className="font-medium text-sm mb-1"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      Include AI-generated analysis
+                    </div>
+                    <div 
+                      className="text-xs leading-relaxed"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Generate an AI-assisted interpretation of the report data and include it in the generated file.
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
           )}

@@ -5,6 +5,7 @@ import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { UsersModule } from '../users/users.module';
+import { MessengerModule } from '../messenger/messenger.module';
 import { PdfGeneratorService } from './generators/pdf-generator.service';
 import { ExcelGeneratorService } from './generators/excel-generator.service';
 
@@ -73,6 +74,9 @@ import { ExcelGeneratorService } from './generators/excel-generator.service';
 
     // Import UsersModule to access UsersService
     UsersModule,
+
+    // Import MessengerModule to access GeminiAIService
+    MessengerModule,
   ],
   controllers: [ReportsController],
   providers: [ReportsService, PdfGeneratorService, ExcelGeneratorService],

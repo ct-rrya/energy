@@ -1,4 +1,8 @@
 /**
+ * Sensor Type Definitions
+ */
+
+/**
  * Sensor Status
  */
 export const SensorStatus = {
@@ -7,21 +11,39 @@ export const SensorStatus = {
   MAINTENANCE: 'maintenance',
 } as const;
 
-export type SensorStatus = (typeof SensorStatus)[keyof typeof SensorStatus];
+export type SensorStatus = typeof SensorStatus[keyof typeof SensorStatus];
 
 /**
- * Sensor Entity
+ * Sensor Metadata
+ */
+export interface SensorMetadata {
+  hardwareVersion?: string;
+  firmwareVersion?: string;
+  model?: string;
+  notes?: string;
+}
+
+/**
+ * Sensor Interface
  */
 export interface Sensor {
-  _id: string;
+  id: string;
   name: string;
   location: string;
-  description?: string;
-  apiKey: string;
   status: SensorStatus;
-  lastSeenAt?: string;
+  installationDate: string;
+  lastSeenAt: string | null;
+  metadata: SensorMetadata;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Sensor with API Key (only returned on creation/regeneration)
+ */
+export interface SensorWithApiKey extends Sensor {
+  apiKey: string;
 }
 
 /**
@@ -30,7 +52,8 @@ export interface Sensor {
 export interface CreateSensorDto {
   name: string;
   location: string;
-  description?: string;
+  status?: SensorStatus;
+  metadata?: SensorMetadata;
 }
 
 /**
@@ -39,6 +62,6 @@ export interface CreateSensorDto {
 export interface UpdateSensorDto {
   name?: string;
   location?: string;
-  description?: string;
   status?: SensorStatus;
+  metadata?: SensorMetadata;
 }

@@ -139,7 +139,7 @@ export function SensorMonitoringPage() {
 
         {/* Sensor Grid */}
         <div className="eco-grid-2">
-          {sensors.map((sensor) => {
+          {sensors.map((sensor: any) => {
             const reading = readingsMap.get(sensor.id);
 
             return (

@@ -1,0 +1,78 @@
+/* Registered so the browser can animate them; every size below derives from these. */
+@property --rail-w  { syntax: "<length>"; inherits: true; initial-value: 80px; }
+@property --notch-y { syntax: "<length>"; inherits: true; initial-value: 0px; }
+@property --ix      { syntax: "<length>"; inherits: true; initial-value: 40px; }
+
+.es-shell,.es-shell *,.es-shell *::before,.es-shell *::after{box-sizing:border-box}
+
+.es-shell{
+  --ease:cubic-bezier(.65,0,.15,1);
+  --green:#19d46a; --green-ink:#05361f;
+  --shell:#070d1c; --bg:#0a1224; --ink:#eaf3ee; --mute:#93a39b;
+  --rail:#16223f; --rail-ink:rgba(255,255,255,.72); --hover:rgba(255,255,255,.08);
+  --rail-w:80px;            /* collapsed 80px, expanded 264px */
+  --icon-x:40px;            /* center of every inactive icon */
+  --notch-x:55px;           /* center of the green circle's round left end, and of the active icon */
+  display:grid;grid-template-columns:var(--rail-w) 1fr;column-gap:16px;
+  height:100dvh;padding:16px;background:var(--shell);color:var(--ink);
+}
+.es-shell[data-theme="light"]{--shell:#ffffff;--bg:#f5f8f3;--ink:#0d1b14;--mute:#5b6b62;--rail:#101a30;--rail-ink:rgba(255,255,255,.72)}
+.es-shell[data-expanded="true"]{--rail-w:264px}
+.es-shell.es-ready{transition:--rail-w .45s var(--ease)}
+
+.es-side{display:flex;flex-direction:column;gap:24px;min-height:0;min-width:0}
+
+/* Logo badge: circle when collapsed, pill when expanded. Icon always at x = 40px. */
+.es-badge{position:relative;flex:none;height:80px;width:var(--rail-w);border-radius:999px;background:var(--rail);color:var(--green);overflow:hidden}
+.es-brand{position:absolute;left:76px;top:50%;translate:0 -50%;white-space:nowrap;opacity:0;color:#fff}
+.es-brand b{display:block;font-size:20px;font-weight:800;line-height:1.1}
+.es-brand small{display:block;font-size:12px;font-weight:600;color:var(--rail-ink)}
+.es-badge .es-ico svg{stroke-width:1.75;width:26px;height:26px;opacity:1}
+.es-badge .es-ico{width:26px;height:26px;translate:calc(var(--icon-x) - 13px) -50%}
+
+/* Capsule: layers bottom to top = fill, ring (cut-out), blob (green), content */
+.es-capsule{position:relative;flex:1;min-height:0;border-radius:44px;--notch-y:0px}
+.es-shell.es-ready .es-capsule{transition:--notch-y .6s var(--ease)}
+.es-fill{position:absolute;inset:0;border-radius:inherit;background:var(--rail)}
+/* The cut-out is a shell-coloured shape painted over the rail. Outside the rail it is invisible. */
+.es-ring{position:absolute;pointer-events:none;height:70px;top:calc(var(--notch-y) - 35px);
+  left:20px;width:calc(var(--rail-w) - 10px);border-radius:999px;background:var(--shell)}
+.es-blob{position:absolute;pointer-events:none;height:54px;top:calc(var(--notch-y) - 27px);
+  left:28px;width:calc(var(--rail-w) - 26px);border-radius:999px;background:var(--green)}
+
+.es-content{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:16px 0}
+.es-sep{flex:none;height:1px;margin:0 16px 12px;background:rgba(255,255,255,.08)}
+.es-grow{flex:1}
+
+.es-row{position:relative;flex:none;display:block;width:100%;height:56px;margin:0 0 12px;padding:0;border:0;background:none;
+  font:inherit;text-align:left;text-decoration:none;color:var(--rail-ink);cursor:pointer;
+  --ix:var(--icon-x)}
+.es-shell.es-ready .es-row{transition:--ix .6s var(--ease),color .3s}
+.es-row[aria-current="page"]{--ix:var(--notch-x);color:var(--green-ink)}
+.es-row::before{content:"";position:absolute;inset:6px 8px;border-radius:999px;background:var(--hover);opacity:0;transition:opacity .2s}
+.es-row:hover::before{opacity:1}
+.es-row[aria-current="page"]::before{display:none}
+.es-row:focus-visible{outline:3px solid var(--green);outline-offset:-3px;border-radius:999px}
+
+/* ONE element carries position (translate). Hover effects live on the inner svg (scale/opacity). */
+.es-ico{position:absolute;left:0;top:50%;width:22px;height:22px;translate:calc(var(--ix) - 11px) -50%}
+.es-ico svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.72;transition:scale .2s,opacity .2s}
+.es-row:hover .es-ico svg{scale:1.08;opacity:1}
+.es-row[aria-current="page"] .es-ico svg{opacity:1}
+
+.es-label{position:absolute;top:50%;left:calc(var(--ix) + 24px);translate:0 -50%;white-space:nowrap;font-size:15px;font-weight:600;opacity:0;pointer-events:none}
+.es-row[aria-current="page"] .es-label{font-weight:800}
+.es-who .es-label small{display:block;font-size:12px;font-weight:400;opacity:.8}
+.es-avatar{position:absolute;left:18px;top:6px;width:44px;height:44px;border-radius:50%;background:var(--hover)}
+.es-avatar .es-ico{left:11px;top:11px;translate:none}
+
+.es-shell[data-expanded="true"] .es-label,
+.es-shell[data-expanded="true"] .es-brand{opacity:1;transition:opacity .2s .15s}
+.es-shell:not([data-expanded="true"]) .es-label,
+.es-shell:not([data-expanded="true"]) .es-brand{transition:opacity .1s}
+
+.es-main{background:var(--bg);border-radius:36px;padding:32px;overflow:auto;min-width:0}
+.es-main h1{margin:0 0 8px;font-size:40px;letter-spacing:-.03em}
+.es-main p{color:var(--mute)}
+
+@media (prefers-reduced-motion:reduce){.es-shell,.es-capsule,.es-row{transition:none!important}}

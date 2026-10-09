@@ -1,0 +1,7 @@
+{
+  "task_id": "task-ecostep-redesign",
+  "task_description": "Redesign the EcoStep monitoring pages (EcoStep Central and Historical Analytics) to match the existing Jitter-style landing page design. Visual and UX upgrade only — all data fetching, routing, auth, roles, and business logic remain unchanged.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

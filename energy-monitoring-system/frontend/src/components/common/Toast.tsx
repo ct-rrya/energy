@@ -45,9 +45,9 @@ export function Toast({ message, type, onClose, duration = 5000 }: ToastProps) {
   };
 
   const colors = {
-    success: 'bg-secondary-500 text-white',
+    success: 'bg-[#42B883] text-white',
     error: 'bg-red-600 text-white',
-    info: 'bg-primary-500 text-white',
+    info: 'bg-blue-600 text-white',
   };
 
   const Icon = icons[type];

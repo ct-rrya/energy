@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsString,
   IsDateString,
+  IsBoolean,
   ValidateIf,
   Min,
   Max,
@@ -293,4 +294,35 @@ export class GenerateReportDto {
   @IsOptional()
   @IsString()
   aggregation?: 'hourly' | 'daily' | 'weekly';
+
+  /**
+   * Include AI Analysis (Optional)
+   *
+   * Whether to include AI-generated analysis in the report.
+   *
+   * When enabled:
+   * - The report will contain actual system data from EcoStep
+   * - An additional "AI-Assisted Analysis" section will be added
+   * - The AI receives only structured report data (no database access)
+   * - Analysis adapts to the report type
+   * - If AI generation fails, the normal report is still generated
+   *
+   * When disabled or omitted:
+   * - Only the system-generated report data is included
+   * - No AI analysis section
+   *
+   * Default: false
+   *
+   * Note: AI analysis is an interpretation layer. It does not replace
+   * or modify the actual measurements from the EcoStep system.
+   */
+  @ApiPropertyOptional({
+    description:
+      'Include AI-generated analysis in the report (optional, default: false)',
+    example: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @IsBoolean()
+  includeAIAnalysis?: boolean;
 }

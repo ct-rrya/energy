@@ -58,6 +58,7 @@ export interface Report {
   endDate: string;
   parameters?: Record<string, any>;
   summary: ReportSummary;
+  generatedByName: string;
   downloadCount: number;
   expiresAt: string;
   createdAt: string;
@@ -78,6 +79,7 @@ export interface GenerateReportDto {
   electricityRate?: number;
   includeSections?: string[];
   aggregation?: 'hourly' | 'daily' | 'weekly';
+  includeAIAnalysis?: boolean;
 }
 
 /**

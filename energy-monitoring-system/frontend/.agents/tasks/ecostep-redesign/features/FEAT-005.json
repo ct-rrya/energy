@@ -1,0 +1,47 @@
+{
+  "id": "FEAT-005",
+  "type": "chore",
+  "description": "Remove dead code (PublicUserBanner component file, unused CSS), verify all pages use landing page design tokens consistently (no hardcoded hex colors), run final build, smoke test all user flows, and perform accessibility audit.",
+  "status": "pending",
+  "steps": [
+    "Delete frontend/src/components/common/PublicUserBanner.tsx file (no longer used after FEAT-003 and FEAT-004)",
+    "Open frontend/src/components/common/index.ts (if exists), remove any export statement for PublicUserBanner",
+    "Search codebase for any remaining imports of PublicUserBanner (use grep or IDE find: 'PublicUserBanner'), remove them or confirm they are already removed",
+    "Search all dashboard and analytics component files for hardcoded hex colors (#F5F7FA, #0B132B, #39FF88, #19d46a, etc.) using grep or IDE find. Replace with CSS variables (var(--landing-*)). Common replacements: #f5f8f3 → var(--landing-bg), #ffffff → var(--landing-surface), #0d1b14 → var(--landing-ink), #5b6b62 → var(--landing-mute), #dfe8e1 → var(--landing-line), #19d46a → var(--landing-green), #e4f7ea → var(--landing-soft), #2563eb → var(--landing-blue), #b45309 → var(--landing-amber), #dc2626 → var(--landing-danger)",
+    "Audit frontend/src/index.css for unused CSS utility classes (e.g., .eco-card-header if no longer used). Document findings, optionally remove unused classes (not critical for functionality).",
+    "Run 'npm run build' from frontend/ directory — build must succeed with zero TypeScript errors. If build fails, fix errors before proceeding.",
+    "Start dev server with 'npm run dev', manually test all user flows: 1) Public user: visit / (landing page) → click 'Dashboard' in landing nav → see MonitoringNav, new KPI layout, no sidebar, no PublicUserBanner. 2) Public user: navigate to /analytics → see unified control bar, summary strip, charts, no PublicUserBanner. 3) Admin user: log in at /admin/login → navigate to /dashboard → see restyled sidebar with soft green highlight, small role chip, no purple badge. 4) Admin user: navigate to /analytics → see same page as public (analytics is public-accessible). 5) Theme toggle: click sun/moon icon in MonitoringNav (public) or header (admin) → colors update correctly. 6) Responsive: resize browser to mobile (<560px), tablet (768-1023px), desktop (1100px+) → layouts adapt correctly.",
+    "Test offline mode: open DevTools Network tab, throttle to Offline, hard refresh /dashboard → status pill shows 'Offline' (red), KPIs show '--', cards are dimmed (opacity 0.5)",
+    "Test skeleton loading: hard refresh /dashboard or /analytics, watch for skeleton cards with pulse animation before data loads",
+    "Run Lighthouse accessibility audit in Chrome DevTools on http://localhost:5173/dashboard and http://localhost:5173/analytics. Target score: > 90. Common issues to fix: missing aria-labels on icon buttons, low-contrast text, keyboard focus ring not visible. Fix any reported issues.",
+    "Run axe DevTools extension (if available) on both pages, fix any reported accessibility violations",
+    "Final git status check: verify PublicUserBanner.tsx is deleted, no broken imports remain in DashboardPage.tsx or AnalyticsPage.tsx"
+  ],
+  "acceptance_criteria": [
+    "PublicUserBanner.tsx file is deleted from repository",
+    "No remaining imports or references to PublicUserBanner in any file",
+    "No hardcoded hex colors remain in dashboard/analytics components (all use CSS variables)",
+    "Build succeeds with zero TypeScript errors ('npm run build')",
+    "All user flows work correctly: public user can navigate and view dashboard/analytics with new design, admin user can log in and see restyled sidebar, theme toggle works, responsive layouts work",
+    "Offline mode works: status pill shows 'Offline', KPIs show '--', cards are dimmed",
+    "Skeleton loading appears on initial page load",
+    "Lighthouse accessibility score > 90 on /dashboard and /analytics",
+    "No critical accessibility issues reported by axe DevTools (if available)",
+    "Git diff confirms PublicUserBanner.tsx is deleted, no broken imports"
+  ],
+  "verification": [
+    "Run 'npm run build' from frontend/ directory — output shows 'Build succeeded' with zero errors",
+    "Run 'npm run lint' from frontend/ directory — zero linting errors (optional but recommended)",
+    "Start dev server, open http://localhost:5173/ in incognito mode (not logged in), click 'Dashboard' in landing nav — /dashboard loads with MonitoringNav at top, no sidebar, KPIs in new design, no PublicUserBanner banner at top",
+    "On /dashboard, click theme toggle (sun/moon icon) — page colors update from light to dark or vice versa, all --landing-* tokens update correctly",
+    "Navigate to /analytics — page loads with unified control bar, summary strip, charts in new design, no PublicUserBanner",
+    "Log in at /admin/login with SYSTEM_ADMIN credentials, navigate to /dashboard — sidebar appears on left with var(--landing-surface) background, 28px radius, soft green highlight on active link, small role chip",
+    "Resize browser to mobile width (<560px) — MonitoringNav tabs scroll horizontally, KPIs stack vertically on dashboard, control bar scrolls horizontally on analytics",
+    "Open DevTools Network tab, throttle to Offline, hard refresh /dashboard — status pill shows 'Offline' (red pill), KPIs show '--', cards have opacity 0.5",
+    "Open DevTools → Lighthouse tab, run audit on /dashboard — Accessibility score is > 90. If < 90, review findings and fix issues (e.g., add missing aria-labels).",
+    "Run 'git status' — PublicUserBanner.tsx shows as deleted, no untracked broken import files",
+    "Final check: grep -r 'PublicUserBanner' frontend/src/ — no matches found (or only in git history)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Extend the existing design system with landing page tokens and create a shared MonitoringNav component that reuses the LandingNav sliding indicator pattern for the monitoring area. This establishes the visual foundation for the redesign.",
+  "status": "pending",
+  "steps": [
+    "Add missing --landing-* CSS custom properties to frontend/src/index.css in both :root (light mode) and .dark (dark mode) selectors. Tokens: --landing-bg, --landing-surface, --landing-ink, --landing-mute, --landing-line, --landing-green, --landing-green-ink, --landing-soft, --landing-pill, --landing-blue, --landing-blue-soft, --landing-amber, --landing-amber-soft, --landing-danger, --landing-danger-soft. Use exact values from landing.css.",
+    "Add CSS utility classes to index.css: .eco-signature-ease { transition-timing-function: cubic-bezier(0.65, 0, 0.15, 1); }, .eco-radius-pill { border-radius: 999px; }, .eco-radius-card { border-radius: 28px; }, .eco-radius-panel { border-radius: 32px; }, .eco-radius-tile { border-radius: 20px; }",
+    "Check if Bricolage Grotesque font is loaded in frontend/index.html. If not, add <link> tag in <head>: <link href='https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap' rel='stylesheet'>. If already loaded via landing.css import, skip this step.",
+    "Create frontend/src/components/layout/MonitoringNav.tsx: Import useSlidingIndicator hook, useLocation, useNavigate, useTheme, Footprints/House/Activity/TrendingUp/Sun/Moon icons from lucide-react, ROUTES from routes.config. Define 3 tabs: Home (house icon, ROUTES.HOME), EcoStep Central (activity icon, ROUTES.DASHBOARD), Historical Analytics (trending-up icon, ROUTES.ANALYTICS). Active tab determined by pathname match. Use useSlidingIndicator with tab refs. Render floating glass pill nav with brand left (Footprints icon + 'EcoStep' text), tabs center (sliding highlight with --landing-soft background), theme toggle right (sun/moon icon button). Style with --landing-* tokens, 999px border-radius, cubic-bezier(0.65, 0, 0.15, 1) transitions. Follow the exact structure of LandingNav.tsx but with router-aware active state.",
+    "Export MonitoringNav from frontend/src/components/layout/index.ts (create file if missing): export { MonitoringNav } from './MonitoringNav';"
+  ],
+  "acceptance_criteria": [
+    "All --landing-* tokens are present in index.css for both light and dark themes",
+    "Bricolage Grotesque font loads globally (verify in DevTools Network tab)",
+    "MonitoringNav component renders a floating glass pill with 3 tabs, brand left, theme toggle right",
+    "Sliding highlight animates smoothly between tabs on hover and focus with cubic-bezier(0.65, 0, 0.15, 1) easing",
+    "Active tab is highlighted based on current route (useLocation pathname)",
+    "Clicking tabs navigates to the correct route",
+    "Theme toggle works (calls toggleTheme from ThemeContext)"
+  ],
+  "verification": [
+    "Run 'npm run build' from frontend/ directory — build succeeds with no TypeScript errors",
+    "Start dev server with 'npm run dev', navigate to http://localhost:5173/dashboard — MonitoringNav renders at top of page",
+    "Hover over tabs — sliding indicator moves smoothly to hovered tab",
+    "Click 'Historical Analytics' tab — URL changes to /analytics, indicator moves to that tab and stays there",
+    "Open DevTools → Elements → Computed styles on MonitoringNav — verify --landing-bg, --landing-surface, --landing-ink variables are defined",
+    "Click theme toggle (sun/moon icon) — page colors update, MonitoringNav colors update",
+    "Check DevTools Network tab — Bricolage Grotesque font file loads (woff2 or similar)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -1,0 +1,166 @@
+/**
+ * Landing Page Design System - Jitter Style
+ * Bricolage Grotesque typography with smooth floating navigation
+ */
+
+:root {
+  /* Light mode colors */
+  --landing-bg: #f5f8f3;
+  --landing-surface: #ffffff;
+  --landing-ink: #0d1b14;
+  --landing-mute: #5b6b62;
+  --landing-line: #dfe8e1;
+  --landing-green: #19d46a;
+  --landing-green-ink: #05361f;
+  --landing-soft: #e4f7ea;
+  --landing-pill: rgba(255, 255, 255, 0.78);
+  --landing-shadow: 0 10px 30px rgba(13, 27, 20, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --landing-bg: #0a1224;
+    --landing-surface: #111b30;
+    --landing-ink: #eaf3ee;
+    --landing-mute: #93a39b;
+    --landing-line: #1f2b44;
+    --landing-soft: #10301f;
+    --landing-pill: rgba(17, 27, 48, 0.78);
+    --landing-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme='dark'] {
+  --landing-bg: #0a1224;
+  --landing-surface: #111b30;
+  --landing-ink: #eaf3ee;
+  --landing-mute: #93a39b;
+  --landing-line: #1f2b44;
+  --landing-soft: #10301f;
+  --landing-pill: rgba(17, 27, 48, 0.78);
+  --landing-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Smooth scrolling with padding for fixed header */
+html.landing-page-active {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
+}
+
+html {
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Typography - Bricolage Grotesque */
+.landing-page {
+  font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--landing-bg);
+  color: var(--landing-ink);
+  transition: background 0.4s, color 0.4s;
+}
+
+.landing-h1 {
+  font-size: clamp(44px, 7vw, 84px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
+
+.landing-h2 {
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+
+.landing-lead {
+  font-size: 20px;
+  line-height: 1.55;
+}
+
+/* Marker highlight effect for hero */
+.landing-highlight {
+  font-style: normal;
+  background: linear-gradient(
+    transparent 62%,
+    var(--landing-green) 62% 92%,
+    transparent 92%
+  );
+}
+
+/* Focus styles */
+.landing-page *:focus-visible {
+  outline: 3px solid var(--landing-green);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* Navigation indicator animations */
+@keyframes landing-slide-indicator {
+  from {
+    transform: translateX(var(--from-x));
+    width: var(--from-width);
+  }
+  to {
+    transform: translateX(var(--to-x));
+    width: var(--to-width);
+  }
+}
+
+/* Card hover lift */
+@keyframes landing-card-lift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+/* Tile press animation */
+@keyframes landing-tile-press {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(12px) scale(0.97);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ring pulse for tile */
+@keyframes landing-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* Bar chart grow animation */
+@keyframes landing-bar-grow {
+  from {
+    transform: scaleY(0.08);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}

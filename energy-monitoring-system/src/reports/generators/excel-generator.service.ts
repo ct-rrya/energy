@@ -48,6 +48,7 @@ export class ExcelGeneratorService {
    * @param endDate - Report end date
    * @param reportData - Report data from AnalyticsService
    * @param user - User who generated the report
+   * @param aiAnalysis - Optional AI analysis text
    * @returns Promise<void>
    */
   async generate(
@@ -57,32 +58,48 @@ export class ExcelGeneratorService {
     endDate: string,
     reportData: any,
     user: any,
+    aiAnalysis: string | null = null,
   ): Promise<void> {
     this.logger.log(`Generating Excel report: ${filePath}`);
 
     try {
       // Create workbook
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = user?.name || 'Energy Monitoring System';
+      workbook.creator = user?.name || 'EcoStep Administrator';
       workbook.created = new Date();
       workbook.modified = new Date();
       workbook.properties.date1904 = false;
 
-      // Add sheets
-      this.addSummarySheet(
-        workbook,
-        reportType,
-        startDate,
-        endDate,
-        reportData,
-        user,
-      );
-      this.addEnergyPerformanceSheet(workbook, reportData);
-      this.addEnvironmentalImpactSheet(workbook, reportData);
-      this.addCostSavingsSheet(workbook, reportData);
+      // Check if data is available
+      if (!reportData.hasData) {
+        // No data - create simple sheet with message
+        const sheet = workbook.addWorksheet('Report');
+        sheet.getCell('A1').value = 'NO DATA AVAILABLE';
+        sheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFEF4444' } };
+        sheet.getCell('A3').value = `No data was found for the period ${startDate} to ${endDate}`;
+        sheet.getCell('A4').value = 'Please verify your date selection or contact support.';
+      } else {
+        // Add sheets with data
+        this.addSummarySheet(
+          workbook,
+          reportType,
+          startDate,
+          endDate,
+          reportData,
+          user,
+        );
+        this.addEnergyPerformanceSheet(workbook, reportData);
+        this.addEnvironmentalImpactSheet(workbook, reportData);
+        this.addCostSavingsSheet(workbook, reportData);
 
-      if (reportData.peakGeneration) {
-        this.addPeakGenerationSheet(workbook, reportData);
+        if (reportData.peakGeneration) {
+          this.addPeakGenerationSheet(workbook, reportData);
+        }
+
+        // Add AI analysis sheet if provided
+        if (aiAnalysis) {
+          this.addAIAnalysisSheet(workbook, aiAnalysis);
+        }
       }
 
       // Save workbook
@@ -444,6 +461,38 @@ export class ExcelGeneratorService {
 
       row++;
     }
+  }
+
+  /**
+   * Add AI Analysis Sheet
+   *
+   * Dedicated worksheet for AI-generated analysis.
+   */
+  private addAIAnalysisSheet(
+    workbook: ExcelJS.Workbook,
+    aiAnalysis: string,
+  ): void {
+    const sheet = workbook.addWorksheet('AI Analysis');
+
+    // Header
+    sheet.getCell('A1').value = 'AI-ASSISTED ANALYSIS';
+    sheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF428475' } };
+    sheet.getRow(1).height = 25;
+
+    // AI analysis content
+    sheet.getCell('A3').value = aiAnalysis;
+    sheet.getCell('A3').alignment = { wrapText: true, vertical: 'top' };
+    sheet.getCell('A3').font = { size: 11 };
+    
+    // Set column width
+    sheet.getColumn('A').width = 100;
+
+    // Disclaimer
+    const disclaimerRow = sheet.lastRow ? sheet.lastRow.number + 2 : 10;
+    sheet.getCell(`A${disclaimerRow}`).value =
+      'Note: AI analysis is an interpretation of system data. Verify conclusions with domain experts and actual measurements.';
+    sheet.getCell(`A${disclaimerRow}`).font = { size: 9, italic: true, color: { argb: 'FF6B7280' } };
+    sheet.getCell(`A${disclaimerRow}`).alignment = { wrapText: true };
   }
 
   /**

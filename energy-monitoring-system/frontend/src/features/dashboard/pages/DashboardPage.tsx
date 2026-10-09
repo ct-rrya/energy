@@ -5,7 +5,6 @@ import { getUserRole } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
-import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { HeroEnergyCard } from '../components/HeroEnergyCard';
 import { MetricCard } from '../components/MetricCard';
@@ -141,9 +140,6 @@ function DashboardPageContent() {
           gap: '12px', // Reduced section gap for compact layout (Requirements 1.7)
         }}
       >
-        
-        {/* Public User Banner - Conditionally rendered (Requirements 18.3) */}
-        {isPublicUser && <PublicUserBanner />}
         
         {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
         <DashboardHeader

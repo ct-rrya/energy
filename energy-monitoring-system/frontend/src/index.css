@@ -103,6 +103,44 @@
     /* Borders - Hairline */
     --border-hairline: 1px solid rgba(11, 19, 43, 0.08);
     --border-hairline-hover: 1px solid rgba(11, 19, 43, 0.15);
+
+    /* ══════════════════════════════════════════════════════════════════════
+     * LANDING PAGE / MONITORING DESIGN TOKENS
+     * Jitter-style light and airy design system
+     * ══════════════════════════════════════════════════════════════════════ */
+    --landing-bg: 245 248 243; /* #f5f8f3 */
+    --landing-surface: 255 255 255; /* #ffffff */
+    --landing-ink: 13 27 20; /* #0d1b14 */
+    --landing-mute: 91 107 98; /* #5b6b62 */
+    --landing-line: 223 232 225; /* #dfe8e1 */
+    --landing-green: 25 212 106; /* #19d46a */
+    --landing-green-ink: 5 54 31; /* #05361f */
+    --landing-soft: 228 247 234; /* #e4f7ea */
+    --landing-pill: rgba(255, 255, 255, 0.78);
+    --landing-blue: 37 99 235; /* #2563eb */
+    --landing-blue-soft: 229 238 255; /* #e5eeff */
+    --landing-amber: 180 83 9; /* #b45309 */
+    --landing-amber-soft: 253 240 217; /* #fdf0d9 */
+    --landing-danger: 220 38 38; /* #dc2626 */
+    --landing-danger-soft: 253 232 232; /* #fde8e8 */
+
+    /* ══════════════════════════════════════════════════════════════════════
+     * FLOATING CAPSULE SIDEBAR TOKENS
+     * Healthcare-style dark floating rail with liquid notch indicator
+     * ══════════════════════════════════════════════════════════════════════ */
+    --shell: 255 255 255; /* #ffffff */
+    --bg: 245 248 243; /* #f5f8f3 */
+    --surface: 255 255 255; /* #ffffff */
+    --rail: 16 26 48; /* #101a30 - deep navy rail */
+    --rail-line: 0 0 0 / 0; /* transparent in light mode */
+    --rail-ink: 255 255 255 / 0.72; /* rgba(255,255,255,.72) */
+    --green: 25 212 106; /* #19d46a */
+    --green-ink: 5 54 31; /* #05361f */
+    
+    /* Sidebar timing */
+    --sidebar-ease: cubic-bezier(0.65, 0, 0.15, 1);
+    --sidebar-indicator-duration: 600ms;
+    --sidebar-collapse-duration: 450ms;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -138,7 +176,52 @@
     /* Shadows - Dark Mode Floating Elements */
     --shadow-floating: 0 4px 20px rgba(0, 0, 0, 0.3);
     --shadow-floating-large: 0 8px 30px rgba(0, 0, 0, 0.4);
+
+    /* Landing Page / Monitoring Design Tokens - Dark Mode */
+    --landing-bg: 10 18 36; /* #0a1224 */
+    --landing-surface: 17 27 48; /* #111b30 */
+    --landing-ink: 234 243 238; /* #eaf3ee */
+    --landing-mute: 147 163 155; /* #93a39b */
+    --landing-line: 31 43 68; /* #1f2b44 */
+    --landing-soft: 16 48 31; /* #10301f */
+    --landing-pill: rgba(17, 27, 48, 0.78);
+    --landing-blue: 110 163 255; /* #6ea3ff */
+    --landing-blue-soft: 20 37 74; /* #14254a */
+    --landing-amber: 245 176 76; /* #f5b04c */
+    --landing-amber-soft: 58 42 14; /* #3a2a0e */
+    --landing-danger: 255 123 123; /* #ff7b7b */
+    --landing-danger-soft: 59 21 24; /* #3b1518 */
+
+    /* Floating Capsule Sidebar - Dark Mode */
+    --shell: 7 13 28; /* #070d1c */
+    --bg: 10 18 36; /* #0a1224 */
+    --surface: 17 27 48; /* #111b30 */
+    --rail: 22 34 63; /* #16223f - lighter navy in dark mode */
+    --rail-line: 34 48 90; /* #22305a */
+    --rail-ink: 255 255 255 / 0.7; /* rgba(255,255,255,.7) */
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * CSS CUSTOM PROPERTY REGISTRATION
+ * Enables smooth transitions for dynamically-updated properties
+ * ══════════════════════════════════════════════════════════════════════ */
+@property --notch-y {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --notch-x {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 55px;
+}
+
+@property --ix {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 40px;
 }
 
 @layer base {
@@ -219,9 +302,35 @@
    * ECOSTEP COMPONENT UTILITIES
    * ══════════════════════════════════════════════════════════════════════ */
 
+  /* Font Families */
+  .font-bricolage {
+    font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
   /* Tabular Numerals */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Landing Page Signature Styles */
+  .eco-signature-ease {
+    transition-timing-function: cubic-bezier(0.65, 0, 0.15, 1);
+  }
+
+  .eco-radius-pill {
+    border-radius: 999px;
+  }
+
+  .eco-radius-card {
+    border-radius: 28px;
+  }
+
+  .eco-radius-panel {
+    border-radius: 32px;
+  }
+
+  .eco-radius-tile {
+    border-radius: 20px;
   }
 
   /* Hairline Borders */
