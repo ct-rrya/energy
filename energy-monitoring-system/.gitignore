@@ -42,6 +42,7 @@ lerna-debug.log*
 .env.production.local
 .env.*
 !.env.example
+.env.test-validation
 
 # Temp files
 *.swp
@@ -53,3 +54,37 @@ lerna-debug.log*
 
 # Temporary Render deployment config
 .render-temporary-config.txt
+
+# Diagnostic and utility scripts (temporary)
+check-*.js
+diagnose-*.js
+migrate-*.js
+fix-*.js
+get-*.js
+reset-*.js
+create-esp32-*.js
+clean-database.js
+deep-clean-database.js
+test-database-*.js
+
+# Documentation files (generated during debugging)
+*FIX*.md
+*COMPLETE*.md
+*ISSUE*.md
+*UPLOAD*.md
+*NAMING*.md
+*INTEGRATION*.md
+DATABASE-*.md
+BUGFIX-*.md
+ESP32-*.md
+!README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+
+# Arduino/ESP32 files (hardware code - keep in separate repo)
+*.ino
+!ESP32-EXAMPLE.ino
+
+# Build artifacts
+build/
+*.tsbuildinfo

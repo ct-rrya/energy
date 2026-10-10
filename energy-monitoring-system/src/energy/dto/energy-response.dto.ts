@@ -225,6 +225,30 @@ export class EnergyReadingResponseDto {
     type: String,
   })
   receivedAt: Date;
+
+  @ApiProperty({
+    description: 'Step count',
+    example: 6,
+    type: Number,
+    required: false,
+  })
+  stepCount?: number;
+
+  @ApiProperty({
+    description: 'Capacitor voltage (V)',
+    example: 30,
+    type: Number,
+    required: false,
+  })
+  capacitorVoltage?: number;
+
+  @ApiProperty({
+    description: 'Frequency (Hz)',
+    example: 1.07,
+    type: Number,
+    required: false,
+  })
+  frequency?: number;
 }
 
 /**

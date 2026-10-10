@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DashboardGateway } from './dashboard.gateway';
 import { DashboardService } from './dashboard.service';
+import { DashboardController } from './dashboard.controller';
 import { EnergyModule } from '../energy/energy.module';
 import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
 
@@ -68,6 +69,7 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
       }),
     }),
   ],
+  controllers: [DashboardController],
   providers: [DashboardGateway, DashboardService],
   exports: [DashboardService, DashboardGateway], // Export for IoT module
 })

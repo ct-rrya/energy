@@ -87,6 +87,16 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     // Configure rate limiting for public APIs
     ThrottlerModule.forRoot([
       {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 10, // Default: 10 requests per minute
+      },
+      {
+        name: 'iot',
+        ttl: 60000, // 1 minute  
+        limit: 100, // IoT devices: 100 requests per minute (ESP32 uploads)
+      },
+      {
         name: 'auth',
         ttl: 900000, // 15 minutes
         limit: 10, // 10 requests per 15 minutes for auth endpoints
@@ -133,11 +143,11 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Global rate limiting guard
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // Global rate limiting guard - DISABLED for IoT testing
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard,
+    // },
   ],
 })
 export class AppModule {}

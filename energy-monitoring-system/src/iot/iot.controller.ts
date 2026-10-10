@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -142,6 +143,7 @@ export class IotController {
   @Post('readings')
   @UseGuards(ApiKeyGuard) // Validate API key format and attach to request
   @HttpCode(HttpStatus.CREATED) // Return 201 Created (not 200 OK)
+  @SkipThrottle() // Skip rate limiting for IoT device uploads
   @ApiOperation({
     summary: 'Submit energy reading from ESP32',
     description:
@@ -215,6 +217,7 @@ export class IotController {
   @Post('piezo/readings')
   @UseGuards(ApiKeyGuard)
   @HttpCode(HttpStatus.CREATED)
+  @SkipThrottle() // Skip rate limiting for IoT device uploads
   @ApiOperation({
     summary: 'Submit piezoelectric sensor reading from ESP32',
     description:

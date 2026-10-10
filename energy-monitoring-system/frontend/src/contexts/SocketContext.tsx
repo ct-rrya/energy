@@ -1,144 +1,116 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { ConnectionStatus, SensorReading } from '@/features/dashboard/types/dashboard.types';
+import { useAuth } from './AuthContext';
 
-/**
- * Socket Context State
- */
-interface SocketContextState {
+interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
-  connectionStatus: ConnectionStatus;
-  lastReading: SensorReading | null;
-  error: string | null;
-  connect: () => void;
-  disconnect: () => void;
 }
 
-/**
- * Socket Context
- */
-const SocketContext = createContext<SocketContextState | undefined>(undefined);
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  isConnected: false,
+});
 
-/**
- * Socket Provider Props
- */
+export const useSocket = () => useContext(SocketContext);
+
 interface SocketProviderProps {
   children: ReactNode;
 }
 
 /**
- * Socket Provider Component
- * Manages WebSocket connection to backend for real-time updates
+ * Socket Provider
+ * 
+ * Manages WebSocket connection to the backend dashboard gateway.
+ * Provides real-time updates for sensor readings and system events.
+ * 
+ * Connection:
+ * - URL: ws://localhost:3000 (from VITE_SOCKET_URL)
+ * - Namespace: /dashboard
+ * - Auth: JWT token from localStorage
+ * 
+ * Events Received:
+ * - reading:new - New sensor reading
+ * - statistics:update - System statistics update
+ * - sensor:online - Sensor came online
+ * - sensor:offline - Sensor went offline
  */
 export function SocketProvider({ children }: SocketProviderProps) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const [lastReading, setLastReading] = useState<SensorReading | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
-  const connect = useCallback(() => {
-    if (socket?.connected) return;
+  useEffect(() => {
+    // Only connect if authenticated
+    if (!isAuthenticated) {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
+      }
+      return;
+    }
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    // Get JWT token for authentication
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      console.warn('[Socket] No auth token available');
+      return;
+    }
 
-    setConnectionStatus('connecting');
-    setError(null);
+    // Get socket URL from environment
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
-    const newSocket = io(API_URL, {
+    console.log('[Socket] Connecting to:', socketUrl);
+
+    // Create socket connection with authentication
+    const newSocket = io(socketUrl, {
+      path: '/socket.io',
+      auth: {
+        token: token,
+      },
       transports: ['websocket', 'polling'],
       reconnection: true,
+      reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 10000,
     });
 
-    // Connection handlers
+    // Connection established
     newSocket.on('connect', () => {
-      console.log('✅ WebSocket connected');
+      console.log('[Socket] Connected:', newSocket.id);
       setIsConnected(true);
-      setConnectionStatus('connected');
-      setError(null);
     });
 
+    // Connection error
+    newSocket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error.message);
+      setIsConnected(false);
+    });
+
+    // Disconnected
     newSocket.on('disconnect', (reason) => {
-      console.log('❌ WebSocket disconnected:', reason);
+      console.log('[Socket] Disconnected:', reason);
       setIsConnected(false);
-      setConnectionStatus('disconnected');
     });
 
-    newSocket.on('connect_error', (err) => {
-      console.error('❌ WebSocket connection error:', err.message);
-      setIsConnected(false);
-      setConnectionStatus('error');
-      setError(err.message);
-    });
-
-    // Dashboard events
-    newSocket.on('dashboard:metrics', (data) => {
-      console.log('📊 Dashboard metrics update:', data);
-    });
-
-    // Sensor reading events
-    newSocket.on('sensor:reading', (data: SensorReading) => {
-      console.log('📡 Sensor reading:', data);
-      setLastReading(data);
-    });
-
-    // System status events
-    newSocket.on('system:status', (data) => {
-      console.log('🔧 System status update:', data);
+    // Unauthorized (invalid token)
+    newSocket.on('unauthorized', (error) => {
+      console.error('[Socket] Unauthorized:', error);
+      newSocket.disconnect();
     });
 
     setSocket(newSocket);
-  }, [socket]);
 
-  const disconnect = useCallback(() => {
-    if (socket) {
-      socket.disconnect();
-      setSocket(null);
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-    }
-  }, [socket]);
-
-  // Auto-connect on mount (optional - can be disabled)
-  useEffect(() => {
-    // Uncomment to enable auto-connection
-    // connect();
-
+    // Cleanup on unmount
     return () => {
-      if (socket) {
-        disconnect();
-      }
+      console.log('[Socket] Cleaning up connection');
+      newSocket.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const value: SocketContextState = {
-    socket,
-    isConnected,
-    connectionStatus,
-    lastReading,
-    error,
-    connect,
-    disconnect,
-  };
+  }, [isAuthenticated]);
 
   return (
-    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={{ socket, isConnected }}>
+      {children}
+    </SocketContext.Provider>
   );
-}
-
-/**
- * Custom hook to use Socket Context
- */
-export function useSocket(): SocketContextState {
-  const context = useContext(SocketContext);
-  if (context === undefined) {
-    throw new Error('useSocket must be used within a SocketProvider');
-  }
-  return context;
 }

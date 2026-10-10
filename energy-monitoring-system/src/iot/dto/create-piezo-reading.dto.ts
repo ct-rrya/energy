@@ -16,13 +16,13 @@ export class CreatePiezoReadingDto extends CreateReadingDto {
     description: 'Capacitor voltage (REQUIRED for piezo sensors) - from voltage divider measurement',
     example: 12.5,
     minimum: 0,
-    maximum: 50,
+    maximum: 100,
     required: true,
   })
   @IsNotEmpty({ message: 'Capacitor voltage is required for piezo sensors' })
   @IsNumber({}, { message: 'Capacitor voltage must be a valid number' })
   @Min(0, { message: 'Capacitor voltage must be at least 0V' })
-  @Max(50, { message: 'Capacitor voltage must not exceed 50V' })
+  @Max(100, { message: 'Capacitor voltage must not exceed 100V' })
   declare capacitorVoltage: number; // Override optional base property to required
 
   @ApiProperty({

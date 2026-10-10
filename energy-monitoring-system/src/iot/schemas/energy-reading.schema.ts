@@ -401,7 +401,7 @@ export class EnergyReading {
    * Voltage level of the energy storage capacitor.
    * Indicates how much energy is currently stored.
    *
-   * Range: 0-50V (typical capacitor range)
+   * Range: 0-100V (increased from 50V to support higher capacity capacitors)
    *
    * Usage:
    * - Monitor energy storage level
@@ -420,7 +420,7 @@ export class EnergyReading {
     required: false,
     type: Number,
     min: 0,
-    max: 50,
+    max: 100,  // Increased from 50V to 100V
   })
   capacitorVoltage?: number;
 
