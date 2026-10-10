@@ -235,6 +235,9 @@ Always cite actual values when answering live data questions.`;
    * - Never throws exceptions (reliability requirement)
    */
   async processQuery(userMessage: string): Promise<string> {
+    // PERFORMANCE TRACKING: Start total timer
+    const totalStartTime = Date.now();
+
     this.logger.log('═══════════════════════════════════════════════════════');
     this.logger.log('[GEMINI] processQuery() called');
     this.logger.log(`[GEMINI]    User message: "${userMessage}"`);
@@ -454,6 +457,18 @@ Always cite actual values when answering live data questions.`;
         aiResponse.substring(0, 200) + (aiResponse.length > 200 ? '...' : ''),
       );
 
+      // PERFORMANCE TRACKING: Log total execution time
+      const totalDuration = Date.now() - totalStartTime;
+      this.logger.log(
+        `[PERFORMANCE] ⏱️  Total processQuery execution time: ${totalDuration}ms`,
+      );
+
+      if (totalDuration > 5000) {
+        this.logger.warn(
+          `[PERFORMANCE] ⚠️  Slow response detected (${totalDuration}ms > 5s threshold)`,
+        );
+      }
+
       this.logger.log(
         '[GEMINI] ✅ Processing complete - returning AI response',
       );
@@ -486,6 +501,12 @@ Always cite actual values when answering live data questions.`;
         this.logger.error(`[GEMINI]    Error status text: ${error.statusText}`);
       }
 
+      // PERFORMANCE TRACKING: Log total time even on error
+      const totalDuration = Date.now() - totalStartTime;
+      this.logger.error(
+        `[PERFORMANCE] ⏱️  Total processQuery time (with error): ${totalDuration}ms`,
+      );
+
       // Return graceful fallback message (never fail silently)
       this.logger.error('[GEMINI] Returning fallback message due to error');
       return this.getFallbackMessage();
@@ -517,52 +538,38 @@ Always cite actual values when answering live data questions.`;
   private async fetchEnergyData(): Promise<any> {
     this.logger.log('[TRACE 3: DB CONTEXT] Starting fetchEnergyData()...');
     this.logger.log('[TRACE 3: DB CONTEXT] Filtering for source=hardware ONLY');
+    this.logger.log(
+      '[TRACE 3: DB CONTEXT] Running 3 queries in PARALLEL for speed...',
+    );
 
     try {
-      // Fetch today's energy total (hardware only)
+      // PERFORMANCE OPTIMIZATION: Run all 3 queries in parallel
+      // This reduces total time from (query1 + query2 + query3) to max(query1, query2, query3)
+      const allQueriesStart = Date.now();
+
+      const [todayEnergy, todaySummary, latestReadings] = await Promise.all([
+        this.energyService.getTodayEnergyTotal(),
+        this.analyticsService.getDailySummary(new Date()),
+        this.iotService.getLatestReadings(),
+      ]);
+
+      const allQueriesDuration = Date.now() - allQueriesStart;
       this.logger.log(
-        '[TRACE 3: DB CONTEXT] [1/3] Querying EnergyService.getTodayEnergyTotal()...',
+        `[TRACE 3: DB CONTEXT] ✅ All 3 queries completed in ${allQueriesDuration}ms (parallel execution)`,
       );
-      const query1Start = Date.now();
-      const todayEnergy = await this.energyService.getTodayEnergyTotal();
-      const query1Duration = Date.now() - query1Start;
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [1/3] ✅ Completed in ${query1Duration}ms`,
+        `[TRACE 3: DB CONTEXT] [1/3] getTodayEnergyTotal: ${JSON.stringify(todayEnergy).substring(0, 100)}...`,
       );
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [1/3] Result: ${JSON.stringify(todayEnergy).substring(0, 100)}...`,
+        `[TRACE 3: DB CONTEXT] [2/3] getDailySummary: ${JSON.stringify(todaySummary).substring(0, 100)}...`,
       );
 
-      // Fetch daily analytics summary (hardware only)
-      this.logger.log(
-        '[TRACE 3: DB CONTEXT] [2/3] Querying AnalyticsService.getDailySummary()...',
-      );
-      const query2Start = Date.now();
-      const todaySummary = await this.analyticsService.getDailySummary(
-        new Date(),
-      );
-      const query2Duration = Date.now() - query2Start;
-      this.logger.log(
-        `[TRACE 3: DB CONTEXT] [2/3] ✅ Completed in ${query2Duration}ms`,
-      );
-      this.logger.log(
-        `[TRACE 3: DB CONTEXT] [2/3] Result: ${JSON.stringify(todaySummary).substring(0, 100)}...`,
-      );
-
-      // Fetch latest sensor readings with monitoring metrics (NEW)
-      this.logger.log(
-        '[TRACE 3: DB CONTEXT] [3/3] Querying IotService for latest readings with monitoring data...',
-      );
-      const query3Start = Date.now();
-      const latestReadings = (await this.iotService.getLatestReadings()) || [];
       const latestReading =
-        latestReadings.length > 0 ? latestReadings[0] : null;
-      const query3Duration = Date.now() - query3Start;
+        latestReadings && latestReadings.length > 0
+          ? latestReadings[0]
+          : null;
       this.logger.log(
-        `[TRACE 3: DB CONTEXT] [3/3] ✅ Completed in ${query3Duration}ms`,
-      );
-      this.logger.log(
-        `[TRACE 3: DB CONTEXT] [3/3] Latest reading: ${latestReading ? 'Found' : 'None'}`,
+        `[TRACE 3: DB CONTEXT] [3/3] getLatestReadings: ${latestReading ? 'Found' : 'None'}`,
       );
 
       // Check if any real hardware data exists
