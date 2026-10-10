@@ -72,10 +72,11 @@ export class AuditLog {
    * - Captures role changes over time
    * - SUPER_ADMIN: Account management actions
    * - SYSTEM_ADMIN: Operational actions
+   * - admin: Legacy role (backward compatibility)
    */
   @Prop({
     type: String,
-    enum: ['SUPER_ADMIN', 'SYSTEM_ADMIN'],
+    enum: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'admin'],
     required: true,
   })
   administratorRole: string;

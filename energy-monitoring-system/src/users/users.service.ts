@@ -173,7 +173,7 @@ export class UsersService {
     includeAccessCodeHash = false,
   ): Promise<UserDocument[]> {
     const query = this.userModel.find({
-      role: { $in: ['SYSTEM_ADMIN', 'SUPER_ADMIN'] },
+      role: { $in: ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin'] },
     });
 
     if (includeAccessCodeHash) {
@@ -266,7 +266,9 @@ export class UsersService {
    * - Counts active and inactive admin accounts
    */
   async hasAdminUsers(): Promise<boolean> {
-    const count = await this.userModel.countDocuments({ role: 'admin' }).exec();
+    const count = await this.userModel.countDocuments({ 
+      role: { $in: ['admin', 'SYSTEM_ADMIN', 'SUPER_ADMIN'] }
+    }).exec();
     return count > 0;
   }
 

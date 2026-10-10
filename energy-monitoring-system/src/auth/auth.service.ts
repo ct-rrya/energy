@@ -82,7 +82,7 @@ export class AuthService {
     // SECURITY: Block admin roles from password login
     // Administrators MUST use access code authentication
     // This enforces individual accountability through personal access codes
-    if (user.role === 'SYSTEM_ADMIN' || user.role === 'SUPER_ADMIN') {
+    if (user.role === 'SYSTEM_ADMIN' || user.role === 'SUPER_ADMIN' || user.role === 'admin') {
       return null;
     }
 

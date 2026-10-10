@@ -43,7 +43,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   const capRef = useRef<HTMLElement>(null);
 
   // Determine user role
-  const isSuperAdmin = isAuthenticated && user && user.role === 'SUPER_ADMIN';
+  const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
   const isSystemAdmin = isAuthenticated && user && user.role === 'SYSTEM_ADMIN';
   const isAnyAdmin = isSuperAdmin || isSystemAdmin;
 
@@ -66,21 +66,37 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     });
   }, [isSystemAdmin, isSuperAdmin]);
 
-  // Place notch function - exactly as in reference
+  // Place notch function - uses getBoundingClientRect for fractional precision
   const place = () => {
     const el = capRef.current;
     if (!el) return;
     const a = el.querySelector<HTMLElement>('.es-row[aria-current="page"]');
     if (!a) return;
-    el.style.setProperty('--notch-y', a.offsetTop + a.offsetHeight / 2 + 'px');
+    const capsuleRect = el.getBoundingClientRect();
+    const rowRect = a.getBoundingClientRect();
+    el.style.setProperty('--notch-y', (rowRect.top - capsuleRect.top + rowRect.height / 2) + 'px');
+  };
+
+  // Auto density: count rows and recalculate layout
+  const fit = () => {
+    const el = capRef.current;
+    if (!el) return;
+    const rowCount = el.querySelectorAll('.es-row').length;
+    el.style.setProperty('--rows', String(rowCount));
+    place();
   };
 
   // Call place after route changes (layout effect)
   useLayoutEffect(() => {
     place();
-  }, [location.pathname, expanded]);
+  }, [location.pathname, expanded, navItems.length]);
 
-  // Mount effect - exactly as in reference
+  // Recalculate when nav items change (role change adds/removes items)
+  useEffect(() => {
+    fit();
+  }, [navItems.length]);
+
+  // Mount effect - fit and place on mount, resize, and font ready
   useEffect(() => {
     // Read storage after mount
     try {
@@ -89,6 +105,9 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
         setExpanded(true);
       }
     } catch {}
+
+    // Initial fit
+    fit();
 
     // Add ready class after two rAFs
     const id = requestAnimationFrame(() => {
@@ -99,15 +118,26 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
     // Place after fonts ready
     if (document.fonts?.ready) {
-      document.fonts.ready.then(place);
+      document.fonts.ready.then(fit);
     }
 
-    // Place on resize
-    window.addEventListener('resize', place);
+    // Fit on resize (row heights change with viewport height)
+    const handleResize = () => fit();
+    window.addEventListener('resize', handleResize);
+
+    // Observe capsule size changes (row heights are dynamic)
+    let resizeObserver: ResizeObserver | null = null;
+    if (capRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => place());
+      resizeObserver.observe(capRef.current);
+    }
 
     return () => {
       cancelAnimationFrame(id);
-      window.removeEventListener('resize', place);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
     };
   }, []);
 

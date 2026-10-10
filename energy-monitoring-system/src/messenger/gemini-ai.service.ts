@@ -199,16 +199,21 @@ Keep responses extremely brief and to-the-point.
 - "🌡️ System temperature is 28.5°C and WiFi is connected, everything running smoothly! 📡"
 
 **Example Decline Response (for "Who is the president?"):**
-- "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?"
+- "I'm EcoStep AI, specialized in the EcoStep energy monitoring system. I can explain how footstep energy works or show you energy data. What would you like to know about EcoStep?"
+
+**CRITICAL: Distinguish Educational from Live Data Questions**
+- Educational questions (how it works, what is X) → Answer from knowledge, regardless of data availability
+- Live data questions (how much energy, current status) → Use database or report unavailability
+- NEVER claim sensors are "offline," "tested," or "being deployed" without verification
 
 **Data Format You Will Receive:**
-The system will provide real-time data in JSON format with fields like:
+Real-time data in JSON format when available:
 - totalEnergy, avgPower, peakPower (numerical values with units)
 - timestamp (ISO format)
 - analytics (aggregated metrics)
-- monitoring (capacitorVoltage, stepCount, temperature, frequency, wifiConnected, bluetoothConnected, voltage, current)
+- monitoring (capacitorVoltage, stepCount, temperature, frequency, wifiConnected, bluetoothConnected)
 
-Always cite these actual values in your response.`;
+Always cite actual values when answering live data questions.`;
   }
 
   /**
@@ -682,40 +687,49 @@ Always cite these actual values in your response.`;
    * @returns Complete prompt with system context + data + user query
    */
   private buildPrompt(userMessage: string, energyData: any): string {
-    // Check if no real data is available
-    if (energyData.status === 'no_data') {
-      return `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE:**
+    // Build data context string
+    const dataContext = energyData.status === 'no_data'
+      ? `**SYSTEM STATUS:** No live sensor data available currently.
+
+**IMPORTANT:** This does NOT mean the system is offline or broken. It only means there are currently no energy readings in the database.`
+      : `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE (source=hardware ONLY):**
 
 \`\`\`json
 ${JSON.stringify(energyData, null, 2)}
-\`\`\`
+\`\`\``;
+
+    return `${dataContext}
 
 **USER QUESTION:**
 ${userMessage}
 
-**CRITICAL INSTRUCTIONS:**
-- The data shows status: "no_data" which means NO REAL HARDWARE DATA is available for analysis
-- You MUST respond with: "The EcoStep piezoelectric sensors are currently offline but have been tested and proven functional. The system is ready—we're just waiting for the hardware deployment to complete. Real-time energy data will start flowing once the sensors are installed. Check back in about a week to see live monitoring in action!"
-- DO NOT make up or estimate any values
-- DO NOT provide analysis when no data exists`;
-    }
+**RESPONSE INSTRUCTIONS:**
 
-    return `**REAL-TIME ECOSTEP DATA FROM MONGODB DATABASE (source=hardware ONLY):**
+1. **Answer Educational Questions Directly:**
+   - If the user asks HOW footsteps generate power, HOW piezoelectricity works, WHAT voltage/current means, or other educational topics, answer those questions using your EcoStep knowledge
+   - Educational questions should be answered regardless of whether live sensor data is available
+   - Keep answers friendly, simple, and 2-3 sentences max
 
-\`\`\`json
-${JSON.stringify(energyData, null, 2)}
-\`\`\`
+2. **Use Live Data When Relevant:**
+   - If the question asks about CURRENT generation, SYSTEM STATUS, or LIVE READINGS, use the real-time data above
+   - If no live data is available and the user asks for current readings, say: "I can explain how EcoStep works, but I can't retrieve live sensor readings right now. Try 'status' to check system data."
+   - NEVER say sensors are "offline" or "being deployed" unless that's verified information
 
-**USER QUESTION:**
-${userMessage}
+3. **Distinguish Educational from Live Data:**
+   - "How does a footstep make power?" = Educational (answer from knowledge)
+   - "How much energy have we generated?" = Live data (use database readings or report unavailability)
+   - "What is piezoelectricity?" = Educational (answer from knowledge)
+   - "Are sensors online?" = Live data (check actual status)
 
-**CRITICAL REMINDER:**
-- This data contains ONLY real hardware readings (source='hardware')
-- Demo/mock data (source='mock') is NEVER included in AI queries
-- If this question is about EcoStep energy data, answer using the JSON data above
-- If this question is NOT about EcoStep (politics, religion, general topics), respond with: "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?"
-- Be concise (2 sentences max)
-- NEVER refuse to generate a response - always reply with something`;
+4. **For Off-Topic Questions:**
+   - If question is unrelated to EcoStep, respond: "I'm EcoStep AI, specialized in monitoring piezoelectric energy generation. I can only answer questions about EcoStep's energy data, performance metrics, and environmental impact. How can I help you with your energy monitoring?"
+
+5. **Never Fabricate:**
+   - Don't invent deployment timelines, test results, or hardware status
+   - Don't claim sensors are "proven functional" or "ready to deploy" without evidence
+   - Don't make up energy readings or sensor data
+
+**REMEMBER:** Keep responses concise (2-3 sentences), friendly, and accurate!`;
   }
 
   /**

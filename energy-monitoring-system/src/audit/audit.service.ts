@@ -9,7 +9,7 @@ import { AuditLog, AuditLogDocument } from './schemas/audit-log.schema';
 export interface CreateAuditLogDto {
   administratorId: string | Types.ObjectId;
   administratorName: string;
-  administratorRole: 'SUPER_ADMIN' | 'SYSTEM_ADMIN';
+  administratorRole: 'SUPER_ADMIN' | 'SYSTEM_ADMIN' | 'admin';
   action: string;
   target?: string;
   targetType?: string;

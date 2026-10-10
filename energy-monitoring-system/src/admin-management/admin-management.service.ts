@@ -266,7 +266,7 @@ export class AdminManagementService {
   async listAdministrators(): Promise<UserDocument[]> {
     return this.userModel
       .find({
-        role: { $in: ['SYSTEM_ADMIN', 'SUPER_ADMIN'] },
+        role: { $in: ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin'] },
       })
       .sort({ createdAt: -1 }) // Newest first
       .exec();
@@ -294,7 +294,7 @@ export class AdminManagementService {
     }
 
     // Verify it's an admin account
-    if (admin.role !== 'SYSTEM_ADMIN' && admin.role !== 'SUPER_ADMIN') {
+    if (admin.role !== 'SYSTEM_ADMIN' && admin.role !== 'SUPER_ADMIN' && admin.role !== 'admin') {
       throw new NotFoundException('Administrator not found');
     }
 
@@ -339,7 +339,7 @@ export class AdminManagementService {
     }
 
     // Verify it's an admin account
-    if (admin.role !== 'SYSTEM_ADMIN' && admin.role !== 'SUPER_ADMIN') {
+    if (admin.role !== 'SYSTEM_ADMIN' && admin.role !== 'SUPER_ADMIN' && admin.role !== 'admin') {
       throw new NotFoundException('Administrator not found');
     }
 

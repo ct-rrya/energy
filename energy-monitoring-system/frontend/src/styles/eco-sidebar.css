@@ -12,7 +12,6 @@
   --rail:#16223f; --rail-ink:rgba(255,255,255,.72); --hover:rgba(255,255,255,.08);
   --rail-w:80px;            /* collapsed 80px, expanded 264px */
   --icon-x:40px;            /* center of every inactive icon */
-  --notch-x:55px;           /* center of the green circle's round left end, and of the active icon */
   display:grid;grid-template-columns:var(--rail-w) 1fr;column-gap:16px;
   height:100dvh;padding:16px;background:var(--shell);color:var(--ink);
 }
@@ -31,40 +30,57 @@
 .es-badge .es-ico{width:26px;height:26px;translate:calc(var(--icon-x) - 13px) -50%}
 
 /* Capsule: layers bottom to top = fill, ring (cut-out), blob (green), content */
-.es-capsule{position:relative;flex:1;min-height:0;border-radius:44px;--notch-y:0px}
+.es-capsule{position:relative;flex:1;min-height:0;border-radius:44px;--notch-y:0px;
+  container-type:size;                 /* lets cqh = this capsule's height */
+  --rows:10;                           /* set by JS: number of .row elements (see fit()) */
+  --row-h:56px;                        /* fallback */
+}
+@supports (height:1cqh){
+  .es-capsule{ /* auto density: rows shrink so every row fits; 56px max, 32px min */
+    --row-h:clamp(32px, calc((100cqh - 34px) / (1.2143 * var(--rows) + .2143)), 56px);
+  }
+}
+.es-capsule{
+  --gap:calc(var(--row-h) * .2143);                 /* 12px at 56px */
+  --ico:clamp(16px, calc(var(--row-h) * .3929), 22px); /* 22px at 56px */
+  --blob-h:calc(var(--row-h) - 2px);                /* 54px at 56px */
+  --blob-left:calc(82px - var(--blob-h));           /* 28px at 54px */
+  --notch-x:calc(82px - var(--blob-h) / 2);         /* 55px at 54px: center of the blob's round left end */
+  --av:calc(var(--row-h) - 12px);                   /* 44px at 56px */
+}
 .es-shell.es-ready .es-capsule{transition:--notch-y .6s var(--ease)}
 .es-fill{position:absolute;inset:0;border-radius:inherit;background:var(--rail)}
 /* The cut-out is a shell-coloured shape painted over the rail. Outside the rail it is invisible. */
-.es-ring{position:absolute;pointer-events:none;height:70px;top:calc(var(--notch-y) - 35px);
-  left:20px;width:calc(var(--rail-w) - 10px);border-radius:999px;background:var(--shell)}
-.es-blob{position:absolute;pointer-events:none;height:54px;top:calc(var(--notch-y) - 27px);
-  left:28px;width:calc(var(--rail-w) - 26px);border-radius:999px;background:var(--green)}
+.es-ring{position:absolute;pointer-events:none;height:calc(var(--blob-h) + 16px);top:calc(var(--notch-y) - var(--blob-h) / 2 - 8px);
+  left:calc(var(--blob-left) - 8px);width:calc(var(--rail-w) - 80px + var(--blob-h) + 16px);border-radius:999px;background:var(--shell)}
+.es-blob{position:absolute;pointer-events:none;height:var(--blob-h);top:calc(var(--notch-y) - var(--blob-h) / 2);
+  left:var(--blob-left);width:calc(var(--rail-w) - 80px + var(--blob-h));border-radius:999px;background:var(--green)}
 
 .es-content{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:16px 0}
-.es-sep{flex:none;height:1px;margin:0 16px 12px;background:rgba(255,255,255,.08)}
+.es-sep{flex:none;height:1px;margin:0 16px var(--gap);background:rgba(255,255,255,.08)}
 .es-grow{flex:1}
 
-.es-row{position:relative;flex:none;display:block;width:100%;height:56px;margin:0 0 12px;padding:0;border:0;background:none;
+.es-row{position:relative;flex:none;display:block;width:100%;height:var(--row-h);margin:0 0 var(--gap);padding:0;border:0;background:none;
   font:inherit;text-align:left;text-decoration:none;color:var(--rail-ink);cursor:pointer;
   --ix:var(--icon-x)}
 .es-shell.es-ready .es-row{transition:--ix .6s var(--ease),color .3s}
 .es-row[aria-current="page"]{--ix:var(--notch-x);color:var(--green-ink)}
-.es-row::before{content:"";position:absolute;inset:6px 8px;border-radius:999px;background:var(--hover);opacity:0;transition:opacity .2s}
+.es-row::before{content:"";position:absolute;inset:calc(var(--row-h) * .107) 8px;border-radius:999px;background:var(--hover);opacity:0;transition:opacity .2s}
 .es-row:hover::before{opacity:1}
 .es-row[aria-current="page"]::before{display:none}
 .es-row:focus-visible{outline:3px solid var(--green);outline-offset:-3px;border-radius:999px}
 
 /* ONE element carries position (translate). Hover effects live on the inner svg (scale/opacity). */
-.es-ico{position:absolute;left:0;top:50%;width:22px;height:22px;translate:calc(var(--ix) - 11px) -50%}
-.es-ico svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.72;transition:scale .2s,opacity .2s}
+.es-ico{position:absolute;left:0;top:50%;width:var(--ico);height:var(--ico);translate:calc(var(--ix) - var(--ico) / 2) -50%}
+.es-ico svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.72;transition:scale .2s,opacity .2s}
 .es-row:hover .es-ico svg{scale:1.08;opacity:1}
 .es-row[aria-current="page"] .es-ico svg{opacity:1}
 
-.es-label{position:absolute;top:50%;left:calc(var(--ix) + 24px);translate:0 -50%;white-space:nowrap;font-size:15px;font-weight:600;opacity:0;pointer-events:none}
+.es-label{position:absolute;top:50%;left:calc(var(--ix) + var(--ico) / 2 + 13px);translate:0 -50%;white-space:nowrap;font-size:clamp(12px, calc(var(--row-h) * .268), 15px);line-height:1.15;font-weight:600;opacity:0;pointer-events:none}
 .es-row[aria-current="page"] .es-label{font-weight:800}
-.es-who .es-label small{display:block;font-size:12px;font-weight:400;opacity:.8}
-.es-avatar{position:absolute;left:18px;top:6px;width:44px;height:44px;border-radius:50%;background:var(--hover)}
-.es-avatar .es-ico{left:11px;top:11px;translate:none}
+.es-who .es-label small{display:block;font-size:clamp(10.5px, calc(var(--row-h) * .214), 12px);font-weight:400;opacity:.8}
+.es-avatar{position:absolute;left:calc(var(--icon-x) - var(--av) / 2);top:calc((var(--row-h) - var(--av)) / 2);width:var(--av);height:var(--av);border-radius:50%;background:var(--hover)}
+.es-avatar .es-ico{left:calc((var(--av) - var(--ico)) / 2);top:calc((var(--av) - var(--ico)) / 2);translate:none}
 
 .es-shell[data-expanded="true"] .es-label,
 .es-shell[data-expanded="true"] .es-brand{opacity:1;transition:opacity .2s .15s}
