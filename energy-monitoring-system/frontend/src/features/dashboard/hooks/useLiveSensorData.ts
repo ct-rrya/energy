@@ -34,12 +34,14 @@ export function useLiveSensorData() {
 
         const latestReading = readings[0];
         return {
+          sensorId: latestReading.sensorId || '',
           voltage: latestReading.voltage || 0,
           current: latestReading.current || 0,
           power: latestReading.power || 0,
+          energy: latestReading.energy || 0,
           stepCount: latestReading.stepCount || 0,
-          timestamp: new Date(latestReading.timestamp),
-        } as SensorReading;
+          timestamp: new Date(latestReading.timestamp).toISOString(),
+        };
       } catch (error) {
         console.warn('[useLiveSensorData] Failed to fetch latest reading:', error);
         return undefined;
@@ -68,11 +70,13 @@ export function useLiveSensorData() {
       console.log('[useLiveSensorData] New reading from WebSocket:', data);
       
       setLastReading({
+        sensorId: data.sensorId || '',
         voltage: data.voltage || 0,
         current: data.current || 0,
         power: data.power || 0,
+        energy: data.energy || 0,
         stepCount: data.stepCount || 0,
-        timestamp: new Date(data.timestamp),
+        timestamp: new Date(data.timestamp).toISOString(),
       });
     };
 
