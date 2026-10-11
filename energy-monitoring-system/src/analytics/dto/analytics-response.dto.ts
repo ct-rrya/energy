@@ -7,8 +7,8 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class BaseEnergySummaryDto {
   @ApiProperty({
-    description: 'Total energy generated (kWh)',
-    example: 12.5,
+    description: 'Total energy generated (mWh)',
+    example: 12500,
   })
   totalEnergyKWh: number;
 
@@ -194,8 +194,8 @@ export class PeakGenerationDto {
  */
 export class EnvironmentalImpactDto {
   @ApiProperty({
-    description: 'Total energy generated (kWh)',
-    example: 125.5,
+    description: 'Total energy generated (mWh)',
+    example: 125500,
   })
   energyGeneratedKWh: number;
 
@@ -246,14 +246,14 @@ export class EnvironmentalImpactDto {
  */
 export class CostSavingsDto {
   @ApiProperty({
-    description: 'Energy generated (kWh)',
-    example: 125.5,
+    description: 'Energy generated (mWh)',
+    example: 125500,
   })
   energyGeneratedKWh: number;
 
   @ApiProperty({
-    description: 'Electricity rate ($/kWh)',
-    example: 0.12,
+    description: 'Electricity rate ($/mWh)',
+    example: 0.00012,
     type: Number,
   })
   electricityRatePerKWh: number;

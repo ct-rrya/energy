@@ -107,12 +107,12 @@ export class EnergyService {
 
     const stats = result[0];
 
-    // Estimate energy in kWh
-    // Simple formula: Average power × hours / 1000
-    // More accurate: Sum (power × time_interval) / 1000
+    // Estimate energy in mWh
+    // Formula: Average power (W) × hours = Wh, then Wh = mWh
+    // More accurate: Sum (power × time_interval)
     const hoursElapsed =
       (new Date().getTime() - todayStart.getTime()) / (1000 * 60 * 60);
-    const estimatedEnergyKWh = (stats.avgPower * hoursElapsed) / 1000;
+    const estimatedEnergyKWh = stats.avgPower * hoursElapsed;
 
     return {
       date: todayStart.toISOString().split('T')[0],
@@ -184,7 +184,7 @@ export class EnergyService {
 
     const hoursElapsed =
       (new Date().getTime() - todayStart.getTime()) / (1000 * 60 * 60);
-    const estimatedEnergyKWh = (stats.avgPower * hoursElapsed) / 1000;
+    const estimatedEnergyKWh = stats.avgPower * hoursElapsed;
 
     return {
       sensorId,
@@ -261,7 +261,7 @@ export class EnergyService {
 
     // Calculate energy based on time span
     const hoursSpan = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    const estimatedEnergyKWh = (stats.avgPower * hoursSpan) / 1000;
+    const estimatedEnergyKWh = stats.avgPower * hoursSpan;
 
     return {
       startDate: start.toISOString().split('T')[0],
@@ -338,7 +338,7 @@ export class EnergyService {
     const stats = result[0];
 
     const hoursSpan = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    const estimatedEnergyKWh = (stats.avgPower * hoursSpan) / 1000;
+    const estimatedEnergyKWh = stats.avgPower * hoursSpan;
 
     return {
       sensorId,

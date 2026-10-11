@@ -321,7 +321,7 @@ export const HeroEnergyCard = React.memo(
                     {formattedEnergy}
                   </span>
                   
-                  {/* Requirement 3.4: Unit "kWh" */}
+                  {/* Requirement 3.4: Unit "mWh" */}
                   <span
                     className="hero-energy-unit"
                     style={{
@@ -329,7 +329,7 @@ export const HeroEnergyCard = React.memo(
                       opacity: valueOpacity,
                     }}
                   >
-                    kWh
+                    mWh
                   </span>
                 </div>
               </div>

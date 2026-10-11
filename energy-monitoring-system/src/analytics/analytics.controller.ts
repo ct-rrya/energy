@@ -235,7 +235,7 @@ export class AnalyticsController {
    *
    * Calculates environmental impact for given energy.
    *
-   * @param energyKWh - Energy in kWh
+   * @param energymWh - Energy in mWh
    * @returns Environmental impact metrics
    */
   @Get('environmental')
@@ -245,7 +245,7 @@ export class AnalyticsController {
       'Calculates CO2 avoided, trees equivalent, and other environmental metrics for given energy amount.',
   })
   @ApiQuery({
-    name: 'energyKWh',
+    name: 'energymWh',
     required: true,
     description: 'Energy generated (kWh)',
     example: 125.5,
@@ -256,10 +256,10 @@ export class AnalyticsController {
     type: EnvironmentalImpactDto,
   })
   getEnvironmentalImpact(
-    @Query('energyKWh') energyKWh: number,
+    @Query('energymWh') energymWh: number,
   ): EnvironmentalImpactDto {
     return this.analyticsService.calculateEnvironmentalImpact(
-      Number(energyKWh),
+      Number(energymWh),
     );
   }
 
@@ -268,9 +268,9 @@ export class AnalyticsController {
    *
    * Estimates cost savings for given energy.
    *
-   * @param energyKWh - Energy in kWh
+   * @param energymWh - Energy in mWh
    * @param periodDays - Number of days in period
-   * @param electricityRate - Rate per kWh (optional, defaults to 0.12)
+   * @param electricityRate - Rate per mWh (optional, defaults to 0.12)
    * @returns Cost savings metrics
    */
   @Get('cost-savings')
@@ -280,7 +280,7 @@ export class AnalyticsController {
       'Estimates cost savings from energy generated. Includes daily, monthly, and yearly projections.',
   })
   @ApiQuery({
-    name: 'energyKWh',
+    name: 'energymWh',
     required: true,
     description: 'Energy generated (kWh)',
     example: 125.5,
@@ -294,7 +294,7 @@ export class AnalyticsController {
   @ApiQuery({
     name: 'electricityRate',
     required: false,
-    description: 'Electricity rate ($/kWh)',
+    description: 'Electricity rate ($/mWh)',
     example: 0.12,
   })
   @ApiResponse({
@@ -303,12 +303,12 @@ export class AnalyticsController {
     type: CostSavingsDto,
   })
   getCostSavings(
-    @Query('energyKWh') energyKWh: number,
+    @Query('energymWh') energymWh: number,
     @Query('periodDays') periodDays: number,
     @Query('electricityRate') electricityRate?: number,
   ): CostSavingsDto {
     return this.analyticsService.calculateCostSavings(
-      Number(energyKWh),
+      Number(energymWh),
       Number(periodDays),
       electricityRate ? Number(electricityRate) : undefined,
     );
@@ -449,8 +449,8 @@ export class AnalyticsController {
 
 **Period:** ${metrics.period} (${metrics.startDate} to ${metrics.endDate})
 **Days Analyzed:** ${metrics.daysAnalyzed}
-**Total Energy Generated:** ${metrics.totalEnergyKWh} kWh
-**Average Daily Energy:** ${metrics.avgDailyEnergyKWh} kWh/day
+**Total Energy Generated:** ${metrics.totalEnergyKWh} mWh
+**Average Daily Energy:** ${metrics.avgDailyEnergyKWh} mWh/day
 **Peak Power:** ${metrics.peakPowerW} W
 **Average Power:** ${metrics.avgPowerW} W
 **Energy Trend:** ${metrics.energyTrend}

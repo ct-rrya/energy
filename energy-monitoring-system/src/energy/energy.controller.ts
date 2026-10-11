@@ -22,6 +22,7 @@ import {
   TotalStatisticsResponseDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 /**
  * Energy Controller
@@ -154,6 +155,7 @@ export class EnergyController {
    * Get Recent Readings
    *
    * Retrieves most recent energy readings across all sensors.
+   * This endpoint is PUBLIC - accessible without authentication for landing page.
    *
    * @param query - Limit (optional, default: 100, max: 1000)
    * @returns Array of recent readings
@@ -178,12 +180,14 @@ export class EnergyController {
    *   ]
    * }
    */
+  @Public() // Allow public access for landing page
   @Get('recent')
   @ApiOperation({
-    summary: 'Get recent readings',
+    summary: 'Get recent readings (PUBLIC)',
     description:
       'Retrieves the most recent energy readings across all sensors. ' +
-      'Sorted by timestamp (newest first). Default limit: 100, max: 1000.',
+      'Sorted by timestamp (newest first). Default limit: 100, max: 1000. ' +
+      'PUBLIC endpoint - no authentication required.',
   })
   @ApiResponse({
     status: 200,
@@ -192,9 +196,6 @@ export class EnergyController {
   })
   @ApiBadRequestResponse({
     description: 'Invalid limit - must be between 1 and 1000',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - JWT token required',
   })
   async getRecentReadings(
     @Query() query: LimitQueryDto,

@@ -51,8 +51,12 @@ apiClient.interceptors.response.use(
           // Unauthorized - clear auth
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
-          // Only redirect if not already on the admin login page
-          if (typeof window !== 'undefined' && window.location.pathname !== '/admin/login') {
+          // Only redirect if not already on public pages (landing, admin login, dashboard)
+          const publicPaths = ['/', '/admin/login', '/dashboard', '/analytics', '/energy'];
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+          const isOnPublicPage = publicPaths.some(path => currentPath === path || currentPath.startsWith(path));
+          
+          if (typeof window !== 'undefined' && !isOnPublicPage) {
             window.location.href = '/admin/login';
           }
           break;

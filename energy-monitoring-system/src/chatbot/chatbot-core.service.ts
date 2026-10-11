@@ -373,7 +373,7 @@ export class ChatbotCoreService {
         };
       }
 
-      const text = `📊 Energy System Status\n\n🌞 Today\nEnergy Generated: ${analytics.today.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${analytics.today.avgPowerW.toFixed(2)} W\nPeak Power: ${analytics.today.peakPowerW.toFixed(2)} W\n\n📅 This Week\nEnergy Generated: ${analytics.thisWeek.totalEnergyKWh.toFixed(3)} kWh\nTotal Readings: ${analytics.thisWeek.readingCount}\n\n📆 This Month\nEnergy Generated: ${analytics.thisMonth.totalEnergyKWh.toFixed(3)} kWh\nActive Days: ${analytics.thisMonth.daysWithData} of ${analytics.thisMonth.daysInMonth}\n\n⚡ Peak Performance\n${analytics.peakGeneration ? `${analytics.peakGeneration.peakPowerW.toFixed(2)} W on ${analytics.peakGeneration.date} at ${analytics.peakGeneration.time}` : 'No peak data available yet'}\n\n🌳 Environmental Impact\nCO₂ Avoided: ${analytics.environmentalImpact.co2AvoidedKg.toFixed(2)} kg\nTree Equivalent: ${analytics.environmentalImpact.treesEquivalent.toFixed(1)} trees/year\n\n💰 Cost Savings\nThis Month: $${analytics.costSavings.totalSavings.toFixed(2)}\nProjected Yearly: $${analytics.costSavings.yearlyProjectedSavings.toFixed(2)}\n\n📈 Trend\n${this.getTrendEmoji(analytics.trend.trend)} ${analytics.trend.trend.charAt(0).toUpperCase() + analytics.trend.trend.slice(1)} (${analytics.trend.changePercent > 0 ? '+' : ''}${analytics.trend.changePercent.toFixed(1)}%)`;
+      const text = `📊 Energy System Status\n\n🌞 Today\nEnergy Generated: ${analytics.today.totalEnergyKWh.toFixed(3)} mWh\nAverage Power: ${analytics.today.avgPowerW.toFixed(2)} W\nPeak Power: ${analytics.today.peakPowerW.toFixed(2)} W\n\n📅 This Week\nEnergy Generated: ${analytics.thisWeek.totalEnergyKWh.toFixed(3)} mWh\nTotal Readings: ${analytics.thisWeek.readingCount}\n\n📆 This Month\nEnergy Generated: ${analytics.thisMonth.totalEnergyKWh.toFixed(3)} mWh\nActive Days: ${analytics.thisMonth.daysWithData} of ${analytics.thisMonth.daysInMonth}\n\n⚡ Peak Performance\n${analytics.peakGeneration ? `${analytics.peakGeneration.peakPowerW.toFixed(2)} W on ${analytics.peakGeneration.date} at ${analytics.peakGeneration.time}` : 'No peak data available yet'}\n\n🌳 Environmental Impact\nCO₂ Avoided: ${analytics.environmentalImpact.co2AvoidedKg.toFixed(2)} kg\nTree Equivalent: ${analytics.environmentalImpact.treesEquivalent.toFixed(1)} trees/year\n\n💰 Cost Savings\nThis Month: $${analytics.costSavings.totalSavings.toFixed(2)}\nProjected Yearly: $${analytics.costSavings.yearlyProjectedSavings.toFixed(2)}\n\n📈 Trend\n${this.getTrendEmoji(analytics.trend.trend)} ${analytics.trend.trend.charAt(0).toUpperCase() + analytics.trend.trend.slice(1)} (${analytics.trend.changePercent > 0 ? '+' : ''}${analytics.trend.changePercent.toFixed(1)}%)`;
 
       return {
         text,
@@ -400,7 +400,7 @@ export class ChatbotCoreService {
     try {
       const today = await this.analyticsService.getDailySummary(new Date());
 
-      const text = `🌞 Today's Energy Report\n${today.dayOfWeek}, ${today.date}\n\n⚡ Power Generation\nTotal Energy: ${today.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${today.avgPowerW.toFixed(2)} W\nPeak Power: ${today.peakPowerW.toFixed(2)} W\nMinimum Power: ${today.minPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${today.readingCount}\n\n💡 Try "week" or "month" for longer periods`;
+      const text = `🌞 Today's Energy Report\n${today.dayOfWeek}, ${today.date}\n\n⚡ Power Generation\nTotal Energy: ${today.totalEnergyKWh.toFixed(3)} mWh\nAverage Power: ${today.avgPowerW.toFixed(2)} W\nPeak Power: ${today.peakPowerW.toFixed(2)} W\nMinimum Power: ${today.minPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${today.readingCount}\n\n💡 Try "week" or "month" for longer periods`;
 
       return {
         text,
@@ -423,7 +423,7 @@ export class ChatbotCoreService {
     try {
       const week = await this.analyticsService.getWeeklySummary();
 
-      const text = `📅 Weekly Energy Report\nWeek ${week.weekNumber}: ${week.weekStart} to ${week.weekEnd}\n\n⚡ Power Generation\nTotal Energy: ${week.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${week.avgPowerW.toFixed(2)} W\nPeak Power: ${week.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${week.readingCount}\n\n📈 Daily Breakdown\n${week.dailyBreakdown.map((day) => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} kWh`).join('\n')}\n\n💡 Try "month" for monthly summary`;
+      const text = `📅 Weekly Energy Report\nWeek ${week.weekNumber}: ${week.weekStart} to ${week.weekEnd}\n\n⚡ Power Generation\nTotal Energy: ${week.totalEnergyKWh.toFixed(3)} mWh\nAverage Power: ${week.avgPowerW.toFixed(2)} W\nPeak Power: ${week.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${week.readingCount}\n\n📈 Daily Breakdown\n${week.dailyBreakdown.map((day) => `${day.date} (${day.dayOfWeek.substring(0, 3)}): ${day.totalEnergyKWh.toFixed(3)} mWh`).join('\n')}\n\n💡 Try "month" for monthly summary`;
 
       return {
         text,
@@ -446,7 +446,7 @@ export class ChatbotCoreService {
     try {
       const month = await this.analyticsService.getMonthlySummary();
 
-      const text = `📆 Monthly Energy Report\n${month.monthName} ${month.year}\n\n⚡ Power Generation\nTotal Energy: ${month.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${month.avgPowerW.toFixed(2)} W\nPeak Power: ${month.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${month.readingCount}\nActive Days: ${month.daysWithData} of ${month.daysInMonth}\n\n💡 Try "impact" or "savings" for more insights`;
+      const text = `📆 Monthly Energy Report\n${month.monthName} ${month.year}\n\n⚡ Power Generation\nTotal Energy: ${month.totalEnergyKWh.toFixed(3)} mWh\nAverage Power: ${month.avgPowerW.toFixed(2)} W\nPeak Power: ${month.peakPowerW.toFixed(2)} W\n\n📊 Activity Summary\nTotal Readings: ${month.readingCount}\nActive Days: ${month.daysWithData} of ${month.daysInMonth}\n\n💡 Try "impact" or "savings" for more insights`;
 
       return {
         text,
@@ -516,7 +516,7 @@ export class ChatbotCoreService {
         month.totalEnergyKWh,
       );
 
-      const text = `🌳 Environmental Impact This Month\n\n🌍 CO₂ Emissions Avoided\n${impact.co2AvoidedKg.toFixed(2)} kg of CO₂\n\n🌲 Real-World Equivalents\n${impact.treesEquivalent.toFixed(1)} trees planted for a year\n${impact.coalNotBurnedKg.toFixed(2)} kg of coal not burned\n${impact.homesPoweredDays.toFixed(1)} home-days of electricity\n${impact.phoneChargesEquivalent.toLocaleString()} smartphone charges\n\n✨ Every kWh helps fight climate change\n\n💡 Try "savings" for cost analysis`;
+      const text = `🌳 Environmental Impact This Month\n\n🌍 CO₂ Emissions Avoided\n${impact.co2AvoidedKg.toFixed(2)} kg of CO₂\n\n🌲 Real-World Equivalents\n${impact.treesEquivalent.toFixed(1)} trees planted for a year\n${impact.coalNotBurnedKg.toFixed(2)} kg of coal not burned\n${impact.homesPoweredDays.toFixed(1)} home-days of electricity\n${impact.phoneChargesEquivalent.toLocaleString()} smartphone charges\n\n✨ Every mWh helps fight climate change\n\n💡 Try "savings" for cost analysis`;
 
       return {
         text,
@@ -543,7 +543,7 @@ export class ChatbotCoreService {
         month.daysWithData,
       );
 
-      const text = `💰 Cost Savings This Month\n\n💵 Current Savings\nTotal Saved: $${savings.totalSavings.toFixed(2)}\nDaily Average: $${savings.dailyAverageSavings.toFixed(2)}\n\n📊 Projected Savings\nMonthly: $${savings.monthlyProjectedSavings.toFixed(2)}\nYearly: $${savings.yearlyProjectedSavings.toFixed(2)}\n\n⚡ Electricity Rate\n$${savings.electricityRatePerKWh.toFixed(2)} per kWh\n\n💡 Try "status" for complete overview`;
+      const text = `💰 Cost Savings This Month\n\n💵 Current Savings\nTotal Saved: $${savings.totalSavings.toFixed(2)}\nDaily Average: $${savings.dailyAverageSavings.toFixed(2)}\n\n📊 Projected Savings\nMonthly: $${savings.monthlyProjectedSavings.toFixed(2)}\nYearly: $${savings.yearlyProjectedSavings.toFixed(2)}\n\n⚡ Electricity Rate\n$${savings.electricityRatePerKWh.toFixed(2)} per mWh\n\n💡 Try "status" for complete overview`;
 
       return {
         text,
@@ -572,7 +572,7 @@ export class ChatbotCoreService {
       const nextMilestone = milestones.find((m) => m > totalWh) || 5000;
       const progress = ((totalWh / nextMilestone) * 100).toFixed(0);
 
-      const text = `⚡ Current Energy Status\n\n📊 Today's Generation\nEnergy: ${today.totalEnergyKWh.toFixed(3)} kWh\nAverage Power: ${today.avgPowerW.toFixed(2)} W\nPeak Power: ${today.peakPowerW.toFixed(2)} W\nUpdated: ${new Date().toLocaleTimeString()}\n\n🎯 Next Milestone\n${nextMilestone} Wh (${progress}% complete)\n\n💡 Try "today" for full daily report`;
+      const text = `⚡ Current Energy Status\n\n📊 Today's Generation\nEnergy: ${today.totalEnergyKWh.toFixed(3)} mWh\nAverage Power: ${today.avgPowerW.toFixed(2)} W\nPeak Power: ${today.peakPowerW.toFixed(2)} W\nUpdated: ${new Date().toLocaleTimeString()}\n\n🎯 Next Milestone\n${nextMilestone} Wh (${progress}% complete)\n\n💡 Try "today" for full daily report`;
 
       return {
         text,

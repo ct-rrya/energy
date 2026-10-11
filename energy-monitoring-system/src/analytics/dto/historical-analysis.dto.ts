@@ -48,14 +48,14 @@ export class HistoricalAnalysisRequestDto {
  */
 export class HistoricalMetricsDto {
   @ApiProperty({
-    description: 'Total energy generated (kWh)',
-    example: 125.5,
+    description: 'Total energy generated (mWh)',
+    example: 125500,
   })
   totalEnergyKWh: number;
 
   @ApiProperty({
-    description: 'Average daily energy (kWh)',
-    example: 18.5,
+    description: 'Average daily energy (mWh)',
+    example: 18500,
   })
   avgDailyEnergyKWh: number;
 

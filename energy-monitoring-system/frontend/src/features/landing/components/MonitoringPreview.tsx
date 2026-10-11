@@ -1,17 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/routes.config';
+import { energyService, type EnergyReading } from '@/api/services';
 
 /**
  * MonitoringPreview Component
  * 
  * Dashboard preview with KPI tiles and animated bar chart.
  * Bars grow in when scrolled into view (IntersectionObserver).
+ * Displays real-time data from the database.
  */
 export function MonitoringPreview() {
   const [isVisible, setIsVisible] = useState(false);
+  const [latestReading, setLatestReading] = useState<EnergyReading | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const dashRef = useRef<HTMLDivElement>(null);
 
+  // Fetch latest reading on mount
+  useEffect(() => {
+    const fetchLatestReading = async () => {
+      try {
+        setIsLoading(true);
+        const reading = await energyService.getLatestReading();
+        setLatestReading(reading);
+      } catch (error) {
+        console.error('Failed to fetch latest reading:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLatestReading();
+    
+    // Optional: Set up polling for updates every 10 seconds
+    const interval = setInterval(fetchLatestReading, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Intersection observer for animation
   useEffect(() => {
     const element = dashRef.current;
     if (!element) return;
@@ -38,10 +64,35 @@ export function MonitoringPreview() {
 
   const barHeights = [35, 55, 40, 70, 60, 85, 50, 75, 45, 90, 65, 55];
 
+  // Format KPI values with proper units
+  const formatKpiValue = (value: number | undefined, unit: string) => {
+    if (value === undefined || value === null) return '--';
+    return `${value.toFixed(2)}${unit}`;
+  };
+
+  const kpiData = [
+    { 
+      label: 'Voltage', 
+      value: isLoading ? '...' : formatKpiValue(latestReading?.voltage, 'V'),
+    },
+    { 
+      label: 'Current', 
+      value: isLoading ? '...' : formatKpiValue(latestReading?.current, 'A'),
+    },
+    { 
+      label: 'Power', 
+      value: isLoading ? '...' : formatKpiValue(latestReading?.power, 'W'),
+    },
+    { 
+      label: 'System', 
+      value: isLoading ? '...' : (latestReading ? 'Active' : 'Idle'),
+    },
+  ];
+
   return (
     <>
       <h2 className="landing-h2" style={{ color: 'var(--landing-ink)', margin: '0 0 14px' }}>
-        See what each step produces
+        See what others are generating
       </h2>
       <p
         className="sub"
@@ -76,25 +127,28 @@ export function MonitoringPreview() {
             marginBottom: '16px',
           }}
         >
-          {['Voltage', 'Current', 'Power', 'System'].map((label) => (
+          {kpiData.map((kpi) => (
             <div
-              key={label}
+              key={kpi.label}
               style={{
                 background: 'var(--landing-bg)',
                 borderRadius: '20px',
                 padding: '16px',
               }}
             >
-              <span style={{ fontSize: '14px', color: 'var(--landing-mute)' }}>{label}</span>
+              <span style={{ fontSize: '14px', color: 'var(--landing-mute)' }}>
+                {kpi.label}
+              </span>
               <b
                 style={{
                   display: 'block',
-                  fontSize: '30px',
+                  fontSize: kpi.label === 'System' ? '20px' : '30px',
                   letterSpacing: '-0.03em',
                   color: 'var(--landing-ink)',
+                  marginTop: '4px',
                 }}
               >
-                --
+                {kpi.value}
               </b>
             </div>
           ))}
@@ -132,7 +186,9 @@ export function MonitoringPreview() {
         </div>
 
         <p className="note" style={{ fontSize: '13px', color: 'var(--landing-mute)', marginTop: '12px' }}>
-          Preview layout. Open Dashboard for live values.
+          {latestReading 
+            ? `Last updated: ${new Date(latestReading.timestamp).toLocaleString()}`
+            : 'No data available yet. Start generating energy!'}
         </p>
       </div>
 
@@ -172,7 +228,7 @@ export function MonitoringPreview() {
       <style>{`
         @media (max-width: 900px) {
           .kpis {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr !important;
           }
         }
       `}</style>

@@ -67,6 +67,7 @@ export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
   // Environmental conversion factors (US EPA standards)
+  // Note: Input energy is in mWh, so we need to convert to kWh for standard factors
   private readonly CO2_PER_KWH = 0.5; // kg CO2 per kWh
   private readonly CO2_PER_TREE_YEAR = 21; // kg CO2 absorbed by tree per year
   private readonly COAL_PER_KWH = 0.45; // kg coal burned per kWh
@@ -74,7 +75,7 @@ export class AnalyticsService {
   private readonly PHONE_CHARGE_KWH = 0.012; // 12 Wh per phone charge
 
   // Cost conversion (configurable)
-  private readonly DEFAULT_ELECTRICITY_RATE = 0.12; // $/kWh (US average)
+  private readonly DEFAULT_ELECTRICITY_RATE = 0.00012; // $/mWh (converted from $0.12/kWh)
 
   constructor(
     private energyService: EnergyService,
@@ -351,12 +352,15 @@ export class AnalyticsService {
    * - Phone: 0.012 kWh per charge
    */
   calculateEnvironmentalImpact(energyKWh: number): EnvironmentalImpactDto {
-    const co2AvoidedKg = energyKWh * this.CO2_PER_KWH;
+    // Convert mWh to kWh for standard EPA conversion factors
+    const energyInKWh = energyKWh / 1000;
+    
+    const co2AvoidedKg = energyInKWh * this.CO2_PER_KWH;
     const treesEquivalent = co2AvoidedKg / this.CO2_PER_TREE_YEAR;
-    const coalNotBurnedKg = energyKWh * this.COAL_PER_KWH;
-    const homesPoweredDays = energyKWh / this.AVG_HOME_DAILY_KWH;
+    const coalNotBurnedKg = energyInKWh * this.COAL_PER_KWH;
+    const homesPoweredDays = energyInKWh / this.AVG_HOME_DAILY_KWH;
     const phoneChargesEquivalent = Math.floor(
-      energyKWh / this.PHONE_CHARGE_KWH,
+      energyInKWh / this.PHONE_CHARGE_KWH,
     );
 
     return {

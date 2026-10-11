@@ -1,18 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /**
  * JWT Authentication Guard
  *
  * Protects routes by requiring valid JWT authentication.
+ * Routes marked with @Public() decorator skip authentication.
  *
  * How it works:
- * 1. Intercepts incoming request
- * 2. Checks for Authorization header
- * 3. Extracts JWT token
- * 4. Uses JwtStrategy to validate token
- * 5. If valid: attaches user to request and allows access
- * 6. If invalid: throws UnauthorizedException (401)
+ * 1. Checks if route is marked with @Public() decorator
+ * 2. If public: allows access without authentication
+ * 3. If protected: intercepts incoming request
+ * 4. Checks for Authorization header
+ * 5. Extracts JWT token
+ * 6. Uses JwtStrategy to validate token
+ * 7. If valid: attaches user to request and allows access
+ * 8. If invalid: throws UnauthorizedException (401)
  *
  * Usage:
  *
@@ -28,6 +33,22 @@ import { AuthGuard } from '@nestjs/passport';
  * @Controller('users')
  * export class UsersController {
  *   // All routes in this controller are protected
+ * }
+ *
+ * // Make specific route public
+ * @UseGuards(JwtAuthGuard)
+ * @Controller('energy')
+ * export class EnergyController {
+ *   @Public() // This route is public
+ *   @Get('recent')
+ *   getRecentReadings() {
+ *     // Accessible without authentication
+ *   }
+ *
+ *   @Get('admin-only')
+ *   adminData() {
+ *     // Requires authentication
+ *   }
  * }
  *
  * What happens when protected route is accessed:
@@ -62,6 +83,26 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  // AuthGuard('jwt') tells Passport to use the JWT strategy
-  // No custom logic needed - default behavior is perfect
+  constructor(private reflector: Reflector) {
+    super();
+  }
+
+  /**
+   * Override canActivate to check for @Public() decorator
+   */
+  canActivate(context: ExecutionContext) {
+    // Check if route is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // If public, allow access without authentication
+    if (isPublic) {
+      return true;
+    }
+
+    // Otherwise, use default JWT authentication
+    return super.canActivate(context);
+  }
 }

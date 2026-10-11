@@ -11,3 +11,4 @@ export * from './alerts.service';
 export * from './reports.service';
 export * from './user.service';
 export * from './diagnostics.service';
+export * from './energy.service';
