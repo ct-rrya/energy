@@ -261,7 +261,7 @@ function DashboardPageContent() {
               energyValue={displayMetrics?.dailyEnergy}
               previousDayEnergy={undefined}
               trendData={[]}
-              aiInsight={undefined}
+              aiInsight={displayMetrics?.aiInsight}
               isLoading={isInitialLoading}
               isError={metricsError}
               onRetry={refetchMetrics}

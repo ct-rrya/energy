@@ -30,6 +30,7 @@ import { DashboardService } from '../dashboard/dashboard.service';
 import { NewReadingEventDto, PowerAlertEventDto } from '../dashboard/dto';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FirebaseService } from '../firebase/firebase.service';
 
 /**
  * IoT Service
@@ -76,6 +77,7 @@ export class IotService {
     private dashboardService: DashboardService,
     private configService: ConfigService,
     private eventEmitter: EventEmitter2,
+    private firebaseService: FirebaseService,
   ) {}
 
   /**
@@ -124,6 +126,11 @@ export class IotService {
     // Step 4: Broadcast to dashboard (fire and forget)
     this.broadcastNewReading(reading, sensor).catch((error) => {
       console.error('Failed to broadcast new reading:', error);
+    });
+
+    // Step 4.5: Push to Firebase for real-time updates (fire and forget)
+    this.pushToFirebase(reading, sensor).catch((error) => {
+      console.error('Failed to push to Firebase:', error);
     });
 
     // Step 5: Check power threshold and send alert if needed
@@ -311,7 +318,7 @@ export class IotService {
       bluetoothConnected: readingDto.bluetoothConnected,
       timestamp: new Date(readingDto.timestamp), // Convert string to Date
       receivedAt: new Date(), // Server timestamp (now)
-      energy: 0, // Will be calculated by analytics module
+      energy: readingDto.energy ?? 0, // Use ESP32's calculated energy, or default to 0
       source: readingDto.source ?? ReadingSource.HARDWARE, // Default to hardware
     });
 
@@ -466,6 +473,39 @@ export class IotService {
     } catch (error) {
       // Log error but don't throw (fire and forget)
       console.error('Failed to broadcast new reading:', error);
+    }
+  }
+
+  /**
+   * Push to Firebase (fire and forget)
+   *
+   * Pushes latest reading to Firestore for real-time dashboard updates.
+   * Complements Socket.IO for better reliability.
+   *
+   * @param reading - Energy reading document
+   * @param sensor - Sensor document
+   */
+  private async pushToFirebase(
+    reading: EnergyReadingDocument,
+    sensor: any,
+  ): Promise<void> {
+    try {
+      await this.firebaseService.pushLatestReading({
+        voltage: reading.voltage,
+        current: reading.current,
+        power: reading.power,
+        energy: reading.energy,
+        stepCount: reading.stepCount,
+        frequency: reading.frequency,
+        capacitorVoltage: reading.capacitorVoltage,
+        batteryPercentage: reading.batteryPercentage,
+        timestamp: reading.timestamp,
+        sensorId: sensor._id.toString(),
+        sensorName: sensor.name,
+      });
+    } catch (error) {
+      // Log error but don't throw (fire and forget)
+      console.error('Failed to push to Firebase:', error);
     }
   }
 

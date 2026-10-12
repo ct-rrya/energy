@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,6 +6,7 @@ import { DashboardGateway } from './dashboard.gateway';
 import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
 import { EnergyModule } from '../energy/energy.module';
+import { AiModule } from '../ai/ai.module';
 import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
 
 /**
@@ -48,6 +49,9 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
   imports: [
     // Import EnergyModule to access EnergyService
     EnergyModule,
+
+    // Import AiModule for AI insights
+    AiModule,
 
     // Import Sensor schema for sensor queries
     MongooseModule.forFeature([

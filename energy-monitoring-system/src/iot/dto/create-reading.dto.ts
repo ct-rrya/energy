@@ -34,6 +34,7 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  *   "voltage": 5.2,
  *   "current": 0.15,
  *   "power": 0.78,
+ *   "energy": 0.2778,
  *   "batteryPercentage": 85,
  *   "temperature": 25.5,
  *   "frequency": 55,
@@ -48,6 +49,21 @@ import { ReadingSource } from '../schemas/energy-reading.schema';
  *   "voltage": 5.2,
  *   "current": 0.15,
  *   "power": 0.78,
+ *   "timestamp": "2026-07-17T14:30:00.000Z"
+ * }
+ * ```
+ *
+ * DC Step Counter (with pre-calculated energy):
+ *
+ * ```json
+ * {
+ *   "voltage": 0.95,
+ *   "current": 0.001,
+ *   "power": 0.001,
+ *   "energy": 0.0002778,
+ *   "capacitorVoltage": 5.0,
+ *   "stepCount": 1,
+ *   "frequency": 1.0,
  *   "timestamp": "2026-07-17T14:30:00.000Z"
  * }
  * ```
@@ -168,6 +184,17 @@ export class CreateReadingDto {
   @Min(0, { message: 'Capacitor voltage must be at least 0V' })
   @Max(50, { message: 'Capacitor voltage must not exceed 50V' })
   capacitorVoltage?: number;
+
+  @ApiPropertyOptional({
+    description: 'Cumulative energy in milliwatt-hours (mWh) - can be calculated by ESP32',
+    example: 0.2778,
+    minimum: 0,
+    type: Number,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Energy must be a valid number' })
+  @Min(0, { message: 'Energy must be at least 0 mWh' })
+  energy?: number;
 
   @ApiPropertyOptional({
     description: 'Wi-Fi connection status of the ESP32 device',

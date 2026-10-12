@@ -184,18 +184,18 @@ export class EnergyReading {
   power: number;
 
   /**
-   * Energy (kWh)
+   * Energy (mWh)
    *
-   * Cumulative energy harvested in kilowatt-hours.
-   * Calculated from power readings over time.
+   * Cumulative energy harvested in milliwatt-hours.
+   * Can be calculated by ESP32 or calculated dynamically by backend.
    *
    * Calculation:
    * - Energy = Power × Time
-   * - E (kWh) = P (W) × t (hours) / 1000
+   * - E (mWh) = P (mW) × t (hours)
    *
    * Example:
-   * - 10W for 1 hour = 0.01 kWh
-   * - 100W for 30 minutes = 0.05 kWh
+   * - 10mW for 1 hour = 10 mWh
+   * - 100mW for 30 minutes = 50 mWh
    *
    * Usage:
    * - Total energy harvested per sensor
@@ -204,13 +204,14 @@ export class EnergyReading {
    * - Cost savings estimates
    *
    * Calculation Strategy:
-   * - Option 1: Calculate during analytics aggregation
-   * - Option 2: Calculate on insert using previous reading
-   * - Current: Stored as 0, calculated by analytics module
+   * - Option 1: ESP32 calculates and sends cumulative energy (preferred for DC step counter)
+   * - Option 2: Backend calculates during analytics aggregation from power readings
+   * - Current: Accepts ESP32's calculation if provided, otherwise defaults to 0
    *
-   * Future Enhancement:
-   * - Calculate on insert using time delta
-   * - Store incremental energy per reading
+   * Note:
+   * - ESP32 DC step counter sends pre-calculated energy in mWh
+   * - Backend stores the value directly without recalculation
+   * - Analytics module can still aggregate for historical analysis
    */
   @Prop({
     required: true,

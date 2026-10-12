@@ -85,6 +85,7 @@ export class EnergyService {
         $group: {
           _id: null,
           totalPower: { $sum: '$power' }, // Sum of all power readings (W)
+          totalEnergy: { $sum: '$energy' }, // Sum of actual energy values (mWh) from ESP32
           count: { $sum: 1 }, // Number of readings
           avgPower: { $avg: '$power' }, // Average power (W)
           maxPower: { $max: '$power' }, // Peak power (W)
@@ -107,12 +108,8 @@ export class EnergyService {
 
     const stats = result[0];
 
-    // Estimate energy in mWh
-    // Formula: Average power (W) × hours = Wh, then Wh = mWh
-    // More accurate: Sum (power × time_interval)
-    const hoursElapsed =
-      (new Date().getTime() - todayStart.getTime()) / (1000 * 60 * 60);
-    const estimatedEnergyKWh = stats.avgPower * hoursElapsed;
+    // Use actual cumulative energy from ESP32 readings (mWh)
+    const estimatedEnergyKWh = stats.totalEnergy || 0;
 
     return {
       date: todayStart.toISOString().split('T')[0],
@@ -121,7 +118,7 @@ export class EnergyService {
       avgPower: Math.round(stats.avgPower * 100) / 100,
       maxPower: Math.round(stats.maxPower * 100) / 100,
       minPower: Math.round(stats.minPower * 100) / 100,
-      estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 1000) / 1000,
+      estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 100) / 100,
     };
   }
 

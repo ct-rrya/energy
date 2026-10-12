@@ -88,3 +88,6 @@ ESP32-*.md
 # Build artifacts
 build/
 *.tsbuildinfo
+
+# Archive folder
+_archive/

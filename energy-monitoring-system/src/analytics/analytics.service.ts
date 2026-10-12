@@ -816,8 +816,8 @@ export class AnalyticsService {
         unit = '%';
         break;
       case MetricType.ENERGY:
-        fieldName = 'power'; // We'll calculate energy from power
-        unit = 'kWh';
+        fieldName = 'energy'; // Use ESP32's pre-calculated energy
+        unit = 'mWh';
         break;
       case MetricType.STEPS:
         fieldName = 'stepCount';
@@ -866,19 +866,11 @@ export class AnalyticsService {
 
     const results = await this.readingModel.aggregate(pipeline).exec();
 
-    // Convert energy from W to kWh if needed
+    // Map results to data points
     const dataPoints: TimeSeriesDataPointDto[] = results.map((r) => {
-      let value = r.value;
-      let minValue = r.min;
-      let maxValue = r.max;
-
-      // For energy metric, convert from average power (W) to energy (kWh)
-      if (metric === MetricType.ENERGY) {
-        const hours = this.getHoursForGranularity(granularity);
-        value = (value * hours) / 1000; // Convert W to kWh
-        minValue = (minValue * hours) / 1000;
-        maxValue = (maxValue * hours) / 1000;
-      }
+      const value = r.value;
+      const minValue = r.min;
+      const maxValue = r.max;
 
       return {
         timestamp: r.timestamp,

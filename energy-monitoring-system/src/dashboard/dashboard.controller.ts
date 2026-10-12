@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EnergyService } from '../energy/energy.service';
+import { GeminiAIService } from '../ai/gemini-ai.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Sensor, SensorDocument } from '../sensors/schemas/sensor.schema';
@@ -10,15 +11,17 @@ import { Sensor, SensorDocument } from '../sensors/schemas/sensor.schema';
  * Dashboard Controller
  *
  * Provides dashboard-specific aggregated data endpoints.
+ * 
+ * All endpoints are publicly accessible to support public dashboard viewing.
  */
 @ApiTags('Dashboard')
 @Controller('dashboard')
-@UseGuards(JwtAuthGuard)
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
   constructor(
     private readonly energyService: EnergyService,
+    private readonly geminiAIService: GeminiAIService,
     @InjectModel(Sensor.name) private sensorModel: Model<SensorDocument>,
   ) {}
 
@@ -38,7 +41,8 @@ export class DashboardController {
    *     "activeSensors": 3,
    *     "lastReadingAt": "2026-10-10T03:48:40.437Z",
    *     "lastReadingPower": 0.000377,
-   *     "lastReadingStepCount": 6
+   *     "lastReadingStepCount": 6,
+   *     "aiInsight": "Peak generation at 2pm today, 15% above average"
    *   }
    * }
    */
@@ -64,6 +68,42 @@ export class DashboardController {
         isActive: true,
       });
 
+      // Generate AI insight for today's energy data
+      let aiInsight: string | undefined;
+      try {
+        const todayEnergy = stats.todayStats.estimatedEnergyKWh;
+        const avgPower = stats.todayStats.avgPower;
+        const maxPower = stats.todayStats.maxPower;
+        const readingCount = stats.todayStats.count;
+
+        const prompt = `Analyze today's energy generation briefly (max 60-100 characters):
+- Total energy: ${todayEnergy} kWh
+- Average power: ${avgPower.toFixed(2)} W
+- Peak power: ${maxPower.toFixed(2)} W
+- Readings: ${readingCount}
+
+Provide ONE concise insight about today's performance. Keep it under 100 characters. Examples:
+- "Peak generation at 2pm, 15% above average"
+- "Steady output throughout the day"
+- "Strong performance with ${maxPower.toFixed(1)}W peak"`;
+
+        const aiResponse = await this.geminiAIService.processQuery(prompt);
+        
+        if (aiResponse) {
+          // Trim to 150 characters max
+          aiInsight = aiResponse.length > 150 
+            ? aiResponse.substring(0, 147) + '...'
+            : aiResponse;
+          
+          this.logger.debug(`Generated AI insight: ${aiInsight}`);
+        } else {
+          aiInsight = undefined; // Fallback to "Analysis in progress..."
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to generate AI insight: ${error.message}`);
+        aiInsight = undefined;
+      }
+
       // Format response to match frontend expectations
       const metrics = {
         dailyEnergy: stats.todayStats.estimatedEnergyKWh, // Frontend expects "dailyEnergy"
@@ -75,6 +115,7 @@ export class DashboardController {
         lastReadingAt: stats.lastReading?.timestamp || null,
         lastReadingPower: stats.lastReading?.power || null,
         lastReadingSensorId: stats.lastReading?.sensorId || null,
+        aiInsight, // Add AI insight to response
       };
 
       this.logger.debug(

@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
-import { GeminiAIService } from '../messenger/gemini-ai.service';
+import { GeminiAIService } from '../ai/gemini-ai.service';
 import {
   DailyEnergySummaryDto,
   WeeklyEnergySummaryDto,
@@ -449,8 +449,8 @@ export class AnalyticsController {
 
 **Period:** ${metrics.period} (${metrics.startDate} to ${metrics.endDate})
 **Days Analyzed:** ${metrics.daysAnalyzed}
-**Total Energy Generated:** ${metrics.totalEnergyKWh} mWh
-**Average Daily Energy:** ${metrics.avgDailyEnergyKWh} mWh/day
+**Total Energy Generated:** ${metrics.totalEnergyKWh} kWh
+**Average Daily Energy:** ${metrics.avgDailyEnergyKWh} kWh/day
 **Peak Power:** ${metrics.peakPowerW} W
 **Average Power:** ${metrics.avgPowerW} W
 **Energy Trend:** ${metrics.energyTrend}
@@ -465,7 +465,9 @@ Provide a concise analysis (3-4 sentences) covering:
 Keep it brief, practical, and focused on the data provided.`;
 
     // Generate AI insights
-    const insights = await this.geminiAIService.processQuery(prompt);
+    const aiResponse = await this.geminiAIService.processQuery(prompt);
+    
+    const insights = aiResponse || 'AI insights not available at this time.';
 
     return {
       insights,

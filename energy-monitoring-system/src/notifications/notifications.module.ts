@@ -10,8 +10,8 @@ import {
   NotificationLog,
   NotificationLogSchema,
 } from './schemas/notification-log.schema';
-import { SubscribersModule } from '../subscribers/subscribers.module';
-import { MessengerModule } from '../messenger/messenger.module';
+// import { SubscribersModule } from '../subscribers/subscribers.module'; // ARCHIVED
+// import { MessengerModule } from '../messenger/messenger.module'; // ARCHIVED
 import { AnalyticsModule } from '../analytics/analytics.module';
 
 /**
@@ -35,8 +35,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
  * Dependencies:
  * - @nestjs/schedule (cron jobs)
  * - @nestjs/event-emitter (event-driven)
- * - SubscribersModule (targeting)
- * - MessengerModule (delivery)
  * - AnalyticsModule (data)
  */
 @Module({
@@ -53,8 +51,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     ScheduleModule.forRoot(),
 
     // Module dependencies
-    SubscribersModule,
-    MessengerModule,
     AnalyticsModule,
   ],
   controllers: [NotificationsController],

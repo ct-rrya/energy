@@ -26,15 +26,12 @@ import { IotModule } from './iot/iot.module';
 import { EnergyModule } from './energy/energy.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import { SubscribersModule } from './subscribers/subscribers.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { MessengerModule } from './messenger/messenger.module';
 import { ReportsModule } from './reports/reports.module';
 import { AlertsModule } from './alerts/alerts.module';
-import { ChatbotModule } from './chatbot/chatbot.module';
-import { ChatModule } from './chat/chat.module';
 import { PublicModule } from './public/public.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 /**
  * Root Application Module
@@ -115,6 +112,9 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 
     HealthModule,
 
+    // Firebase real-time updates
+    FirebaseModule,
+
     // Feature modules
     UsersModule,
     AuthModule,
@@ -126,15 +126,10 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     EnergyModule,
     DashboardModule,
     AnalyticsModule,
-    SubscribersModule,
-    MessengerModule,
     NotificationsModule, // Phase 7: Notification Platform
     ReportsModule,
     AlertsModule, // Phase 8: Alert Management System
 
-    // Chat feature modules
-    ChatbotModule, // Shared chatbot core logic
-    ChatModule, // Public chat API
     PublicModule, // Public telemetry API
 
     // System Diagnostics Module

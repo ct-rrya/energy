@@ -9,8 +9,8 @@ import {
   NotificationType,
   NotificationStatus,
 } from './schemas/notification-log.schema';
-import { SubscribersService } from '../subscribers/subscribers.service';
-import { MessengerService } from '../messenger/messenger.service';
+// import { SubscribersService } from '../subscribers/subscribers.service'; // ARCHIVED
+// import { MessengerService } from '../messenger/messenger.service'; // ARCHIVED
 import { AnalyticsService } from '../analytics/analytics.service';
 import {
   EnergyMilestoneEvent,
@@ -52,15 +52,15 @@ export class NotificationsService {
   constructor(
     @InjectModel(NotificationLog.name)
     private notificationLogModel: Model<NotificationLogDocument>,
-    private subscribersService: SubscribersService,
-    private messengerService: MessengerService,
+    // private subscribersService: SubscribersService, // ARCHIVED
+    // private messengerService: MessengerService, // ARCHIVED
     private analyticsService: AnalyticsService,
     private configService: ConfigService,
   ) {
     this.timezone =
       this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
-    this.logger.log(
-      `Notifications Service initialized (Timezone: ${this.timezone})`,
+    this.logger.warn(
+      `Notifications Service initialized (Timezone: ${this.timezone}) - Messenger/Subscribers services ARCHIVED - notifications disabled`,
     );
   }
 
@@ -76,24 +76,9 @@ export class NotificationsService {
    * @param event - Energy milestone event data
    */
   async sendEnergyMilestone(event: EnergyMilestoneEvent): Promise<void> {
-    this.logger.log(`Energy milestone reached: ${event.milestone}Wh`);
-
-    // Get active subscribers with milestone preference
-    const subscribers =
-      await this.getSubscribersForNotification('energyMilestones');
-
-    // Format message
-    const message = this.formatEnergyMilestoneMessage(event);
-
-    // Send to all subscribers
-    await this.sendToMultiple(
-      subscribers,
-      NotificationType.MILESTONE,
-      message,
-      {
-        milestone: event.milestone,
-      },
-    );
+    this.logger.warn(`Energy milestone reached: ${event.milestone}Wh - Notifications disabled (messenger archived)`);
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   /**
@@ -104,23 +89,11 @@ export class NotificationsService {
    * @param event - Battery alert event data
    */
   async sendBatteryAlert(event: BatteryAlertEvent): Promise<void> {
-    this.logger.log(
-      `Battery alert: ${event.sensorName} at ${event.batteryLevel}%`,
+    this.logger.warn(
+      `Battery alert: ${event.sensorName} at ${event.batteryLevel}% - Notifications disabled (messenger archived)`,
     );
-
-    // Get active subscribers with battery alert preference
-    const subscribers =
-      await this.getSubscribersForNotification('batteryAlerts');
-
-    // Format message
-    const message = this.formatBatteryAlertMessage(event);
-
-    // Send to all subscribers
-    await this.sendToMultiple(subscribers, NotificationType.BATTERY, message, {
-      batteryLevel: event.batteryLevel,
-      sensorName: event.sensorName,
-      sensorLocation: event.sensorLocation,
-    });
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   /**
@@ -131,20 +104,9 @@ export class NotificationsService {
    * @param event - Sensor online event data
    */
   async sendSensorOnline(event: SensorOnlineEvent): Promise<void> {
-    this.logger.log(`Sensor online: ${event.sensorName}`);
-
-    // Get active subscribers with sensor events preference
-    const subscribers =
-      await this.getSubscribersForNotification('sensorEvents');
-
-    // Format message
-    const message = `✅ **Sensor Online**\n\n${event.sensorName} (${event.sensorLocation}) is now online and reporting data.\n\n📡 Status: Active\n⏰ Time: ${event.timestamp.toLocaleTimeString()}`;
-
-    // Send to all subscribers
-    await this.sendToMultiple(subscribers, NotificationType.SENSOR, message, {
-      sensorName: event.sensorName,
-      sensorLocation: event.sensorLocation,
-    });
+    this.logger.warn(`Sensor online: ${event.sensorName} - Notifications disabled (messenger archived)`);
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   /**
@@ -155,20 +117,9 @@ export class NotificationsService {
    * @param event - Sensor offline event data
    */
   async sendSensorOffline(event: SensorOfflineEvent): Promise<void> {
-    this.logger.warn(`Sensor offline: ${event.sensorName}`);
-
-    // Get active subscribers with sensor events preference
-    const subscribers =
-      await this.getSubscribersForNotification('sensorEvents');
-
-    // Format message
-    const message = `⚠️ **Sensor Offline**\n\n${event.sensorName} (${event.sensorLocation}) has gone offline.\n\n📡 Status: Inactive\n⏰ Last Seen: ${event.lastSeenAt.toLocaleTimeString()}\n\n💡 Check sensor connection.`;
-
-    // Send to all subscribers
-    await this.sendToMultiple(subscribers, NotificationType.SENSOR, message, {
-      sensorName: event.sensorName,
-      sensorLocation: event.sensorLocation,
-    });
+    this.logger.warn(`Sensor offline: ${event.sensorName} - Notifications disabled (messenger archived)`);
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   /**
@@ -179,27 +130,9 @@ export class NotificationsService {
    * @param event - System alert event data
    */
   async sendSystemAlert(event: SystemAlertEvent): Promise<void> {
-    this.logger.log(`System alert: ${event.alertType} - ${event.message}`);
-
-    // Get active subscribers with system alerts preference
-    const subscribers =
-      await this.getSubscribersForNotification('systemAlerts');
-
-    // Format message
-    const emoji =
-      event.severity === 'critical'
-        ? '🚨'
-        : event.severity === 'warning'
-          ? '⚠️'
-          : 'ℹ️';
-    const message = `${emoji} **System ${event.alertType.toUpperCase()}**\n\n${event.message}\n\n⏰ Time: ${event.timestamp.toLocaleTimeString()}`;
-
-    // Send to all subscribers
-    await this.sendToMultiple(subscribers, NotificationType.SYSTEM, message, {
-      alertType: event.alertType,
-      severity: event.severity,
-      ...event.metadata,
-    });
+    this.logger.warn(`System alert: ${event.alertType} - ${event.message} - Notifications disabled (messenger archived)`);
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   // ============================================================
@@ -218,40 +151,9 @@ export class NotificationsService {
     timeZone: 'Asia/Manila',
   })
   async sendDailySummary(): Promise<void> {
-    this.logger.log('Starting daily summary job');
-
-    try {
-      // Get active subscribers with daily report preference
-      const subscribers =
-        await this.getSubscribersForNotification('dailyReport');
-
-      if (subscribers.length === 0) {
-        this.logger.log('No subscribers for daily summary');
-        return;
-      }
-
-      // Get today's analytics
-      const today = await this.analyticsService.getDailySummary(new Date());
-
-      // Format message
-      const message = this.formatDailySummaryMessage(today);
-
-      // Send to all subscribers
-      await this.sendToMultiple(
-        subscribers,
-        NotificationType.DAILY_SUMMARY,
-        message,
-      );
-
-      this.logger.log(
-        `Daily summary sent to ${subscribers.length} subscribers`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send daily summary: ${error.message}`,
-        error.stack,
-      );
-    }
+    this.logger.warn('Daily summary job skipped - Notifications disabled (messenger archived)');
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   /**
@@ -266,40 +168,9 @@ export class NotificationsService {
     timeZone: 'Asia/Manila',
   })
   async sendWeeklySummary(): Promise<void> {
-    this.logger.log('Starting weekly summary job');
-
-    try {
-      // Get active subscribers with weekly report preference
-      const subscribers =
-        await this.getSubscribersForNotification('weeklyReport');
-
-      if (subscribers.length === 0) {
-        this.logger.log('No subscribers for weekly summary');
-        return;
-      }
-
-      // Get this week's analytics
-      const week = await this.analyticsService.getWeeklySummary();
-
-      // Format message
-      const message = this.formatWeeklySummaryMessage(week);
-
-      // Send to all subscribers
-      await this.sendToMultiple(
-        subscribers,
-        NotificationType.WEEKLY_SUMMARY,
-        message,
-      );
-
-      this.logger.log(
-        `Weekly summary sent to ${subscribers.length} subscribers`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send weekly summary: ${error.message}`,
-        error.stack,
-      );
-    }
+    this.logger.warn('Weekly summary job skipped - Notifications disabled (messenger archived)');
+    // Notification sending disabled - messenger module archived
+    return;
   }
 
   // ============================================================
@@ -317,81 +188,16 @@ export class NotificationsService {
   async broadcastMessage(
     dto: BroadcastMessageDto,
   ): Promise<BroadcastResultDto> {
-    this.logger.log('Starting broadcast');
-
+    this.logger.warn('Broadcast message skipped - Notifications disabled (messenger archived)');
+    
     const broadcastId = `broadcast_${Date.now()}`;
-
-    // Get target subscribers
-    let subscribers;
-    if (dto.targetAll) {
-      subscribers = await this.subscribersService.getActiveSubscribers();
-    } else if (dto.targetTags && dto.targetTags.length > 0) {
-      // Filter by tags
-      const allSubscribers =
-        await this.subscribersService.getActiveSubscribers();
-      subscribers = allSubscribers.filter((sub) =>
-        dto.targetTags!.some((tag) => sub.tags.includes(tag)),
-      );
-    } else {
-      subscribers = await this.subscribersService.getActiveSubscribers();
-    }
-
-    if (subscribers.length === 0) {
-      return {
-        broadcastId,
-        totalRecipients: 0,
-        sentCount: 0,
-        failedCount: 0,
-        status: 'completed',
-      };
-    }
-
-    // Send to all subscribers with rate limiting
-    let sentCount = 0;
-    let failedCount = 0;
-
-    const batchSize =
-      this.configService.get<number>('NOTIFICATION_RATE_LIMIT') || 50;
-    const batchDelay =
-      this.configService.get<number>('NOTIFICATION_BATCH_DELAY') || 100;
-
-    for (let i = 0; i < subscribers.length; i += batchSize) {
-      const batch = subscribers.slice(i, i + batchSize);
-
-      await Promise.all(
-        batch.map(async (subscriber) => {
-          try {
-            await this.sendNotification(
-              subscriber.facebookUserId,
-              NotificationType.BROADCAST,
-              dto.message,
-              { broadcastId },
-            );
-            sentCount++;
-          } catch (error) {
-            this.logger.error(
-              `Failed to send broadcast to ${subscriber.facebookUserId}: ${error.message}`,
-            );
-            failedCount++;
-          }
-        }),
-      );
-
-      // Delay between batches to respect rate limits
-      if (i + batchSize < subscribers.length) {
-        await this.delay(batchDelay);
-      }
-    }
-
-    this.logger.log(
-      `Broadcast ${broadcastId} completed: ${sentCount} sent, ${failedCount} failed`,
-    );
-
+    
+    // Return empty result - notifications disabled
     return {
       broadcastId,
-      totalRecipients: subscribers.length,
-      sentCount,
-      failedCount,
+      totalRecipients: 0,
+      sentCount: 0,
+      failedCount: 0,
       status: 'completed',
     };
   }
@@ -514,14 +320,8 @@ export class NotificationsService {
   private async getSubscribersForNotification(
     preferenceKey: keyof any,
   ): Promise<any[]> {
-    const allSubscribers = await this.subscribersService.getActiveSubscribers();
-
-    return allSubscribers.filter(
-      (sub) =>
-        sub.status === 'active' &&
-        sub.isSubscribed &&
-        sub.notificationPreferences?.[preferenceKey] !== false,
-    );
+    // SubscribersService archived - return empty array
+    return [];
   }
 
   /**
@@ -540,33 +340,9 @@ export class NotificationsService {
     message: string,
     metadata?: Record<string, any>,
   ): Promise<void> {
-    const batchSize = 50;
-    const batchDelay = 100; // ms
-
-    for (let i = 0; i < subscribers.length; i += batchSize) {
-      const batch = subscribers.slice(i, i + batchSize);
-
-      await Promise.all(
-        batch.map(async (subscriber) => {
-          try {
-            await this.sendNotification(
-              subscriber.facebookUserId,
-              type,
-              message,
-              metadata,
-            );
-          } catch (error) {
-            this.logger.error(
-              `Failed to send to ${subscriber.facebookUserId}: ${error.message}`,
-            );
-          }
-        }),
-      );
-
-      if (i + batchSize < subscribers.length) {
-        await this.delay(batchDelay);
-      }
-    }
+    // MessengerService archived - no sending capability
+    this.logger.warn('sendToMultiple skipped - MessengerService archived');
+    return;
   }
 
   /**
@@ -585,34 +361,9 @@ export class NotificationsService {
     message: string,
     metadata?: Record<string, any>,
   ): Promise<void> {
-    // Create log entry (pending)
-    const log = await this.notificationLogModel.create({
-      subscriberId,
-      type,
-      content: message,
-      status: NotificationStatus.PENDING,
-      metadata,
-    });
-
-    try {
-      // Send via Messenger
-      await this.messengerService.sendMessage(subscriberId, message);
-
-      // Update log (sent)
-      log.status = NotificationStatus.SENT;
-      log.sentAt = new Date();
-      await log.save();
-
-      // Update subscriber stats
-      await this.subscribersService.updateLastInteraction(subscriberId);
-    } catch (error) {
-      // Update log (failed)
-      log.status = NotificationStatus.FAILED;
-      log.errorMessage = error.message;
-      await log.save();
-
-      throw error;
-    }
+    // MessengerService and SubscribersService archived - no sending capability
+    this.logger.warn(`sendNotification skipped for ${subscriberId} - MessengerService archived`);
+    return;
   }
 
   /**

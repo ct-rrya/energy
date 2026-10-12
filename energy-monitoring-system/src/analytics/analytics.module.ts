@@ -4,6 +4,7 @@ import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
 import { EnergyModule } from '../energy/energy.module';
 import { SensorsModule } from '../sensors/sensors.module';
+import { AiModule } from '../ai/ai.module';
 import {
   EnergyReading,
   EnergyReadingSchema,
@@ -62,8 +63,8 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
     // Import SensorsModule to use SensorsService (Phase 6)
     SensorsModule,
 
-    // Import MessengerModule to use GeminiAIService for historical insights (Phase 6)
-    forwardRef(() => require('../messenger/messenger.module').MessengerModule),
+    // Import AiModule for AI insights
+    AiModule,
 
     // Import schemas for direct queries (peak detection)
     MongooseModule.forFeature([

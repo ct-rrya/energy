@@ -20,7 +20,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { UsersService } from '../users/users.service';
 import { PdfGeneratorService } from './generators/pdf-generator.service';
 import { ExcelGeneratorService } from './generators/excel-generator.service';
-import { GeminiAIService } from '../messenger/gemini-ai.service';
+import { GeminiAIService } from '../ai/gemini-ai.service';
 
 /**
  * Reports Service
@@ -124,7 +124,7 @@ export class ReportsService {
         if (aiAnalysis) {
           this.logger.log('[REPORT] ✅ AI analysis generated successfully');
         } else {
-          this.logger.warn('[REPORT] ⚠️ AI analysis returned null (AI unavailable or disabled)');
+          this.logger.warn('[REPORT] ⚠️ AI analysis returned null (AI unavailable)');
         }
       } catch (error) {
         this.logger.error(`[REPORT] ❌ AI analysis failed: ${error.message}`);

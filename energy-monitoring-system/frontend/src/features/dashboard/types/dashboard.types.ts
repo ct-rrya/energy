@@ -9,6 +9,7 @@ export interface DashboardMetrics {
   batteryPercentage: number;
   dailyEnergy: number;
   estimatedDailyEnergy: number;
+  aiInsight?: string; // AI-generated insight about today's energy performance
   stepCount?: number;
   capacitorVoltage?: number;
   temperature?: number;
