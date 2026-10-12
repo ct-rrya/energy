@@ -29,6 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * Restore session on app startup
    * Retrieves token and user from secure storage
+   * 
+   * If either token or user is missing/corrupted, treats session as invalid.
+   * This fail-safe approach ensures the app doesn't remain in a broken state.
    */
   const restoreSession = useCallback(async () => {
     try {
@@ -41,6 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(storedUser);
+      } else if (storedToken || storedUser) {
+        // Partial data found (one is null) - clear everything
+        console.warn('Partial auth data found, clearing for consistency');
+        await secureStorage.clearAuth();
       }
     } catch (error) {
       console.error('Failed to restore session:', error);

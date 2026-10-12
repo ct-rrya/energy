@@ -35,6 +35,8 @@ export async function getToken(): Promise<string | null> {
     return await SecureStore.getItemAsync(TOKEN_KEY);
   } catch (error) {
     console.error('Failed to retrieve token from secure storage:', error);
+    // Return null to trigger auth clear in calling code
+    // (SecureStore errors typically indicate corruption or system issues)
     return null;
   }
 }
@@ -66,15 +68,26 @@ export async function saveUser(user: User): Promise<void> {
 
 /**
  * Retrieve user data from secure storage
- * @returns User object or null if not found
+ * @returns User object or null if not found or corrupted
  */
 export async function getUser(): Promise<User | null> {
   try {
     const userJson = await SecureStore.getItemAsync(USER_KEY);
     if (!userJson) return null;
-    return JSON.parse(userJson) as User;
+    
+    // Parse and validate user JSON
+    const parsed = JSON.parse(userJson);
+    
+    // Basic runtime validation: check required fields exist
+    if (!parsed || typeof parsed !== 'object' || !parsed.id || !parsed.email || !parsed.role) {
+      console.error('User data validation failed: missing required fields');
+      return null;
+    }
+    
+    return parsed as User;
   } catch (error) {
-    console.error('Failed to retrieve user from secure storage:', error);
+    console.error('Failed to retrieve or parse user from secure storage:', error);
+    // Return null to trigger auth clear (data is corrupted or unreadable)
     return null;
   }
 }

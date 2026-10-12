@@ -40,7 +40,26 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-page">
+    <div className="landing-page" style={{ position: 'relative' }}>
+      {/* CTU-DB Campus Photo Background */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          opacity: 0.06,
+          pointerEvents: 'none',
+          zIndex: 0,
+          backgroundImage: 'url(/ctudb.svg)',
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center center',
+        }}
+        aria-hidden="true"
+      />
+      
       {/* Floating Navigation */}
       <LandingNav activeIndex={activeIndex} sectionRefs={sectionRefs} />
 

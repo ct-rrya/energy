@@ -91,3 +91,10 @@ build/
 
 # Archive folder
 _archive/
+
+# Mobile app (Expo/React Native)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/.env.local
