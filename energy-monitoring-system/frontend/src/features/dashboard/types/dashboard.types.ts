@@ -2,23 +2,37 @@
  * Dashboard Metrics Response
  */
 export interface DashboardMetrics {
-  currentEnergy: number;
-  currentVoltage: number;
-  currentCurrent: number;
-  currentPower: number;
-  batteryPercentage: number;
+  // Energy metrics
   dailyEnergy: number;
-  estimatedDailyEnergy: number;
+  todayTotalPower?: number;
+  todayAvgPower?: number;
+  todayEstimatedEnergyKWh?: number;
+  
+  // Sensor data
+  totalReadings?: number;
+  activeSensors: number;
+  lastReadingAt?: string;
+  lastReadingPower?: number;
+  lastReadingSensorId?: string;
+  
+  // AI insight
   aiInsight?: string; // AI-generated insight about today's energy performance
+  
+  // Legacy fields (kept for backward compatibility)
+  currentEnergy?: number;
+  currentVoltage?: number;
+  currentCurrent?: number;
+  currentPower?: number;
+  batteryPercentage?: number;
+  estimatedDailyEnergy?: number;
   stepCount?: number;
   capacitorVoltage?: number;
   temperature?: number;
   frequency?: number;
   wifiConnected?: boolean;
   bluetoothConnected?: boolean;
-  lastUpdate: string;
-  activeSensors: number;
-  connectedDevices: number;
+  lastUpdate?: string;
+  connectedDevices?: number;
 }
 
 /**

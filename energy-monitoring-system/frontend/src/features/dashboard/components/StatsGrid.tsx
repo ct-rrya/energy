@@ -16,14 +16,14 @@ interface StatsGridProps {
  * Grid layout displaying all dashboard statistics
  */
 export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
-  const batteryVariant: 'danger' | 'success' = metrics.batteryPercentage < 20 ? 'danger' : 'success';
+  const batteryVariant: 'danger' | 'success' = (metrics.batteryPercentage ?? 0) < 20 ? 'danger' : 'success';
 
   const stats = [
     {
       id: 'energy',
       icon: TrendingUp,
       title: 'Energy Generated',
-      value: isLoading ? '—' : formatEnergy(metrics.currentEnergy),
+      value: isLoading ? '—' : formatEnergy(metrics.currentEnergy ?? 0),
       unit: '',
       variant: 'success' as const,
       trend: { value: 12.5, direction: 'up' as const },
@@ -32,7 +32,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'voltage',
       icon: Zap,
       title: 'Voltage',
-      value: isLoading ? '—' : formatNumber(metrics.currentVoltage, 2),
+      value: isLoading ? '—' : formatNumber(metrics.currentVoltage ?? 0, 2),
       unit: 'V',
       variant: 'info' as const,
     },
@@ -40,7 +40,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'current',
       icon: Activity,
       title: 'Current',
-      value: isLoading ? '—' : formatNumber(metrics.currentCurrent, 2),
+      value: isLoading ? '—' : formatNumber(metrics.currentCurrent ?? 0, 2),
       unit: 'A',
       variant: 'warning' as const,
     },
@@ -48,7 +48,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'power',
       icon: Gauge,
       title: 'Power',
-      value: isLoading ? '—' : formatPower(metrics.currentPower),
+      value: isLoading ? '—' : formatPower(metrics.currentPower ?? 0),
       unit: '',
       variant: 'default' as const,
     },
@@ -56,7 +56,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'battery',
       icon: Battery,
       title: 'Battery Level',
-      value: isLoading ? '—' : formatNumber(metrics.batteryPercentage, 0),
+      value: isLoading ? '—' : formatNumber(metrics.batteryPercentage ?? 0, 0),
       unit: '%',
       variant: batteryVariant,
     },
@@ -64,7 +64,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'daily',
       icon: TrendingUp,
       title: 'Estimated Daily Energy',
-      value: isLoading ? '—' : formatEnergy(metrics.estimatedDailyEnergy),
+      value: isLoading ? '—' : formatEnergy(metrics.estimatedDailyEnergy ?? 0),
       unit: '',
       variant: 'success' as const,
     },
@@ -80,7 +80,7 @@ export function StatsGrid({ metrics, isLoading }: StatsGridProps) {
       id: 'devices',
       icon: Radio,
       title: 'Connected Devices',
-      value: isLoading ? '—' : metrics.connectedDevices.toString(),
+      value: isLoading ? '—' : (metrics.connectedDevices ?? 0).toString(),
       unit: '',
       variant: 'default' as const,
     },
