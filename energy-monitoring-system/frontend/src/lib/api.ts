@@ -12,25 +12,13 @@
  */
 export interface SendMessageRequest {
   message: string;
-  channel?: 'web' | 'mobile';
+  sessionId?: string;
 }
 
 /**
- * Response DTO for chat API
+ * Response DTO for chat API (matches backend ChatResponseDto)
  */
-export interface ChatResponse {
-  text: string;
-  suggestions?: string[];
-  metadata?: {
-    commandType?: string;
-    dataSource?: string;
-  };
-}
-
-/**
- * Legacy response wrapper for backward compatibility
- */
-interface ChatResponseWrapper {
+export interface ChatResponseDto {
   success: boolean;
   response: string;
   sessionId: string;
@@ -101,9 +89,9 @@ export const chat = {
    * 
    * Requirements: 4.10
    */
-  async sendMessage(message: string, sessionId?: string): Promise<ChatResponseWrapper> {
+  async sendMessage(message: string, sessionId?: string): Promise<ChatResponseDto> {
     const baseUrl = getApiBaseUrl();
-    const endpoint = `${baseUrl}/chat/message`;
+    const endpoint = `${baseUrl}/chat`;
     const token = getAuthToken();
     
     try {
@@ -116,13 +104,18 @@ export const chat = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const requestBody: SendMessageRequest = {
+        message,
+      };
+      
+      if (sessionId) {
+        requestBody.sessionId = sessionId;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          message,
-          channel: 'web',
-        } as SendMessageRequest),
+        body: JSON.stringify(requestBody),
       });
       
       // Handle non-OK responses
@@ -158,18 +151,10 @@ export const chat = {
       }
       
       // Parse successful response
-      const data: ChatResponse = await response.json();
+      const data: ChatResponseDto = await response.json();
       
-      // Wrap in legacy format for compatibility with useChat hook
-      const wrappedResponse: ChatResponseWrapper = {
-        success: true,
-        response: data.text,
-        sessionId: sessionId || crypto.randomUUID(),
-        suggestions: data.suggestions,
-        timestamp: new Date().toISOString(),
-      };
-      
-      return wrappedResponse;
+      // Return the response directly (backend already uses the correct format)
+      return data;
       
     } catch (error) {
       // Network errors or other exceptions
