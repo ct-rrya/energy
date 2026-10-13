@@ -62,6 +62,7 @@ export class DashboardController {
 
       // Get statistics from EnergyService
       const stats = await this.energyService.getTotalStatistics();
+      const detailedStats = await this.energyService.getTodayDetailedStats();
 
       // Get active sensors count
       const activeSensors = await this.sensorModel.countDocuments({
@@ -106,20 +107,33 @@ Provide ONE concise insight about today's performance. Keep it under 100 charact
 
       // Format response to match frontend expectations
       const metrics = {
-        dailyEnergy: stats.todayStats.estimatedEnergyKWh, // Frontend expects "dailyEnergy"
+        // Energy metrics
+        dailyEnergy: stats.todayStats.estimatedEnergyKWh,
         totalReadings: stats.totalReadings,
         todayTotalPower: stats.todayStats.totalPower,
         todayAvgPower: stats.todayStats.avgPower,
         todayEstimatedEnergyKWh: stats.todayStats.estimatedEnergyKWh,
+        
+        // Daily aggregates (NEW)
+        todayTotalSteps: detailedStats.totalSteps,
+        todayMaxVoltage: detailedStats.maxVoltage,
+        todayPeakPower: detailedStats.peakPower,
+        todayPeakCurrent: detailedStats.peakCurrent,
+        todayAvgVoltage: detailedStats.avgVoltage,
+        todayAvgCurrent: detailedStats.avgCurrent,
+        
+        // System metrics
         activeSensors,
         lastReadingAt: stats.lastReading?.timestamp || null,
         lastReadingPower: stats.lastReading?.power || null,
         lastReadingSensorId: stats.lastReading?.sensorId || null,
-        aiInsight, // Add AI insight to response
+        
+        // AI insight
+        aiInsight,
       };
 
       this.logger.debug(
-        `Dashboard metrics: ${metrics.totalReadings} total readings, ${activeSensors} active sensors`,
+        `Dashboard metrics: ${metrics.totalReadings} total readings, ${activeSensors} active sensors, ${metrics.todayTotalSteps} steps today`,
       );
 
       return {

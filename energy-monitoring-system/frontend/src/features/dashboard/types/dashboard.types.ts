@@ -19,6 +19,15 @@ export interface DashboardMetrics {
   lastUpdate: string;
   activeSensors: number;
   connectedDevices: number;
+  
+  // Daily aggregates (NEW - from backend /dashboard/metrics)
+  todayTotalSteps?: number;      // Total steps accumulated today (delta-based)
+  todayMaxVoltage?: number;      // Maximum voltage reading today
+  todayPeakPower?: number;       // Peak power reading today
+  todayPeakCurrent?: number;     // Peak current reading today
+  todayAvgVoltage?: number;      // Average voltage today
+  todayAvgPower?: number;        // Average power today
+  todayAvgCurrent?: number;      // Average current today
 }
 
 /**

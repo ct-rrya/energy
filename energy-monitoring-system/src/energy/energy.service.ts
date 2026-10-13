@@ -307,6 +307,195 @@ export class EnergyService {
   }
 
   /**
+   * Get Today's Detailed Statistics
+   * 
+   * Returns comprehensive daily statistics including steps total, max voltage,
+   * peak power, and peak current. Uses year-agnostic date matching like getTodayEnergyTotal().
+   * 
+   * Note: For cumulative counters (steps), we use delta calculation to avoid double-counting.
+   * For instantaneous measurements (voltage, power, current), we use max/peak values.
+   * 
+   * @returns Daily statistics with totals and peaks
+   */
+  async getTodayDetailedStats() {
+    const now = new Date();
+    const zonedNow = toZonedTime(now, this.timezone);
+    
+    // Extract today's month and day (ignore year to match historical readings)
+    const targetMonth = zonedNow.getMonth(); // 0-11
+    const targetDay = zonedNow.getDate(); // 1-31
+
+    try {
+      const result = await this.readingModel.aggregate([
+        {
+          // Match readings from today's month and day (any year)
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: [{ $month: '$timestamp' }, targetMonth + 1] },
+                { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
+              ],
+            },
+            source: 'hardware' as any,
+          },
+        },
+        {
+          $sort: { sensorId: 1, timestamp: 1 },
+        },
+        {
+          // Calculate previous stepCount for delta
+          $setWindowFields: {
+            partitionBy: '$sensorId',
+            sortBy: { timestamp: 1 },
+            output: {
+              previousStepCount: {
+                $shift: {
+                  output: '$stepCount',
+                  by: -1,
+                },
+              },
+            },
+          },
+        },
+        {
+          // Calculate step delta, handling resets
+          $addFields: {
+            stepDelta: {
+              $cond: {
+                if: {
+                  $or: [
+                    { $eq: ['$previousStepCount', null] },
+                    { $lt: ['$stepCount', '$previousStepCount'] }, // Reset detected
+                  ],
+                },
+                then: 0,
+                else: { $subtract: ['$stepCount', '$previousStepCount'] },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalSteps: { $sum: '$stepDelta' },
+            maxVoltage: { $max: '$voltage' },
+            peakPower: { $max: '$power' },
+            peakCurrent: { $max: '$current' },
+            avgVoltage: { $avg: '$voltage' },
+            avgPower: { $avg: '$power' },
+            avgCurrent: { $avg: '$current' },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      if (result.length === 0) {
+        return {
+          totalSteps: 0,
+          maxVoltage: 0,
+          peakPower: 0,
+          peakCurrent: 0,
+          avgVoltage: 0,
+          avgPower: 0,
+          avgCurrent: 0,
+          count: 0,
+        };
+      }
+
+      const stats = result[0];
+
+      return {
+        totalSteps: Math.round(stats.totalSteps || 0),
+        maxVoltage: Math.round(stats.maxVoltage * 100) / 100,
+        peakPower: Math.round(stats.peakPower * 1000) / 1000,
+        peakCurrent: Math.round(stats.peakCurrent * 1000) / 1000,
+        avgVoltage: Math.round(stats.avgVoltage * 100) / 100,
+        avgPower: Math.round(stats.avgPower * 1000) / 1000,
+        avgCurrent: Math.round(stats.avgCurrent * 1000) / 1000,
+        count: stats.count,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to calculate detailed stats: ${error.message}`,
+      );
+      
+      // Fallback: simple query without window functions
+      const readings = await this.readingModel
+        .find({
+          $expr: {
+            $and: [
+              { $eq: [{ $month: '$timestamp' }, targetMonth + 1] },
+              { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
+            ],
+          },
+          source: 'hardware' as any,
+        })
+        .sort({ sensorId: 1, timestamp: 1 })
+        .exec();
+
+      if (readings.length === 0) {
+        return {
+          totalSteps: 0,
+          maxVoltage: 0,
+          peakPower: 0,
+          peakCurrent: 0,
+          avgVoltage: 0,
+          avgPower: 0,
+          avgCurrent: 0,
+          count: 0,
+        };
+      }
+
+      // Calculate in memory
+      let totalSteps = 0;
+      let maxVoltage = 0;
+      let peakPower = 0;
+      let peakCurrent = 0;
+      let totalVoltage = 0;
+      let totalPower = 0;
+      let totalCurrent = 0;
+      const sensorPreviousSteps = new Map<string, number>();
+
+      for (const reading of readings) {
+        const sensorIdStr = reading.sensorId.toString();
+        const previousSteps = sensorPreviousSteps.get(sensorIdStr);
+        const currentSteps = reading.stepCount || 0;
+
+        // Calculate step delta
+        if (
+          previousSteps !== undefined &&
+          currentSteps >= previousSteps
+        ) {
+          totalSteps += currentSteps - previousSteps;
+        }
+
+        sensorPreviousSteps.set(sensorIdStr, currentSteps);
+
+        // Track max values
+        maxVoltage = Math.max(maxVoltage, reading.voltage || 0);
+        peakPower = Math.max(peakPower, reading.power || 0);
+        peakCurrent = Math.max(peakCurrent, reading.current || 0);
+        
+        // Track totals for averages
+        totalVoltage += reading.voltage || 0;
+        totalPower += reading.power || 0;
+        totalCurrent += reading.current || 0;
+      }
+
+      return {
+        totalSteps: Math.round(totalSteps),
+        maxVoltage: Math.round(maxVoltage * 100) / 100,
+        peakPower: Math.round(peakPower * 1000) / 1000,
+        peakCurrent: Math.round(peakCurrent * 1000) / 1000,
+        avgVoltage: Math.round((totalVoltage / readings.length) * 100) / 100,
+        avgPower: Math.round((totalPower / readings.length) * 1000) / 1000,
+        avgCurrent: Math.round((totalCurrent / readings.length) * 1000) / 1000,
+        count: readings.length,
+      };
+    }
+  }
+
+  /**
    * Get Today's Energy by Sensor
    *
    * Calculates energy for specific sensor today.

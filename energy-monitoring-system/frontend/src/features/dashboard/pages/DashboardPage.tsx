@@ -309,10 +309,11 @@ function DashboardPageContent() {
 
             {/* Step Count Metric Card (Requirements 11.1-11.10) */}
             {/* Requirement 14.4: Row 2, Column 2 on tablet */}
+            {/* NOW USES DAILY TOTAL FROM METRICS API INSTEAD OF LATEST READING */}
             <div className="metric-steps">
               <MetricCard
                 label="Steps Today"
-                value={displayReading?.stepCount}
+                value={displayMetrics?.todayTotalSteps}
                 unit=""
                 precision={0}
                 color="accent"
