@@ -12,13 +12,25 @@
  */
 export interface SendMessageRequest {
   message: string;
-  sessionId?: string;
+  channel?: 'web' | 'mobile';
 }
 
 /**
  * Response DTO for chat API
  */
 export interface ChatResponse {
+  text: string;
+  suggestions?: string[];
+  metadata?: {
+    commandType?: string;
+    dataSource?: string;
+  };
+}
+
+/**
+ * Legacy response wrapper for backward compatibility
+ */
+interface ChatResponseWrapper {
   success: boolean;
   response: string;
   sessionId: string;
@@ -59,11 +71,18 @@ const getApiBaseUrl = (): string => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   
   if (!baseUrl) {
-    console.warn('VITE_API_BASE_URL not configured, using default: http://localhost:3000/api');
-    return 'http://localhost:3000/api';
+    console.warn('VITE_API_BASE_URL not configured, using default: http://localhost:3000');
+    return 'http://localhost:3000';
   }
   
   return baseUrl;
+};
+
+/**
+ * Get authentication token from localStorage
+ */
+const getAuthToken = (): string | null => {
+  return localStorage.getItem('accessToken');
 };
 
 /**
@@ -76,25 +95,33 @@ export const chat = {
    * Send a message to the chatbot
    * 
    * @param message - The message text to send
-   * @param sessionId - Optional session ID for conversation continuity
-   * @returns Promise resolving to ChatResponse
+   * @param sessionId - Optional session ID (ignored, kept for compatibility)
+   * @returns Promise resolving to ChatResponse wrapped for compatibility
    * @throws Error with user-friendly message on failure
    * 
    * Requirements: 4.10
    */
-  async sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
+  async sendMessage(message: string, sessionId?: string): Promise<ChatResponseWrapper> {
     const baseUrl = getApiBaseUrl();
-    const endpoint = `${baseUrl}/chat`;
+    const endpoint = `${baseUrl}/chat/message`;
+    const token = getAuthToken();
     
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           message,
-          sessionId,
+          channel: 'web',
         } as SendMessageRequest),
       });
       
@@ -109,6 +136,10 @@ export const chat = {
         }
         
         // Handle specific error cases
+        if (response.status === 401) {
+          throw new Error('Please log in to use EcoChat.');
+        }
+        
         if (response.status === 429) {
           const retryAfter = errorData?.retryAfter || 60;
           throw new Error(`Too many messages. Please wait ${retryAfter} seconds.`);
@@ -128,7 +159,17 @@ export const chat = {
       
       // Parse successful response
       const data: ChatResponse = await response.json();
-      return data;
+      
+      // Wrap in legacy format for compatibility with useChat hook
+      const wrappedResponse: ChatResponseWrapper = {
+        success: true,
+        response: data.text,
+        sessionId: sessionId || crypto.randomUUID(),
+        suggestions: data.suggestions,
+        timestamp: new Date().toISOString(),
+      };
+      
+      return wrappedResponse;
       
     } catch (error) {
       // Network errors or other exceptions

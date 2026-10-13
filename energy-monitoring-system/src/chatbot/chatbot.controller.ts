@@ -21,12 +21,11 @@ export class ChatMessageDto {
  * - AI-powered responses (Gemini with Groq fallback)
  * - Command-based queries (status, today, week, etc.)
  * - Natural language understanding
- * - Authenticated access only
+ * - Public access (no authentication required)
  *
  * Requirements: 2.1, 2.6, 2.8, 10.1, 10.2, 10.3
  */
 @Controller('chat')
-@UseGuards(JwtAuthGuard) // Require authentication
 export class ChatbotController {
   private readonly logger = new Logger(ChatbotController.name);
 
@@ -38,7 +37,7 @@ export class ChatbotController {
    * Send a message to the chatbot and receive a response
    *
    * @param body - Chat message DTO
-   * @param user - Current authenticated user
+   * @param user - Current authenticated user (optional for public access)
    * @returns ChatbotResponse with text and suggestions
    */
   @Post('message')
@@ -46,13 +45,14 @@ export class ChatbotController {
     @Body() body: ChatMessageDto,
     @CurrentUser() user: any,
   ): Promise<ChatbotResponse> {
-    this.logger.log(`Chat message from user ${user.id}: "${body.message.substring(0, 50)}..."`);
+    const userId = user?.id || 'anonymous';
+    this.logger.log(`Chat message from user ${userId}: "${body.message.substring(0, 50)}..."`);
 
     try {
       const response = await this.chatbotCoreService.processMessage(
         body.message,
         {
-          userId: user.id,
+          userId,
           channel: body.channel || 'web',
           originalText: body.message,
         },
@@ -62,7 +62,12 @@ export class ChatbotController {
       return response;
     } catch (error) {
       this.logger.error('Error processing chat message', error.stack);
-      throw error;
+      
+      // Return user-friendly error
+      return {
+        text: "I'm having trouble processing your request right now. Please try again in a moment.",
+        suggestions: ['help', 'status'],
+      };
     }
   }
 }
