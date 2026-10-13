@@ -80,25 +80,26 @@ export class EnergyService {
   /**
    * Get Today's Energy Total
    *
-   * Calculates total energy for current day across all sensors using delta calculation.
-   * Uses server-side receivedAt timestamp instead of ESP32 timestamp for reliable daily aggregation.
+   * Calculates total energy for current day across all sensors by integrating power over time.
+   * Uses server-side receivedAt timestamp for reliable time intervals.
    * 
-   * Strategy:
-   * - ESP32 sends CUMULATIVE energy that increases during each session
-   * - When ESP32 reboots, cumulative counter resets to 0
-   * - We calculate deltas between consecutive readings to avoid double-counting
-   * - Resets are detected when energy decreases between readings
+   * Strategy (NEW - Power Integration Method):
+   * - Calculate time delta between consecutive readings
+   * - Multiply power by time to get energy increment (E = P × Δt)
+   * - Sum all energy increments to get total daily energy
+   * - This method is resilient to ESP32 resets and doesn't rely on cumulative counters
    *
    * @returns Today's energy statistics
    *
    * Performance:
    * - Uses { receivedAt: 1, sensorId: 1 } index
-   * - Aggregation pipeline with $setWindowFields for delta calculation
+   * - Aggregation pipeline with $setWindowFields for time delta calculation
    * - Handles multiple sensors independently
    *
    * Energy Calculation:
-   * - Correct: Sum of energy deltas (increments only)
-   * - Not: Sum of cumulative values (would double-count)
+   * - Correct: Sum of (Power × Time) for each interval
+   * - Physics: E = ∫ P dt (numerical integration)
+   * - Units: Power (W) × Time (hours) × 1000 = Energy (mWh)
    */
   async getTodayEnergyTotal() {
     const now = new Date();
@@ -132,33 +133,53 @@ export class EnergyService {
           $sort: { sensorId: 1, receivedAt: 1 }, // Sort by sensor, then server receive time
         },
         {
-          // Calculate previous energy for each reading within same sensor
+          // Calculate previous time for energy integration
           $setWindowFields: {
             partitionBy: '$sensorId', // Separate window per sensor
             sortBy: { receivedAt: 1 },
             output: {
-              previousEnergy: {
+              previousTime: {
                 $shift: {
-                  output: '$energy',
-                  by: -1, // Previous reading
+                  output: '$receivedAt',
+                  by: -1, // Previous reading's time
                 },
               },
             },
           },
         },
         {
-          // Calculate delta, handling resets
+          // Calculate energy from power × time (E = P × t)
           $addFields: {
-            energyDelta: {
+            // Time delta in hours
+            timeDeltaHours: {
               $cond: {
-                if: {
-                  $or: [
-                    { $eq: ['$previousEnergy', null] }, // First reading for sensor
-                    { $lt: ['$energy', '$previousEnergy'] }, // Reset detected
+                if: { $eq: ['$previousTime', null] }, // First reading for sensor
+                then: 0,
+                else: {
+                  $divide: [
+                    { $subtract: ['$receivedAt', '$previousTime'] },
+                    3600000, // Convert milliseconds to hours
                   ],
                 },
-                then: 0, // Skip this reading's contribution
-                else: { $subtract: ['$energy', '$previousEnergy'] }, // Normal delta
+              },
+            },
+            // Energy increment = Power (W) × Time (h) × 1000 (convert Wh to mWh)
+            energyIncrement: {
+              $cond: {
+                if: { $eq: ['$previousTime', null] },
+                then: 0,
+                else: {
+                  $multiply: [
+                    '$power',
+                    {
+                      $divide: [
+                        { $subtract: ['$receivedAt', '$previousTime'] },
+                        3600000,
+                      ],
+                    },
+                    1000, // Convert Wh to mWh
+                  ],
+                },
               },
             },
           },
@@ -167,7 +188,7 @@ export class EnergyService {
           $group: {
             _id: null,
             totalPower: { $sum: '$power' }, // Sum of all power readings (W)
-            totalEnergy: { $sum: '$energyDelta' }, // Sum of energy deltas (mWh)
+            totalEnergy: { $sum: '$energyIncrement' }, // Sum of energy increments (mWh)
             count: { $sum: 1 }, // Number of readings
             avgPower: { $avg: '$power' }, // Average power (W)
             maxPower: { $max: '$power' }, // Peak power (W)
@@ -216,7 +237,7 @@ export class EnergyService {
   /**
    * Fallback Energy Calculation (for MongoDB < 5.0)
    * 
-   * Calculates energy deltas in application code instead of aggregation pipeline.
+   * Calculates energy by integrating power over time in application code.
    * Less efficient but compatible with older MongoDB versions.
    * 
    * @param todayStart - Start of today in Manila timezone
@@ -250,27 +271,27 @@ export class EnergyService {
       };
     }
 
-    // Calculate deltas in memory
-    let totalEnergy = 0;
+    // Calculate energy by integrating power over time
+    let totalEnergy = 0;  // mWh
     let totalPower = 0;
     let maxPower = 0;
     let minPower = Infinity;
-    const sensorPrevious = new Map<string, number>();
+    const sensorPreviousTime = new Map<string, Date>();
 
     for (const reading of readings) {
       const sensorIdStr = reading.sensorId.toString();
-      const previousEnergy = sensorPrevious.get(sensorIdStr);
+      const previousTime = sensorPreviousTime.get(sensorIdStr);
 
-      // Calculate delta if not first reading and no reset detected
-      if (
-        previousEnergy !== undefined &&
-        reading.energy >= previousEnergy
-      ) {
-        totalEnergy += reading.energy - previousEnergy;
+      // Calculate energy increment if not first reading
+      if (previousTime) {
+        const timeDeltaMs = reading.receivedAt.getTime() - previousTime.getTime();
+        const timeDeltaHours = timeDeltaMs / 3600000;  // Convert ms to hours
+        const energyIncrement = reading.power * timeDeltaHours * 1000;  // W × h × 1000 = mWh
+        totalEnergy += energyIncrement;
       }
 
       // Update tracking
-      sensorPrevious.set(sensorIdStr, reading.energy);
+      sensorPreviousTime.set(sensorIdStr, reading.receivedAt);
       totalPower += reading.power;
       maxPower = Math.max(maxPower, reading.power);
       minPower = Math.min(minPower, reading.power);
@@ -278,7 +299,7 @@ export class EnergyService {
 
     const avgPower = totalPower / readings.length;
 
-    // ESP32 sends energy in mWh, convert to kWh (1 kWh = 1,000,000 mWh)
+    // Convert mWh to kWh (1 kWh = 1,000,000 mWh)
     const estimatedEnergyKWh = totalEnergy / 1000000;
 
     return {
