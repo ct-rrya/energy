@@ -1,0 +1,24 @@
+{
+  "project_type": "React Native mobile app using Expo SDK 57 with Expo Router for navigation",
+  "language": "TypeScript (strict mode enabled)",
+  "build_system": "npm scripts: npm start (dev), npm run type-check (TypeScript validation), npm run lint (ESLint)",
+  "test_framework": "None currently - manual testing required for Stage 3",
+  "build_command": "cd mobile && npm run type-check",
+  "test_command": "Manual testing with Expo Go or emulator - no automated tests in Stage 3 scope",
+  "verification_instructions": "1. Run 'cd mobile && npm run type-check' to verify 0 TypeScript errors. 2. Run 'cd . && npm run build' to verify backend unchanged. 3. Run 'cd frontend && npm run build' to verify frontend unchanged. 4. Start mobile dev server and test dashboard data loading, pull-to-refresh, error states, and public vs admin access.",
+  "snapshot_or_generated_files": "None - no snapshot tests or generated files to commit",
+  "environment_constraints": "1. Expo SDK 57 + React Native 0.86.3 + React 19.2.3 - package versions are fixed. 2. No new npm packages unless absolutely necessary. 3. No Firebase, Socket.IO, or real-time subscriptions (Stage 4). 4. No analytics charts (Stage 5). 5. No push notifications (Stage 6). 6. Backend API must be running at configured API_BASE_URL for live testing.",
+  "contribution_requirements": "1. Use existing Stage 2 API services - never call axios directly from screens. 2. Handle null/missing values safely - distinguish zero from null. 3. Never bypass API authorization. 4. Preserve Phase 2 authentication flow. 5. Public endpoints (getDashboardMetrics, getRecentReadings) must work without JWT. 6. Admin endpoints require JWT from auth context. 7. Handle expired sessions via existing interceptor.",
+  "key_patterns": "1. Services: mobile/src/api/services/*.service.ts export async functions returning typed data. 2. Types: mobile/src/types/*.types.ts define all DTOs matching backend exactly. 3. Auth: mobile/src/contexts/AuthContext.tsx provides useAuth() hook. 4. File-based routing: app/(public)/*.tsx for public routes, app/(admin)/*.tsx for admin routes. 5. Expo Router uses index.tsx as default route. 6. Styles use StyleSheet.create() with inline style objects. 7. Colors: EcoStep brand - primary: #2FBF71 (green), dark: #0A2947, light bg: #F5F7FA, card bg: #FFFFFF.",
+  "relevant_files": [
+    "mobile/src/api/services/dashboard.service.ts",
+    "mobile/src/api/services/energy.service.ts",
+    "mobile/src/types/dashboard.types.ts",
+    "mobile/src/types/energy.types.ts",
+    "mobile/src/contexts/AuthContext.tsx",
+    "mobile/app/(public)/index.tsx",
+    "mobile/app/(admin)/dashboard.tsx",
+    "frontend/src/features/dashboard/pages/DashboardPage.tsx"
+  ],
+  "directory_structure": "mobile/app/ - Expo Router file-based routes; mobile/src/api/ - API client and services; mobile/src/types/ - TypeScript type definitions; mobile/src/contexts/ - React contexts (Auth); mobile/src/utils/ - Utility functions; mobile/src/components/ - Reusable UI components (will be created); mobile/src/hooks/ - Custom React hooks (will be created)"
+}

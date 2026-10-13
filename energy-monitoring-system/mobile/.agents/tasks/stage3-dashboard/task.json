@@ -1,0 +1,7 @@
+{
+  "task_id": "stage3-dashboard",
+  "task_description": "Live Energy Dashboard UI - Replace placeholder screens with real-time dashboard displaying voltage, current, power, energy, and sensor status using Stage 2 API services",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
