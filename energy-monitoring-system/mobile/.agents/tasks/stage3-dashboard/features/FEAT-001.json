@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create reusable dashboard UI components and hooks for data fetching. Components: MetricCard (voltage/current/power/energy display), HeroEnergyCard (main energy display), LoadingCard (skeleton), ErrorCard (retry UI). Hooks: useDashboardData (fetches getDashboardMetrics), useRecentReading (fetches getRecentReadings with limit 1). These components and hooks will be shared by both public and admin dashboard screens.",
+  "status": "completed",
+  "steps": [
+    "Create mobile/src/components/ directory structure",
+    "Create mobile/src/components/dashboard/MetricCard.tsx - displays single metric (label, value, unit) with loading/error/null states. Props: label: string, value: number | null | undefined, unit: string, precision?: number, color?: 'green' | 'blue' | 'amber'. Style: white card with shadow, 16px padding, rounded 12px. Value display: large bold number (32px), unit in gray (16px). Handle null distinctly from 0 - show '--' for null, '0' for zero. Show skeleton for loading. Design matches EcoStep visual identity with #2FBF71 accent color.",
+    "Create mobile/src/components/dashboard/HeroEnergyCard.tsx - hero card for daily energy. Props: energyValue: number | null | undefined, aiInsight?: string, isLoading: boolean, isError: boolean, onRetry: () => void. Style: larger card (approx 2x height of MetricCard), white bg, 20px padding, rounded 12px. Display: 'Daily Energy' title, energy value in large font (48px bold) with 'kWh' unit, AI insight in smaller italic text if available. Loading shows skeleton. Error shows message + retry button. Null shows '--' distinctly from zero.",
+    "Create mobile/src/components/dashboard/LoadingCard.tsx - skeleton loading state for cards. Animated placeholder with gray background pulses. Matches card styling (white bg, rounded, shadow). Used when data is loading initially.",
+    "Create mobile/src/components/dashboard/ErrorCard.tsx - error display with retry button. Props: message: string, onRetry: () => void. Style: card with red border, error icon, error message, 'Retry' button. Matches overall card styling.",
+    "Create mobile/src/components/dashboard/index.ts - barrel export for all dashboard components",
+    "Create mobile/src/hooks/ directory",
+    "Create mobile/src/hooks/useDashboardData.ts - custom hook wrapping getDashboardMetrics() from dashboard.service. Returns: { data: DashboardMetrics | null, isLoading: boolean, isError: boolean, error: Error | null, refetch: () => Promise<void> }. Uses useState and useEffect. Initial load on mount. Does not poll - single fetch only (real-time is Stage 4). Handles errors gracefully. Uses useCallback for refetch function.",
+    "Create mobile/src/hooks/useRecentReading.ts - custom hook wrapping getRecentReadings(1) from energy.service. Returns: { reading: EnergyReading | null, isLoading: boolean, isError: boolean, error: Error | null, refetch: () => Promise<void> }. Initial load on mount. Does not poll. Extracts first reading from array or returns null if empty.",
+    "Create mobile/src/hooks/index.ts - barrel export for hooks"
+  ],
+  "acceptance_criteria": [
+    "All component files exist in mobile/src/components/dashboard/ with proper TypeScript types",
+    "All hook files exist in mobile/src/hooks/ with proper return types matching Stage 2 API services",
+    "MetricCard correctly distinguishes null (displays '--') from zero (displays '0.0')",
+    "HeroEnergyCard displays energy in kWh with proper formatting and optional AI insight",
+    "LoadingCard shows animated skeleton matching card dimensions",
+    "ErrorCard displays error message and calls onRetry when button pressed",
+    "useDashboardData hook calls getDashboardMetrics() and returns proper loading/error/data states",
+    "useRecentReading hook calls getRecentReadings(1) and extracts single reading or null",
+    "npm run type-check passes with 0 errors after component and hook creation"
+  ],
+  "verification": [
+    "Run 'cd mobile && npm run type-check' and confirm 0 TypeScript errors",
+    "Verify all component files exist and export default React components",
+    "Verify all hook files exist and export custom hooks with proper return types",
+    "Check that imports from Stage 2 types (DashboardMetrics, EnergyReading) and services (getDashboardMetrics, getRecentReadings) resolve correctly"
+  ],
+  "blocked_reason": null,
+  "findings": "All components and hooks created successfully. TypeScript type-check passed with 0 errors. All acceptance criteria met:\n- MetricCard distinguishes null (--) from zero (0.0)\n- HeroEnergyCard displays daily energy in kWh with AI insight support\n- LoadingCard shows animated skeleton\n- ErrorCard provides retry functionality\n- useDashboardData wraps getDashboardMetrics() with proper state management\n- useRecentReading wraps getRecentReadings(1) and extracts single reading\n- All files use EcoStep brand colors (#2FBF71 green, #0A2947 dark, #F5F7FA bg)\n- Components are fully typed with TypeScript strict mode\n- Barrel exports created for both components and hooks"
+}
