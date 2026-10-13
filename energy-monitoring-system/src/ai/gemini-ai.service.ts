@@ -297,10 +297,18 @@ export class GeminiAIService {
         // Check if we should fallback to Groq
         if (this.shouldFallback(errorType) && this.groqEnabled) {
           this.logger.log(`[Fallback] Attempting Groq due to ${errorType}...`);
+          // Continue to Groq attempt below
         } else {
           // Don't fallback for auth errors or invalid requests
           this.logger.error(`[Gemini] No fallback for ${errorType}`);
-          return null;
+          
+          // If Groq is available as primary, try it anyway for auth errors
+          if (this.groqEnabled && errorType === AIErrorType.AUTH_ERROR) {
+            this.logger.log('[Fallback] Gemini auth failed, trying Groq as primary...');
+            // Continue to Groq attempt below
+          } else {
+            return null;
+          }
         }
       }
     }

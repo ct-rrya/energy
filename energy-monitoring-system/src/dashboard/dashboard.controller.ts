@@ -77,6 +77,12 @@ export class DashboardController {
         const maxPower = stats.todayStats.maxPower;
         const readingCount = stats.todayStats.count;
 
+        this.logger.log('[AI] Generating insight with the following data:');
+        this.logger.log(`  - Energy: ${todayEnergy} kWh`);
+        this.logger.log(`  - Avg Power: ${avgPower.toFixed(2)} W`);
+        this.logger.log(`  - Peak Power: ${maxPower.toFixed(2)} W`);
+        this.logger.log(`  - Readings: ${readingCount}`);
+
         const prompt = `Analyze today's energy generation briefly (max 60-100 characters):
 - Total energy: ${todayEnergy} kWh
 - Average power: ${avgPower.toFixed(2)} W
@@ -88,7 +94,10 @@ Provide ONE concise insight about today's performance. Keep it under 100 charact
 - "Steady output throughout the day"
 - "Strong performance with ${maxPower.toFixed(1)}W peak"`;
 
+        this.logger.log('[AI] Calling AI service...');
         const aiResponse = await this.geminiAIService.processQuery(prompt);
+        
+        this.logger.log(`[AI] Response received: ${aiResponse ? `"${aiResponse}"` : 'null'}`);
         
         if (aiResponse) {
           // Trim to 150 characters max
@@ -96,12 +105,14 @@ Provide ONE concise insight about today's performance. Keep it under 100 charact
             ? aiResponse.substring(0, 147) + '...'
             : aiResponse;
           
-          this.logger.debug(`Generated AI insight: ${aiInsight}`);
+          this.logger.log(`[AI] ✅ Generated insight: "${aiInsight}"`);
         } else {
           aiInsight = undefined; // Fallback to "Analysis in progress..."
+          this.logger.warn('[AI] ⚠️  No response from AI service, will show "Analysis in progress..."');
         }
       } catch (error) {
-        this.logger.warn(`Failed to generate AI insight: ${error.message}`);
+        this.logger.error(`[AI] ❌ Failed to generate AI insight: ${error.message}`);
+        this.logger.error(error.stack);
         aiInsight = undefined;
       }
 
@@ -152,6 +163,9 @@ Provide ONE concise insight about today's performance. Keep it under 100 charact
       );
       this.logger.log(
         `  - activeSensors: ${activeSensors}`,
+      );
+      this.logger.log(
+        `  - aiInsight: ${metrics.aiInsight ? `"${metrics.aiInsight}"` : 'undefined'}`,
       );
 
       return {

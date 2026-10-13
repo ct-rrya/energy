@@ -186,15 +186,20 @@ describe('GeminiAIService', () => {
   });
 
   describe('No Fallback Scenarios', () => {
-    it('should NOT fallback on authentication errors', async () => {
+    it('should fallback to Groq even on authentication errors if Groq is available', async () => {
       const authError = new Error('Invalid API key');
       (authError as any).status = 401;
       mockGeminiModel.generateContent.mockRejectedValue(authError);
 
+      const groqResponse = 'Response from Groq after Gemini auth failure';
+      mockGroq.chat.completions.create.mockResolvedValue({
+        choices: [{ message: { content: groqResponse } }],
+      });
+
       const result = await service.processQuery('Test prompt');
 
-      expect(result).toBeNull();
-      expect(mockGroq.chat.completions.create).not.toHaveBeenCalled();
+      expect(result).toBe(groqResponse);
+      expect(mockGroq.chat.completions.create).toHaveBeenCalled();
     });
 
     it('should NOT fallback on malformed requests', async () => {
