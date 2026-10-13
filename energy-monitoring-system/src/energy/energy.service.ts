@@ -177,10 +177,13 @@ export class EnergyService {
         `  - Readings count: ${stats.count}`,
       );
       this.logger.log(
-        `  - Total energy (mWh): ${totalEnergyMWh}`,
+        `  - Total energy (raw sum): ${totalEnergyMWh}`,
       );
       this.logger.log(
-        `  - Estimated energy (kWh): ${estimatedEnergyKWh}`,
+        `  - If unit is mWh: ${totalEnergyMWh} mWh = ${estimatedEnergyKWh} kWh (÷1,000,000)`,
+      );
+      this.logger.log(
+        `  - If unit is Wh: ${totalEnergyMWh} Wh = ${totalEnergyMWh / 1000} kWh (÷1,000)`,
       );
       this.logger.log(
         `  - Avg power: ${stats.avgPower} W`,
@@ -337,12 +340,17 @@ export class EnergyService {
               $cond: {
                 if: {
                   $or: [
-                    { $eq: ['$previousStepCount', null] },
-                    { $lt: ['$stepCount', '$previousStepCount'] }, // Reset detected
+                    { $eq: ['$previousStepCount', null] },  // First reading: use its value directly
                   ],
                 },
-                then: 0,
-                else: { $subtract: ['$stepCount', '$previousStepCount'] },
+                then: '$stepCount',  // ✅ FIX: Include first reading's steps
+                else: {
+                  $cond: {
+                    if: { $lt: ['$stepCount', '$previousStepCount'] }, // Reset detected
+                    then: '$stepCount',  // After reset, current value is the increment
+                    else: { $subtract: ['$stepCount', '$previousStepCount'] }, // Normal delta
+                  },
+                },
               },
             },
           },
@@ -433,10 +441,14 @@ export class EnergyService {
         const currentSteps = reading.stepCount || 0;
 
         // Calculate step delta
-        if (
-          previousSteps !== undefined &&
-          currentSteps >= previousSteps
-        ) {
+        if (previousSteps === undefined) {
+          // First reading for this sensor: use its value directly
+          totalSteps += currentSteps;
+        } else if (currentSteps < previousSteps) {
+          // Reset detected: current value is the increment since reset
+          totalSteps += currentSteps;
+        } else {
+          // Normal case: delta between consecutive readings
           totalSteps += currentSteps - previousSteps;
         }
 
