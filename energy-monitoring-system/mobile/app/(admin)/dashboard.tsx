@@ -5,31 +5,89 @@
  * Only accessible to authenticated SYSTEM_ADMIN and SUPER_ADMIN users.
  * 
  * Phase 2: Authentication and session management implemented.
- * Phase 3 will add admin features (sensors, alerts, reports).
+ * Phase 3: Live energy dashboard integrated with admin user info.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useDashboardData, useRecentReading } from '../../src/hooks';
+import { HeroEnergyCard, MetricCard, ErrorCard } from '../../src/components/dashboard';
 
 export default function AdminDashboardScreen() {
   const { user, logout } = useAuth();
+  const dashboardData = useDashboardData();
+  const recentReadingData = useRecentReading();
+
+  const [refreshing, setRefreshing] = useState(false);
 
   if (!user) {
     return null; // AuthContext will handle redirect
   }
 
+  /**
+   * Handle pull-to-refresh
+   * Refreshes dashboard data only (user info comes from AuthContext)
+   */
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        dashboardData.refetch(),
+        recentReadingData.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dashboardData, recentReadingData]);
+
+  /**
+   * Combined retry function for error state
+   */
+  const handleRetry = useCallback(async () => {
+    await Promise.all([
+      dashboardData.refetch(),
+      recentReadingData.refetch(),
+    ]);
+  }, [dashboardData, recentReadingData]);
+
+  // Determine if dashboard has an error
+  const hasDashboardError = dashboardData.isError || recentReadingData.isError;
+
+  // Error message combining both error sources
+  const errorMessage = [
+    dashboardData.isError ? 'Failed to load dashboard metrics' : null,
+    recentReadingData.isError ? 'Failed to load recent readings' : null,
+  ]
+    .filter(Boolean)
+    .join('. ');
+
+  // Extract data
+  const metrics = dashboardData.data;
+  const reading = recentReadingData.reading;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#2FBF71"
+            colors={['#2FBF71']}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Administrator Dashboard</Text>
           <Text style={styles.subtitle}>Welcome, {user.name}</Text>
         </View>
 
-        {/* User Info Card */}
+        {/* User Info Card - Preserved from Phase 2 */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Your Account</Text>
           <View style={styles.infoRow}>
@@ -52,40 +110,116 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
 
-        {/* Coming Soon Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Phase 3 Features (Coming Soon)</Text>
-          <View style={styles.featureList}>
-            <Text style={styles.featureItem}>• Sensor management (CRUD operations)</Text>
-            <Text style={styles.featureItem}>• Real-time energy monitoring dashboard</Text>
-            <Text style={styles.featureItem}>• Alert configuration and management</Text>
-            <Text style={styles.featureItem}>• Report generation and export</Text>
-            <Text style={styles.featureItem}>• System diagnostics and health checks</Text>
-            <Text style={styles.featureItem}>• User account management</Text>
-            <Text style={styles.featureItem}>• Push notifications</Text>
-          </View>
+        {/* Live Energy Dashboard Section */}
+        <View style={styles.dashboardSection}>
+          <Text style={styles.sectionTitle}>Energy Monitoring</Text>
+
+          {/* Error State */}
+          {hasDashboardError && (
+            <ErrorCard message={errorMessage} onRetry={handleRetry} />
+          )}
+
+          {/* Dashboard Content */}
+          {!hasDashboardError && (
+            <>
+              {/* Hero Energy Card */}
+              <HeroEnergyCard
+                energyValue={metrics?.dailyEnergy ?? null}
+                aiInsight={metrics?.aiInsight}
+                isLoading={dashboardData.isLoading}
+                isError={dashboardData.isError}
+                onRetry={dashboardData.refetch}
+              />
+
+              {/* Last Updated Timestamp */}
+              {metrics?.lastReadingAt && (
+                <View style={styles.timestampContainer}>
+                  <Text style={styles.timestampText}>
+                    Updated {formatRelativeTime(metrics.lastReadingAt)}
+                  </Text>
+                </View>
+              )}
+
+              {/* Metric Cards - Voltage, Current, Power, Energy */}
+              <View style={styles.metricsGrid}>
+                <MetricCard
+                  label="Voltage"
+                  value={reading?.voltage ?? null}
+                  unit="V"
+                  precision={1}
+                  color="blue"
+                  isLoading={recentReadingData.isLoading}
+                />
+
+                <MetricCard
+                  label="Current"
+                  value={reading?.current ?? null}
+                  unit="A"
+                  precision={2}
+                  color="amber"
+                  isLoading={recentReadingData.isLoading}
+                />
+
+                <MetricCard
+                  label="Power"
+                  value={reading?.power ?? null}
+                  unit="W"
+                  precision={1}
+                  color="green"
+                  isLoading={recentReadingData.isLoading}
+                />
+
+                <MetricCard
+                  label="Energy (Latest)"
+                  value={reading?.energy ?? null}
+                  unit="kWh"
+                  precision={3}
+                  color="green"
+                  isLoading={recentReadingData.isLoading}
+                />
+              </View>
+            </>
+          )}
         </View>
 
-        {/* Logout Button */}
+        {/* Logout Button - Preserved from Phase 2 */}
         <Pressable style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </Pressable>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Phase 2: Authentication & Authorization Complete
-          </Text>
-          <Text style={styles.footerText}>
-            CLIENT-SIDE ROUTE GUARDS ARE FOR UX ONLY.
-          </Text>
-          <Text style={styles.footerText}>
-            Backend remains authority for authentication and authorization.
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+/**
+ * Format timestamp as relative time
+ * Simple implementation without external libraries
+ */
+function formatRelativeTime(timestamp: string): string {
+  try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    if (diffMinutes < 1) {
+      return 'just now';
+    } else if (diffMinutes === 1) {
+      return '1 minute ago';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} minutes ago`;
+    } else if (diffMinutes < 120) {
+      return '1 hour ago';
+    } else if (diffMinutes < 1440) {
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours} hours ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      return days === 1 ? '1 day ago' : `${days} days ago`;
+    }
+  } catch {
+    return 'Unknown';
+  }
 }
 
 const styles = StyleSheet.create({
@@ -95,10 +229,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  content: {
     padding: 16,
+    gap: 16,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
@@ -114,7 +251,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 12,
-    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -151,13 +287,26 @@ const styles = StyleSheet.create({
     color: '#2FBF71',
     fontWeight: '600',
   },
-  featureList: {
-    gap: 12,
+  dashboardSection: {
+    gap: 16,
   },
-  featureItem: {
-    fontSize: 15,
-    color: '#64748B',
-    lineHeight: 22,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0A2947',
+  },
+  timestampContainer: {
+    alignItems: 'center',
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  timestampText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  metricsGrid: {
+    gap: 16,
   },
   logoutButton: {
     backgroundColor: '#DC2626',
@@ -165,21 +314,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-    marginBottom: 24,
   },
   logoutButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 20,
-  },
-  footerText: {
-    color: '#94A3B8',
-    fontSize: 12,
-    textAlign: 'center',
   },
 });
