@@ -72,27 +72,61 @@ export class DashboardController {
       // Generate AI insight for today's energy data
       let aiInsight: string | undefined;
       try {
-        const todayEnergy = stats.todayStats.estimatedEnergyKWh;
-        const avgPower = stats.todayStats.avgPower;
-        const maxPower = stats.todayStats.maxPower;
-        const readingCount = stats.todayStats.count;
+        // Get RAW unrounded values from database for AI analysis
+        const rawStats = await this.energyService.getTodayRawStatistics();
+        
+        const todayEnergy = rawStats.totalEnergyMWh; // Raw mWh value
+        const avgPower = rawStats.avgPower; // Unrounded W
+        const maxPower = rawStats.maxPower; // Unrounded W
+        const readingCount = rawStats.count;
+        const totalSteps = detailedStats.totalSteps;
 
-        this.logger.log('[AI] Generating insight with the following data:');
-        this.logger.log(`  - Energy: ${todayEnergy} kWh`);
-        this.logger.log(`  - Avg Power: ${avgPower.toFixed(2)} W`);
-        this.logger.log(`  - Peak Power: ${maxPower.toFixed(2)} W`);
+        this.logger.log('[AI] Generating insight with RAW unrounded data:');
+        this.logger.log(`  - Energy: ${todayEnergy} mWh (${(todayEnergy / 1000000).toFixed(9)} kWh)`);
+        this.logger.log(`  - Avg Power: ${avgPower} W (unrounded)`);
+        this.logger.log(`  - Peak Power: ${maxPower} W (unrounded)`);
         this.logger.log(`  - Readings: ${readingCount}`);
+        this.logger.log(`  - Steps: ${totalSteps}`);
 
-        const prompt = `Analyze today's energy generation briefly (max 60-100 characters):
-- Total energy: ${todayEnergy} kWh
-- Average power: ${avgPower.toFixed(2)} W
-- Peak power: ${maxPower.toFixed(2)} W
-- Readings: ${readingCount}
+        // Determine status category for AI guidance
+        let statusGuidance: string;
+        if (readingCount === 0) {
+          statusGuidance = 'NO_READINGS';
+        } else if (todayEnergy === 0 && maxPower === 0) {
+          statusGuidance = 'ZERO_GENERATION';
+        } else if (todayEnergy > 0 && todayEnergy < 0.001) {
+          statusGuidance = 'MINIMAL_GENERATION'; // Less than 0.001 mWh
+        } else {
+          statusGuidance = 'NORMAL_GENERATION';
+        }
 
-Provide ONE concise insight about today's performance. Keep it under 100 characters. Examples:
-- "Peak generation at 2pm, 15% above average"
-- "Steady output throughout the day"
-- "Strong performance with ${maxPower.toFixed(1)}W peak"`;
+        this.logger.log(`[AI] Status category: ${statusGuidance}`);
+
+        // Build context-aware prompt with explicit units
+        const prompt = `You are analyzing a piezoelectric energy monitoring system. Here's today's data:
+
+STATUS: ${statusGuidance}
+- Total energy harvested: ${todayEnergy} milliwatt-hours (mWh)
+- Average power: ${avgPower} watts (W)
+- Peak power: ${maxPower} watts (W)  
+- Number of readings: ${readingCount}
+- Total footsteps detected: ${totalSteps}
+
+IMPORTANT RULES:
+1. If STATUS is NO_READINGS: Say "No sensor data recorded today"
+2. If STATUS is ZERO_GENERATION: Say "System active but no energy generated yet"
+3. If STATUS is MINIMAL_GENERATION: Acknowledge the tiny energy (use mW or μW if appropriate)
+4. If STATUS is NORMAL_GENERATION: Provide performance insight
+
+Provide ONE concise statement (60-100 characters) about today's performance.
+
+Examples for MINIMAL_GENERATION:
+- "Minimal activity: ${(avgPower * 1000).toFixed(2)}mW avg, ${totalSteps} steps detected"
+- "Light usage today: ${maxPower.toFixed(4)}W peak from ${totalSteps} steps"
+
+Examples for NORMAL_GENERATION:
+- "Strong performance: ${maxPower.toFixed(1)}W peak power"
+- "Steady generation throughout the day"`;
 
         this.logger.log('[AI] Calling AI service...');
         const aiResponse = await this.geminiAIService.processQuery(prompt);

@@ -277,6 +277,77 @@ export class EnergyService {
   }
 
   /**
+   * Get Today's Raw Statistics (UNROUNDED)
+   *
+   * Returns unrounded values for AI analysis to prevent zero-rounding issues.
+   * Used by DashboardController for AI prompt construction.
+   *
+   * Critical for tiny energy values where rounding would produce misleading zeros.
+   * Example: 0.009722 mWh would round to 0 kWh, misleading the AI.
+   */
+  async getTodayRawStatistics() {
+    const now = new Date();
+    const zonedNow = toZonedTime(now, this.timezone);
+    const todayStart = startOfDay(zonedNow);
+    const todayEnd = endOfDay(zonedNow);
+
+    try {
+      const result = await this.readingModel.aggregate([
+        {
+          $match: {
+            receivedAt: {
+              $gte: todayStart,
+              $lte: todayEnd,
+            },
+            source: 'hardware' as any,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalEnergy: { $sum: '$energy' }, // Raw mWh sum
+            avgPower: { $avg: '$power' }, // Unrounded W
+            maxPower: { $max: '$power' }, // Unrounded W
+            minPower: { $min: '$power' }, // Unrounded W
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      if (result.length === 0) {
+        return {
+          totalEnergyMWh: 0,
+          avgPower: 0,
+          maxPower: 0,
+          minPower: 0,
+          count: 0,
+        };
+      }
+
+      const stats = result[0];
+
+      return {
+        totalEnergyMWh: stats.totalEnergy || 0, // Keep as mWh (no conversion)
+        avgPower: stats.avgPower || 0, // Unrounded watts
+        maxPower: stats.maxPower || 0, // Unrounded watts  
+        minPower: stats.minPower || 0, // Unrounded watts
+        count: stats.count,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Raw statistics aggregation failed: ${error.message}`,
+      );
+      return {
+        totalEnergyMWh: 0,
+        avgPower: 0,
+        maxPower: 0,
+        minPower: 0,
+        count: 0,
+      };
+    }
+  }
+
+  /**
    * Get Today's Detailed Statistics
    * 
    * Returns comprehensive daily statistics including steps total, max voltage,
