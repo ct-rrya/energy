@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { toZonedTime } from 'date-fns-tz';
+import { startOfDay, endOfDay } from 'date-fns';
 import {
   EnergyReading,
   EnergyReadingDocument,
@@ -103,14 +104,13 @@ export class EnergyService {
    */
   async getTodayEnergyTotal() {
     const now = new Date();
+    
+    // Get current time in Manila timezone
     const zonedNow = toZonedTime(now, this.timezone);
     
-    // Set today's boundaries in Manila timezone
-    const todayStart = new Date(zonedNow);
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const todayEnd = new Date(zonedNow);
-    todayEnd.setHours(23, 59, 59, 999);
+    // Get start and end of day (this gives us correct UTC boundaries)
+    const todayStart = startOfDay(zonedNow);
+    const todayEnd = endOfDay(zonedNow);
 
     this.logger.debug(
       `Calculating today's energy total for ${todayStart.toISOString()} to ${todayEnd.toISOString()} in timezone ${this.timezone}`,
