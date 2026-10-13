@@ -167,6 +167,28 @@ export class EnergyService {
       const totalEnergyMWh = stats.totalEnergy || 0;
       const estimatedEnergyKWh = totalEnergyMWh / 1000000;
 
+      this.logger.log(
+        `[DIAGNOSTIC] Today's energy aggregation:`,
+      );
+      this.logger.log(
+        `  - Date boundaries: ${todayStart.toISOString()} to ${todayEnd.toISOString()}`,
+      );
+      this.logger.log(
+        `  - Readings count: ${stats.count}`,
+      );
+      this.logger.log(
+        `  - Total energy (mWh): ${totalEnergyMWh}`,
+      );
+      this.logger.log(
+        `  - Estimated energy (kWh): ${estimatedEnergyKWh}`,
+      );
+      this.logger.log(
+        `  - Avg power: ${stats.avgPower} W`,
+      );
+      this.logger.log(
+        `  - Max power: ${stats.maxPower} W`,
+      );
+
       return {
         date: todayStart.toISOString().split('T')[0],
         totalPower: Math.round(stats.totalPower * 100) / 100,

@@ -132,8 +132,26 @@ Provide ONE concise insight about today's performance. Keep it under 100 charact
         aiInsight,
       };
 
-      this.logger.debug(
-        `Dashboard metrics: ${metrics.totalReadings} total readings, ${activeSensors} active sensors, ${metrics.todayTotalSteps} steps today`,
+      this.logger.log(
+        `[DIAGNOSTIC] Dashboard metrics response:`,
+      );
+      this.logger.log(
+        `  - dailyEnergy: ${metrics.dailyEnergy} kWh`,
+      );
+      this.logger.log(
+        `  - todayTotalSteps: ${metrics.todayTotalSteps} steps`,
+      );
+      this.logger.log(
+        `  - todayAvgPower: ${metrics.todayAvgPower} W`,
+      );
+      this.logger.log(
+        `  - todayPeakPower: ${metrics.todayPeakPower} W`,
+      );
+      this.logger.log(
+        `  - totalReadings: ${metrics.totalReadings}`,
+      );
+      this.logger.log(
+        `  - activeSensors: ${activeSensors}`,
       );
 
       return {
