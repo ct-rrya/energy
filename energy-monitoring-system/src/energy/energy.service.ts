@@ -57,10 +57,6 @@ export class EnergyService {
    * Returns start and end dates for "today" in the configured timezone (Asia/Manila).
    * This ensures daily aggregations match user expectations regardless of server timezone.
    * 
-   * NOTE: When readings have historical timestamps (e.g., January 2025 while server time 
-   * is October 2026), this will return empty results. Use getMatchingDayBoundary() instead
-   * to match ANY year's same month/day.
-   * 
    * @param date - Optional specific date, defaults to today
    * @returns Object with todayStart and todayEnd in project timezone
    */
@@ -85,16 +81,7 @@ export class EnergyService {
    * Get Today's Energy Total
    *
    * Calculates total energy for current day across all sensors using delta calculation.
-   * 
-   * IMPORTANT: For systems with historical data (readings from past years), this uses
-   * MongoDB aggregation to match readings from today's date ACROSS ALL YEARS.
-   * 
-   * Example: If today is Oct 13, 2026, this will aggregate:
-   * - Oct 13, 2025 readings
-   * - Oct 13, 2024 readings
-   * - Oct 13, 2026 readings
-   * 
-   * This prevents returning 0 when readings exist but have historical timestamps.
+   * Uses server-side receivedAt timestamp instead of ESP32 timestamp for reliable daily aggregation.
    * 
    * Strategy:
    * - ESP32 sends CUMULATIVE energy that increases during each session
@@ -105,7 +92,7 @@ export class EnergyService {
    * @returns Today's energy statistics
    *
    * Performance:
-   * - Uses { timestamp: -1 } index
+   * - Uses { receivedAt: 1, sensorId: 1 } index
    * - Aggregation pipeline with $setWindowFields for delta calculation
    * - Handles multiple sensors independently
    *
@@ -117,37 +104,38 @@ export class EnergyService {
     const now = new Date();
     const zonedNow = toZonedTime(now, this.timezone);
     
-    // Extract today's month and day (ignore year to match historical readings)
-    const targetMonth = zonedNow.getMonth(); // 0-11
-    const targetDay = zonedNow.getDate(); // 1-31
+    // Set today's boundaries in Manila timezone
+    const todayStart = new Date(zonedNow);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date(zonedNow);
+    todayEnd.setHours(23, 59, 59, 999);
 
     this.logger.debug(
-      `Calculating today's energy total for month=${targetMonth + 1}, day=${targetDay} (any year) in timezone ${this.timezone}`,
+      `Calculating today's energy total for ${todayStart.toISOString()} to ${todayEnd.toISOString()} in timezone ${this.timezone}`,
     );
 
     // Try MongoDB 5.0+ $setWindowFields approach first
     try {
       const result = await this.readingModel.aggregate([
         {
-          // Match readings from today's month and day (any year)
+          // Match readings received today (use server timestamp, not ESP32 timestamp)
           $match: {
-            $expr: {
-              $and: [
-                { $eq: [{ $month: '$timestamp' }, targetMonth + 1] }, // MongoDB months are 1-12
-                { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
-              ],
+            receivedAt: {
+              $gte: todayStart,
+              $lte: todayEnd,
             },
             source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
           },
         },
         {
-          $sort: { sensorId: 1, timestamp: 1 }, // Sort by sensor, then time
+          $sort: { sensorId: 1, receivedAt: 1 }, // Sort by sensor, then server receive time
         },
         {
           // Calculate previous energy for each reading within same sensor
           $setWindowFields: {
             partitionBy: '$sensorId', // Separate window per sensor
-            sortBy: { timestamp: 1 },
+            sortBy: { receivedAt: 1 },
             output: {
               previousEnergy: {
                 $shift: {
@@ -189,8 +177,9 @@ export class EnergyService {
       ]);
 
       if (result.length === 0) {
+        this.logger.warn('No energy readings found for today');
         return {
-          date: `${zonedNow.getFullYear()}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`,
+          date: todayStart.toISOString().split('T')[0],
           totalPower: 0,
           count: 0,
           avgPower: 0,
@@ -207,7 +196,7 @@ export class EnergyService {
       const estimatedEnergyKWh = totalEnergyMWh / 1000000;
 
       return {
-        date: `${zonedNow.getFullYear()}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`,
+        date: todayStart.toISOString().split('T')[0],
         totalPower: Math.round(stats.totalPower * 100) / 100,
         count: stats.count,
         avgPower: Math.round(stats.avgPower * 100) / 100,
@@ -220,7 +209,7 @@ export class EnergyService {
       this.logger.warn(
         `$setWindowFields failed, using fallback calculation: ${error.message}`,
       );
-      return this.getTodayEnergyTotalFallback(targetMonth, targetDay);
+      return this.getTodayEnergyTotalFallback(todayStart, todayEnd);
     }
   }
 
@@ -230,31 +219,28 @@ export class EnergyService {
    * Calculates energy deltas in application code instead of aggregation pipeline.
    * Less efficient but compatible with older MongoDB versions.
    * 
-   * @param targetMonth - Month to match (0-11)
-   * @param targetDay - Day to match (1-31)
+   * @param todayStart - Start of today in Manila timezone
+   * @param todayEnd - End of today in Manila timezone
    */
   private async getTodayEnergyTotalFallback(
-    targetMonth: number,
-    targetDay: number,
+    todayStart: Date,
+    todayEnd: Date,
   ) {
-    const zonedNow = toZonedTime(new Date(), this.timezone);
-    
     const readings = await this.readingModel
       .find({
-        $expr: {
-          $and: [
-            { $eq: [{ $month: '$timestamp' }, targetMonth + 1] },
-            { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
-          ],
+        receivedAt: {
+          $gte: todayStart,
+          $lte: todayEnd,
         },
         source: 'hardware' as any,
       })
-      .sort({ sensorId: 1, timestamp: 1 })
+      .sort({ sensorId: 1, receivedAt: 1 })
       .exec();
 
     if (readings.length === 0) {
+      this.logger.warn('No energy readings found for today (fallback method)');
       return {
-        date: `${zonedNow.getFullYear()}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`,
+        date: todayStart.toISOString().split('T')[0],
         totalPower: 0,
         count: 0,
         avgPower: 0,
@@ -296,7 +282,7 @@ export class EnergyService {
     const estimatedEnergyKWh = totalEnergy / 1000000;
 
     return {
-      date: `${zonedNow.getFullYear()}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`,
+      date: todayStart.toISOString().split('T')[0],
       totalPower: Math.round(totalPower * 100) / 100,
       count: readings.length,
       avgPower: Math.round(avgPower * 100) / 100,
@@ -310,7 +296,8 @@ export class EnergyService {
    * Get Today's Detailed Statistics
    * 
    * Returns comprehensive daily statistics including steps total, max voltage,
-   * peak power, and peak current. Uses year-agnostic date matching like getTodayEnergyTotal().
+   * peak power, and peak current. Uses server-side receivedAt timestamp for accurate
+   * daily aggregation regardless of ESP32 clock accuracy.
    * 
    * Note: For cumulative counters (steps), we use delta calculation to avoid double-counting.
    * For instantaneous measurements (voltage, power, current), we use max/peak values.
@@ -321,32 +308,37 @@ export class EnergyService {
     const now = new Date();
     const zonedNow = toZonedTime(now, this.timezone);
     
-    // Extract today's month and day (ignore year to match historical readings)
-    const targetMonth = zonedNow.getMonth(); // 0-11
-    const targetDay = zonedNow.getDate(); // 1-31
+    // Set today's boundaries in Manila timezone
+    const todayStart = new Date(zonedNow);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date(zonedNow);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    this.logger.debug(
+      `Calculating today's detailed stats for ${todayStart.toISOString()} to ${todayEnd.toISOString()}`,
+    );
 
     try {
       const result = await this.readingModel.aggregate([
         {
-          // Match readings from today's month and day (any year)
+          // Match readings received today (use server timestamp, not ESP32 timestamp)
           $match: {
-            $expr: {
-              $and: [
-                { $eq: [{ $month: '$timestamp' }, targetMonth + 1] },
-                { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
-              ],
+            receivedAt: {
+              $gte: todayStart,
+              $lte: todayEnd,
             },
             source: 'hardware' as any,
           },
         },
         {
-          $sort: { sensorId: 1, timestamp: 1 },
+          $sort: { sensorId: 1, receivedAt: 1 },
         },
         {
           // Calculate previous stepCount for delta
           $setWindowFields: {
             partitionBy: '$sensorId',
-            sortBy: { timestamp: 1 },
+            sortBy: { receivedAt: 1 },
             output: {
               previousStepCount: {
                 $shift: {
@@ -422,15 +414,13 @@ export class EnergyService {
       // Fallback: simple query without window functions
       const readings = await this.readingModel
         .find({
-          $expr: {
-            $and: [
-              { $eq: [{ $month: '$timestamp' }, targetMonth + 1] },
-              { $eq: [{ $dayOfMonth: '$timestamp' }, targetDay] },
-            ],
+          receivedAt: {
+            $gte: todayStart,
+            $lte: todayEnd,
           },
           source: 'hardware' as any,
         })
-        .sort({ sensorId: 1, timestamp: 1 })
+        .sort({ sensorId: 1, receivedAt: 1 })
         .exec();
 
       if (readings.length === 0) {
