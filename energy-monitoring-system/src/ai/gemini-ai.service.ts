@@ -62,7 +62,7 @@ export class GeminiAIService {
   // Groq client
   private readonly groq: Groq;
   private readonly groqEnabled: boolean = false;
-  private readonly groqModel: string = 'llama-3.3-70b-versatile';
+  private readonly groqModel: string = 'openai/gpt-oss-120b';
 
   constructor(private configService: ConfigService) {
     this.logger.log('Initializing AI Service with Groq fallback...');
