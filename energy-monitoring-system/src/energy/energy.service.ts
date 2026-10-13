@@ -180,8 +180,9 @@ export class EnergyService {
 
       const stats = result[0];
 
-      // Use calculated energy deltas (already in mWh)
-      const estimatedEnergyKWh = stats.totalEnergy || 0;
+      // ESP32 sends energy in mWh, convert to kWh (1 kWh = 1,000,000 mWh)
+      const totalEnergyMWh = stats.totalEnergy || 0;
+      const estimatedEnergyKWh = totalEnergyMWh / 1000000;
 
       return {
         date: todayStart.toISOString().split('T')[0],
@@ -190,7 +191,7 @@ export class EnergyService {
         avgPower: Math.round(stats.avgPower * 100) / 100,
         maxPower: Math.round(stats.maxPower * 100) / 100,
         minPower: Math.round(stats.minPower * 100) / 100,
-        estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 100) / 100,
+        estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 1000) / 1000, // 3 decimals for kWh
       };
     } catch (error) {
       // Fallback for MongoDB < 5.0 or if $setWindowFields fails
@@ -262,6 +263,9 @@ export class EnergyService {
 
     const avgPower = totalPower / readings.length;
 
+    // ESP32 sends energy in mWh, convert to kWh (1 kWh = 1,000,000 mWh)
+    const estimatedEnergyKWh = totalEnergy / 1000000;
+
     return {
       date: todayStart.toISOString().split('T')[0],
       totalPower: Math.round(totalPower * 100) / 100,
@@ -269,7 +273,7 @@ export class EnergyService {
       avgPower: Math.round(avgPower * 100) / 100,
       maxPower: Math.round(maxPower * 100) / 100,
       minPower: Math.round((minPower === Infinity ? 0 : minPower) * 100) / 100,
-      estimatedEnergyKWh: Math.round(totalEnergy * 100) / 100,
+      estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 1000) / 1000, // 3 decimals for kWh
     };
   }
 
