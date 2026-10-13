@@ -1,6 +1,8 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
+import { toZonedTime } from 'date-fns-tz';
 import { EnergyService } from '../energy/energy.service';
 import { SensorsService } from '../sensors/sensors.service';
 import {
@@ -65,6 +67,7 @@ import {
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
+  private readonly timezone: string;
 
   // Environmental conversion factors (US EPA standards)
   // Note: Input energy is in mWh, so we need to convert to kWh for standard factors
@@ -84,12 +87,37 @@ export class AnalyticsService {
     @InjectModel(Sensor.name)
     private sensorModel: Model<SensorDocument>,
     private sensorsService: SensorsService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    // Get timezone from config, default to Asia/Manila
+    this.timezone =
+      this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
+    this.logger.log(`AnalyticsService initialized with timezone: ${this.timezone}`);
+  }
+
+  /**
+   * Get Monday of Week
+   *
+   * Returns the Monday of the week containing the given date (in project timezone).
+   *
+   * @param date - Any date in the week
+   * @returns Monday of that week
+   */
+  private getMondayOfWeek(date: Date): Date {
+    // Convert to project timezone first
+    const zonedDate = toZonedTime(date, this.timezone);
+    const day = zonedDate.getDay();
+    const diff = zonedDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    const monday = new Date(zonedDate);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
 
   /**
    * Get Daily Energy Summary
    *
-   * Calculates energy summary for a specific date.
+   * Calculates energy summary for a specific date (in project timezone).
    *
    * @param date - Date string (YYYY-MM-DD) or Date object
    * @returns Daily energy summary
@@ -100,9 +128,12 @@ export class AnalyticsService {
    */
   async getDailySummary(date: Date | string): Promise<DailyEnergySummaryDto> {
     const targetDate = typeof date === 'string' ? new Date(date) : date;
-    const dateStr = targetDate.toISOString().split('T')[0];
+    
+    // Convert to project timezone
+    const zonedDate = toZonedTime(targetDate, this.timezone);
+    const dateStr = zonedDate.toISOString().split('T')[0];
 
-    this.logger.debug(`Getting daily summary for ${dateStr}`);
+    this.logger.debug(`Getting daily summary for ${dateStr} (${this.timezone})`);
 
     // Query energy for the date
     const energy = await this.energyService.getEnergyRange(dateStr, dateStr);
@@ -117,10 +148,11 @@ export class AnalyticsService {
       'Friday',
       'Saturday',
     ];
-    const dayOfWeek = dayNames[targetDate.getDay()];
+    const dayOfWeek = dayNames[zonedDate.getDay()];
 
-    // Check if today
-    const today = new Date().toISOString().split('T')[0];
+    // Check if today (in project timezone)
+    const nowZoned = toZonedTime(new Date(), this.timezone);
+    const today = nowZoned.toISOString().split('T')[0];
     const isToday = dateStr === today;
 
     return {
@@ -529,17 +561,7 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Helper: Get Monday of Week
-   *
-   * Returns Monday of the week for a given date.
-   */
-  private getMondayOfWeek(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    return new Date(d.setDate(diff));
-  }
+
 
   /**
    * Helper: Get Week Number

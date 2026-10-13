@@ -226,7 +226,7 @@ export class IotService {
    *
    * Validation Rules:
    * 1. Timestamp not in future (vs server time)
-   * 2. Timestamp not too old (optional, not implemented)
+   * 2. Timestamp not suspiciously old (log warning)
    * 3. Power calculation check (P = V × I, optional)
    * 4. Anomaly detection (optional, future)
    *
@@ -240,7 +240,7 @@ export class IotService {
    * - DTO: "Is this a number?" ✓
    * - DTO: "Is it in range 0-50?" ✓
    * - Service: "Is timestamp in the future?" ✓
-   * - Service: "Is this an anomaly?" (future)
+   * - Service: "Is timestamp suspiciously old?" ✓ (warning only)
    */
   private validateReadingData(readingDto: CreateReadingDto): void {
     // Validate timestamp is not in the future
@@ -251,11 +251,21 @@ export class IotService {
       throw new BadRequestException('Timestamp cannot be in the future');
     }
 
-    // Optional: Validate timestamp is not too old (e.g., > 24 hours)
-    // const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    // if (readingTime < oneDayAgo) {
-    //   throw new BadRequestException('Timestamp is too old');
-    // }
+    // Detect suspiciously old timestamps (more than 1 year old)
+    // This may indicate NTP sync failure on ESP32
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+
+    if (readingTime < oneYearAgo) {
+      // Log warning but don't reject (could be legitimate historical data)
+      this.logger.warn(
+        `⚠️ Suspicious timestamp detected: ${readingDto.timestamp} is more than 1 year old. ` +
+          `This may indicate NTP sync failure on ESP32. ` +
+          `Sensor: ${readingDto.source || 'unknown'}, ` +
+          `Power: ${readingDto.power}W, ` +
+          `Energy: ${readingDto.energy || 0} mWh`,
+      );
+    }
 
     // Optional: Validate power calculation (P = V × I)
     // const calculatedPower = readingDto.voltage * readingDto.current;

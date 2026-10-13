@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
+import { toZonedTime } from 'date-fns-tz';
 import {
   EnergyReading,
   EnergyReadingDocument,
@@ -35,66 +37,192 @@ import {
  */
 @Injectable()
 export class EnergyService {
+  private readonly logger = new Logger(EnergyService.name);
+  private readonly timezone: string;
+
   constructor(
     @InjectModel(EnergyReading.name)
     private readingModel: Model<EnergyReadingDocument>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    // Get timezone from config, default to Asia/Manila
+    this.timezone =
+      this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
+    this.logger.log(`EnergyService initialized with timezone: ${this.timezone}`);
+  }
+
+  /**
+   * Get Daily Boundary Dates in Project Timezone
+   * 
+   * Returns start and end dates for "today" in the configured timezone (Asia/Manila).
+   * This ensures daily aggregations match user expectations regardless of server timezone.
+   * 
+   * @param date - Optional specific date, defaults to today
+   * @returns Object with todayStart and todayEnd in project timezone
+   */
+  private getDailyBoundary(date?: Date): { todayStart: Date; todayEnd: Date } {
+    const targetDate = date || new Date();
+    
+    // Convert to project timezone
+    const zonedDate = toZonedTime(targetDate, this.timezone);
+    
+    // Set to midnight (start of day)
+    const todayStart = new Date(zonedDate);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    // Set to end of day
+    const todayEnd = new Date(zonedDate);
+    todayEnd.setHours(23, 59, 59, 999);
+    
+    return { todayStart, todayEnd };
+  }
 
   /**
    * Get Today's Energy Total
    *
-   * Calculates total energy for current day across all sensors.
+   * Calculates total energy for current day across all sensors using delta calculation.
+   * 
+   * Strategy:
+   * - ESP32 sends CUMULATIVE energy that increases during each session
+   * - When ESP32 reboots, cumulative counter resets to 0
+   * - We calculate deltas between consecutive readings to avoid double-counting
+   * - Resets are detected when energy decreases between readings
    *
    * @returns Today's energy statistics
    *
-   * Calculation:
-   * - Filters readings from 00:00:00 to 23:59:59 today
-   * - Sums power (W) to estimate energy
-   * - Counts total readings
-   * - Calculates average power
-   *
    * Performance:
    * - Uses { timestamp: -1 } index
-   * - Aggregation pipeline on filtered data
-   * - Result cached for 5 minutes (future)
+   * - Aggregation pipeline with $setWindowFields for delta calculation
+   * - Handles multiple sensors independently
    *
-   * Energy Calculation Note:
-   * - Simplified: Sum of power readings
-   * - Accurate: Integrate power over time
-   * - For now: Sum power, divide by readings to get average
-   * - Future: Calculate kWh based on time intervals
+   * Energy Calculation:
+   * - Correct: Sum of energy deltas (increments only)
+   * - Not: Sum of cumulative values (would double-count)
    */
   async getTodayEnergyTotal() {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const { todayStart, todayEnd } = this.getDailyBoundary();
 
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    this.logger.debug(
+      `Calculating today's energy total (${this.timezone}): ${todayStart.toISOString()} to ${todayEnd.toISOString()}`,
+    );
 
-    const result = await this.readingModel.aggregate([
-      {
-        $match: {
-          timestamp: {
-            $gte: todayStart,
-            $lte: todayEnd,
+    // Try MongoDB 5.0+ $setWindowFields approach first
+    try {
+      const result = await this.readingModel.aggregate([
+        {
+          $match: {
+            timestamp: {
+              $gte: todayStart,
+              $lte: todayEnd,
+            },
+            source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
           },
-          source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
         },
-      },
-      {
-        $group: {
-          _id: null,
-          totalPower: { $sum: '$power' }, // Sum of all power readings (W)
-          totalEnergy: { $sum: '$energy' }, // Sum of actual energy values (mWh) from ESP32
-          count: { $sum: 1 }, // Number of readings
-          avgPower: { $avg: '$power' }, // Average power (W)
-          maxPower: { $max: '$power' }, // Peak power (W)
-          minPower: { $min: '$power' }, // Minimum power (W)
+        {
+          $sort: { sensorId: 1, timestamp: 1 }, // Sort by sensor, then time
         },
-      },
-    ]);
+        {
+          // Calculate previous energy for each reading within same sensor
+          $setWindowFields: {
+            partitionBy: '$sensorId', // Separate window per sensor
+            sortBy: { timestamp: 1 },
+            output: {
+              previousEnergy: {
+                $shift: {
+                  output: '$energy',
+                  by: -1, // Previous reading
+                },
+              },
+            },
+          },
+        },
+        {
+          // Calculate delta, handling resets
+          $addFields: {
+            energyDelta: {
+              $cond: {
+                if: {
+                  $or: [
+                    { $eq: ['$previousEnergy', null] }, // First reading for sensor
+                    { $lt: ['$energy', '$previousEnergy'] }, // Reset detected
+                  ],
+                },
+                then: 0, // Skip this reading's contribution
+                else: { $subtract: ['$energy', '$previousEnergy'] }, // Normal delta
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalPower: { $sum: '$power' }, // Sum of all power readings (W)
+            totalEnergy: { $sum: '$energyDelta' }, // Sum of energy deltas (mWh)
+            count: { $sum: 1 }, // Number of readings
+            avgPower: { $avg: '$power' }, // Average power (W)
+            maxPower: { $max: '$power' }, // Peak power (W)
+            minPower: { $min: '$power' }, // Minimum power (W)
+          },
+        },
+      ]);
 
-    if (result.length === 0) {
+      if (result.length === 0) {
+        return {
+          date: todayStart.toISOString().split('T')[0],
+          totalPower: 0,
+          count: 0,
+          avgPower: 0,
+          maxPower: 0,
+          minPower: 0,
+          estimatedEnergyKWh: 0,
+        };
+      }
+
+      const stats = result[0];
+
+      // Use calculated energy deltas (already in mWh)
+      const estimatedEnergyKWh = stats.totalEnergy || 0;
+
+      return {
+        date: todayStart.toISOString().split('T')[0],
+        totalPower: Math.round(stats.totalPower * 100) / 100,
+        count: stats.count,
+        avgPower: Math.round(stats.avgPower * 100) / 100,
+        maxPower: Math.round(stats.maxPower * 100) / 100,
+        minPower: Math.round(stats.minPower * 100) / 100,
+        estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 100) / 100,
+      };
+    } catch (error) {
+      // Fallback for MongoDB < 5.0 or if $setWindowFields fails
+      this.logger.warn(
+        `$setWindowFields failed, using fallback calculation: ${error.message}`,
+      );
+      return this.getTodayEnergyTotalFallback(todayStart, todayEnd);
+    }
+  }
+
+  /**
+   * Fallback Energy Calculation (for MongoDB < 5.0)
+   * 
+   * Calculates energy deltas in application code instead of aggregation pipeline.
+   * Less efficient but compatible with older MongoDB versions.
+   */
+  private async getTodayEnergyTotalFallback(
+    todayStart: Date,
+    todayEnd: Date,
+  ) {
+    const readings = await this.readingModel
+      .find({
+        timestamp: {
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
+        source: 'hardware' as any,
+      })
+      .sort({ sensorId: 1, timestamp: 1 })
+      .exec();
+
+    if (readings.length === 0) {
       return {
         date: todayStart.toISOString().split('T')[0],
         totalPower: 0,
@@ -106,19 +234,42 @@ export class EnergyService {
       };
     }
 
-    const stats = result[0];
+    // Calculate deltas in memory
+    let totalEnergy = 0;
+    let totalPower = 0;
+    let maxPower = 0;
+    let minPower = Infinity;
+    const sensorPrevious = new Map<string, number>();
 
-    // Use actual cumulative energy from ESP32 readings (mWh)
-    const estimatedEnergyKWh = stats.totalEnergy || 0;
+    for (const reading of readings) {
+      const sensorIdStr = reading.sensorId.toString();
+      const previousEnergy = sensorPrevious.get(sensorIdStr);
+
+      // Calculate delta if not first reading and no reset detected
+      if (
+        previousEnergy !== undefined &&
+        reading.energy >= previousEnergy
+      ) {
+        totalEnergy += reading.energy - previousEnergy;
+      }
+
+      // Update tracking
+      sensorPrevious.set(sensorIdStr, reading.energy);
+      totalPower += reading.power;
+      maxPower = Math.max(maxPower, reading.power);
+      minPower = Math.min(minPower, reading.power);
+    }
+
+    const avgPower = totalPower / readings.length;
 
     return {
       date: todayStart.toISOString().split('T')[0],
-      totalPower: Math.round(stats.totalPower * 100) / 100,
-      count: stats.count,
-      avgPower: Math.round(stats.avgPower * 100) / 100,
-      maxPower: Math.round(stats.maxPower * 100) / 100,
-      minPower: Math.round(stats.minPower * 100) / 100,
-      estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 100) / 100,
+      totalPower: Math.round(totalPower * 100) / 100,
+      count: readings.length,
+      avgPower: Math.round(avgPower * 100) / 100,
+      maxPower: Math.round(maxPower * 100) / 100,
+      minPower: Math.round((minPower === Infinity ? 0 : minPower) * 100) / 100,
+      estimatedEnergyKWh: Math.round(totalEnergy * 100) / 100,
     };
   }
 
@@ -136,11 +287,7 @@ export class EnergyService {
    * - Small result set (one sensor, one day)
    */
   async getTodayEnergySensor(sensorId: string) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const { todayStart, todayEnd } = this.getDailyBoundary();
 
     const result = await this.readingModel.aggregate([
       {

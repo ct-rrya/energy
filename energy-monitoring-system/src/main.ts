@@ -73,8 +73,12 @@ async function bootstrap() {
     allowedOrigins.push(productionUrl);
   }
 
+  // In development, allow all origins for mobile app testing
+  // In production, restrict to specific domains
+  const isDevelopment = configService.get<string>('app.nodeEnv') === 'development';
+  
   app.enableCors({
-    origin: allowedOrigins.filter(Boolean),
+    origin: isDevelopment ? true : allowedOrigins.filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ All HTTP methods
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization'], // ✅ Include Authorization
     credentials: true, // ✅ Enable credentials
