@@ -6,7 +6,6 @@ import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { DashboardHeader } from '../components/DashboardHeader';
-import { HeroEnergyCard } from '../components/HeroEnergyCard';
 import { MetricCard } from '../components/MetricCard';
 import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
 import { validateSensorData } from '../utils/validateSensorData';
@@ -52,10 +51,7 @@ function DashboardPageContent() {
 
   // Fetch dashboard data with error and loading states (Requirements 16.1-16.3, 17.1-17.5)
   const { 
-    data: metrics, 
-    isLoading: metricsLoading, 
-    isError: metricsError,
-    refetch: refetchMetrics,
+    data: metrics,
   } = useDashboardMetrics();
   
   const { 
@@ -121,9 +117,6 @@ function DashboardPageContent() {
     return 'unknown';
   };
 
-  // Show loading state when initial data is loading (Requirement 17.3)
-  const isInitialLoading = metricsLoading && !lastGoodMetrics;
-
   return (
     <div 
       className="min-h-screen transition-colors duration-300"
@@ -150,129 +143,102 @@ function DashboardPageContent() {
           isWebSocketConnected={isWebSocketConnected}
         />
 
-        {/* Hero Layout: Hero Card (left) + Metrics Column (right) */}
-        {/* Requirements 1.3-1.7, 13.1-13.6, 14.1-14.6 */}
+        {/* Main Metrics Grid - Power as hero, then Steps, Voltage, Current */}
         
         {/* Global responsive layout styles */}
         <style>{`
-          /* Mobile: Stacked layout (default) - Requirements 15.1-15.6 */
-          /* Requirement 15.1: Stack all components vertically */
-          /* Requirement 15.4: Apply 16px vertical spacing between all components */
-          .dashboard-hero-layout {
+          /* Mobile: Stacked layout (default) */
+          .dashboard-metrics-grid {
             display: flex;
             flex-direction: column;
-            gap: 16px; /* Requirement 15.4: 16px vertical gap */
+            gap: 16px;
           }
           
-          /* Requirement 15.3: Render hero card at full width */
-          .dashboard-hero-section {
+          .metric-hero-power {
             width: 100%;
           }
           
-          /* Requirement 15.2: Display metrics in order: Voltage, Power, Current, Steps */
-          /* Requirement 15.3: Render each metric card at full width */
-          /* Requirement 15.4: Apply 16px vertical spacing between components */
-          .dashboard-metrics-section {
+          .dashboard-secondary-metrics {
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 16px; /* Requirement 15.4: 16px vertical gap */
+            gap: 16px;
           }
           
-          /* Tablet: Hero full width above, metrics in 2x2 grid below */
-          /* Requirements 14.1-14.6: 768px - 1023px breakpoint */
+          /* Tablet: Power hero above, 3 metrics in row below */
           @media (min-width: 768px) and (max-width: 1023px) {
-            .dashboard-hero-layout {
+            .dashboard-metrics-grid {
               display: flex;
               flex-direction: column;
-              gap: 24px; /* Requirement 14.1: Hero above, metrics below */
+              gap: 24px;
             }
             
-            .dashboard-hero-section {
-              width: 100%; /* Requirement 14.1: Hero full width */
-            }
-            
-            .dashboard-metrics-section {
+            .metric-hero-power {
               width: 100%;
+            }
+            
+            .dashboard-secondary-metrics {
               display: grid;
-              grid-template-columns: repeat(2, 1fr); /* Requirement 14.2: 2x2 grid */
-              grid-template-rows: repeat(2, 1fr);
-              gap: 16px; /* Requirement 14.5: 16px grid gap */
-            }
-            
-            /* Requirement 14.3: Voltage in position 1 (row 1, col 1) */
-            .metric-voltage {
-              grid-row: 1;
-              grid-column: 1;
-            }
-            
-            /* Requirement 14.3: Power in position 2 (row 1, col 2) */
-            .metric-power {
-              grid-row: 1;
-              grid-column: 2;
-            }
-            
-            /* Requirement 14.4: Current in position 3 (row 2, col 1) */
-            .metric-current {
-              grid-row: 2;
-              grid-column: 1;
-            }
-            
-            /* Requirement 14.4: Steps in position 4 (row 2, col 2) */
-            .metric-steps {
-              grid-row: 2;
-              grid-column: 2;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 16px;
             }
           }
           
-          /* Desktop: Side-by-side layout */
-          /* Requirements 13.1-13.6: 1024px and above */
+          /* Desktop: Power hero (60%) left, 3 metrics stacked (40%) right */
           @media (min-width: 1024px) {
-            .dashboard-hero-layout {
+            .dashboard-metrics-grid {
               display: flex;
               flex-direction: row;
-              gap: 24px; /* Requirement 1.7: 24px horizontal spacing */
+              gap: 24px;
             }
             
-            .dashboard-hero-section {
-              width: 62%; /* Requirement 1.3: 60-65% width */
-              flex-basis: 62%;
+            .metric-hero-power {
+              width: 60%;
+              flex-basis: 60%;
               flex-grow: 0;
               flex-shrink: 1;
             }
             
-            .dashboard-metrics-section {
-              width: 38%; /* Requirement 1.4-1.5: 35-40% width */
-              flex-basis: 38%;
+            .dashboard-secondary-metrics {
+              width: 40%;
+              flex-basis: 40%;
               flex-grow: 0;
               flex-shrink: 1;
               display: flex;
               flex-direction: column;
-              gap: 16px; /* Requirement 7.3: 16px vertical spacing */
+              gap: 16px;
             }
           }
         `}</style>
         
-        <div className="dashboard-hero-layout">
+        <div className="dashboard-metrics-grid">
           
-          {/* Hero Energy Card - Full width on mobile/tablet, 60-65% on desktop */}
-          <div className="dashboard-hero-section">
-            <HeroEnergyCard
-              energyValue={displayMetrics?.dailyEnergy}
-              previousDayEnergy={undefined}
-              trendData={[]}
-              aiInsight={displayMetrics?.aiInsight}
-              isLoading={isInitialLoading}
-              isError={metricsError}
-              onRetry={refetchMetrics}
+          {/* Hero Power Card - Prominent display */}
+          <div className="metric-hero-power">
+            <MetricCard
+              label="Power Output"
+              value={displayReading?.power}
+              unit="mW"
+              precision={4}
+              color="amber"
             />
           </div>
 
-          {/* Metrics Section - Stacked on mobile, 2x2 grid on tablet, column on desktop */}
-          <div className="dashboard-metrics-section">
+          {/* Secondary Metrics - Steps, Voltage, Current */}
+          <div className="dashboard-secondary-metrics">
             
-            {/* Voltage Metric Card (Requirements 8.1-8.9) */}
-            {/* Requirement 14.3: Row 1, Column 1 on tablet */}
+            {/* Step Count */}
+            <div className="metric-steps">
+              <MetricCard
+                label="Steps Today"
+                value={displayMetrics?.todayTotalSteps}
+                unit=""
+                precision={0}
+                color="accent"
+              />
+            </div>
+
+            {/* Voltage */}
             <div className="metric-voltage">
               <MetricCard
                 label="Voltage"
@@ -283,20 +249,7 @@ function DashboardPageContent() {
               />
             </div>
 
-            {/* Power Metric Card (Requirements 9.1-9.9) */}
-            {/* Requirement 14.3: Row 1, Column 2 on tablet */}
-            <div className="metric-power">
-              <MetricCard
-                label="Power"
-                value={displayReading?.power}
-                unit="W"
-                precision={4}
-                color="amber"
-              />
-            </div>
-
-            {/* Current Metric Card (Requirements 10.1-10.9) */}
-            {/* Requirement 14.4: Row 2, Column 1 on tablet */}
+            {/* Current */}
             <div className="metric-current">
               <MetricCard
                 label="Current"
@@ -304,20 +257,6 @@ function DashboardPageContent() {
                 unit="A"
                 precision={4}
                 color="blue"
-              />
-            </div>
-
-            {/* Step Count Metric Card (Requirements 11.1-11.10) */}
-            {/* Requirement 14.4: Row 2, Column 2 on tablet */}
-            {/* NOW USES DAILY TOTAL FROM METRICS API INSTEAD OF LATEST READING */}
-            <div className="metric-steps">
-              <MetricCard
-                label="Steps Today"
-                value={displayMetrics?.todayTotalSteps}
-                unit=""
-                precision={0}
-                color="accent"
-                
               />
             </div>
 
