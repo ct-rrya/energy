@@ -317,10 +317,10 @@ export class EnergyService {
       if (result.length === 0) {
         return {
           totalEnergyMWh: 0,
-          avgPower: 0,
-          maxPower: 0,
-          minPower: 0,
-          count: 0,
+          avgPowerW: 0,
+          peakPowerW: 0,
+          minPowerW: 0,
+          readingCount: 0,
         };
       }
 
@@ -328,10 +328,10 @@ export class EnergyService {
 
       return {
         totalEnergyMWh: stats.totalEnergy || 0, // Keep as mWh (no conversion)
-        avgPower: stats.avgPower || 0, // Unrounded watts
-        maxPower: stats.maxPower || 0, // Unrounded watts  
-        minPower: stats.minPower || 0, // Unrounded watts
-        count: stats.count,
+        avgPowerW: stats.avgPower || 0, // Unrounded watts
+        peakPowerW: stats.maxPower || 0, // Unrounded watts  
+        minPowerW: stats.minPower || 0, // Unrounded watts
+        readingCount: stats.count,
       };
     } catch (error) {
       this.logger.warn(
@@ -339,10 +339,10 @@ export class EnergyService {
       );
       return {
         totalEnergyMWh: 0,
-        avgPower: 0,
-        maxPower: 0,
-        minPower: 0,
-        count: 0,
+        avgPowerW: 0,
+        peakPowerW: 0,
+        minPowerW: 0,
+        readingCount: 0,
       };
     }
   }

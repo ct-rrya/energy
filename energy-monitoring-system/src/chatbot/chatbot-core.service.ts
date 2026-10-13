@@ -370,6 +370,7 @@ export class ChatbotCoreService {
     if (
       lowerMessage.includes('latest') ||
       lowerMessage.includes('current') ||
+      lowerMessage.includes('status') ||
       lowerMessage.includes('now') ||
       lowerMessage.includes('right now')
     ) {
@@ -457,6 +458,20 @@ export class ChatbotCoreService {
 
         // Get today's raw statistics (unrounded for accuracy)
         context.todayStats = await this.energyService.getTodayRawStatistics();
+        
+        // Log what we retrieved for debugging
+        this.logger.debug(`Data Context - Latest Reading: ${context.latestReading ? 'Found' : 'None'}`);
+        if (context.latestReading) {
+          this.logger.debug(`  Power: ${context.latestReading.powerW || context.latestReading.power || 0}W`);
+          this.logger.debug(`  Voltage: ${context.latestReading.voltageV || context.latestReading.voltage || 0}V`);
+          this.logger.debug(`  Steps: ${context.latestReading.stepCount || 0}`);
+          this.logger.debug(`  Timestamp: ${context.latestReading.timestamp}`);
+        }
+        this.logger.debug(`Data Context - Today Stats:`);
+        this.logger.debug(`  Energy: ${context.todayStats?.totalEnergyMWh || 0} mWh`);
+        this.logger.debug(`  Avg Power: ${context.todayStats?.avgPowerW || 0} W`);
+        this.logger.debug(`  Peak Power: ${context.todayStats?.peakPowerW || 0} W`);
+        this.logger.debug(`  Reading Count: ${context.todayStats?.readingCount || 0}`);
       }
 
       // For historical queries, get detailed stats
@@ -486,15 +501,28 @@ export class ChatbotCoreService {
       const ageSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
       const ageMinutes = Math.floor(ageSeconds / 60);
       
+      // Extract power value (try both field names for compatibility)
+      const powerW = reading.powerW ?? reading.power ?? 0;
+      const voltageV = reading.voltageV ?? reading.voltage ?? 0;
+      const currentA = reading.currentA ?? reading.current ?? 0;
+      const steps = reading.stepCount ?? 0;
+      
       prompt += `**Latest EcoStep Reading:**\n`;
-      prompt += `- Power: ${reading.powerW?.toFixed(6) || '0.000000'} W (${((reading.powerW || 0) * 1000).toFixed(3)} mW)\n`;
-      prompt += `- Voltage: ${reading.voltageV?.toFixed(3) || '0.000'} V\n`;
-      prompt += `- Current: ${reading.currentA?.toFixed(6) || '0.000000'} A (${((reading.currentA || 0) * 1000).toFixed(3)} mA)\n`;
-      prompt += `- Timestamp: ${timestamp.toISOString()} (${ageMinutes < 1 ? 'just now' : `${ageMinutes} minutes ago`})\n`;
+      prompt += `- Power: ${powerW.toFixed(6)} W (${(powerW * 1000).toFixed(3)} mW)\n`;
+      prompt += `- Voltage: ${voltageV.toFixed(3)} V\n`;
+      prompt += `- Current: ${currentA.toFixed(6)} A (${(currentA * 1000).toFixed(3)} mA)\n`;
+      prompt += `- Steps in this reading: ${steps}\n`;
+      prompt += `- Timestamp: ${timestamp.toISOString()} (${ageMinutes < 1 ? 'just now' : ageMinutes < 60 ? `${ageMinutes} minutes ago` : `${Math.floor(ageMinutes/60)} hours ago`})\n`;
       
       if (reading.sensorId && typeof reading.sensorId === 'object') {
         const sensor = reading.sensorId as any;
         prompt += `- Sensor: ${sensor.name || 'Unknown'} at ${sensor.location || 'Unknown location'}\n`;
+      }
+      
+      // Add data freshness assessment
+      const isStale = ageMinutes > 30;
+      if (isStale) {
+        prompt += `- **Note:** This reading is ${Math.floor(ageMinutes/60)} hours old and may not reflect current conditions\n`;
       }
       prompt += `\n`;
     } else {
@@ -513,11 +541,38 @@ export class ChatbotCoreService {
       
       const totalEnergy = stats.totalEnergyMWh || 0;
       const readingCount = stats.readingCount || 0;
-      const dataStatus = readingCount === 0 ? 'NO_READINGS' : 
-                        totalEnergy === 0 ? 'ZERO_GENERATION' : 
-                        totalEnergy < 0.001 ? 'MINIMAL_GENERATION' : 
-                        'NORMAL_GENERATION';
+      
+      // Determine data status with context from latest reading
+      let dataStatus: string;
+      if (readingCount === 0) {
+        // Check if we have recent readings from yesterday
+        if (dataContext.latestReading) {
+          const reading = dataContext.latestReading;
+          const timestamp = new Date(reading.timestamp);
+          const now = new Date();
+          const ageHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
+          
+          if (ageHours < 24) {
+            dataStatus = 'NO_READINGS_TODAY_BUT_RECENT_DATA';
+          } else {
+            dataStatus = 'NO_READINGS';
+          }
+        } else {
+          dataStatus = 'NO_READINGS';
+        }
+      } else if (totalEnergy === 0) {
+        dataStatus = 'ZERO_GENERATION';
+      } else if (totalEnergy < 0.001) {
+        dataStatus = 'MINIMAL_GENERATION';
+      } else {
+        dataStatus = 'NORMAL_GENERATION';
+      }
+      
       prompt += `- Data Status: ${dataStatus}\n`;
+      
+      if (dataStatus === 'NO_READINGS_TODAY_BUT_RECENT_DATA') {
+        prompt += `- **Important:** Today's stats are zero because it's a new day and no readings have been received yet today. However, the system was active recently (see latest reading above from yesterday).\n`;
+      }
       prompt += `\n`;
     }
 

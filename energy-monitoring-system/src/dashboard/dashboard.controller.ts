@@ -76,9 +76,9 @@ export class DashboardController {
         const rawStats = await this.energyService.getTodayRawStatistics();
         
         const todayEnergy = rawStats.totalEnergyMWh; // Raw mWh value
-        const avgPower = rawStats.avgPower; // Unrounded W
-        const maxPower = rawStats.maxPower; // Unrounded W
-        const readingCount = rawStats.count;
+        const avgPower = rawStats.avgPowerW; // Unrounded W
+        const maxPower = rawStats.peakPowerW; // Unrounded W
+        const readingCount = rawStats.readingCount;
         const totalSteps = detailedStats.totalSteps;
 
         this.logger.log('[AI] Generating insight with RAW unrounded data:');
