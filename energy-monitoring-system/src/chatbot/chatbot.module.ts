@@ -1,19 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ChatbotCoreService } from './chatbot-core.service';
-import { ChatbotController } from './chatbot.controller';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { EnergyModule } from '../energy/energy.module';
+import { SubscribersModule } from '../subscribers/subscribers.module';
 import { AiModule } from '../ai/ai.module';
 
 /**
  * ChatbotModule
  *
- * Provides shared chatbot core logic for all channels (Web, Mobile)
+ * Provides shared chatbot core logic for all channels (Messenger, Web)
  *
  * Architecture:
- * - Imports service modules (Analytics, Energy)
- * - Imports AiModule for Gemini/Groq AI with automatic fallback
- * - Exports ChatbotCoreService for use by controllers
+ * - Imports service modules (Analytics, Energy, Subscribers)
+ * - Uses AiModule for Gemini/Groq AI services
+ * - Exports ChatbotCoreService for use by MessengerService and ChatController
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.6
  */
@@ -21,9 +21,9 @@ import { AiModule } from '../ai/ai.module';
   imports: [
     AnalyticsModule,
     EnergyModule,
-    AiModule, // Centralized AI service with Groq fallback
+    SubscribersModule,
+    AiModule, // Centralized AI services (Gemini with Groq fallback)
   ],
-  controllers: [ChatbotController],
   providers: [ChatbotCoreService],
   exports: [ChatbotCoreService],
 })

@@ -33,6 +33,7 @@ import { PublicModule } from './public/public.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { ChatModule } from './chat/chat.module';
 
 /**
  * Root Application Module
@@ -131,6 +132,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
     ReportsModule,
     AlertsModule, // Phase 8: Alert Management System
     ChatbotModule, // EcoChat: AI-powered chatbot with Gemini/Groq fallback
+    ChatModule, // Public web chat interface
 
     PublicModule, // Public telemetry API
 
