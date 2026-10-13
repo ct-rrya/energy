@@ -264,6 +264,49 @@ export class GeminiAIService {
   }
 
   /**
+   * Build EcoChat System Prompt
+   * 
+   * Creates consistent system instructions for EcoChat AI assistant
+   * Used by both Gemini and Groq to ensure consistent behavior
+   * 
+   * @returns System instructions for EcoChat
+   */
+  private buildEcoChatSystemPrompt(): string {
+    return `You are EcoChat, the built-in AI assistant for EcoStep, a footstep energy-monitoring system using piezoelectric sensors.
+
+**Your Role:**
+- Help users understand EcoStep's power output, energy generation, steps, voltage, current, and system status
+- Explain dashboard metrics, charts, and historical readings
+- Provide concise, accurate answers based on actual system data
+
+**Core Rules:**
+1. When users ask about "the dashboard," they mean the EcoStep dashboard
+2. When users ask about "power output" or "energy," they mean EcoStep readings unless context indicates otherwise
+3. NEVER invent measurements or claim access to data not provided in the prompt
+4. If data is missing, stale, or insufficient, explain that clearly
+5. Keep responses to 2-5 sentences unless more detail is requested
+6. Answer the user's question directly first, then provide context if needed
+7. Use simple, understandable language
+8. Avoid generic textbook explanations and unrelated platforms (Power BI, Tableau, etc.)
+
+**Response Style:**
+- Direct and concise
+- Application-specific (EcoStep context only)
+- Data-grounded (use provided measurements, not assumptions)
+- Helpful follow-up suggestions when relevant
+
+**Measurements:**
+- Energy: milliwatt-hours (mWh) or watt-hours (Wh)
+- Power: milliwatts (mW) or watts (W)
+- Voltage: volts (V)
+- Current: milliamps (mA) or amps (A)
+- Steps: count of recorded footsteps
+- Always preserve precision for small values (e.g., 0.648 mW, not "nearly zero")
+
+When real data is provided, use it. When it's not, explain what's missing rather than asking which device the user means.`;
+  }
+
+  /**
    * Process Query
    *
    * Sends a prompt to AI providers with automatic fallback.
@@ -271,21 +314,27 @@ export class GeminiAIService {
    * Used for generating AI insights for dashboard, reports, and analytics.
    *
    * @param prompt - The prompt to send to AI
+   * @param includeEcoChatContext - Whether to prepend EcoChat system instructions
    * @returns AI-generated response or null if unavailable
    */
-  async processQuery(prompt: string): Promise<string | null> {
+  async processQuery(prompt: string, includeEcoChatContext: boolean = false): Promise<string | null> {
     // Check if any provider is available
     if (!this.geminiEnabled && !this.groqEnabled) {
       this.logger.debug('No AI providers enabled - returning null');
       return null;
     }
 
+    // Prepend EcoChat system instructions if requested
+    const finalPrompt = includeEcoChatContext 
+      ? `${this.buildEcoChatSystemPrompt()}\n\n---\n\nUser Query:\n${prompt}`
+      : prompt;
+
     let lastError: any = null;
 
     // Try Gemini first (if enabled)
     if (this.geminiEnabled && this.geminiModel) {
       try {
-        const result = await this.queryGemini(prompt);
+        const result = await this.queryGemini(finalPrompt);
         this.logger.log('[Gemini] ✅ Request successful');
         return result;
       } catch (error) {
@@ -316,7 +365,7 @@ export class GeminiAIService {
     // Try Groq (if enabled and fallback is warranted)
     if (this.groqEnabled) {
       try {
-        const result = await this.queryGroq(prompt);
+        const result = await this.queryGroq(finalPrompt);
         
         // Log whether this was a fallback or primary attempt
         if (this.geminiEnabled) {

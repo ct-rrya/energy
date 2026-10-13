@@ -300,6 +300,9 @@ export class ChatbotCoreService {
   /**
    * Handle natural language queries via AI
    *
+   * Fetches relevant EcoStep data and provides it to the AI
+   * for grounded, context-aware responses
+   *
    * Requirements: 2.8, 9.9
    *
    * @param message - The user's message
@@ -307,6 +310,273 @@ export class ChatbotCoreService {
    * @returns Promise<ChatbotResponse>
    */
   private async handleNaturalLanguage(
+    message: string,
+    context: MessageContext,
+  ): Promise<ChatbotResponse> {
+    this.logger.log('Handling natural language query via AI');
+
+    try {
+      // Determine what data to fetch based on message intent
+      const intent = this.detectIntent(message);
+      const dataContext = await this.buildDataContext(intent);
+
+      // Build enriched prompt with EcoStep data
+      const enrichedPrompt = this.buildEnrichedPrompt(message, dataContext);
+
+      // Query AI with EcoChat context enabled
+      const aiResponse = await this.geminiAIService.processQuery(
+        enrichedPrompt,
+        true, // Enable EcoChat system instructions
+      );
+
+      // Handle null response from AI
+      if (!aiResponse) {
+        this.logger.warn('AI service returned null, using fallback');
+        return {
+          text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
+          suggestions: ['status', 'energy', 'help'],
+        };
+      }
+
+      return {
+        text: aiResponse,
+        suggestions: this.getSuggestionsForIntent(intent),
+        metadata: {
+          commandType: 'natural_language',
+          dataSource: 'gemini_ai',
+        },
+      };
+    } catch (error) {
+      this.logger.warn(
+        'AI service failed, falling back to default response',
+        error.message,
+      );
+
+      // Graceful fallback when AI fails
+      return {
+        text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
+        suggestions: ['status', 'energy', 'help'],
+      };
+    }
+  }
+
+  /**
+   * Detect user intent from message
+   */
+  private detectIntent(message: string): string {
+    const lowerMessage = message.toLowerCase();
+
+    // Current status / latest readings
+    if (
+      lowerMessage.includes('latest') ||
+      lowerMessage.includes('current') ||
+      lowerMessage.includes('now') ||
+      lowerMessage.includes('right now')
+    ) {
+      return 'current_status';
+    }
+
+    // Dashboard guidance
+    if (
+      lowerMessage.includes('dashboard') ||
+      lowerMessage.includes('how do i read') ||
+      lowerMessage.includes('how to read') ||
+      lowerMessage.includes('understand the')
+    ) {
+      return 'dashboard_help';
+    }
+
+    // Historical / today's data
+    if (
+      lowerMessage.includes('today') ||
+      lowerMessage.includes('this week') ||
+      lowerMessage.includes('this month') ||
+      lowerMessage.includes('history') ||
+      lowerMessage.includes('summary')
+    ) {
+      return 'historical';
+    }
+
+    // Power-related
+    if (
+      lowerMessage.includes('power') ||
+      lowerMessage.includes('watt')
+    ) {
+      return 'power_query';
+    }
+
+    // Energy-related
+    if (
+      lowerMessage.includes('energy') ||
+      lowerMessage.includes('generation')
+    ) {
+      return 'energy_query';
+    }
+
+    // Steps
+    if (
+      lowerMessage.includes('step') ||
+      lowerMessage.includes('footstep')
+    ) {
+      return 'steps_query';
+    }
+
+    // Voltage/Current
+    if (
+      lowerMessage.includes('voltage') ||
+      lowerMessage.includes('current') ||
+      lowerMessage.includes('volt') ||
+      lowerMessage.includes('amp')
+    ) {
+      return 'electrical_query';
+    }
+
+    // General question
+    return 'general';
+  }
+
+  /**
+   * Build data context based on intent
+   */
+  private async buildDataContext(intent: string): Promise<any> {
+    try {
+      const context: any = {};
+
+      // For most intents, fetch latest readings and today's stats
+      if (
+        intent === 'current_status' ||
+        intent === 'power_query' ||
+        intent === 'energy_query' ||
+        intent === 'steps_query' ||
+        intent === 'electrical_query' ||
+        intent === 'general'
+      ) {
+        // Get latest reading
+        const latestReadings = await this.energyService.getRecentReadings(1);
+        context.latestReading = latestReadings[0] || null;
+
+        // Get today's raw statistics (unrounded for accuracy)
+        context.todayStats = await this.energyService.getTodayRawStatistics();
+      }
+
+      // For historical queries, get detailed stats
+      if (intent === 'historical') {
+        context.todayStats = await this.energyService.getTodayRawStatistics();
+        context.todayDetailed = await this.energyService.getTodayDetailedStats();
+      }
+
+      return context;
+    } catch (error) {
+      this.logger.error('Failed to build data context', error);
+      return {};
+    }
+  }
+
+  /**
+   * Build enriched prompt with EcoStep data
+   */
+  private buildEnrichedPrompt(message: string, dataContext: any): string {
+    let prompt = `User Question: ${message}\n\n`;
+
+    // Add latest reading data if available
+    if (dataContext.latestReading) {
+      const reading = dataContext.latestReading;
+      const timestamp = new Date(reading.timestamp);
+      const now = new Date();
+      const ageSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
+      const ageMinutes = Math.floor(ageSeconds / 60);
+      
+      prompt += `**Latest EcoStep Reading:**\n`;
+      prompt += `- Power: ${reading.powerW?.toFixed(6) || '0.000000'} W (${((reading.powerW || 0) * 1000).toFixed(3)} mW)\n`;
+      prompt += `- Voltage: ${reading.voltageV?.toFixed(3) || '0.000'} V\n`;
+      prompt += `- Current: ${reading.currentA?.toFixed(6) || '0.000000'} A (${((reading.currentA || 0) * 1000).toFixed(3)} mA)\n`;
+      prompt += `- Timestamp: ${timestamp.toISOString()} (${ageMinutes < 1 ? 'just now' : `${ageMinutes} minutes ago`})\n`;
+      
+      if (reading.sensorId && typeof reading.sensorId === 'object') {
+        const sensor = reading.sensorId as any;
+        prompt += `- Sensor: ${sensor.name || 'Unknown'} at ${sensor.location || 'Unknown location'}\n`;
+      }
+      prompt += `\n`;
+    } else {
+      prompt += `**Latest EcoStep Reading:**\n`;
+      prompt += `No recent readings available. The system has not received any sensor data yet.\n\n`;
+    }
+
+    // Add today's statistics if available
+    if (dataContext.todayStats) {
+      const stats = dataContext.todayStats;
+      prompt += `**Today's EcoStep Statistics:**\n`;
+      prompt += `- Total Energy: ${stats.totalEnergyMWh?.toFixed(6) || '0.000000'} mWh (${((stats.totalEnergyMWh || 0) / 1000).toFixed(9)} Wh)\n`;
+      prompt += `- Average Power: ${stats.avgPowerW?.toFixed(6) || '0.000000'} W (${((stats.avgPowerW || 0) * 1000).toFixed(3)} mW)\n`;
+      prompt += `- Peak Power: ${stats.peakPowerW?.toFixed(6) || '0.000000'} W (${((stats.peakPowerW || 0) * 1000).toFixed(3)} mW)\n`;
+      prompt += `- Steps Recorded: ${stats.readingCount || 0}\n`;
+      
+      const totalEnergy = stats.totalEnergyMWh || 0;
+      const readingCount = stats.readingCount || 0;
+      const dataStatus = readingCount === 0 ? 'NO_READINGS' : 
+                        totalEnergy === 0 ? 'ZERO_GENERATION' : 
+                        totalEnergy < 0.001 ? 'MINIMAL_GENERATION' : 
+                        'NORMAL_GENERATION';
+      prompt += `- Data Status: ${dataStatus}\n`;
+      prompt += `\n`;
+    }
+
+    // Add detailed stats for historical queries
+    if (dataContext.todayDetailed) {
+      const detailed = dataContext.todayDetailed;
+      prompt += `**Detailed Today's Stats:**\n`;
+      prompt += `- Min Power: ${detailed.minPowerW?.toFixed(6) || '0.000000'} W\n`;
+      prompt += `- Max Power: ${detailed.peakPowerW?.toFixed(6) || '0.000000'} W\n`;
+      prompt += `- Total Readings: ${detailed.readingCount || 0}\n`;
+      prompt += `\n`;
+    }
+
+    // Add dashboard help context for dashboard queries
+    if (message.toLowerCase().includes('dashboard')) {
+      prompt += `**EcoStep Dashboard Components:**\n`;
+      prompt += `- Power Output: Shows latest power reading in watts or milliwatts\n`;
+      prompt += `- Steps Counter: Total footsteps recorded by sensors\n`;
+      prompt += `- Voltage Display: Current electrical potential in volts\n`;
+      prompt += `- Current Display: Measured or calculated current in amps or milliamps\n`;
+      prompt += `- Energy Charts: Historical power generation over time\n`;
+      prompt += `- Daily/Weekly/Monthly views: Aggregated statistics\n`;
+      prompt += `\n`;
+    }
+
+    prompt += `Answer the user's question directly and concisely using the actual data provided above. If no data is available, explain that the system hasn't received readings yet.`;
+
+    return prompt;
+  }
+
+  /**
+   * Get relevant suggestions based on intent
+   */
+  private getSuggestionsForIntent(intent: string): string[] {
+    switch (intent) {
+      case 'current_status':
+        return ['today', 'energy', 'help'];
+      case 'dashboard_help':
+        return ['status', 'energy', 'today'];
+      case 'historical':
+        return ['week', 'month', 'status'];
+      case 'power_query':
+      case 'energy_query':
+        return ['today', 'battery', 'status'];
+      case 'steps_query':
+        return ['energy', 'today', 'status'];
+      case 'electrical_query':
+        return ['status', 'energy', 'help'];
+      default:
+        return ['status', 'help', 'today'];
+    }
+  }
+
+  /**
+   * OLD Handle natural language - REPLACED ABOVE
+   * 
+   * This method has been replaced with data-enriched version
+   */
+  private async handleNaturalLanguageOld(
     message: string,
     context: MessageContext,
   ): Promise<ChatbotResponse> {
