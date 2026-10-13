@@ -1,136 +1,272 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDashboardData, useRecentReading } from '@/hooks';
+import { HeroEnergyCard, MetricCard, ErrorCard } from '@/components/dashboard';
 
 /**
  * Public Dashboard Screen
  * 
- * Phase 1: Placeholder screen with navigation structure.
+ * Live energy monitoring dashboard accessible without authentication.
+ * Displays daily energy in hero card and latest sensor readings in metric cards.
  * 
- * Future implementation:
- * - Real-time energy metrics
- * - Live sensor data
- * - Hero energy card
- * - Metric cards (voltage, power, current, steps)
+ * Features:
+ * - Pull-to-refresh for manual data updates
+ * - Loading states with skeleton cards
+ * - Error states with retry functionality
+ * - Empty state when no readings exist
+ * - Safe handling of null/missing values
  */
 export default function PublicDashboardScreen() {
-  const router = useRouter();
+  const dashboardData = useDashboardData();
+  const recentReadingData = useRecentReading();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * Handle pull-to-refresh
+   * Refetches both dashboard metrics and recent reading
+   */
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        dashboardData.refetch(),
+        recentReadingData.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dashboardData, recentReadingData]);
+
+  /**
+   * Combined retry function for error state
+   */
+  const handleRetry = useCallback(async () => {
+    await Promise.all([
+      dashboardData.refetch(),
+      recentReadingData.refetch(),
+    ]);
+  }, [dashboardData, recentReadingData]);
+
+  // Determine overall loading state (initial load only)
+  const isInitialLoading = dashboardData.isLoading && recentReadingData.isLoading;
+
+  // Determine if either has an error
+  const hasError = dashboardData.isError || recentReadingData.isError;
+
+  // Error message combining both error sources
+  const errorMessage = [
+    dashboardData.isError ? 'Failed to load dashboard metrics' : null,
+    recentReadingData.isError ? 'Failed to load recent readings' : null,
+  ]
+    .filter(Boolean)
+    .join('. ');
+
+  // Empty state: no readings at all
+  const isEmpty = dashboardData.data?.totalReadings === 0;
+
+  // Extract data
+  const metrics = dashboardData.data;
+  const reading = recentReadingData.reading;
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* Placeholder Content */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Dashboard</Text>
-          <Text style={styles.cardDescription}>
-            This screen will display real-time energy monitoring data.
-          </Text>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#2FBF71"
+            colors={['#2FBF71']}
+          />
+        }
+      >
+        {/* Title */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Energy Dashboard</Text>
+          <Text style={styles.subtitle}>Real-time monitoring</Text>
         </View>
 
-        {/* Navigation to other public screens */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Public Screens</Text>
-          
-          <Pressable
-            style={styles.navButton}
-            onPress={() => router.push('/(public)/analytics')}
-          >
-            <Text style={styles.navButtonText}>Analytics</Text>
-            <Text style={styles.navButtonSubtext}>View energy analytics</Text>
-          </Pressable>
+        {/* Error State */}
+        {hasError && !isInitialLoading && (
+          <ErrorCard message={errorMessage} onRetry={handleRetry} />
+        )}
 
-          <Pressable
-            style={styles.navButton}
-            onPress={() => router.push('/(public)/energy')}
-          >
-            <Text style={styles.navButtonText}>Energy Monitoring</Text>
-            <Text style={styles.navButtonSubtext}>View detailed readings</Text>
-          </Pressable>
-        </View>
+        {/* Empty State */}
+        {isEmpty && !hasError && !isInitialLoading && (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyIcon}>📊</Text>
+            <Text style={styles.emptyTitle}>No Sensor Data Available Yet</Text>
+            <Text style={styles.emptyMessage}>
+              Energy readings will appear here once sensors start transmitting data.
+            </Text>
+          </View>
+        )}
 
-        {/* Phase 1 Notice */}
-        <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>Phase 1: Navigation Shell</Text>
-          <Text style={styles.noticeText}>
-            This is a placeholder screen. Data integration will be implemented in later phases.
-          </Text>
-        </View>
-      </View>
-    </ScrollView>
+        {/* Dashboard Content */}
+        {!hasError && !isEmpty && (
+          <>
+            {/* Hero Energy Card */}
+            <HeroEnergyCard
+              energyValue={metrics?.dailyEnergy ?? null}
+              aiInsight={metrics?.aiInsight}
+              isLoading={dashboardData.isLoading}
+              isError={dashboardData.isError}
+              onRetry={dashboardData.refetch}
+            />
+
+            {/* Last Updated Timestamp */}
+            {metrics?.lastReadingAt && (
+              <View style={styles.timestampContainer}>
+                <Text style={styles.timestampText}>
+                  Updated {formatRelativeTime(metrics.lastReadingAt)}
+                </Text>
+              </View>
+            )}
+
+            {/* Metric Cards - Voltage, Current, Power, Energy */}
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                label="Voltage"
+                value={reading?.voltage ?? null}
+                unit="V"
+                precision={1}
+                color="blue"
+                isLoading={recentReadingData.isLoading}
+              />
+
+              <MetricCard
+                label="Current"
+                value={reading?.current ?? null}
+                unit="A"
+                precision={2}
+                color="amber"
+                isLoading={recentReadingData.isLoading}
+              />
+
+              <MetricCard
+                label="Power"
+                value={reading?.power ?? null}
+                unit="W"
+                precision={1}
+                color="green"
+                isLoading={recentReadingData.isLoading}
+              />
+
+              <MetricCard
+                label="Energy (Latest)"
+                value={reading?.energy ?? null}
+                unit="kWh"
+                precision={3}
+                color="green"
+                isLoading={recentReadingData.isLoading}
+              />
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+/**
+ * Format timestamp as relative time
+ * Simple implementation without external libraries
+ */
+function formatRelativeTime(timestamp: string): string {
+  try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    if (diffMinutes < 1) {
+      return 'just now';
+    } else if (diffMinutes === 1) {
+      return '1 minute ago';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} minutes ago`;
+    } else if (diffMinutes < 120) {
+      return '1 hour ago';
+    } else if (diffMinutes < 1440) {
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours} hours ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      return days === 1 ? '1 day ago' : `${days} days ago`;
+    }
+  } catch {
+    return 'Unknown';
+  }
+}
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
+  },
+  container: {
+    flex: 1,
   },
   content: {
     padding: 16,
     gap: 16,
   },
-  card: {
+  header: {
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0A2947',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748B',
+  },
+  timestampContainer: {
+    alignItems: 'center',
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  timestampText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  metricsGrid: {
+    gap: 16,
+  },
+  emptyCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
     borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  cardTitle: {
-    fontSize: 24,
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#0A2947',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  cardDescription: {
-    fontSize: 16,
-    color: '#64748B',
-    lineHeight: 24,
-  },
-  section: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0A2947',
-    marginBottom: 8,
-  },
-  navButton: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  navButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0A2947',
-    marginBottom: 4,
-  },
-  navButtonSubtext: {
+  emptyMessage: {
     fontSize: 14,
-    color: '#64748B',
-  },
-  notice: {
-    backgroundColor: '#FEF3C7',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-  },
-  noticeTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
-    marginBottom: 4,
-  },
-  noticeText: {
-    fontSize: 14,
-    color: '#78350F',
+    color: '#6B7280',
+    textAlign: 'center',
     lineHeight: 20,
   },
 });
