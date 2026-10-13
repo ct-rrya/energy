@@ -80,26 +80,27 @@ export class EnergyService {
   /**
    * Get Today's Energy Total
    *
-   * Calculates total energy for current day across all sensors by integrating power over time.
-   * Uses server-side receivedAt timestamp for reliable time intervals.
+   * Calculates total energy for current day across all sensors using stored energy field.
+   * Falls back to power integration if no energy values are available.
+   * Uses server-side receivedAt timestamp for reliable daily boundaries.
    * 
-   * Strategy (NEW - Power Integration Method):
-   * - Calculate time delta between consecutive readings
-   * - Multiply power by time to get energy increment (E = P × Δt)
-   * - Sum all energy increments to get total daily energy
-   * - This method is resilient to ESP32 resets and doesn't rely on cumulative counters
+   * Strategy (Hybrid Method):
+   * - PRIMARY: Use stored cumulative energy field from ESP32 with delta calculation
+   * - FALLBACK: Calculate from power × time if no energy values stored
+   * - Handles ESP32 resets by detecting energy decreases and skipping those deltas
+   * - Resilient to missing data by falling back to power integration
    *
    * @returns Today's energy statistics
    *
    * Performance:
    * - Uses { receivedAt: 1, sensorId: 1 } index
-   * - Aggregation pipeline with $setWindowFields for time delta calculation
+   * - Aggregation pipeline with $setWindowFields for delta calculation
    * - Handles multiple sensors independently
    *
    * Energy Calculation:
-   * - Correct: Sum of (Power × Time) for each interval
-   * - Physics: E = ∫ P dt (numerical integration)
-   * - Units: Power (W) × Time (hours) × 1000 = Energy (mWh)
+   * - Method 1 (Preferred): Sum of energy deltas from stored cumulative values
+   * - Method 2 (Fallback): Sum of (Power × Time) for each interval
+   * - Units: Stored energy is in mWh, converted to kWh (÷ 1,000,000)
    */
   async getTodayEnergyTotal() {
     const now = new Date();
@@ -118,68 +119,44 @@ export class EnergyService {
 
     // Try MongoDB 5.0+ $setWindowFields approach first
     try {
-      const result = await this.readingModel.aggregate([
+      // First, try to aggregate using stored energy field (ESP32 cumulative energy)
+      const energyResult = await this.readingModel.aggregate([
         {
-          // Match readings received today (use server timestamp, not ESP32 timestamp)
           $match: {
             receivedAt: {
               $gte: todayStart,
               $lte: todayEnd,
             },
-            source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
+            source: 'hardware' as any,
+            energy: { $gt: 0 }, // Only consider readings with actual energy values
           },
         },
         {
-          $sort: { sensorId: 1, receivedAt: 1 }, // Sort by sensor, then server receive time
+          $sort: { sensorId: 1, receivedAt: 1 },
         },
         {
-          // Calculate previous time for energy integration
           $setWindowFields: {
-            partitionBy: '$sensorId', // Separate window per sensor
+            partitionBy: '$sensorId',
             sortBy: { receivedAt: 1 },
             output: {
-              previousTime: {
-                $shift: {
-                  output: '$receivedAt',
-                  by: -1, // Previous reading's time
-                },
+              previousEnergy: {
+                $shift: { output: '$energy', by: -1 },
               },
             },
           },
         },
         {
-          // Calculate energy from power × time (E = P × t)
           $addFields: {
-            // Time delta in hours
-            timeDeltaHours: {
+            energyDelta: {
               $cond: {
-                if: { $eq: ['$previousTime', null] }, // First reading for sensor
-                then: 0,
-                else: {
-                  $divide: [
-                    { $subtract: ['$receivedAt', '$previousTime'] },
-                    3600000, // Convert milliseconds to hours
+                if: {
+                  $or: [
+                    { $eq: ['$previousEnergy', null] },
+                    { $lt: ['$energy', '$previousEnergy'] }, // Reset detected
                   ],
                 },
-              },
-            },
-            // Energy increment = Power (W) × Time (h) × 1000 (convert Wh to mWh)
-            energyIncrement: {
-              $cond: {
-                if: { $eq: ['$previousTime', null] },
                 then: 0,
-                else: {
-                  $multiply: [
-                    '$power',
-                    {
-                      $divide: [
-                        { $subtract: ['$receivedAt', '$previousTime'] },
-                        3600000,
-                      ],
-                    },
-                    1000, // Convert Wh to mWh
-                  ],
-                },
+                else: { $subtract: ['$energy', '$previousEnergy'] },
               },
             },
           },
@@ -187,12 +164,34 @@ export class EnergyService {
         {
           $group: {
             _id: null,
-            totalPower: { $sum: '$power' }, // Sum of all power readings (W)
-            totalEnergy: { $sum: '$energyIncrement' }, // Sum of energy increments (mWh)
-            count: { $sum: 1 }, // Number of readings
-            avgPower: { $avg: '$power' }, // Average power (W)
-            maxPower: { $max: '$power' }, // Peak power (W)
-            minPower: { $min: '$power' }, // Minimum power (W)
+            totalEnergy: { $sum: '$energyDelta' },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Get all readings for power statistics
+      const result = await this.readingModel.aggregate([
+        {
+          $match: {
+            receivedAt: {
+              $gte: todayStart,
+              $lte: todayEnd,
+            },
+            source: 'hardware' as any,
+          },
+        },
+        {
+          $sort: { sensorId: 1, receivedAt: 1 },
+        },
+        {
+          $group: {
+            _id: null,
+            totalPower: { $sum: '$power' },
+            count: { $sum: 1 },
+            avgPower: { $avg: '$power' },
+            maxPower: { $max: '$power' },
+            minPower: { $min: '$power' },
           },
         },
       ]);
@@ -211,10 +210,30 @@ export class EnergyService {
       }
 
       const stats = result[0];
+      
+      // Use stored energy if available, otherwise fall back to power integration
+      let totalEnergyMWh = 0;
+      
+      if (energyResult.length > 0 && energyResult[0].totalEnergy > 0) {
+        // Use stored cumulative energy deltas (preferred method)
+        totalEnergyMWh = energyResult[0].totalEnergy;
+        this.logger.debug(
+          `Using stored energy: ${totalEnergyMWh.toFixed(6)} mWh from ${energyResult[0].count} readings with energy field`,
+        );
+      } else {
+        // Fallback: Calculate from power × time if no energy values stored
+        this.logger.warn('No stored energy values found, using power integration fallback');
+        const fallbackResult = await this.calculateEnergyFromPower(todayStart, todayEnd);
+        totalEnergyMWh = fallbackResult;
+      }
 
-      // ESP32 sends energy in mWh, convert to kWh (1 kWh = 1,000,000 mWh)
-      const totalEnergyMWh = stats.totalEnergy || 0;
       const estimatedEnergyKWh = totalEnergyMWh / 1000000;
+
+      this.logger.debug(
+        `Daily energy calculation: totalEnergy=${totalEnergyMWh.toFixed(6)} mWh, ` +
+        `estimatedEnergyKWh=${estimatedEnergyKWh.toFixed(8)} kWh, ` +
+        `count=${stats.count}, avgPower=${stats.avgPower.toFixed(6)} W`,
+      );
 
       return {
         date: todayStart.toISOString().split('T')[0],
@@ -235,10 +254,53 @@ export class EnergyService {
   }
 
   /**
+   * Calculate Energy from Power Integration
+   * Helper method for when stored energy values are unavailable
+   */
+  private async calculateEnergyFromPower(
+    todayStart: Date,
+    todayEnd: Date,
+  ): Promise<number> {
+    const readings = await this.readingModel
+      .find({
+        receivedAt: {
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
+        source: 'hardware' as any,
+      })
+      .sort({ sensorId: 1, receivedAt: 1 })
+      .exec();
+
+    if (readings.length === 0) {
+      return 0;
+    }
+
+    let totalEnergy = 0; // mWh
+    const sensorPreviousTime = new Map<string, Date>();
+
+    for (const reading of readings) {
+      const sensorIdStr = reading.sensorId.toString();
+      const previousTime = sensorPreviousTime.get(sensorIdStr);
+
+      if (previousTime) {
+        const timeDeltaMs = reading.receivedAt.getTime() - previousTime.getTime();
+        const timeDeltaHours = timeDeltaMs / 3600000;
+        const energyIncrement = reading.power * timeDeltaHours * 1000; // W × h × 1000 = mWh
+        totalEnergy += energyIncrement;
+      }
+
+      sensorPreviousTime.set(sensorIdStr, reading.receivedAt);
+    }
+
+    return totalEnergy;
+  }
+
+  /**
    * Fallback Energy Calculation (for MongoDB < 5.0)
    * 
-   * Calculates energy by integrating power over time in application code.
-   * Less efficient but compatible with older MongoDB versions.
+   * Calculates energy using stored energy field with delta calculation.
+   * Falls back to power integration if no energy values are stored.
    * 
    * @param todayStart - Start of today in Manila timezone
    * @param todayEnd - End of today in Manila timezone
@@ -271,35 +333,61 @@ export class EnergyService {
       };
     }
 
-    // Calculate energy by integrating power over time
-    let totalEnergy = 0;  // mWh
+    // Try to use stored energy values first
+    let totalEnergy = 0; // mWh
     let totalPower = 0;
     let maxPower = 0;
     let minPower = Infinity;
+    const sensorPreviousEnergy = new Map<string, number>();
     const sensorPreviousTime = new Map<string, Date>();
+    let hasEnergyValues = false;
 
     for (const reading of readings) {
       const sensorIdStr = reading.sensorId.toString();
-      const previousTime = sensorPreviousTime.get(sensorIdStr);
-
-      // Calculate energy increment if not first reading
-      if (previousTime) {
-        const timeDeltaMs = reading.receivedAt.getTime() - previousTime.getTime();
-        const timeDeltaHours = timeDeltaMs / 3600000;  // Convert ms to hours
-        const energyIncrement = reading.power * timeDeltaHours * 1000;  // W × h × 1000 = mWh
-        totalEnergy += energyIncrement;
+      
+      // Try stored energy field
+      if (reading.energy > 0) {
+        hasEnergyValues = true;
+        const previousEnergy = sensorPreviousEnergy.get(sensorIdStr);
+        
+        if (previousEnergy !== undefined && reading.energy >= previousEnergy) {
+          totalEnergy += reading.energy - previousEnergy;
+        }
+        
+        sensorPreviousEnergy.set(sensorIdStr, reading.energy);
       }
 
-      // Update tracking
-      sensorPreviousTime.set(sensorIdStr, reading.receivedAt);
+      // Track power stats
       totalPower += reading.power;
       maxPower = Math.max(maxPower, reading.power);
       minPower = Math.min(minPower, reading.power);
+      
+      // Track time for fallback calculation
+      sensorPreviousTime.set(sensorIdStr, reading.receivedAt);
+    }
+
+    // If no energy values, fall back to power integration
+    if (!hasEnergyValues || totalEnergy === 0) {
+      this.logger.warn('No stored energy values, calculating from power × time');
+      totalEnergy = 0;
+      const sensorTime = new Map<string, Date>();
+      
+      for (const reading of readings) {
+        const sensorIdStr = reading.sensorId.toString();
+        const previousTime = sensorTime.get(sensorIdStr);
+        
+        if (previousTime) {
+          const timeDeltaMs = reading.receivedAt.getTime() - previousTime.getTime();
+          const timeDeltaHours = timeDeltaMs / 3600000;
+          const energyIncrement = reading.power * timeDeltaHours * 1000; // mWh
+          totalEnergy += energyIncrement;
+        }
+        
+        sensorTime.set(sensorIdStr, reading.receivedAt);
+      }
     }
 
     const avgPower = totalPower / readings.length;
-
-    // Convert mWh to kWh (1 kWh = 1,000,000 mWh)
     const estimatedEnergyKWh = totalEnergy / 1000000;
 
     return {
