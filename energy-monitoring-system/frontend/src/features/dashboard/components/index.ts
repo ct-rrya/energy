@@ -85,6 +85,7 @@ export type { DataFetchErrorProps } from './DataFetchError';
 // Hero Dashboard Components (EcoStep Hero Energy Dashboard)
 // =============================================================================
 export { HeroEnergyCard } from './HeroEnergyCard';
+export { HeroPowerCard } from './HeroPowerCard';
 export { TrendIndicator } from './TrendIndicator';
 export { MiniTrendGraph } from './MiniTrendGraph';
 export { AIInsightSection } from './AIInsightSection';
