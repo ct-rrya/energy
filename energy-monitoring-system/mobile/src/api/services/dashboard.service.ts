@@ -27,9 +27,13 @@ import type { ApiResponse, DashboardMetrics } from '../../types';
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   try {
+    console.log('[Dashboard Service] Fetching dashboard metrics...');
     const response = await apiClient.get<ApiResponse<DashboardMetrics>>(
       '/dashboard/metrics'
     );
+
+    console.log('[Dashboard Service] Response status:', response.status);
+    console.log('[Dashboard Service] Response data:', JSON.stringify(response.data, null, 2));
 
     if (!response.data.success) {
       throw new Error(
@@ -39,6 +43,12 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     return response.data.data;
   } catch (error: any) {
+    console.error('[Dashboard Service] Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    
     const message =
       error.response?.data?.message ||
       error.message ||

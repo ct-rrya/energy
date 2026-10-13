@@ -13,6 +13,10 @@ import { getToken, clearAuth } from '../utils/secureStorage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
+// Debug: Log the API URL being used
+console.log('[API Client] Base URL:', API_BASE_URL);
+console.log('[API Client] Full URL:', `${API_BASE_URL}/api`);
+
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api`,
