@@ -278,7 +278,7 @@ function DashboardPageContent() {
                 label="Voltage"
                 value={displayReading?.voltage}
                 unit="V"
-                precision={1}
+                precision={2}
                 color="accent"
               />
             </div>
@@ -290,7 +290,7 @@ function DashboardPageContent() {
                 label="Power"
                 value={displayReading?.power}
                 unit="W"
-                precision={1}
+                precision={4}
                 color="amber"
               />
             </div>
@@ -302,7 +302,7 @@ function DashboardPageContent() {
                 label="Current"
                 value={displayReading?.current}
                 unit="A"
-                precision={2}
+                precision={4}
                 color="blue"
               />
             </div>

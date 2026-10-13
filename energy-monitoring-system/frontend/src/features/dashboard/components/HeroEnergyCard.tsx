@@ -98,9 +98,9 @@ export const HeroEnergyCard = React.memo(
     // Requirement 20.3: Memoize formatted value to prevent unnecessary recalculations
     const formattedEnergy = useMemo(() => {
       // Requirement 3.8: Show "0.0" when undefined
-      if (energyValue === undefined) return '0.0';
-      // Format to 1 decimal place
-      return energyValue.toFixed(1);
+      if (energyValue === undefined) return '0.0000';
+      // Format to 4 decimal places to show small kWh values
+      return energyValue.toFixed(4);
     }, [energyValue]);
 
     // Task 6.6: Show loading skeleton when isLoading is true
@@ -321,7 +321,7 @@ export const HeroEnergyCard = React.memo(
                     {formattedEnergy}
                   </span>
                   
-                  {/* Requirement 3.4: Unit "mWh" */}
+                  {/* Requirement 3.4: Unit "kWh" (backend returns energy in kWh) */}
                   <span
                     className="hero-energy-unit"
                     style={{
@@ -329,7 +329,7 @@ export const HeroEnergyCard = React.memo(
                       opacity: valueOpacity,
                     }}
                   >
-                    mWh
+                    kWh
                   </span>
                 </div>
               </div>
