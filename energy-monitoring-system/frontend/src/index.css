@@ -362,6 +362,15 @@
     }
   }
 
+  @media (max-width: 640px) {
+    .eco-page-container {
+      padding: 16px 12px;
+    }
+    .eco-card {
+      padding: 16px;
+    }
+  }
+
   /* EcoStep Card System */
   .eco-card {
     background: rgb(var(--color-surface));

@@ -280,85 +280,157 @@ export function DiagnosticHistoryTable() {
       {/* ============================================================ */}
       {/* TAB 1: DAILY DIAGNOSTIC TASKS VIEW */}
       {/* ============================================================ */}
+      {/* ============================================================ */}
+      {/* TAB 1: DAILY DIAGNOSTIC TASKS VIEW */}
+      {/* ============================================================ */}
       {activeTab === 'daily' && (
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '950px' }}>
-            <thead style={{ backgroundColor: colors.hoverBackground }}>
-              <tr className="border-b" style={{ borderColor: colors.border }}>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                  Date
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '150px' }}>
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '220px' }}>
-                  Verified By
-                </th>
-                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                  Measured (mWh)
-                </th>
-                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                  Baseline (mWh)
-                </th>
-                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '110px' }}>
-                  Deviation
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                  Verdict / Notes
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y" style={{ borderColor: colors.border }}>
-              {dailyTasks && dailyTasks.length > 0 ? (
-                dailyTasks.map((t) => (
-                  <tr key={t.taskDate} className="hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="px-4 py-3 text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
-                      {t.taskDate}
-                    </td>
-                    <td className="px-4 py-3">
-                      {getDailyStatusBadge(t.status)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
-                      {t.performedByName ? (
-                        <span>
-                          <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.performedByName}</strong>
-                          <span className="block text-[10px] text-slate-400 truncate">{t.performedBy}</span>
-                        </span>
-                      ) : t.performedBy ? (
-                        t.performedBy
-                      ) : (
-                        <span className="text-slate-400 italic">Pending Physical Test</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                      {t.actualEnergyMWh !== undefined ? t.actualEnergyMWh.toFixed(5) : '—'}
-                    </td>
-                    <td className="px-3 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-gray-300">
-                      {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
-                    </td>
-                    <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold">
-                      {t.deviationPercentage !== undefined ? (
-                        <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                          {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
-                      {t.statusMessage || t.notes || (t.status === DailyDiagnosticTaskStatus.PENDING ? 'Awaiting test' : '—')}
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden sm:block w-full overflow-x-auto">
+            <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '950px' }}>
+              <thead style={{ backgroundColor: colors.hoverBackground }}>
+                <tr className="border-b" style={{ borderColor: colors.border }}>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '150px' }}>
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '220px' }}>
+                    Verified By
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                    Measured (mWh)
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                    Baseline (mWh)
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '110px' }}>
+                    Deviation
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                    Verdict / Notes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: colors.border }}>
+                {dailyTasks && dailyTasks.length > 0 ? (
+                  dailyTasks.map((t) => (
+                    <tr key={t.taskDate} className="hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                      <td className="px-4 py-3 text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+                        {t.taskDate}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getDailyStatusBadge(t.status)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
+                        {t.performedByName ? (
+                          <span>
+                            <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.performedByName}</strong>
+                            <span className="block text-[10px] text-slate-400 truncate">{t.performedBy}</span>
+                          </span>
+                        ) : t.performedBy ? (
+                          t.performedBy
+                        ) : (
+                          <span className="text-slate-400 italic">Pending Physical Test</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                        {t.actualEnergyMWh !== undefined ? t.actualEnergyMWh.toFixed(5) : '—'}
+                      </td>
+                      <td className="px-3 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-gray-300">
+                        {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
+                      </td>
+                      <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold">
+                        {t.deviationPercentage !== undefined ? (
+                          <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                            {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
+                        {t.statusMessage || t.notes || (t.status === DailyDiagnosticTaskStatus.PENDING ? 'Awaiting test' : '—')}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-500">
+                      <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                      <span>No daily diagnostic tasks recorded yet. Today's task will automatically initialize.</span>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-500">
-                    <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
-                    <span>No daily diagnostic tasks recorded yet. Today's task will automatically initialize.</span>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View for Daily Tasks */}
+          <div className="sm:hidden divide-y" style={{ borderColor: colors.border }}>
+            {dailyTasks && dailyTasks.length > 0 ? (
+              dailyTasks.map((t) => (
+                <div key={t.taskDate} className="p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                      {t.taskDate}
+                    </span>
+                    {getDailyStatusBadge(t.status)}
+                  </div>
+
+                  <div className="text-xs">
+                    <span className="text-slate-500">Verified By: </span>
+                    {t.performedByName ? (
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {t.performedByName}{' '}
+                        <span className="text-[11px] text-slate-400">({t.performedBy})</span>
+                      </span>
+                    ) : t.performedBy ? (
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{t.performedBy}</span>
+                    ) : (
+                      <span className="text-slate-400 italic">Pending Physical Test</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-gray-800/40 text-xs">
+                    <div>
+                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Measured</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {t.actualEnergyMWh !== undefined ? `${t.actualEnergyMWh.toFixed(4)}` : '—'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Baseline</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                        {t.expectedEnergyMWh !== undefined ? `${t.expectedEnergyMWh.toFixed(4)}` : '0.0051'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Deviation</span>
+                      <span className="font-semibold tabular-nums">
+                        {t.deviationPercentage !== undefined ? (
+                          <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                            {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
+                          </span>
+                        ) : '—'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(t.statusMessage || t.notes) && (
+                    <p className="text-xs text-slate-500 dark:text-gray-400 italic bg-white/50 dark:bg-gray-800/20 p-2 rounded border border-slate-100 dark:border-gray-800">
+                      {t.statusMessage || t.notes}
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-500">
+                <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                <span>No daily diagnostic tasks recorded yet.</span>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* ============================================================ */}

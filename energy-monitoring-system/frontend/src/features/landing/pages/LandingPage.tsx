@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/routes.config';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { LandingNav } from '../components/LandingNav';
 import { PiezoTileDemo } from '../components/PiezoTileDemo';
 import { HowItWorks } from '../components/HowItWorks';
@@ -21,6 +22,8 @@ import '@/styles/landing.css';
  * - Full prefers-reduced-motion accessibility support
  */
 export function LandingPage() {
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
   // Section refs for scroll-spy and scroll reveals
   const homeRef = useRef<HTMLElement | null>(null);
   const howRef = useRef<HTMLElement | null>(null);
@@ -103,40 +106,68 @@ export function LandingPage() {
 
       <main style={{ position: 'relative', zIndex: 1 }}>
         {/* Hero Section with Staggered Entrance (<850ms) */}
-        <section ref={homeRef} id="home" className="hero" style={{ paddingTop: '140px', paddingBottom: '60px' }}>
-          <div className="wrap" style={{ maxWidth: '1120px', margin: '0 auto', padding: '0 24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '48px', alignItems: 'center' }}>
+        <section ref={homeRef} id="home" className="hero-section hero">
+          <div className="landing-page-wrap">
+            <div className="hero-grid">
               <div>
                 {/* 1. Tag (Delay: 0ms) */}
                 <span
                   className="tag hero-stagger-1"
                   style={{
                     display: 'inline-block',
-                    padding: '7px 14px',
+                    padding: '6px 14px',
                     borderRadius: '999px',
                     background: 'var(--landing-soft)',
                     fontWeight: 600,
-                    fontSize: '14px',
-                    marginBottom: '20px',
-                    color: 'var(--landing-ink)',
+                    fontSize: isMobile ? '12px' : '13.5px',
+                    lineHeight: '1.4',
+                    marginBottom: isMobile ? '14px' : '20px',
+                    color: isMobile ? '#16a34a' : 'var(--landing-ink)',
                     border: '1px solid var(--landing-line)',
+                    maxWidth: '100%',
+                    wordBreak: 'break-word',
                   }}
                 >
-                  Cebu Technological University, Daanbantayan Campus
+                  {isMobile ? 'CTU Daanbantayan Campus' : 'Cebu Technological University, Daanbantayan Campus'}
                 </span>
 
                 {/* 2. Headline (Delay: 90ms) */}
-                <h1 className="landing-h1 hero-stagger-2" style={{ margin: '0 0 20px', color: 'var(--landing-ink)' }}>
-                  Every step can make a <em className="landing-highlight">difference</em>.
+                <h1
+                  className="landing-h1 hero-stagger-2"
+                  style={{
+                    margin: '0 0 16px',
+                    color: 'var(--landing-ink)',
+                    fontSize: isMobile ? '34px' : undefined,
+                    lineHeight: isMobile ? '1.1' : undefined,
+                  }}
+                >
+                  Every step can make a <em className="landing-highlight" style={{ fontStyle: 'normal' }}>difference.</em>
                 </h1>
 
                 {/* 3. Lead text (Delay: 180ms) */}
-                <p className="landing-lead hero-stagger-3" style={{ color: 'var(--landing-mute)', maxWidth: '34em', margin: '0 0 28px' }}>
+                <p
+                  className="landing-lead hero-stagger-3"
+                  style={{
+                    color: 'var(--landing-mute)',
+                    maxWidth: '34em',
+                    margin: isMobile ? '0 0 20px' : '0 0 28px',
+                    fontSize: isMobile ? '14px' : undefined,
+                    lineHeight: isMobile ? '1.45' : undefined,
+                  }}
+                >
                   EcoStep turns footstep energy into measurable electricity and shows it live on a web dashboard.
                 </p>
 
                 {/* 4. CTA buttons (Delay: 270ms) */}
-                <div className="cta hero-stagger-4" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                <div
+                  className="cta hero-stagger-4"
+                  style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: isMobile ? '10px' : '12px',
+                    width: '100%',
+                  }}
+                >
                   <a
                     href="#how"
                     onClick={(e) => {
@@ -147,8 +178,9 @@ export function LandingPage() {
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
-                      padding: '12px 22px',
+                      padding: isMobile ? '13px 20px' : '12px 22px',
                       borderRadius: '999px',
                       fontWeight: 700,
                       fontSize: '15px',
@@ -157,10 +189,12 @@ export function LandingPage() {
                       color: 'var(--landing-green-ink)',
                       textDecoration: 'none',
                       cursor: 'pointer',
+                      width: isMobile ? '100%' : 'auto',
+                      boxSizing: 'border-box',
                     }}
                   >
                     See how it works
-                    <span className="arrow-micro">→</span>
+                    {!isMobile && <span className="arrow-micro">→</span>}
                   </a>
                   <Link
                     to={ROUTES.DASHBOARD}
@@ -168,8 +202,9 @@ export function LandingPage() {
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
-                      padding: '12px 22px',
+                      padding: isMobile ? '13px 20px' : '12px 22px',
                       borderRadius: '999px',
                       fontWeight: 700,
                       fontSize: '15px',
@@ -178,15 +213,17 @@ export function LandingPage() {
                       color: 'var(--landing-ink)',
                       cursor: 'pointer',
                       textDecoration: 'none',
+                      width: isMobile ? '100%' : 'auto',
+                      boxSizing: 'border-box',
                     }}
                   >
-                    View Dashboard
+                    View dashboard
                   </Link>
                 </div>
               </div>
 
               {/* 5. Hero Product Visual (Delay: 200ms) */}
-              <div className="hero-stagger-5">
+              <div className="hero-stagger-5" style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}>
                 <PiezoTileDemo />
               </div>
             </div>
@@ -197,27 +234,27 @@ export function LandingPage() {
         <section
           ref={howRef}
           id="how"
-          className="scroll-reveal"
-          style={{ padding: '80px 0' }}
+          className="scroll-reveal landing-section-py"
+          style={{ padding: isMobile ? '40px 0' : '80px 0' }}
         >
-          <div className="wrap" style={{ maxWidth: '1120px', margin: '0 auto', padding: '0 24px' }}>
+          <div className="landing-page-wrap">
             <HowItWorks />
           </div>
         </section>
 
-        {/* Monitoring Preview (Scroll Reveal, Fits in single viewport) */}
+        {/* Monitoring Preview (Scroll Reveal, Fits in single viewport on desktop) */}
         <section
           ref={monitoringRef}
           id="monitoring"
-          className="scroll-reveal"
+          className="scroll-reveal landing-section-monitoring"
           style={{
-            minHeight: 'calc(100vh - 80px)',
+            minHeight: isMobile ? 'auto' : 'calc(100vh - 80px)',
             display: 'flex',
             alignItems: 'center',
-            padding: '36px 0',
+            padding: isMobile ? '36px 0' : '36px 0',
           }}
         >
-          <div className="wrap" style={{ maxWidth: '1120px', width: '100%', margin: '0 auto', padding: '0 24px' }}>
+          <div className="landing-page-wrap">
             <MonitoringPreview />
           </div>
         </section>
@@ -226,10 +263,10 @@ export function LandingPage() {
         <section
           ref={ecochatRef}
           id="ecochat"
-          className="scroll-reveal"
-          style={{ padding: '80px 0' }}
+          className="scroll-reveal landing-section-py"
+          style={{ padding: isMobile ? '40px 0' : '80px 0' }}
         >
-          <div className="wrap" style={{ maxWidth: '1120px', margin: '0 auto', padding: '0 24px' }}>
+          <div className="landing-page-wrap">
             <EcoChatSection />
           </div>
         </section>
@@ -238,25 +275,49 @@ export function LandingPage() {
         <section
           ref={aboutRef}
           id="about"
-          className="end scroll-reveal"
-          style={{ textAlign: 'center', padding: '80px 0 60px' }}
+          className="end scroll-reveal landing-section-py"
+          style={{
+            textAlign: isMobile ? 'left' : 'center',
+            padding: isMobile ? '44px 0 36px' : '80px 0 60px',
+            background: isMobile ? '#0d271e' : 'transparent',
+            color: isMobile ? '#ffffff' : 'inherit',
+            marginTop: isMobile ? '32px' : 0,
+          }}
         >
-          <div className="wrap" style={{ maxWidth: '1120px', margin: '0 auto', padding: '0 24px' }}>
-            <h2 className="landing-h2" style={{ color: 'var(--landing-ink)', margin: '0 0 14px' }}>
+          <div className="landing-page-wrap">
+            <h2
+              className="landing-h2"
+              style={{
+                color: isMobile ? '#ffffff' : 'var(--landing-ink)',
+                margin: '0 0 12px',
+                fontSize: isMobile ? '26px' : undefined,
+                lineHeight: 1.15,
+              }}
+            >
               Built for CTU Daanbantayan
             </h2>
             <p
               className="sub"
               style={{
-                color: 'var(--landing-mute)',
-                fontSize: '19px',
+                color: isMobile ? '#a7c2b3' : 'var(--landing-mute)',
+                fontSize: isMobile ? '14px' : '19px',
                 maxWidth: '36em',
-                margin: '0 auto 30px',
+                margin: isMobile ? '0 0 24px' : '0 auto 30px',
+                lineHeight: 1.45,
               }}
             >
               A student-developed IoT energy monitoring system for research, innovation, and awareness of the energy generated by footsteps.
             </p>
-            <div className="cta" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+            <div
+              className="cta"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                flexWrap: 'wrap',
+                gap: '12px',
+                justifyContent: isMobile ? 'stretch' : 'center',
+              }}
+            >
               <a
                 href="#how"
                 onClick={(e) => {
@@ -267,6 +328,7 @@ export function LandingPage() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
                   padding: '12px 22px',
                   borderRadius: '999px',
@@ -277,6 +339,8 @@ export function LandingPage() {
                   color: 'var(--landing-green-ink)',
                   textDecoration: 'none',
                   cursor: 'pointer',
+                  width: isMobile ? '100%' : 'auto',
+                  boxSizing: 'border-box',
                 }}
               >
                 Explore EcoStep
@@ -288,16 +352,19 @@ export function LandingPage() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
                   padding: '12px 22px',
                   borderRadius: '999px',
                   fontWeight: 700,
                   fontSize: '15px',
-                  border: '1px solid var(--landing-line)',
-                  background: 'var(--landing-surface)',
-                  color: 'var(--landing-ink)',
+                  border: isMobile ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--landing-line)',
+                  background: isMobile ? 'rgba(255, 255, 255, 0.08)' : 'var(--landing-surface)',
+                  color: isMobile ? '#ffffff' : 'var(--landing-ink)',
                   cursor: 'pointer',
                   textDecoration: 'none',
+                  width: isMobile ? '100%' : 'auto',
+                  boxSizing: 'border-box',
                 }}
               >
                 View Dashboard
@@ -308,21 +375,19 @@ export function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer style={{ textAlign: 'center', color: 'var(--landing-mute)', fontSize: '14px', padding: '0 24px 36px', position: 'relative', zIndex: 1 }}>
+      <footer
+        style={{
+          textAlign: 'center',
+          color: isMobile ? '#6e8579' : 'var(--landing-mute)',
+          fontSize: '13px',
+          padding: isMobile ? '16px 16px 28px' : '0 16px 36px',
+          background: isMobile ? '#0d271e' : 'transparent',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         EcoStep Energy Monitoring System, Cebu Technological University
       </footer>
-
-      {/* Mobile responsive adjustments */}
-      <style>{`
-        @media (max-width: 900px) {
-          .hero .wrap > div {
-            grid-template-columns: 1fr;
-          }
-          section {
-            padding: 60px 0 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

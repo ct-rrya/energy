@@ -161,15 +161,15 @@ export function MonitoringPreview() {
     {
       label: 'Current',
       value: `${currentVal} mA`,
-      icon: <Activity size={12} style={{ color: '#38bdf8' }} />,
-      color: '#38bdf8',
+      icon: <Activity size={12} style={{ color: '#22c55e' }} />,
+      color: '#22c55e',
       badge: 'Equiv',
     },
     {
       label: 'Power',
       value: `${powerVal} mW`,
-      icon: <TrendingUp size={12} style={{ color: '#fbbf24' }} />,
-      color: '#fbbf24',
+      icon: <TrendingUp size={12} style={{ color: '#22c55e' }} />,
+      color: '#22c55e',
       badge: 'Peak',
     },
     {
@@ -194,15 +194,15 @@ export function MonitoringPreview() {
         margin: '0 auto',
       }}
     >
-      {/* Compact Section Header */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+      {/* Section Header */}
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? '14px' : '20px', width: '100%' }}>
         <h2
           className="landing-h2"
           style={{
             color: 'var(--landing-ink)',
             margin: '0 0 6px',
-            fontSize: 'clamp(26px, 3.8vw, 40px)',
-            lineHeight: 1.1,
+            fontSize: isMobile ? 'clamp(24px, 5.5vw, 32px)' : 'clamp(26px, 3.8vw, 40px)',
+            lineHeight: 1.15,
           }}
         >
           See what others are generating
@@ -211,17 +211,17 @@ export function MonitoringPreview() {
           className="sub"
           style={{
             color: 'var(--landing-mute)',
-            fontSize: '15px',
+            fontSize: isMobile ? '13.5px' : '15px',
             maxWidth: '38em',
             margin: '0 auto',
-            lineHeight: 1.4,
+            lineHeight: 1.45,
           }}
         >
-          Energy generation, electrical measurements, system status, and analytics in one live dashboard.
+          Energy, electrical measurements, system status and analytics in one live dashboard.
         </p>
       </div>
 
-      {/* Floating Promotional Callout Tags (Reference Image Style) */}
+      {/* Promotional Callout Tags Bar (Unified Green) */}
       <div
         className="callout-tags-bar"
         style={{
@@ -229,64 +229,64 @@ export function MonitoringPreview() {
           alignItems: 'center',
           justifyContent: 'center',
           flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '16px',
+          gap: isMobile ? '6px' : '10px',
+          marginBottom: isMobile ? '14px' : '18px',
         }}
       >
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '4px 12px',
+            gap: '5px',
+            padding: isMobile ? '3px 10px' : '4px 12px',
             borderRadius: '999px',
             background: 'rgba(34, 197, 94, 0.1)',
             border: '1px solid rgba(34, 197, 94, 0.25)',
-            fontSize: '12px',
+            fontSize: isMobile ? '11px' : '12px',
             fontWeight: 600,
             color: '#22c55e',
           }}
         >
-          <Zap size={13} />
+          <Zap size={isMobile ? 11 : 13} />
           Key Electrical Metrics
         </span>
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '4px 12px',
+            gap: '5px',
+            padding: isMobile ? '3px 10px' : '4px 12px',
             borderRadius: '999px',
-            background: 'rgba(56, 189, 248, 0.1)',
-            border: '1px solid rgba(56, 189, 248, 0.25)',
-            fontSize: '12px',
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.25)',
+            fontSize: isMobile ? '11px' : '12px',
             fontWeight: 600,
-            color: '#38bdf8',
+            color: '#22c55e',
           }}
         >
-          <Activity size={13} />
+          <Activity size={isMobile ? 11 : 13} />
           Interactive Generation Chart
         </span>
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '4px 12px',
+            gap: '5px',
+            padding: isMobile ? '3px 10px' : '4px 12px',
             borderRadius: '999px',
-            background: 'rgba(251, 191, 36, 0.1)',
-            border: '1px solid rgba(251, 191, 36, 0.25)',
-            fontSize: '12px',
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.25)',
+            fontSize: isMobile ? '11px' : '12px',
             fontWeight: 600,
-            color: '#fbbf24',
+            color: '#22c55e',
           }}
         >
-          <Sparkles size={13} />
+          <Sparkles size={isMobile ? 11 : 13} />
           Tile System Diagnostics
         </span>
       </div>
 
-      {/* Laptop Showcase Frame (Fits comfortably in a single viewport) */}
+      {/* Laptop Showcase Frame (Responsive & Scaled to fit normal phone screens) */}
       <div
         className="laptop-mockup-wrapper"
         style={{
@@ -299,9 +299,9 @@ export function MonitoringPreview() {
         <div
           style={{
             background: '#151d2f',
-            border: '2px solid #2a3754',
-            borderRadius: '16px 16px 2px 2px',
-            padding: '8px 8px 10px',
+            border: isMobile ? '1.5px solid #2a3754' : '2px solid #2a3754',
+            borderRadius: isMobile ? '12px 12px 2px 2px' : '16px 16px 2px 2px',
+            padding: isMobile ? '6px 6px 8px' : '8px 8px 10px',
             boxShadow: '0 20px 50px -10px rgba(0, 0, 0, 0.7), 0 0 30px rgba(34, 197, 94, 0.08)',
           }}
         >
@@ -311,13 +311,13 @@ export function MonitoringPreview() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              paddingBottom: '6px',
+              paddingBottom: isMobile ? '4px' : '6px',
             }}
           >
             <span
               style={{
-                width: '6px',
-                height: '6px',
+                width: isMobile ? '4px' : '6px',
+                height: isMobile ? '4px' : '6px',
                 borderRadius: '50%',
                 background: '#334155',
                 display: 'inline-block',
@@ -325,39 +325,41 @@ export function MonitoringPreview() {
             />
           </div>
 
-          {/* Screen Content: Miniature EcoStep Dashboard */}
+          {/* Screen Content: Scaled EcoStep Dashboard */}
           <div
             style={{
               background: '#070d1e',
-              borderRadius: '10px',
+              borderRadius: isMobile ? '8px' : '10px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: isMobile ? '10px' : '14px 16px',
+              padding: isMobile ? '8px 8px' : '14px 16px',
               overflow: 'hidden',
             }}
           >
-            {/* Miniature Dashboard Header */}
+            {/* Dashboard Header Bar inside screen */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingBottom: '10px',
-                marginBottom: '10px',
+                paddingBottom: isMobile ? '6px' : '10px',
+                marginBottom: isMobile ? '8px' : '10px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '5px' : '8px' }}>
+                <div style={{ display: 'flex', gap: isMobile ? '3px' : '5px' }}>
+                  <span style={{ width: isMobile ? '6px' : '8px', height: isMobile ? '6px' : '8px', borderRadius: '50%', background: '#ef4444' }} />
+                  <span style={{ width: isMobile ? '6px' : '8px', height: isMobile ? '6px' : '8px', borderRadius: '50%', background: '#f59e0b' }} />
+                  <span style={{ width: isMobile ? '6px' : '8px', height: isMobile ? '6px' : '8px', borderRadius: '50%', background: '#22c55e' }} />
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#eaf3ee', marginLeft: '6px' }}>
+                <span style={{ fontSize: isMobile ? '11px' : '12px', fontWeight: 700, color: '#eaf3ee', marginLeft: isMobile ? '2px' : '6px' }}>
                   EcoStep Central
                 </span>
-                <span style={{ fontSize: '10px', color: '#64748b', display: isMobile ? 'none' : 'inline' }}>
-                  • 100 Hz Piezoelectric Tile
-                </span>
+                {!isMobile && (
+                  <span style={{ fontSize: '10px', color: '#64748b' }}>
+                    • 100 Hz Piezoelectric Tile
+                  </span>
+                )}
               </div>
 
               {/* Pulsing Live Demo Badge */}
@@ -365,8 +367,8 @@ export function MonitoringPreview() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  padding: '2px 8px',
+                  gap: isMobile ? '4px' : '6px',
+                  padding: isMobile ? '2px 6px' : '2px 8px',
                   borderRadius: '999px',
                   background: 'rgba(34, 197, 94, 0.12)',
                   border: '1px solid rgba(34, 197, 94, 0.3)',
@@ -374,54 +376,47 @@ export function MonitoringPreview() {
               >
                 <span
                   style={{
-                    width: '6px',
-                    height: '6px',
+                    width: isMobile ? '5px' : '6px',
+                    height: isMobile ? '5px' : '6px',
                     borderRadius: '50%',
                     background: '#22c55e',
                     boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)',
                     animation: 'mockup-pulse 1.8s infinite ease-in-out',
                   }}
                 />
-                <span style={{ fontSize: '10px', fontWeight: 700, color: '#22c55e' }}>
+                <span style={{ fontSize: isMobile ? '8.5px' : '10px', fontWeight: 700, color: '#22c55e', letterSpacing: '0.02em' }}>
                   LIVE PREVIEW
                 </span>
               </div>
             </div>
 
-            {/* 4 Metric Cards Row (Sized to fit cleanly without vertical scroll) */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '8px',
-                marginBottom: '12px',
-              }}
-            >
+            {/* 4 Metric Cards (2x2 on mobile, 4-in-a-row on desktop) */}
+            <div className="preview-kpis-grid">
               {kpis.map((kpi) => (
                 <div
                   key={kpi.label}
                   style={{
                     background: 'rgba(15, 23, 42, 0.75)',
                     border: '1px solid rgba(255, 255, 255, 0.07)',
-                    borderRadius: '10px',
-                    padding: '8px 10px',
+                    borderRadius: isMobile ? '8px' : '10px',
+                    padding: isMobile ? '6px 8px' : '8px 10px',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {kpi.icon}
-                      <span style={{ fontSize: '11px', color: '#93a39b', fontWeight: 600 }}>
+                      <span style={{ fontSize: isMobile ? '10px' : '11px', color: '#93a39b', fontWeight: 600 }}>
                         {kpi.label}
                       </span>
                     </div>
                     <span
                       style={{
-                        fontSize: '9px',
+                        fontSize: isMobile ? '8px' : '9px',
                         fontWeight: 600,
                         color: kpi.color,
                         background: 'rgba(255, 255, 255, 0.05)',
-                        padding: '1px 5px',
-                        borderRadius: '4px',
+                        padding: isMobile ? '1px 4px' : '1px 5px',
+                        borderRadius: '3px',
                       }}
                     >
                       {kpi.badge}
@@ -431,7 +426,7 @@ export function MonitoringPreview() {
                   <b
                     style={{
                       display: 'block',
-                      fontSize: kpi.isStatus ? '16px' : '18px',
+                      fontSize: isMobile ? (kpi.isStatus ? '14px' : '16px') : (kpi.isStatus ? '16px' : '18px'),
                       fontWeight: 800,
                       color: '#eaf3ee',
                       letterSpacing: '-0.02em',
@@ -444,13 +439,13 @@ export function MonitoringPreview() {
               ))}
             </div>
 
-            {/* Energy Generation Bar Chart (Compact, fits within laptop screen) */}
+            {/* Energy Generation Bar Chart */}
             <div
               style={{
                 background: 'rgba(11, 19, 43, 0.65)',
                 border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '10px',
-                padding: '10px 12px 6px',
+                borderRadius: isMobile ? '8px' : '10px',
+                padding: isMobile ? '8px 8px 4px' : '10px 12px 6px',
               }}
             >
               <div
@@ -458,28 +453,28 @@ export function MonitoringPreview() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '8px',
+                  marginBottom: isMobile ? '4px' : '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#eaf3ee' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: isMobile ? '10.5px' : '12px', fontWeight: 700, color: '#eaf3ee' }}>
                     Energy Generation Over Time
                   </span>
-                  <span style={{ fontSize: '10px', color: '#64748b' }}>
+                  <span style={{ fontSize: isMobile ? '9px' : '10px', color: '#64748b' }}>
                     (mJ)
                   </span>
                 </div>
-                <span style={{ fontSize: '10px', color: '#93a39b' }}>
+                <span style={{ fontSize: isMobile ? '9px' : '10px', color: '#93a39b' }}>
                   8:00 AM – 7:00 PM
                 </span>
               </div>
 
               {/* Bar Chart Container */}
-              <div style={{ width: '100%', height: isMobile ? '120px' : '140px' }}>
+              <div style={{ width: '100%', height: isMobile ? '110px' : '140px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={SAMPLE_CHART_DATA}
-                    margin={{ top: 5, right: 5, left: -25, bottom: 0 }}
+                    margin={{ top: 4, right: 4, left: isMobile ? -30 : -25, bottom: 0 }}
                   >
                     <defs>
                       <linearGradient id="laptopBarGrad" x1="0" y1="0" x2="0" y2="1">
@@ -493,17 +488,16 @@ export function MonitoringPreview() {
                       vertical={false}
                     />
                     <XAxis
-                      dataKey="time"
-                      tickFormatter={(val, idx) => (isMobile ? SAMPLE_CHART_DATA[idx]?.shortTime : val)}
+                      dataKey={isMobile ? 'shortTime' : 'time'}
                       stroke="rgba(255, 255, 255, 0.12)"
-                      tick={{ fill: '#93a39b', fontSize: 9 }}
+                      tick={{ fill: '#93a39b', fontSize: isMobile ? 8 : 9 }}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
                       interval={0}
                     />
                     <YAxis
                       stroke="rgba(255, 255, 255, 0.12)"
-                      tick={{ fill: '#93a39b', fontSize: 9 }}
+                      tick={{ fill: '#93a39b', fontSize: isMobile ? 8 : 9 }}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(255, 255, 255, 0.1)' }}
                       domain={[0, 36]}
@@ -530,18 +524,18 @@ export function MonitoringPreview() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  paddingTop: '6px',
-                  marginTop: '4px',
+                  paddingTop: '4px',
+                  marginTop: '2px',
                   borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                  fontSize: '11px',
+                  fontSize: isMobile ? '9.5px' : '11px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#93a39b' }}>
-                  <Info size={12} style={{ color: '#22c55e' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#93a39b' }}>
+                  <Info size={isMobile ? 10 : 12} style={{ color: '#22c55e' }} />
                   <span>Illustrative Demo Data — Not Live Readings</span>
                 </div>
-                <span style={{ fontSize: '10px', color: '#64748b' }}>
-                  Sample yield: 243 mJ
+                <span style={{ fontSize: isMobile ? '8.5px' : '10px', color: '#64748b' }}>
+                  Sample: 243 mJ
                 </span>
               </div>
             </div>
@@ -552,11 +546,11 @@ export function MonitoringPreview() {
         <div
           style={{
             position: 'relative',
-            width: '104%',
-            left: '-2%',
-            height: '12px',
+            width: isMobile ? '102%' : '104%',
+            left: isMobile ? '-1%' : '-2%',
+            height: isMobile ? '9px' : '12px',
             background: 'linear-gradient(180deg, #334155 0%, #1e293b 100%)',
-            borderRadius: '0 0 14px 14px',
+            borderRadius: isMobile ? '0 0 10px 10px' : '0 0 14px 14px',
             boxShadow: '0 12px 25px rgba(0, 0, 0, 0.6)',
             display: 'flex',
             alignItems: 'flex-start',
@@ -566,10 +560,10 @@ export function MonitoringPreview() {
           {/* Thumb Notch */}
           <div
             style={{
-              width: '64px',
-              height: '4px',
+              width: isMobile ? '46px' : '64px',
+              height: isMobile ? '3px' : '4px',
               background: '#0f172a',
-              borderRadius: '0 0 4px 4px',
+              borderRadius: '0 0 3px 3px',
             }}
           />
         </div>
@@ -578,12 +572,12 @@ export function MonitoringPreview() {
       {/* Button navigating to actual live dashboard */}
       <div
         style={{
-          marginTop: '22px',
+          marginTop: isMobile ? '18px' : '22px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: '14px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
+          gap: '8px',
+          width: '100%',
         }}
       >
         <Link
@@ -592,17 +586,22 @@ export function MonitoringPreview() {
           style={{
             display: 'inline-flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
-            padding: '10px 24px',
+            padding: isMobile ? '12px 28px' : '10px 24px',
             borderRadius: '999px',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: isMobile ? '15px' : '14px',
             border: '1px solid var(--landing-green)',
             background: 'var(--landing-green)',
             color: 'var(--landing-green-ink)',
             cursor: 'pointer',
             textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(25, 212, 106, 0.3)',
             transition: 'transform 0.25s cubic-bezier(0.65, 0, 0.15, 1), box-shadow 0.25s',
+            width: isMobile ? '100%' : 'auto',
+            maxWidth: isMobile ? '340px' : 'none',
+            boxSizing: 'border-box',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
@@ -610,13 +609,13 @@ export function MonitoringPreview() {
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(25, 212, 106, 0.3)';
           }}
         >
           Open Dashboard
           <ArrowRight size={15} />
         </Link>
-        <span style={{ fontSize: '13px', color: 'var(--landing-mute)' }}>
+        <span style={{ fontSize: isMobile ? '12px' : '13px', color: 'var(--landing-mute)', textAlign: 'center' }}>
           Click to access live database readings & diagnostics
         </span>
       </div>
@@ -631,15 +630,6 @@ export function MonitoringPreview() {
           50% {
             transform: scale(1.3);
             opacity: 0.6;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .laptop-mockup-wrapper {
-            max-width: 100% !important;
-          }
-          .callout-tags-bar {
-            display: none !important;
           }
         }
       `}</style>

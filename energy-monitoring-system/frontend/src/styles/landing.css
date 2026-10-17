@@ -279,3 +279,163 @@ html {
     animation: none !important;
   }
 }
+
+/* =========================================================================
+   RESPONSIVE LAYOUT SYSTEM
+   ========================================================================= */
+.landing-page-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .landing-page-wrap {
+    padding: 0 16px;
+  }
+}
+
+.hero-section {
+  padding-top: 130px;
+  padding-bottom: 60px;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding-top: 92px;
+    padding-bottom: 36px;
+  }
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+
+.how-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  counter-reset: s;
+}
+
+@media (max-width: 900px) {
+  .how-steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .how-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.ecochat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .ecochat-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+.preview-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .preview-kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-section-py {
+    padding: 48px 0 !important;
+  }
+  .landing-section-monitoring {
+    min-height: auto !important;
+    padding: 36px 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-section-py {
+    padding: 48px 0 !important;
+  }
+  .landing-section-monitoring {
+    min-height: auto !important;
+    padding: 36px 0 !important;
+  }
+}
+
+/* =========================================================================
+   RESPONSIVE HEADER & NAVIGATION CONTROLS
+   ========================================================================= */
+
+/* Desktop default: mobile menu button hidden */
+.landing-mobile-menu-btn {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .landing-header {
+    padding: 12px 16px !important;
+  }
+
+  /* Completely remove desktop center navigation tabs from layout on screens <= 900px */
+  .landing-center-nav {
+    display: none !important;
+  }
+
+  /* Completely remove desktop CTAs / buttons from layout on screens <= 900px */
+  .landing-desktop-controls {
+    display: none !important;
+  }
+
+  /* Prominently display the mobile menu button at the top right */
+  .landing-mobile-menu-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 14px !important;
+    border-radius: 999px !important;
+    background: var(--landing-surface) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--landing-line) !important;
+    color: var(--landing-ink) !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    box-shadow: var(--landing-shadow) !important;
+    white-space: nowrap !important;
+    pointer-events: auto !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+
+

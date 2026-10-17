@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
@@ -53,15 +53,12 @@ export const DashboardHeader = React.memo(function DashboardHeader({
 
   return (
     <header 
-      className="grid grid-cols-[1fr_auto_auto] items-center gap-6"
-      style={{
-        marginBottom: '16px', // Reduced from 24px to pull content up
-      }}
+      className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_auto] items-start sm:items-center justify-between gap-3 sm:gap-6 mb-4"
     >
       {/* Title and Subtitle Section */}
       <div className="flex flex-col">
         <h1 
-          className="text-2xl font-bold uppercase"
+          className="text-xl sm:text-2xl font-bold uppercase"
           style={{
             color: theme === 'dark' ? '#F9FAFB' : '#0B132B',
             letterSpacing: '0.05em',
@@ -81,40 +78,42 @@ export const DashboardHeader = React.memo(function DashboardHeader({
         </p>
       </div>
 
-      {/* Date/Time Section */}
-      <div className="flex flex-col items-center">
-        <div 
-          className="text-sm font-semibold uppercase"
-          style={{
-            color: theme === 'dark' ? '#F9FAFB' : '#0B132B',
-            letterSpacing: '0.05em',
-          }}
-        >
-          TODAY
+      <div className="flex items-center justify-between w-full sm:w-auto gap-3 sm:contents">
+        {/* Date/Time Section */}
+        <div className="flex flex-col items-start sm:items-center">
+          <div 
+            className="text-xs sm:text-sm font-semibold uppercase"
+            style={{
+              color: theme === 'dark' ? '#F9FAFB' : '#0B132B',
+              letterSpacing: '0.05em',
+            }}
+          >
+            TODAY
+          </div>
+          <div 
+            className="text-[11px] sm:text-xs"
+            style={{
+              color: theme === 'dark' ? '#9CA3AF' : '#374151',
+            }}
+          >
+            {formattedDate}
+          </div>
+          <div 
+            className="text-[11px] sm:text-xs"
+            style={{
+              color: theme === 'dark' ? '#9CA3AF' : '#374151',
+            }}
+          >
+            {formattedTime}
+          </div>
         </div>
-        <div 
-          className="text-xs"
-          style={{
-            color: theme === 'dark' ? '#9CA3AF' : '#374151',
-          }}
-        >
-          {formattedDate}
-        </div>
-        <div 
-          className="text-xs"
-          style={{
-            color: theme === 'dark' ? '#9CA3AF' : '#374151',
-          }}
-        >
-          {formattedTime}
-        </div>
-      </div>
 
-      {/* System Status Badge */}
-      <SystemStatusBadge 
-        status={systemStatus} 
-        isWebSocketConnected={isWebSocketConnected}
-      />
+        {/* System Status Badge */}
+        <SystemStatusBadge 
+          status={systemStatus} 
+          isWebSocketConnected={isWebSocketConnected}
+        />
+      </div>
     </header>
   );
 });
@@ -169,11 +168,11 @@ function SystemStatusBadge({ status, isWebSocketConnected }: SystemStatusBadgePr
 
   return (
     <div 
-      className={`flex items-center justify-center gap-3 min-w-[200px] h-[80px] px-6 ${config.bgColor} ${config.textColor} border-2 ${config.borderColor} rounded-lg`}
+      className={`flex items-center justify-center gap-2 sm:gap-3 min-w-0 sm:min-w-[180px] h-12 sm:h-[80px] px-3.5 sm:px-6 ${config.bgColor} ${config.textColor} border sm:border-2 ${config.borderColor} rounded-lg`}
     >
       <div className="flex flex-col items-center">
         <div 
-          className="text-xs uppercase font-semibold"
+          className="hidden sm:block text-xs uppercase font-semibold"
           style={{
             letterSpacing: '0.1em',
             marginBottom: '8px',
@@ -183,11 +182,11 @@ function SystemStatusBadge({ status, isWebSocketConnected }: SystemStatusBadgePr
         </div>
         <div className="flex items-center gap-2">
           <div 
-            className={`w-3 h-3 rounded-full ${config.dotColor}`}
+            className={`w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full ${config.dotColor}`}
             role="status"
             aria-label={`System status: ${config.label}`}
           />
-          <span className="font-bold text-sm">
+          <span className="font-bold text-xs sm:text-sm">
             {config.label}
           </span>
         </div>

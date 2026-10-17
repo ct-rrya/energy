@@ -39,22 +39,35 @@ export function useMediaQuery(query: string): boolean {
 
     const media = window.matchMedia(query);
     
-    // Set initial value
+    // Set initial value immediately
     setMatches(media.matches);
     
-    // Debounce for performance (100ms delay)
-    const listener = debounce((e: MediaQueryListEvent) => {
-      setMatches(e.matches);
-    }, 100);
+    const updateMatches = () => {
+      if (typeof window !== 'undefined') {
+        setMatches(window.matchMedia(query).matches);
+      }
+    };
+
+    // Debounce for performance (80ms delay)
+    const listener = debounce(updateMatches, 80);
     
-    // Add event listener for media query changes
-    media.addEventListener('change', listener);
+    // Add event listeners for media query changes and window resize
+    if (media.addEventListener) {
+      media.addEventListener('change', listener);
+    } else if ((media as any).addListener) {
+      (media as any).addListener(listener);
+    }
+    window.addEventListener('resize', listener);
     
     // Cleanup function
     return () => {
-      // Cancel any pending debounced calls
       listener.cancel();
-      media.removeEventListener('change', listener);
+      if (media.removeEventListener) {
+        media.removeEventListener('change', listener);
+      } else if ((media as any).removeListener) {
+        (media as any).removeListener(listener);
+      }
+      window.removeEventListener('resize', listener);
     };
   }, [query]);
 

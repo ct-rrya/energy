@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type RefObject } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Footprints, Sun, Moon, Menu, X, ArrowUpRight } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator';
 import { ROUTES } from '@/routes/routes.config';
 
@@ -37,21 +38,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 900;
-    }
-    return false;
-  });
-
-  // Track window resize for responsive layout
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 900);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isMobile = useMediaQuery('(max-width: 899px)');
 
   // Scroll detection with hysteresis buffer
   useEffect(() => {
@@ -126,17 +113,20 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
 
   return (
     <header
+      className="landing-header"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
+        width: '100%',
+        boxSizing: 'border-box',
         zIndex: 50,
         pointerEvents: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 28px',
+        padding: isMobile ? '12px 16px' : '16px 28px',
       }}
     >
       {/* =========================================================================
@@ -149,6 +139,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
           gap: '10px',
           pointerEvents: 'auto',
           position: 'relative',
+          flexShrink: 0,
         }}
       >
         {/* EcoStep Logo & Brand */}
@@ -190,7 +181,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
             <Footprints size={20} strokeWidth={2.4} />
           </div>
 
-          {/* Brand Text: Slides away smoothly when scrolling */}
+          {/* Brand Text: Slides away smoothly when scrolling on desktop, stays visible on mobile */}
           <span
             className="brand-text"
             style={{
@@ -199,13 +190,13 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
               letterSpacing: '-0.02em',
               whiteSpace: 'nowrap',
               display: 'inline-block',
-              transform: showCollapsedMenu ? 'translateX(-32px)' : 'translateX(0)',
-              opacity: showCollapsedMenu ? 0 : 1,
-              maxWidth: showCollapsedMenu ? '0px' : '90px',
-              marginLeft: showCollapsedMenu ? '0px' : '9px',
+              transform: !isMobile && showCollapsedMenu ? 'translateX(-32px)' : 'translateX(0)',
+              opacity: !isMobile && showCollapsedMenu ? 0 : 1,
+              maxWidth: !isMobile && showCollapsedMenu ? '0px' : '90px',
+              marginLeft: !isMobile && showCollapsedMenu ? '0px' : '9px',
               transition:
                 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              pointerEvents: showCollapsedMenu ? 'none' : 'auto',
+              pointerEvents: !isMobile && showCollapsedMenu ? 'none' : 'auto',
             }}
           >
             EcoStep
@@ -217,7 +208,9 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
           CENTER: NAVIGATION TABS (Visible when at top of page on desktop)
          ========================================================================= */}
       <div
+        className="landing-center-nav"
         style={{
+          display: showCollapsedMenu ? 'none' : 'block',
           pointerEvents: showCollapsedMenu ? 'none' : 'auto',
           opacity: showCollapsedMenu ? 0 : 1,
           transform: showCollapsedMenu ? 'translate3d(0, -12px, 0)' : 'translate3d(0, 0, 0)',
@@ -326,140 +319,175 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
          ========================================================================= */}
       <div
         ref={menuContainerRef}
+        className="landing-nav-right"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
           pointerEvents: 'auto',
           position: 'relative',
+          flexShrink: 0,
+          marginLeft: 'auto',
         }}
       >
-        {/* State A: Admin Login + Theme Toggle (Visible when at top of page) */}
-        <div
+        {/* Mobile View: Dedicated Expandable Menu Button (Handled via CSS .landing-mobile-menu-btn) */}
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={isMenuOpen}
+          className="landing-mobile-menu-btn"
           style={{
-            display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            opacity: showCollapsedMenu ? 0 : 1,
-            transform: showCollapsedMenu ? 'translate3d(14px, 0, 0) scale(0.96)' : 'translate3d(0, 0, 0) scale(1)',
-            pointerEvents: showCollapsedMenu ? 'none' : 'auto',
-            transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
-            position: showCollapsedMenu ? 'absolute' : 'relative',
-            right: 0,
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '999px',
+            background: isMenuOpen ? 'var(--landing-soft)' : 'var(--landing-surface)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid var(--landing-line)',
+            color: 'var(--landing-ink)',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: 'var(--landing-shadow)',
             whiteSpace: 'nowrap',
+            pointerEvents: 'auto',
           }}
         >
-          <Link
-            to={ROUTES.ADMIN_LOGIN}
-            className="btn go"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '11px 22px',
-              borderRadius: '999px',
-              fontWeight: 700,
-              fontSize: '15px',
-              border: '1px solid var(--landing-green)',
-              background: 'var(--landing-green)',
-              color: 'var(--landing-green-ink)',
-              textDecoration: 'none',
-              boxShadow: 'var(--landing-shadow)',
-              transform: 'translate3d(0, 0, 0)',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(25, 212, 106, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
-              e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
-            }}
-          >
-            Admin login
-          </Link>
+          {isMenuOpen ? <X size={18} strokeWidth={2.4} /> : <Menu size={18} strokeWidth={2.4} />}
+          <span>{isMenuOpen ? 'Close' : 'Menu'}</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle light and dark theme"
+        {/* Desktop View: State A (top of page) or State B (scrolled) - Handled via CSS .landing-desktop-controls */}
+        <div className="landing-desktop-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* State A: Admin Login + Theme Toggle (Visible when at top of page on desktop) */}
+          <div
             style={{
-              width: '42px',
-              height: '42px',
-              padding: 0,
-              display: 'inline-flex',
-              justifyContent: 'center',
+              display: 'flex',
               alignItems: 'center',
-              borderRadius: '50%',
-              border: '1px solid var(--landing-line)',
-              background: 'var(--landing-surface)',
-              color: 'var(--landing-ink)',
-              cursor: 'pointer',
-              boxShadow: 'var(--landing-shadow)',
-              transform: 'translate3d(0, 0, 0)',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
-            }}
-          >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-        </div>
-
-        {/* State B: Single Expandable Menu Button (Visible when scrolled) */}
-        <div
-          style={{
-            opacity: showCollapsedMenu ? 1 : 0,
-            transform: showCollapsedMenu ? 'translate3d(0, 0, 0) scale(1)' : 'translate3d(14px, 0, 0) scale(0.96)',
-            pointerEvents: showCollapsedMenu ? 'auto' : 'none',
-            transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
-            position: showCollapsedMenu ? 'relative' : 'absolute',
-            right: 0,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={isMenuOpen}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              borderRadius: '999px',
-              background: isMenuOpen ? 'var(--landing-soft)' : 'var(--landing-pill)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid var(--landing-line)',
-              color: 'var(--landing-ink)',
-              fontSize: '13.5px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: 'var(--landing-shadow)',
+              gap: '10px',
+              opacity: isScrolled ? 0 : 1,
+              transform: isScrolled ? 'translate3d(14px, 0, 0) scale(0.96)' : 'translate3d(0, 0, 0) scale(1)',
+              pointerEvents: isScrolled ? 'none' : 'auto',
+              transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              position: isScrolled ? 'absolute' : 'relative',
+              right: 0,
               whiteSpace: 'nowrap',
-              transform: 'translate3d(0, 0, 0)',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
             }}
           >
-            {isMenuOpen ? <X size={16} strokeWidth={2.4} /> : <Menu size={16} strokeWidth={2.4} />}
-            <span>{isMenuOpen ? 'Close' : 'Menu'}</span>
-          </button>
+            <Link
+              to={ROUTES.ADMIN_LOGIN}
+              className="btn go"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '11px 22px',
+                borderRadius: '999px',
+                fontWeight: 700,
+                fontSize: '15px',
+                border: '1px solid var(--landing-green)',
+                background: 'var(--landing-green)',
+                color: 'var(--landing-green-ink)',
+                textDecoration: 'none',
+                boxShadow: 'var(--landing-shadow)',
+                transform: 'translate3d(0, 0, 0)',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(25, 212, 106, 0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+                e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
+              }}
+            >
+              Admin login
+            </Link>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle light and dark theme"
+              style={{
+                width: '42px',
+                height: '42px',
+                padding: 0,
+                display: 'inline-flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderRadius: '50%',
+                border: '1px solid var(--landing-line)',
+                background: 'var(--landing-surface)',
+                color: 'var(--landing-ink)',
+                cursor: 'pointer',
+                boxShadow: 'var(--landing-shadow)',
+                transform: 'translate3d(0, 0, 0)',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+              }}
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+          </div>
+
+          {/* State B: Single Expandable Menu Button (Visible when scrolled on desktop) */}
+          <div
+            style={{
+              opacity: isScrolled ? 1 : 0,
+              transform: isScrolled ? 'translate3d(0, 0, 0) scale(1)' : 'translate3d(14px, 0, 0) scale(0.96)',
+              pointerEvents: isScrolled ? 'auto' : 'none',
+              transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              position: isScrolled ? 'relative' : 'absolute',
+              right: 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+              aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMenuOpen}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 18px',
+                borderRadius: '999px',
+                background: isMenuOpen ? 'var(--landing-soft)' : 'var(--landing-pill)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid var(--landing-line)',
+                color: 'var(--landing-ink)',
+                fontSize: '13.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: 'var(--landing-shadow)',
+                whiteSpace: 'nowrap',
+                transform: 'translate3d(0, 0, 0)',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+              }}
+            >
+              {isMenuOpen ? <X size={16} strokeWidth={2.4} /> : <Menu size={16} strokeWidth={2.4} />}
+              <span>{isMenuOpen ? 'Close' : 'Menu'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Dropdown Menu attached to top-right */}
-        {isMenuOpen && showCollapsedMenu && (
+        {isMenuOpen && (
           <div
             style={{
               position: 'absolute',
@@ -470,7 +498,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
               borderRadius: '20px',
               padding: '10px',
               boxShadow: '0 20px 48px rgba(0, 0, 0, 0.35)',
-              minWidth: '220px',
+              minWidth: isMobile ? 'min(240px, calc(100vw - 32px))' : '220px',
               zIndex: 60,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',

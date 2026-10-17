@@ -8,6 +8,8 @@ import { energyService, type EnergyReading } from '@/api/services/energy.service
 import type { MetricType, Granularity } from '@/features/analytics/types';
 import { format } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserRole } from '@/lib/permissions';
 
 /**
  * View Mode Type
@@ -39,6 +41,8 @@ interface HistoricalDataViewProps {
   endDate: string;
   /** Granularity for data aggregation */
   granularity: Granularity;
+  /** Whether the current user is a public user (read-only) */
+  isPublicUser?: boolean;
 }
 
 /**
@@ -54,9 +58,15 @@ export function HistoricalDataView({
   startDate,
   endDate,
   granularity,
+  isPublicUser: propIsPublicUser,
 }: HistoricalDataViewProps) {
   // Theme for styling
   const { theme } = useTheme();
+  const { isAuthenticated, user } = useAuth();
+
+  // Determine if user is public (cannot export CSV)
+  const userRole = getUserRole(isAuthenticated, user);
+  const isPublic = propIsPublicUser !== undefined ? propIsPublicUser : (userRole === 'public');
   
   // State for view mode and pagination
   const [viewMode, setViewMode] = useState<ViewMode>('aggregated');
@@ -165,9 +175,9 @@ export function HistoricalDataView({
     });
   }, [energyData, voltageData, currentData, powerData, stepsData]);
 
-  // Export to CSV
+  // Export to CSV (Unavailable for public users)
   const handleExport = () => {
-    if (!historicalRecords.length) return;
+    if (isPublic || !historicalRecords.length) return;
 
     const headers = ['Date', 'Time', 'Energy (mWh)', 'Voltage (V)', 'Equiv. Current (mA)', 'Power (mW)', 'Steps'];
     const csvContent = [
@@ -271,10 +281,10 @@ export function HistoricalDataView({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             {/* View Mode Toggle - EcoStep Design System */}
             <div 
-              className="flex items-center gap-1 rounded-xl p-1"
+              className="flex items-center gap-1 rounded-xl p-1 w-full sm:w-auto"
               style={{
                 backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6',
                 border: `1px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
@@ -285,7 +295,7 @@ export function HistoricalDataView({
                   setViewMode('aggregated');
                   setCurrentPage(1);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
                 style={{
                   backgroundColor: viewMode === 'aggregated'
                     ? (theme === 'dark' ? '#1E2B24' : '#E8F8EF')
@@ -305,7 +315,7 @@ export function HistoricalDataView({
                   setViewMode('raw');
                   setCurrentPage(1);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
                 style={{
                   backgroundColor: viewMode === 'raw'
                     ? (theme === 'dark' ? '#1E2B24' : '#E8F8EF')
@@ -322,13 +332,20 @@ export function HistoricalDataView({
               </button>
             </div>
 
-            {/* Export Button */}
+            {/* Export Button (Disabled for public users) */}
             <button
-              onClick={handleExport}
-              className="eco-btn-secondary flex items-center gap-2"
+              onClick={isPublic ? undefined : handleExport}
+              disabled={isPublic}
+              title={isPublic ? 'Exporting CSV is unavailable to public users' : 'Export CSV'}
+              aria-disabled={isPublic}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm rounded-lg font-medium transition-all w-full sm:w-auto ${
+                isPublic
+                  ? 'opacity-40 cursor-not-allowed bg-neutral-200/50 dark:bg-neutral-800/50 text-neutral-400 dark:text-neutral-500 border border-neutral-300 dark:border-neutral-700 pointer-events-auto'
+                  : 'eco-btn-secondary cursor-pointer'
+              }`}
             >
               <Download className="h-4 w-4" strokeWidth={2} />
-              Export CSV
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
@@ -336,8 +353,8 @@ export function HistoricalDataView({
 
       {/* Pagination Controls (Raw Mode Only) */}
       {viewMode === 'raw' && rawReadingsData && totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
-          <p className="text-sm text-[rgb(var(--color-neutral-600))]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
+          <p className="text-xs sm:text-sm text-[rgb(var(--color-neutral-600))] text-center sm:text-left">
             Page {currentPage} of {totalPages} • Showing {(currentPage - 1) * recordsPerPage + 1} to{' '}
             {Math.min(currentPage * recordsPerPage, totalRecords)} of {totalRecords} records
           </p>
@@ -345,17 +362,17 @@ export function HistoricalDataView({
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="eco-btn-secondary px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="eco-btn-secondary px-3 py-1.5 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
             </button>
-            <span className="text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] px-2">
+            <span className="text-xs sm:text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] px-2 font-medium">
               {currentPage}
             </span>
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="eco-btn-secondary px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="eco-btn-secondary px-3 py-1.5 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -363,9 +380,9 @@ export function HistoricalDataView({
         </div>
       )}
 
-      {/* Table Container with horizontal scroll */}
-      <div className="overflow-x-auto -mx-6 px-6">
-        <table className="w-full text-left border-collapse">
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto -mx-6 px-6">
+        <table className="w-full text-left border-collapse" style={{ minWidth: '680px' }}>
           <thead>
             <tr className="border-b border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
               <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))]">
@@ -428,6 +445,57 @@ export function HistoricalDataView({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card List View */}
+      <div className="md:hidden space-y-2.5">
+        {displayRecords.map((record, index) => (
+          <div
+            key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
+            className="p-3.5 rounded-xl border border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-800))] bg-[rgb(var(--color-neutral-50))]/60 dark:bg-[rgb(var(--color-neutral-900))]/60 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-[rgb(var(--color-neutral-900))] dark:text-[rgb(var(--color-neutral-100))]">
+                  {record.date}
+                </span>
+                <span className="text-xs text-[rgb(var(--color-neutral-500))] dark:text-[rgb(var(--color-neutral-400))]">
+                  • {record.time}
+                </span>
+              </div>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
+                {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[rgb(var(--color-neutral-200))]/70 dark:border-[rgb(var(--color-neutral-800))] text-xs">
+              <div>
+                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Voltage</span>
+                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                  {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Current</span>
+                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                  {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Power</span>
+                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                  {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Steps</span>
+                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                  {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Summary footer */}

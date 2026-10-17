@@ -1,24 +1,34 @@
 import { type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
-import { EcoSidebar } from '@/components/layout/EcoSidebar';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { DesktopDashboardLayout } from './DesktopDashboardLayout';
+import { TabletDashboardLayout } from './TabletDashboardLayout';
+import { MobileDashboardLayout } from './MobileDashboardLayout';
 
-/**
- * Dashboard Layout Props
- */
 interface DashboardLayoutProps {
   children?: ReactNode;
 }
 
 /**
- * Dashboard Layout with EcoStep Sidebar
+ * Dashboard Layout with Hybrid Responsive Architecture
  * 
- * Unified layout for both public viewers and admins.
- * Features:
- * - EcoStep floating capsule sidebar
- * - Liquid notch indicator
- * - Role-based navigation
- * - Theme toggle
+ * Dynamically renders:
+ * - DesktopDashboardLayout (>= 1024px): 100% original EcoSidebar, liquid notch, and desktop layout
+ * - TabletDashboardLayout (768px - 1023px): Tablet-adapted header, drawer, and spacious canvas
+ * - MobileDashboardLayout (< 768px): Dedicated mobile header, slide-out drawer, touch-friendly UI
+ * 
+ * Reuses all existing routes, Socket.IO connections, queries, and business logic without duplication.
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  return <EcoSidebar>{children ?? <Outlet />}</EcoSidebar>;
+  const { isDesktop, isTablet } = useDeviceLayout();
+
+  if (isDesktop) {
+    return <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>;
+  }
+
+  if (isTablet) {
+    return <TabletDashboardLayout>{children ?? <Outlet />}</TabletDashboardLayout>;
+  }
+
+  return <MobileDashboardLayout>{children ?? <Outlet />}</MobileDashboardLayout>;
 }

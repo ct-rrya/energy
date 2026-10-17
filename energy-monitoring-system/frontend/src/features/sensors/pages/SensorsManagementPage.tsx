@@ -483,7 +483,7 @@ export function SensorsManagementPage() {
 
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full" style={{ minWidth: '650px' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
                     <th

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
@@ -321,139 +321,233 @@ export default function AdminManagementPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className={`border-b ${
-                  theme === 'dark' 
-                    ? 'bg-[#0F1218] border-gray-800' 
-                    : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <tr>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Name
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Email
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Role
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Status
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Last Login
-                    </th>
-                    <th className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${
-                  theme === 'dark' 
-                    ? 'bg-[#1A1D2E] divide-gray-800' 
-                    : 'bg-white divide-gray-200'
-                }`}>
-                  {filteredAdmins.map((admin: any) => (
-                    <tr key={admin.id} className={theme === 'dark' ? 'hover:bg-[#0F1218]' : 'hover:bg-gray-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full" style={{ minWidth: '700px' }}>
+                  <thead className={`border-b ${
+                    theme === 'dark' 
+                      ? 'bg-[#0F1218] border-gray-800' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <tr>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Name
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Email
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Role
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Status
+                      </th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Last Login
+                      </th>
+                      <th className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${
+                    theme === 'dark' 
+                      ? 'bg-[#1A1D2E] divide-gray-800' 
+                      : 'bg-white divide-gray-200'
+                  }`}>
+                    {filteredAdmins.map((admin: any) => (
+                      <tr key={admin.id} className={theme === 'dark' ? 'hover:bg-[#0F1218]' : 'hover:bg-gray-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {admin.name}
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {admin.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getRoleBadge(admin.role)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(admin.isActive)}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {admin.lastLoginAt
+                            ? new Date(admin.lastLoginAt).toLocaleString()
+                            : 'Never'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() =>
+                                setConfirmAction({ type: 'reset', admin })
+                              }
+                              className={`p-2 rounded transition-colors duration-200 ${
+                                theme === 'dark'
+                                  ? 'text-blue-400 hover:bg-blue-900/30'
+                                  : 'text-blue-600 hover:bg-blue-50'
+                              }`}
+                              title="Reset Access Code"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setConfirmAction({
+                                  type: admin.isActive ? 'deactivate' : 'activate',
+                                  admin,
+                                })
+                              }
+                              className={`p-2 rounded transition-colors duration-200 ${
+                                admin.isActive
+                                  ? theme === 'dark'
+                                    ? 'text-amber-400 hover:bg-amber-900/30'
+                                    : 'text-amber-600 hover:bg-amber-50'
+                                  : theme === 'dark'
+                                    ? 'text-green-400 hover:bg-green-900/30'
+                                    : 'text-green-600 hover:bg-green-50'
+                              }`}
+                              title={
+                                admin.isActive
+                                  ? 'Deactivate Account'
+                                  : 'Activate Account'
+                              }
+                            >
+                              {admin.isActive ? (
+                                <XCircle className="w-4 h-4" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() =>
+                                setConfirmAction({ type: 'delete', admin })
+                              }
+                              className={`p-2 rounded transition-colors duration-200 ${
+                                theme === 'dark'
+                                  ? 'text-red-400 hover:bg-red-900/30'
+                                  : 'text-red-600 hover:bg-red-50'
+                              }`}
+                              title="Delete Administrator"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards View */}
+              <div className={`md:hidden divide-y ${
+                theme === 'dark' ? 'divide-gray-800' : 'divide-gray-200'
+              }`}>
+                {filteredAdmins.map((admin: any) => (
+                  <div key={admin.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className={`font-semibold text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                           {admin.name}
                         </div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {admin.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getRoleBadge(admin.role)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(admin.isActive)}
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {admin.lastLoginAt
-                          ? new Date(admin.lastLoginAt).toLocaleString()
-                          : 'Never'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() =>
-                              setConfirmAction({ type: 'reset', admin })
-                            }
-                            className={`p-2 rounded transition-colors duration-200 ${
-                              theme === 'dark'
-                                ? 'text-blue-400 hover:bg-blue-900/30'
-                                : 'text-blue-600 hover:bg-blue-50'
-                            }`}
-                            title="Reset Access Code"
-                          >
-                            <Key className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() =>
-                              setConfirmAction({
-                                type: admin.isActive ? 'deactivate' : 'activate',
-                                admin,
-                              })
-                            }
-                            className={`p-2 rounded transition-colors duration-200 ${
-                              admin.isActive
-                                ? theme === 'dark'
-                                  ? 'text-amber-400 hover:bg-amber-900/30'
-                                  : 'text-amber-600 hover:bg-amber-50'
-                                : theme === 'dark'
-                                  ? 'text-green-400 hover:bg-green-900/30'
-                                  : 'text-green-600 hover:bg-green-50'
-                            }`}
-                            title={
-                              admin.isActive
-                                ? 'Deactivate Account'
-                                : 'Activate Account'
-                            }
-                          >
-                            {admin.isActive ? (
-                              <XCircle className="w-4 h-4" />
-                            ) : (
-                              <CheckCircle className="w-4 h-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() =>
-                              setConfirmAction({ type: 'delete', admin })
-                            }
-                            className={`p-2 rounded transition-colors duration-200 ${
-                              theme === 'dark'
-                                ? 'text-red-400 hover:bg-red-900/30'
-                                : 'text-red-600 hover:bg-red-50'
-                            }`}
-                            title="Delete Administrator"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {admin.email}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                      <div>
+                        {getRoleBadge(admin.role)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <div className="flex items-center gap-2">
+                        <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>Status:</span>
+                        {getStatusBadge(admin.isActive)}
+                      </div>
+                      <div className={`text-[11px] ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {admin.lastLoginAt
+                          ? `Logged in: ${new Date(admin.lastLoginAt).toLocaleDateString()}`
+                          : 'Never logged in'}
+                      </div>
+                    </div>
+
+                    {/* Touch-Friendly Action Buttons */}
+                    <div className={`flex items-center justify-end gap-2 pt-2 border-t ${
+                      theme === 'dark' ? 'border-gray-800/80' : 'border-gray-100'
+                    }`}>
+                      <button
+                        onClick={() => setConfirmAction({ type: 'reset', admin })}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                          theme === 'dark' ? 'text-blue-400 bg-blue-950/40 hover:bg-blue-900/50' : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                        }`}
+                        title="Reset Access Code"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        <span>Reset Code</span>
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setConfirmAction({
+                            type: admin.isActive ? 'deactivate' : 'activate',
+                            admin,
+                          })
+                        }
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                          admin.isActive
+                            ? theme === 'dark'
+                              ? 'text-amber-400 bg-amber-950/40 hover:bg-amber-900/50'
+                              : 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                            : theme === 'dark'
+                              ? 'text-green-400 bg-green-950/40 hover:bg-green-900/50'
+                              : 'text-green-600 bg-green-50 hover:bg-green-100'
+                        }`}
+                      >
+                        {admin.isActive ? (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Deactivate</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Activate</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => setConfirmAction({ type: 'delete', admin })}
+                        className={`p-2 rounded-lg text-xs font-medium transition-colors ${
+                          theme === 'dark' ? 'text-red-400 bg-red-950/40 hover:bg-red-900/50' : 'text-red-600 bg-red-50 hover:bg-red-100'
+                        }`}
+                        title="Delete Administrator"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

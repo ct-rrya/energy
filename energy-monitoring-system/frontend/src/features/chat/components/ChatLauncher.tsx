@@ -7,10 +7,12 @@
 
 import { MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import '../chat.css';
 
 export function ChatLauncher() {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Listen for open/close events
   useEffect(() => {
@@ -30,8 +32,8 @@ export function ChatLauncher() {
     window.dispatchEvent(new CustomEvent('ecostep:openchat', { bubbles: true }));
   };
 
-  // Hide launcher while panel is open
-  if (isOpen) return null;
+  // Hide launcher while panel is open or on mobile (since EcoChat is in the bottom navigation)
+  if (isOpen || isMobile) return null;
 
   return (
     <button

@@ -1,4 +1,4 @@
-﻿
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getUserRole } from '@/lib/permissions';
@@ -12,6 +12,8 @@ import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
 import { validateSensorData } from '../utils/validateSensorData';
 import { useEffect, useState } from 'react';
 import type { SensorReading } from '../types/dashboard.types';
+import { useDeviceLayout } from '@/hooks/useDeviceLayout';
+import { MobileEnergyHarvestingDashboard } from '../components/MobileEnergyHarvestingDashboard';
 
 /**
  * EcoStep Dashboard Page - Hero Power Dashboard
@@ -47,6 +49,7 @@ import type { SensorReading } from '../types/dashboard.types';
 function DashboardPageContent() {
   const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
+  const { isMobile } = useDeviceLayout();
   
   // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
@@ -130,6 +133,19 @@ function DashboardPageContent() {
     return 'unknown';
   };
 
+  // Dedicated Mobile Layout matching design specification (< 768px)
+  if (isMobile) {
+    return (
+      <MobileEnergyHarvestingDashboard
+        displayReading={displayReading}
+        displayMetrics={displayMetrics}
+        systemStatus={getSystemStatus()}
+        isWebSocketConnected={isWebSocketConnected}
+        isPublicUser={isPublicUser}
+      />
+    );
+  }
+
   return (
     <div 
       className="min-h-screen transition-colors duration-300"
@@ -160,11 +176,11 @@ function DashboardPageContent() {
         
         {/* Global responsive layout styles */}
         <style>{`
-          /* Mobile: Stacked layout (default) */
+          /* Mobile: Stacked layout with compact gap */
           .dashboard-metrics-grid {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
           }
           
           .metric-hero-power {
@@ -173,9 +189,16 @@ function DashboardPageContent() {
           
           .dashboard-secondary-metrics {
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          @media (min-width: 480px) and (max-width: 767px) {
+            .dashboard-secondary-metrics {
+              grid-template-columns: repeat(3, 1fr);
+              gap: 12px;
+            }
           }
           
           /* Tablet: Power hero above, 3 metrics in row below */
