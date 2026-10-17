@@ -7,6 +7,9 @@ import type {
   DiagnosticBaseline,
   RecordStepTestRequest,
   StepTestResult,
+  DailyDiagnosticTask,
+  CompleteDailyDiagnosticRequest,
+  CompleteDailyDiagnosticResponse,
 } from '@/types/diagnostic.types';
 
 /**
@@ -100,6 +103,52 @@ export const getDiagnosticHistory = async (
 };
 
 /**
+ * Get Today's Shared Daily Diagnostic Task
+ */
+export const getTodayDailyTask = async (): Promise<DailyDiagnosticTask> => {
+  const response = await apiClient.get<DailyDiagnosticTask>('/diagnostics/daily-task/today');
+  return response.data;
+};
+
+/**
+ * Start Daily Diagnostic Session (Lock for Active Admin)
+ */
+export const startDailySession = async (): Promise<DailyDiagnosticTask> => {
+  const response = await apiClient.post<DailyDiagnosticTask>('/diagnostics/daily-task/start-session');
+  return response.data;
+};
+
+/**
+ * Cancel Daily Diagnostic Session (Release Lock)
+ */
+export const cancelDailySession = async (): Promise<DailyDiagnosticTask> => {
+  const response = await apiClient.post<DailyDiagnosticTask>('/diagnostics/daily-task/cancel-session');
+  return response.data;
+};
+
+/**
+ * Complete Daily Diagnostic Task
+ */
+export const completeDailyTask = async (
+  data: CompleteDailyDiagnosticRequest
+): Promise<CompleteDailyDiagnosticResponse> => {
+  const response = await apiClient.post<CompleteDailyDiagnosticResponse>('/diagnostics/daily-task/complete', data);
+  return response.data;
+};
+
+/**
+ * Get Daily Diagnostic Task History
+ */
+export const getDailyTaskHistory = async (
+  limit: number = 30
+): Promise<DailyDiagnosticTask[]> => {
+  const response = await apiClient.get<DailyDiagnosticTask[]>('/diagnostics/daily-task/history', {
+    params: { limit },
+  });
+  return response.data;
+};
+
+/**
  * Diagnostics Service Object
  * 
  * Centralized object for all diagnostics API calls.
@@ -111,4 +160,9 @@ export const diagnosticsService = {
   getReferenceConfig,
   recordDiagnosticTest,
   getDiagnosticHistory,
+  getTodayDailyTask,
+  startDailySession,
+  cancelDailySession,
+  completeDailyTask,
+  getDailyTaskHistory,
 };

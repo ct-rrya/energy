@@ -84,3 +84,53 @@ export interface StepTestResult {
   statusMessage: string;
   notes?: string;
 }
+
+export const DailyDiagnosticTaskStatus = {
+  PENDING: 'Pending',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  OVERDUE: 'Overdue',
+  NEEDS_ATTENTION: 'Needs Attention',
+  FAILED: 'Failed',
+} as const;
+
+export type DailyDiagnosticTaskStatus =
+  (typeof DailyDiagnosticTaskStatus)[keyof typeof DailyDiagnosticTaskStatus];
+
+export interface ActiveDiagnosticSession {
+  adminEmail: string;
+  adminName: string;
+  startedAt: string;
+  expiresAt: string;
+}
+
+export interface DailyDiagnosticTask {
+  _id?: string;
+  taskDate: string;
+  status: DailyDiagnosticTaskStatus;
+  activeSession?: ActiveDiagnosticSession;
+  performedBy?: string;
+  performedByName?: string;
+  completedAt?: string;
+  actualEnergyMWh?: number;
+  expectedEnergyMWh?: number;
+  deviationPercentage?: number;
+  performancePercentage?: number;
+  result?: DiagnosticResultStatus;
+  statusMessage?: string;
+  notes?: string;
+  diagnosticTestId?: string;
+  reminderSentAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CompleteDailyDiagnosticRequest {
+  actualStepEnergyMWh: number;
+  notes?: string;
+}
+
+export interface CompleteDailyDiagnosticResponse {
+  task: DailyDiagnosticTask;
+  stepResult: StepTestResult;
+}

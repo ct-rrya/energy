@@ -40,18 +40,37 @@ export function DiagnosticsPage() {
       console.log('✅ Diagnostic step test completed via WebSocket');
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'history'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'baseline'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
+    };
+
+    // Handle daily task updates (status changes, lock acquisition/release)
+    const handleDailyTaskUpdated = () => {
+      console.log('📅 Daily diagnostic task updated via WebSocket');
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
+    };
+
+    // Handle daily reminder received
+    const handleDailyReminder = (payload: any) => {
+      console.log('🔔 Daily diagnostic reminder received via WebSocket', payload);
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
     // Subscribe to events
     socket.on('diagnostic:config-updated', handleConfigUpdate);
     socket.on('diagnostic:test-completed', handleTestCompleted);
     socket.on('diagnostic:step-tested', handleTestCompleted);
+    socket.on('diagnostic:daily-task-updated', handleDailyTaskUpdated);
+    socket.on('diagnostic:daily-task-completed', handleTestCompleted);
+    socket.on('diagnostic:daily-reminder', handleDailyReminder);
 
     // Cleanup
     return () => {
       socket.off('diagnostic:config-updated', handleConfigUpdate);
       socket.off('diagnostic:test-completed', handleTestCompleted);
       socket.off('diagnostic:step-tested', handleTestCompleted);
+      socket.off('diagnostic:daily-task-updated', handleDailyTaskUpdated);
+      socket.off('diagnostic:daily-task-completed', handleTestCompleted);
+      socket.off('diagnostic:daily-reminder', handleDailyReminder);
     };
   }, [socket, isConnected, queryClient]);
 

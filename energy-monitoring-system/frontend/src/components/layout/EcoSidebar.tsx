@@ -1,6 +1,21 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Footprints, Menu, House, Activity, TrendingUp, Sun, Moon, User, LogOut, Stethoscope, FileText, Settings, Users } from 'lucide-react';
+import { 
+  Footprints, 
+  Menu, 
+  House, 
+  Activity, 
+  TrendingUp, 
+  Sun, 
+  Moon, 
+  User, 
+  LogOut, 
+  Stethoscope, 
+  FileText, 
+  Settings, 
+  Users,
+  ChevronUp 
+} from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -23,7 +38,6 @@ const ALL_NAV_ITEMS: NavItem[] = [
   // SYSTEM_ADMIN only routes (operational features)
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'System Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
-  { to: ROUTES.SETTINGS, label: 'Settings', Icon: Settings, systemAdminOnly: true },
   // SUPER_ADMIN only route (admin management)
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
 ];
@@ -50,7 +64,46 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   });
   const [ready, setReady] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const capRef = useRef<HTMLElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Close menu on route changes
+  useEffect(() => {
+    setUserMenuOpen(false);
+  }, [location.pathname]);
+
+  // Click outside and Escape key handler for user menu popover
+  useEffect(() => {
+    if (!userMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false);
+        userTriggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [userMenuOpen]);
 
   // Determine user role
   const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
@@ -166,6 +219,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
   const userName = user?.name || 'Guest';
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
+  const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
 
   return (
     <div
@@ -227,54 +281,141 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             
             <div className="es-grow"></div>
             <div className="es-sep"></div>
-            
-            <button
-              className="es-row"
-              id="theme"
-              aria-label="Toggle theme"
-              onClick={toggleTheme}
-            >
-              <span className="es-ico">
-                {theme === 'dark' ? (
-                  <Sun size={22} strokeWidth={1.5} />
-                ) : (
-                  <Moon size={22} strokeWidth={1.5} />
-                )}
-              </span>
-              <span className="es-label">Theme</span>
-            </button>
-            
-            {isAnyAdmin && (
+
+            {/* Expandable User / Settings / Theme Row */}
+            <div className="es-user-anchor" ref={userMenuRef}>
+              {userMenuOpen && (
+                <div 
+                  className="es-user-popover" 
+                  role="menu"
+                  aria-label="User settings and account menu"
+                >
+                  <div className="es-popover-header">
+                    <div className="es-popover-avatar">
+                      <User size={18} strokeWidth={2} />
+                    </div>
+                    <div className="es-popover-user-info">
+                      <div className="es-popover-name">{userName}</div>
+                      <div className="es-popover-role">{userRole}</div>
+                      {user?.email && (
+                        <div className="es-popover-email">{user.email}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="es-popover-sep" />
+
+                  <div className="es-popover-body">
+                    {/* Settings Navigation */}
+                    {isAnyAdmin && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={`es-popover-item ${isSettingsActive ? 'es-active' : ''}`}
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          navigate(ROUTES.SETTINGS);
+                        }}
+                      >
+                        <span className="es-popover-icon">
+                          <Settings size={18} strokeWidth={1.75} />
+                        </span>
+                        <span className="es-popover-label">Settings</span>
+                        {isSettingsActive && (
+                          <span className="es-popover-pill">Active</span>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Theme Toggle */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="es-popover-item"
+                      onClick={toggleTheme}
+                    >
+                      <span className="es-popover-icon">
+                        {theme === 'dark' ? (
+                          <Sun size={18} strokeWidth={1.75} />
+                        ) : (
+                          <Moon size={18} strokeWidth={1.75} />
+                        )}
+                      </span>
+                      <span className="es-popover-label">Theme</span>
+                      <span className="es-popover-badge">
+                        {theme === 'dark' ? 'Dark' : 'Light'}
+                      </span>
+                    </button>
+
+                    {/* Auth Action */}
+                    {isAnyAdmin ? (
+                      <>
+                        <div className="es-popover-sep" />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="es-popover-item es-popover-logout"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            handleLogout();
+                          }}
+                        >
+                          <span className="es-popover-icon">
+                            <LogOut size={18} strokeWidth={1.75} />
+                          </span>
+                          <span className="es-popover-label">Sign Out</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="es-popover-item"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          navigate(ROUTES.LOGIN);
+                        }}
+                      >
+                        <span className="es-popover-icon">
+                          <User size={18} strokeWidth={1.75} />
+                        </span>
+                        <span className="es-popover-label">Sign In</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <button
-                className="es-row"
-                id="logout"
-                aria-label="Sign out"
-                onClick={handleLogout}
+                ref={userTriggerRef}
+                className={`es-row es-user-trigger ${userMenuOpen ? 'es-open' : ''}`}
+                id="user-menu-trigger"
+                aria-label="User account and settings"
+                aria-haspopup="true"
+                aria-expanded={userMenuOpen}
+                aria-current={isSettingsActive ? 'page' : undefined}
+                onClick={() => setUserMenuOpen((prev) => !prev)}
               >
-                <span className="es-ico">
-                  <LogOut size={22} strokeWidth={1.5} />
+                <span className="es-avatar">
+                  <span className="es-ico">
+                    <User size={22} strokeWidth={1.5} />
+                  </span>
                 </span>
-                <span className="es-label">Sign Out</span>
+                <span className="es-label">
+                  {isAnyAdmin ? (
+                    <>
+                      {userName}<small>{userRole}</small>
+                    </>
+                  ) : (
+                    <>
+                      Guest<small>Read-only access</small>
+                    </>
+                  )}
+                </span>
+                <span className={`es-user-chevron ${userMenuOpen ? 'es-open' : ''}`}>
+                  <ChevronUp size={16} strokeWidth={2} />
+                </span>
               </button>
-            )}
-            
-            <div className="es-row es-who" style={{ marginBottom: 0, cursor: 'default' }}>
-              <span className="es-avatar">
-                <span className="es-ico">
-                  <User size={22} strokeWidth={1.5} />
-                </span>
-              </span>
-              <span className="es-label">
-                {isAnyAdmin ? (
-                  <>
-                    {userName}<small>{userRole}</small>
-                  </>
-                ) : (
-                  <>
-                    Guest<small>Read-only access</small>
-                  </>
-                )}
-              </span>
             </div>
           </div>
         </nav>

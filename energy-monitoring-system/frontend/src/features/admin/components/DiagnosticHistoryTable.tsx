@@ -1,12 +1,23 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Download, 
+  FileText, 
+  CalendarCheck, 
+  ListFilter,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Clock
+} from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
-import { useDiagnosticHistory } from '../hooks/useDiagnostics';
-import { DiagnosticResultStatus } from '@/types/diagnostic.types';
+import { getThemeColors } from '@/lib/theme';
+import { useDiagnosticHistory, useDailyTaskHistory } from '../hooks/useDiagnostics';
+import { DiagnosticResultStatus, DailyDiagnosticTaskStatus } from '@/types/diagnostic.types';
 import type { DiagnosticTest } from '@/types/diagnostic.types';
 
 /**
@@ -18,9 +29,11 @@ import type { DiagnosticTest } from '@/types/diagnostic.types';
 export function DiagnosticHistoryTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTest, setSelectedTest] = useState<DiagnosticTest | null>(null);
+  const [activeTab, setActiveTab] = useState<'daily' | 'all'>('daily');
   const limit = 20;
 
   const { data, isLoading, error, refetch } = useDiagnosticHistory(currentPage, limit);
+  const { data: dailyTasks, isLoading: isDailyLoading } = useDailyTaskHistory(30);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
@@ -82,7 +95,7 @@ export function DiagnosticHistoryTable() {
     URL.revokeObjectURL(url);
   };
 
-  if (isLoading) {
+  if (isLoading || isDailyLoading) {
     return (
       <div 
         className="rounded-lg p-6"
@@ -141,88 +154,235 @@ export function DiagnosticHistoryTable() {
     );
   }
 
-  if (!data?.tests || data.tests.length === 0) {
-    return (
-      <div 
-        className="rounded-lg p-12 text-center"
-        style={{
-          backgroundColor: colors.cardBackground,
-          border: `1px solid ${colors.border}`,
-          boxShadow: colors.shadow
-        }}
-      >
-        <FileText 
-          className="h-12 w-12 mx-auto mb-4"
-          style={{ color: colors.textMuted }}
-        />
-        <h3 
-          className="text-lg font-semibold mb-2"
-          style={{ 
-            color: colors.textPrimary,
-            fontWeight: TYPOGRAPHY.fontWeight.semibold
-          }}
-        >
-          No diagnostic tests performed yet
-        </h3>
-        <p 
-          className="text-sm"
-          style={{ color: colors.textSecondary }}
-        >
-          Run your first diagnostic test above to start tracking system performance.
-        </p>
-      </div>
-    );
-  }
+  const getDailyStatusBadge = (status: DailyDiagnosticTaskStatus) => {
+    switch (status) {
+      case DailyDiagnosticTaskStatus.COMPLETED:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+            Completed
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.IN_PROGRESS:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            In Progress
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.NEEDS_ATTENTION:
+      case DailyDiagnosticTaskStatus.FAILED:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+            <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+            Needs Attention
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.OVERDUE:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-700">
+            <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+            Overdue
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.PENDING:
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+            <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+            Pending
+          </span>
+        );
+    }
+  };
 
   return (
     <div 
-      className="rounded-lg overflow-hidden"
+      className="rounded-2xl overflow-hidden border shadow-xs transition-all"
       style={{
         backgroundColor: colors.cardBackground,
-        border: `1px solid ${colors.border}`,
-        boxShadow: colors.shadow
+        borderColor: colors.border,
       }}
     >
-      {/* Header */}
+      {/* Header with View Tabs */}
       <div 
-        className="px-6 py-4 flex items-center justify-between"
-        style={{ borderBottom: `1px solid ${colors.border}` }}
+        className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
+        style={{ borderColor: colors.border }}
       >
-        <div>
-          <h3 
-            className="text-lg font-semibold"
-            style={{ 
-              color: colors.textPrimary,
-              fontWeight: TYPOGRAPHY.fontWeight.semibold
-            }}
-          >
-            Diagnostic History
-          </h3>
-          <p 
-            className="text-sm mt-1"
-            style={{ color: colors.textSecondary }}
-          >
-            {data.pagination.total} test{data.pagination.total !== 1 ? 's' : ''} recorded
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div>
+            <h3 
+              className="text-lg font-bold tracking-tight"
+              style={{ color: colors.textPrimary }}
+            >
+              Diagnostic Logs & Verification History
+            </h3>
+            <p 
+              className="text-xs text-slate-500 dark:text-gray-400 mt-0.5"
+            >
+              Multi-admin performance records and daily physical step test tasks
+            </p>
+          </div>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setActiveTab('daily')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'daily'
+                  ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-[#39FF88] shadow-xs'
+                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <CalendarCheck className="h-3.5 w-3.5" />
+              <span>Daily Tasks</span>
+              {dailyTasks && dailyTasks.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold">
+                  {dailyTasks.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'all'
+                  ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-[#39FF88] shadow-xs'
+                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <ListFilter className="h-3.5 w-3.5" />
+              <span>All Test Runs</span>
+              {data?.pagination?.total !== undefined && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 font-bold">
+                  {data.pagination.total}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-        <Button
-          onClick={handleExportCSV}
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+
+        {activeTab === 'all' && data?.tests && data.tests.length > 0 && (
+          <Button
+            onClick={handleExportCSV}
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer self-start sm:self-auto"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        )}
       </div>
 
-      {/* Table Container - Prevents horizontal page overflow */}
-      <div className="w-full overflow-x-auto">
-        {/* Table - Desktop */}
-        <div className="hidden sm:block min-w-full">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: '900px' }}>
+      {/* ============================================================ */}
+      {/* TAB 1: DAILY DIAGNOSTIC TASKS VIEW */}
+      {/* ============================================================ */}
+      {activeTab === 'daily' && (
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '950px' }}>
             <thead style={{ backgroundColor: colors.hoverBackground }}>
-              <tr>
+              <tr className="border-b" style={{ borderColor: colors.border }}>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                  Date
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '150px' }}>
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '220px' }}>
+                  Verified By
+                </th>
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                  Measured (mWh)
+                </th>
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
+                  Baseline (mWh)
+                </th>
+                <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '110px' }}>
+                  Deviation
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                  Verdict / Notes
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: colors.border }}>
+              {dailyTasks && dailyTasks.length > 0 ? (
+                dailyTasks.map((t) => (
+                  <tr key={t.taskDate} className="hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="px-4 py-3 text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+                      {t.taskDate}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getDailyStatusBadge(t.status)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
+                      {t.performedByName ? (
+                        <span>
+                          <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.performedByName}</strong>
+                          <span className="block text-[10px] text-slate-400 truncate">{t.performedBy}</span>
+                        </span>
+                      ) : t.performedBy ? (
+                        t.performedBy
+                      ) : (
+                        <span className="text-slate-400 italic">Pending Physical Test</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                      {t.actualEnergyMWh !== undefined ? t.actualEnergyMWh.toFixed(5) : '—'}
+                    </td>
+                    <td className="px-3 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-gray-300">
+                      {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
+                    </td>
+                    <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold">
+                      {t.deviationPercentage !== undefined ? (
+                        <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                          {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
+                      {t.statusMessage || t.notes || (t.status === DailyDiagnosticTaskStatus.PENDING ? 'Awaiting test' : '—')}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-500">
+                    <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                    <span>No daily diagnostic tasks recorded yet. Today's task will automatically initialize.</span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB 2: ALL STEP TEST LOGS VIEW */}
+      {/* ============================================================ */}
+      {activeTab === 'all' && (
+        <div className="w-full overflow-x-auto">
+          {(!data?.tests || data.tests.length === 0) ? (
+            <div className="p-12 text-center">
+              <FileText className="h-10 w-10 mx-auto mb-3 text-slate-400" />
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+                No individual step tests recorded yet
+              </h4>
+              <p className="text-xs text-slate-500">
+                Perform your first footstep verification test above to see individual test runs here.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Table - Desktop */}
+              <div className="hidden sm:block min-w-full">
+              <table className="w-full" style={{ tableLayout: 'fixed', minWidth: '900px' }}>
+                <thead style={{ backgroundColor: colors.hoverBackground }}>
+                  <tr>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                   style={{ 
@@ -427,10 +587,13 @@ export function DiagnosticHistoryTable() {
             </div>
           ))}
         </div>
+            </>
+        )}
       </div>
+      )}
 
-      {/* Pagination */}
-      {data.pagination.totalPages > 1 && (
+      {/* Pagination (only for all step test logs) */}
+      {activeTab === 'all' && data?.pagination && data.pagination.totalPages > 1 && (
         <div 
           className="px-6 py-4 flex items-center justify-between"
           style={{ borderTop: `1px solid ${colors.border}` }}

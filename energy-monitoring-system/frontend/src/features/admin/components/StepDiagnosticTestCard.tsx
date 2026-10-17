@@ -9,15 +9,30 @@ import {
   TrendingDown, 
   TrendingUp, 
   Sparkles,
-  Zap
+  Zap,
+  Calendar,
+  Lock,
+  Clock,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getThemeColors } from '@/lib/theme';
-import { useDiagnosticBaseline, useRecordStepTest } from '../hooks/useDiagnostics';
-import { DiagnosticResultStatus } from '@/types/diagnostic.types';
+import { 
+  useDiagnosticBaseline, 
+  useTodayDailyTask,
+  useStartDailySession,
+  useCancelDailySession,
+  useCompleteDailyTask,
+} from '../hooks/useDiagnostics';
+import { 
+  DiagnosticResultStatus, 
+  DailyDiagnosticTaskStatus 
+} from '@/types/diagnostic.types';
 import type { StepTestResult } from '@/types/diagnostic.types';
 
 type TestModeState = 'IDLE' | 'LISTENING' | 'RESULT';
@@ -26,23 +41,31 @@ type TestModeState = 'IDLE' | 'LISTENING' | 'RESULT';
  * Step Diagnostic Test Card
  * 
  * Provides:
- * 1. Automatic 30-day baseline calculation
- * 2. On-demand single-step test mode with live hardware listener
- * 3. High-fidelity visual comparison range bar
+ * 1. Automated Daily System Diagnostic task workflow for multiple admins
+ * 2. Active session locking to prevent simultaneous diagnostic sessions
+ * 3. On-demand single-step physical test mode with ESP32 telemetry capture
+ * 4. Evaluation against established reference baseline and acceptable thresholds
+ * 5. High-fidelity visual comparison range bar and real-time multi-admin sync
  */
 export function StepDiagnosticTestCard() {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { socket, isConnected } = useSocket();
+  const { user } = useAuth();
 
+  // Queries & Mutations
   const { data: baseline, isLoading: isBaselineLoading, refetch: refetchBaseline } = useDiagnosticBaseline();
-  const recordMutation = useRecordStepTest();
+  const { data: todayTask, isLoading: isDailyTaskLoading, refetch: refetchDailyTask } = useTodayDailyTask();
+  const startSessionMutation = useStartDailySession();
+  const cancelSessionMutation = useCancelDailySession();
+  const completeDailyMutation = useCompleteDailyTask();
 
   const [testState, setTestState] = useState<TestModeState>('IDLE');
   const [testResult, setTestResult] = useState<StepTestResult | null>(null);
   const [manualInput, setManualInput] = useState<string>('0.00418');
+  const [lockError, setLockError] = useState<string | null>(null);
 
-  // Values with fallbacks matching specs
+  // Baseline metrics
   const daysAnalyzed = baseline?.daysAnalyzed ?? 30;
   const totalSteps = baseline?.totalSteps ?? 1547;
   const normalStep = baseline?.normalStepMWh ?? 0.00510;
@@ -50,12 +73,31 @@ export function StepDiagnosticTestCard() {
   const maxAcceptable = baseline?.maxAcceptableMWh ?? 0.00674;
   const tolerance = baseline?.tolerancePercent ?? 34;
 
-  // Listen for real-time readings from hardware tile when in LISTENING mode
+  // Session & Lock Status
+  const now = new Date();
+  const activeSession = todayTask?.activeSession;
+  const isSessionActive = Boolean(
+    activeSession && new Date(activeSession.expiresAt) > now
+  );
+  const isLockedByOtherAdmin = Boolean(
+    isSessionActive && activeSession?.adminEmail !== user?.email
+  );
+  const isLockedByCurrentUser = Boolean(
+    isSessionActive && activeSession?.adminEmail === user?.email
+  );
+
+  // Synchronize state if current user has an active session
+  useEffect(() => {
+    if (isLockedByCurrentUser && testState === 'IDLE' && todayTask?.status === DailyDiagnosticTaskStatus.IN_PROGRESS) {
+      setTestState('LISTENING');
+    }
+  }, [isLockedByCurrentUser, todayTask?.status, testState]);
+
+  // Listen for real-time readings from ESP32 hardware tile when in LISTENING mode
   useEffect(() => {
     if (!socket || !isConnected || testState !== 'LISTENING') return;
 
     const handleNewReading = (reading: any) => {
-      // If hardware tile transmitted an energy reading
       if (reading && (reading.energy > 0 || reading.power > 0)) {
         const stepEnergy = reading.energy > 0 
           ? (reading.stepCount && reading.stepCount > 0 ? reading.energy / reading.stepCount : reading.energy)
@@ -71,34 +113,59 @@ export function StepDiagnosticTestCard() {
     };
   }, [socket, isConnected, testState, normalStep]);
 
-  const handleStartTest = () => {
+  // Start Diagnostic Session (Acquire Lock)
+  const handleStartTest = async () => {
+    setLockError(null);
     setTestResult(null);
-    setTestState('LISTENING');
+
+    try {
+      await startSessionMutation.mutateAsync();
+      setTestState('LISTENING');
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Could not acquire session lock';
+      setLockError(errMsg);
+    }
   };
 
+  // Cancel Diagnostic Session (Release Lock)
+  const handleCancelTest = async () => {
+    try {
+      await cancelSessionMutation.mutateAsync();
+    } catch (err) {
+      console.warn('Error releasing session lock:', err);
+    } finally {
+      setTestState('IDLE');
+      setTestResult(null);
+      setLockError(null);
+    }
+  };
+
+  // Execute & Complete Daily Diagnostic
   const handleExecuteTest = async (energyVal: number, notes?: string) => {
     try {
-      const res = await recordMutation.mutateAsync({
+      const response = await completeDailyMutation.mutateAsync({
         actualStepEnergyMWh: energyVal,
         notes: notes || 'Single Step Verification Test',
       });
-      setTestResult(res);
+      setTestResult(response.stepResult);
       setTestState('RESULT');
-    } catch (err) {
-      console.error('Failed to record step test:', err);
+      setLockError(null);
+    } catch (err: any) {
+      console.error('Failed to complete daily diagnostic test:', err);
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to complete test';
+      setLockError(errMsg);
     }
   };
 
   const handleReset = () => {
     setTestState('IDLE');
     setTestResult(null);
+    setLockError(null);
   };
 
   // Visual Gauge Math
   const getMarkerPosition = () => {
-    if (!testResult) return 50;
-    const actual = testResult.actualEnergyMWh;
-    // Scale span: 30% padding below min and above max
+    const actual = testResult ? testResult.actualEnergyMWh : (todayTask?.actualEnergyMWh ?? normalStep);
     const spanMin = minAcceptable * 0.7;
     const spanMax = maxAcceptable * 1.3;
     const range = spanMax - spanMin;
@@ -124,7 +191,52 @@ export function StepDiagnosticTestCard() {
     return ((maxAcceptable - spanMin) / (spanMax - spanMin)) * 100;
   };
 
-  const isWithinRange = testResult?.result === DiagnosticResultStatus.WITHIN_RANGE;
+  const isWithinRange = testResult
+    ? testResult.result === DiagnosticResultStatus.WITHIN_RANGE
+    : todayTask?.result === DiagnosticResultStatus.WITHIN_RANGE;
+
+  // Status Badge Configuration
+  const getDailyStatusBadge = (status?: DailyDiagnosticTaskStatus) => {
+    switch (status) {
+      case DailyDiagnosticTaskStatus.COMPLETED:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            Completed
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.IN_PROGRESS:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+            In Progress
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.NEEDS_ATTENTION:
+      case DailyDiagnosticTaskStatus.FAILED:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+            <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+            Needs Attention
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.OVERDUE:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-700">
+            <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+            Overdue
+          </span>
+        );
+      case DailyDiagnosticTaskStatus.PENDING:
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            Pending Today's Verification
+          </span>
+        );
+    }
+  };
 
   return (
     <div 
@@ -134,7 +246,99 @@ export function StepDiagnosticTestCard() {
         borderColor: colors.border,
       }}
     >
-      {/* Title & Badge */}
+      {/* ============================================================ */}
+      {/* 1. DAILY DIAGNOSTIC TASK BANNER (SHARED MULTI-ADMIN) */}
+      {/* ============================================================ */}
+      <div 
+        className="mb-6 p-4 sm:p-5 rounded-2xl border transition-all"
+        style={{
+          backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
+            ? (theme === 'light' ? '#F0FDF4' : 'rgba(6, 78, 59, 0.2)')
+            : (theme === 'light' ? '#F8FAFC' : 'rgba(15, 23, 42, 0.4)'),
+          borderColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
+            ? (theme === 'light' ? '#BBF7D0' : 'rgba(5, 150, 105, 0.4)')
+            : colors.border,
+        }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div 
+              className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
+                  ? 'rgba(16, 185, 129, 0.15)'
+                  : colors.accentSubtle,
+              }}
+            >
+              <Calendar className="h-5 w-5" style={{ color: colors.accent }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                  Today's Daily Diagnostic Task
+                </h3>
+                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-gray-800 text-slate-700 dark:text-slate-300 font-mono font-medium">
+                  {todayTask?.taskDate || new Date().toISOString().split('T')[0]}
+                </span>
+                {getDailyStatusBadge(todayTask?.status)}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED ? (
+                  <span>
+                    Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200">{todayTask.performedByName || todayTask.performedBy}</strong> on{' '}
+                    {todayTask.completedAt ? new Date(todayTask.completedAt).toLocaleTimeString() : 'today'} (Single shared daily task for all administrators).
+                  </span>
+                ) : (
+                  <span>
+                    One shared task per day. Any authorized administrator may initiate and complete today's verification test on the tile.
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                refetchDailyTask();
+                refetchBaseline();
+              }}
+              isLoading={isDailyTaskLoading || isBaselineLoading}
+              className="gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Sync Status
+            </Button>
+          </div>
+        </div>
+
+        {/* Lock Warning Banner if Another Admin is Currently Testing */}
+        {isLockedByOtherAdmin && activeSession && (
+          <div className="mt-4 p-3.5 rounded-xl border flex items-start gap-3 bg-amber-50/90 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-200">
+            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              <span className="font-bold">Diagnostic Session in Progress:</span>{' '}
+              Administrator <strong className="font-semibold">{activeSession.adminName}</strong> ({activeSession.adminEmail}) is currently conducting the physical step test.
+              Simultaneous testing is prevented to ensure telemetry integrity. Session lock will release once they finish or upon timeout at{' '}
+              <span className="font-mono">{new Date(activeSession.expiresAt).toLocaleTimeString()}</span>.
+            </div>
+          </div>
+        )}
+
+        {/* Lock Error Message */}
+        {lockError && (
+          <div className="mt-4 p-3 rounded-xl border flex items-center gap-2.5 bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 text-xs font-medium">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{lockError}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ============================================================ */}
+      {/* 2. CARD HEADER: TILE STEP DIAGNOSTIC */}
+      {/* ============================================================ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b" style={{ borderColor: colors.border }}>
         <div className="flex items-center gap-3">
           <div 
@@ -161,20 +365,17 @@ export function StepDiagnosticTestCard() {
           </div>
         </div>
 
-        {/* Recalculate Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetchBaseline()}
-          isLoading={isBaselineLoading}
-          className="self-start sm:self-auto gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Refresh Baseline
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            Baseline Recalibration Protected
+          </span>
+        </div>
       </div>
 
-      {/* Grid: Baseline Info & Test Execution */}
+      {/* ============================================================ */}
+      {/* 3. GRID: BASELINE METRICS & TEST EXECUTION */}
+      {/* ============================================================ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
         
         {/* Left Column: Automatic Baseline (5 cols) */}
@@ -185,19 +386,19 @@ export function StepDiagnosticTestCard() {
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
               <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
-                1. Automatic Baseline
+                1. Established Reference Baseline
               </h3>
             </div>
             
             <p className="text-xs mb-4 text-slate-500 dark:text-slate-400">
-              System analyzes last {daysAnalyzed} days ({totalSteps.toLocaleString()} steps):
+              Evaluated against last {daysAnalyzed} days ({totalSteps.toLocaleString()} footsteps recorded):
             </p>
 
             <div className="space-y-3">
               {/* Normal Step */}
               <div className="p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
                 <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                  Normal step output
+                  Normal step output baseline
                 </p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">
@@ -211,7 +412,7 @@ export function StepDiagnosticTestCard() {
               <div className="p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                    Acceptable range (±{tolerance}%)
+                    Acceptable threshold (±{tolerance}%)
                   </p>
                   <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60">
                     Normal Zone
@@ -232,7 +433,7 @@ export function StepDiagnosticTestCard() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span>Hardware verification baseline is continuously auto-synced</span>
+            <span>Reference baseline is protected against auto-recalibration</span>
           </div>
         </div>
 
@@ -243,7 +444,7 @@ export function StepDiagnosticTestCard() {
               <Radio className={`h-3.5 w-3.5 ${testState === 'LISTENING' ? 'animate-pulse' : ''}`} />
             </div>
             <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
-              2. On-Demand Test Mode
+              2. Physical Step Test Session
             </h3>
           </div>
 
@@ -254,19 +455,38 @@ export function StepDiagnosticTestCard() {
                 <Footprints className="h-8 w-8" />
               </div>
               <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
-                Ready to Verify Footstep Tile
+                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
+                  ? 'Daily Task Completed — Tile Verified'
+                  : 'Ready to Perform Daily Step Verification'}
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mb-6 leading-relaxed">
-                Click Start Test Mode, then step on the physical tile once. The system will instantly compare your step against the 30-day baseline.
+                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
+                  ? `Completed today by ${todayTask.performedByName || todayTask.performedBy}. You may initiate a re-verification test anytime.`
+                  : 'Click Start Test Mode to acquire the testing lock, then step firmly on the physical piezoelectric tile.'}
               </p>
               
               <button
                 type="button"
                 onClick={handleStartTest}
-                className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 text-sm font-semibold rounded-xl shadow-xs hover:shadow transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] active:scale-[0.98] cursor-pointer"
+                disabled={isLockedByOtherAdmin || startSessionMutation.isPending}
+                className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 text-sm font-semibold rounded-xl shadow-xs hover:shadow transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play className="h-4 w-4 fill-current shrink-0" />
-                <span className="whitespace-nowrap">Start Test Mode</span>
+                {startSessionMutation.isPending ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                    <span>Acquiring Lock...</span>
+                  </>
+                ) : isLockedByOtherAdmin ? (
+                  <>
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span>Session Locked ({activeSession?.adminName})</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 fill-current shrink-0" />
+                    <span>{todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED ? 'Perform Re-Verification Test' : 'Start Test Mode'}</span>
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -277,7 +497,7 @@ export function StepDiagnosticTestCard() {
               <div className="text-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-500/30 font-semibold text-xs mb-3">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  Active Listening Mode
+                  Session Locked for {user?.name || user?.email}
                 </div>
                 
                 <h4 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
@@ -285,18 +505,18 @@ export function StepDiagnosticTestCard() {
                 </h4>
                 
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-                  Walk or step firmly on the physical footstep tile. Waiting for ESP32 telemetry event...
+                  Step firmly on the physical piezoelectric tile. Waiting for live ESP32 telemetry event...
                 </p>
               </div>
 
-              {/* Quick Simulator / Trigger Box (for convenience or desk testing) */}
+              {/* Quick Trigger / Manual Step Entry */}
               <div className="mt-6 p-4 rounded-xl bg-white dark:bg-gray-900/90 border border-emerald-200 dark:border-emerald-500/30 shadow-xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
                     <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    Quick Trigger / Manual Step Entry
+                    ESP32 Telemetry Trigger / Manual Entry
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-gray-400 tabular-nums">Spec default: 0.00418 mWh</span>
+                  <span className="text-[10px] text-slate-400 dark:text-gray-400 tabular-nums">Normal: 0.00510 mWh</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -314,18 +534,24 @@ export function StepDiagnosticTestCard() {
 
                   <button
                     type="button"
-                    onClick={() => handleExecuteTest(parseFloat(manualInput) || 0.00418, 'Manual Step Simulation')}
-                    disabled={recordMutation.isPending}
+                    onClick={() => handleExecuteTest(parseFloat(manualInput) || 0.00418, 'Admin Step Verification')}
+                    disabled={completeDailyMutation.isPending}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
                   >
-                    Submit Step
+                    {completeDailyMutation.isPending ? 'Verifying...' : 'Submit Step'}
                   </button>
                 </div>
               </div>
 
               <div className="mt-4 flex justify-center">
-                <Button variant="ghost" size="sm" onClick={handleReset} className="text-xs text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white cursor-pointer">
-                  Cancel Test
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleCancelTest} 
+                  disabled={cancelSessionMutation.isPending}
+                  className="text-xs text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white cursor-pointer"
+                >
+                  Cancel Session & Release Lock
                 </Button>
               </div>
             </div>
@@ -357,9 +583,14 @@ export function StepDiagnosticTestCard() {
                     </div>
                   </div>
 
-                  <span className="text-xs tabular-nums text-slate-400 dark:text-gray-400">
-                    {new Date(testResult.testDate).toLocaleTimeString()}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xs tabular-nums text-slate-400 dark:text-gray-400 block">
+                      {new Date(testResult.testDate).toLocaleTimeString()}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Daily Task Updated
+                    </span>
+                  </div>
                 </div>
 
                 {/* Numeric Comparison Card */}
@@ -402,11 +633,10 @@ export function StepDiagnosticTestCard() {
 
                   {/* Horizontal Track Container */}
                   <div className="relative h-10 w-full flex items-center">
-                    
                     {/* Base Background Track */}
                     <div className="absolute w-full h-3 rounded-full bg-slate-200 dark:bg-gray-700/80"></div>
 
-                    {/* Acceptable Zone Highlight (Green shaded) */}
+                    {/* Acceptable Zone Highlight */}
                     <div 
                       className="absolute h-3 bg-emerald-500/25 dark:bg-emerald-500/20 rounded-full border border-emerald-500/40"
                       style={{
@@ -421,7 +651,7 @@ export function StepDiagnosticTestCard() {
                       style={{ left: `${getMeanPosition()}%` }}
                     ></div>
 
-                    {/* Your Step Marker (Shoe Icon) */}
+                    {/* Your Step Marker */}
                     <div 
                       className="absolute -top-3.5 transform -translate-x-1/2 flex flex-col items-center z-10 transition-all duration-500"
                       style={{ left: `${getMarkerPosition()}%` }}
@@ -436,19 +666,16 @@ export function StepDiagnosticTestCard() {
 
                   {/* Ticks and Labels below Track */}
                   <div className="relative w-full h-8 mt-1 text-[11px] tabular-nums text-slate-600 dark:text-gray-300">
-                    {/* Min Label */}
                     <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMinPosition()}%` }}>
                       <span className="block font-semibold">{minAcceptable.toFixed(5)}</span>
                       <span className="text-[10px] text-slate-400 dark:text-gray-400">(min)</span>
                     </div>
 
-                    {/* Mean Label */}
                     <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMeanPosition()}%` }}>
                       <span className="block font-semibold">{normalStep.toFixed(5)}</span>
                       <span className="text-[10px] text-slate-400 dark:text-gray-400">(mean)</span>
                     </div>
 
-                    {/* Max Label */}
                     <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMaxPosition()}%` }}>
                       <span className="block font-semibold">{maxAcceptable.toFixed(5)}</span>
                       <span className="text-[10px] text-slate-400 dark:text-gray-400">(max)</span>
@@ -473,7 +700,7 @@ export function StepDiagnosticTestCard() {
                   <span>Test Again</span>
                 </button>
                 <Button variant="ghost" onClick={handleReset} className="text-xs text-slate-600 dark:text-gray-300 cursor-pointer">
-                  Close
+                  Done
                 </Button>
               </div>
             </div>
