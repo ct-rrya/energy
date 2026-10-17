@@ -21,12 +21,12 @@ const NAV_ITEMS = [
 /**
  * LandingNav Component
  * 
- * Clean, separated layout:
- * - Logo and Menu button on the FAR LEFT.
- * - Center navigation tabs (visible at top of hero).
- * - Admin login button and Theme toggle on the FAR RIGHT.
- * - No outer pill grouping all elements together.
- * - Clicking [ ☰ Menu ] opens a dropdown aligned with the menu button on the left.
+ * Jitter.video inspired navigation pattern:
+ * - At top of page: Logo on the far left, tabs in center, CTAs on the far right.
+ * - When scrolled: All navigation collapses into ONE expandable menu button on the top right.
+ * - Logo remains clean on the far left with brand text smoothly tucked in.
+ * - Clicking the expandable top-right button opens a floating card with all nav links,
+ *   Admin login, and Theme toggle.
  */
 export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
   const { theme, toggleTheme } = useTheme();
@@ -37,6 +37,21 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 900;
+    }
+    return false;
+  });
+
+  // Track window resize for responsive layout
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 900);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Scroll detection with hysteresis buffer
   useEffect(() => {
@@ -79,11 +94,11 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
       }
     };
 
-    window.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      window.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [isMenuOpen]);
 
@@ -107,6 +122,8 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
     }
   };
 
+  const showCollapsedMenu = isScrolled || isMobile;
+
   return (
     <header
       style={{
@@ -123,10 +140,9 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
       }}
     >
       {/* =========================================================================
-          FAR LEFT: ECOSTEP LOGO & MENU BUTTON (Beside logo)
+          FAR LEFT: ECOSTEP LOGO ONLY (No menu button here)
          ========================================================================= */}
       <div
-        ref={menuContainerRef}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -155,7 +171,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
             overflow: 'hidden',
           }}
         >
-          {/* Logo Icon (stays on top with zIndex 2) */}
+          {/* Logo Icon */}
           <div
             style={{
               position: 'relative',
@@ -174,7 +190,7 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
             <Footprints size={20} strokeWidth={2.4} />
           </div>
 
-          {/* Brand Text: Slides directly behind the logo icon when scrolling down */}
+          {/* Brand Text: Slides away smoothly when scrolling */}
           <span
             className="brand-text"
             style={{
@@ -183,142 +199,28 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
               letterSpacing: '-0.02em',
               whiteSpace: 'nowrap',
               display: 'inline-block',
-              transform: isScrolled ? 'translateX(-32px)' : 'translateX(0)',
-              opacity: isScrolled ? 0 : 1,
-              maxWidth: isScrolled ? '0px' : '90px',
-              marginLeft: isScrolled ? '0px' : '9px',
-              transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              pointerEvents: isScrolled ? 'none' : 'auto',
+              transform: showCollapsedMenu ? 'translateX(-32px)' : 'translateX(0)',
+              opacity: showCollapsedMenu ? 0 : 1,
+              maxWidth: showCollapsedMenu ? '0px' : '90px',
+              marginLeft: showCollapsedMenu ? '0px' : '9px',
+              transition:
+                'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              pointerEvents: showCollapsedMenu ? 'none' : 'auto',
             }}
           >
             EcoStep
           </span>
         </button>
-
-        {/* Menu Button: Positioned directly beside the logo on the far left with smooth glide-in */}
-        <div
-          style={{
-            position: 'relative',
-            opacity: isScrolled ? 1 : 0,
-            transform: isScrolled ? 'translate3d(0, 0, 0)' : 'translate3d(-12px, 0, 0)',
-            maxWidth: isScrolled ? '130px' : '0px',
-            overflow: isMenuOpen ? 'visible' : 'hidden',
-            pointerEvents: isScrolled ? 'auto' : 'none',
-            transition: 'opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={isMenuOpen}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              padding: '9px 16px',
-              borderRadius: '999px',
-              background: isMenuOpen ? 'var(--landing-soft)' : 'var(--landing-pill)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid var(--landing-line)',
-              color: 'var(--landing-ink)',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: 'var(--landing-shadow)',
-              whiteSpace: 'nowrap',
-              transform: 'translate3d(0, 0, 0)',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
-            }}
-          >
-            {isMenuOpen ? <X size={15} strokeWidth={2.4} /> : <Menu size={15} strokeWidth={2.4} />}
-            <span>{isMenuOpen ? 'Close' : 'Menu'}</span>
-          </button>
-
-            {/* Dropdown Menu attached directly beneath the Menu button */}
-            {isMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 10px)',
-                  left: 0,
-                  background: 'var(--landing-surface)',
-                  border: '1px solid var(--landing-line)',
-                  borderRadius: '20px',
-                  padding: '8px',
-                  boxShadow: '0 16px 36px rgba(0, 0, 0, 0.25)',
-                  minWidth: '200px',
-                  zIndex: 60,
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  {NAV_ITEMS.map((item, index) => {
-                    const isTabActive = index === activeIndex && !item.href;
-                    return (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={() => handleItemSelect(index, item)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '9px 14px',
-                          borderRadius: '12px',
-                          border: 'none',
-                          background: isTabActive ? 'var(--landing-soft)' : 'transparent',
-                          color: isTabActive ? 'var(--landing-ink)' : 'var(--landing-mute)',
-                          fontWeight: isTabActive ? 700 : 500,
-                          fontSize: '14px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s, color 0.15s',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isTabActive) {
-                            e.currentTarget.style.background = 'var(--landing-soft)';
-                            e.currentTarget.style.color = 'var(--landing-ink)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isTabActive) {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'var(--landing-mute)';
-                          }
-                        }}
-                      >
-                        <span>{item.label}</span>
-                        {item.href ? (
-                          <ArrowUpRight size={14} style={{ opacity: 0.6 }} />
-                        ) : isTabActive ? (
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--landing-green)' }} />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      </div>
 
       {/* =========================================================================
-          CENTER: NAVIGATION TABS (Visible when at top of page)
+          CENTER: NAVIGATION TABS (Visible when at top of page on desktop)
          ========================================================================= */}
       <div
         style={{
-          pointerEvents: isScrolled ? 'none' : 'auto',
-          opacity: isScrolled ? 0 : 1,
-          transform: isScrolled ? 'translate3d(0, -12px, 0)' : 'translate3d(0, 0, 0)',
+          pointerEvents: showCollapsedMenu ? 'none' : 'auto',
+          opacity: showCollapsedMenu ? 0 : 1,
+          transform: showCollapsedMenu ? 'translate3d(0, -12px, 0)' : 'translate3d(0, 0, 0)',
           transition: 'opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
@@ -420,76 +322,301 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
       </div>
 
       {/* =========================================================================
-          FAR RIGHT: ADMIN LOGIN CTA & THEME TOGGLE
+          FAR RIGHT: UN-SCROLLED CTAs OR EXPANDABLE MENU (TOP RIGHT - Jitter.video style)
          ========================================================================= */}
       <div
+        ref={menuContainerRef}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
           pointerEvents: 'auto',
+          position: 'relative',
         }}
       >
-        <Link
-          to={ROUTES.ADMIN_LOGIN}
-          className="btn go"
+        {/* State A: Admin Login + Theme Toggle (Visible when at top of page) */}
+        <div
           style={{
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '11px 22px',
-            borderRadius: '999px',
-            fontWeight: 700,
-            fontSize: '15px',
-            border: '1px solid var(--landing-green)',
-            background: 'var(--landing-green)',
-            color: 'var(--landing-green-ink)',
-            textDecoration: 'none',
-            boxShadow: 'var(--landing-shadow)',
-            transform: 'translate3d(0, 0, 0)',
-            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(25, 212, 106, 0.35)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
-            e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
+            gap: '10px',
+            opacity: showCollapsedMenu ? 0 : 1,
+            transform: showCollapsedMenu ? 'translate3d(14px, 0, 0) scale(0.96)' : 'translate3d(0, 0, 0) scale(1)',
+            pointerEvents: showCollapsedMenu ? 'none' : 'auto',
+            transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+            position: showCollapsedMenu ? 'absolute' : 'relative',
+            right: 0,
+            whiteSpace: 'nowrap',
           }}
         >
-          Admin login
-        </Link>
+          <Link
+            to={ROUTES.ADMIN_LOGIN}
+            className="btn go"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '11px 22px',
+              borderRadius: '999px',
+              fontWeight: 700,
+              fontSize: '15px',
+              border: '1px solid var(--landing-green)',
+              background: 'var(--landing-green)',
+              color: 'var(--landing-green-ink)',
+              textDecoration: 'none',
+              boxShadow: 'var(--landing-shadow)',
+              transform: 'translate3d(0, 0, 0)',
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(25, 212, 106, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+              e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
+            }}
+          >
+            Admin login
+          </Link>
 
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label="Toggle light and dark theme"
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle light and dark theme"
+            style={{
+              width: '42px',
+              height: '42px',
+              padding: 0,
+              display: 'inline-flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: '50%',
+              border: '1px solid var(--landing-line)',
+              background: 'var(--landing-surface)',
+              color: 'var(--landing-ink)',
+              cursor: 'pointer',
+              boxShadow: 'var(--landing-shadow)',
+              transform: 'translate3d(0, 0, 0)',
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+            }}
+          >
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+        </div>
+
+        {/* State B: Single Expandable Menu Button (Visible when scrolled) */}
+        <div
           style={{
-            width: '42px',
-            height: '42px',
-            padding: 0,
-            display: 'inline-flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: '50%',
-            border: '1px solid var(--landing-line)',
-            background: 'var(--landing-surface)',
-            color: 'var(--landing-ink)',
-            cursor: 'pointer',
-            boxShadow: 'var(--landing-shadow)',
-            transform: 'translate3d(0, 0, 0)',
-            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+            opacity: showCollapsedMenu ? 1 : 0,
+            transform: showCollapsedMenu ? 'translate3d(0, 0, 0) scale(1)' : 'translate3d(14px, 0, 0) scale(0.96)',
+            pointerEvents: showCollapsedMenu ? 'auto' : 'none',
+            transition: 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+            position: showCollapsedMenu ? 'relative' : 'absolute',
+            right: 0,
           }}
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-        </button>
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isMenuOpen}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '999px',
+              background: isMenuOpen ? 'var(--landing-soft)' : 'var(--landing-pill)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid var(--landing-line)',
+              color: 'var(--landing-ink)',
+              fontSize: '13.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: 'var(--landing-shadow)',
+              whiteSpace: 'nowrap',
+              transform: 'translate3d(0, 0, 0)',
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, -2px, 0)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+            }}
+          >
+            {isMenuOpen ? <X size={16} strokeWidth={2.4} /> : <Menu size={16} strokeWidth={2.4} />}
+            <span>{isMenuOpen ? 'Close' : 'Menu'}</span>
+          </button>
+        </div>
+
+        {/* Dropdown Menu attached to top-right */}
+        {isMenuOpen && showCollapsedMenu && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 12px)',
+              right: 0,
+              background: 'var(--landing-surface)',
+              border: '1px solid var(--landing-line)',
+              borderRadius: '20px',
+              padding: '10px',
+              boxShadow: '0 20px 48px rgba(0, 0, 0, 0.35)',
+              minWidth: '220px',
+              zIndex: 60,
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              {NAV_ITEMS.map((item, index) => {
+                const isTabActive = index === activeIndex && !item.href;
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => handleItemSelect(index, item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '9px 14px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: isTabActive ? 'var(--landing-soft)' : 'transparent',
+                      color: isTabActive ? 'var(--landing-ink)' : 'var(--landing-mute)',
+                      fontWeight: isTabActive ? 700 : 500,
+                      fontSize: '14px',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isTabActive) {
+                        e.currentTarget.style.background = 'var(--landing-soft)';
+                        e.currentTarget.style.color = 'var(--landing-ink)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isTabActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'var(--landing-mute)';
+                      }
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    {item.href ? (
+                      <ArrowUpRight size={14} style={{ opacity: 0.6 }} />
+                    ) : isTabActive ? (
+                      <span
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          background: 'var(--landing-green)',
+                        }}
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
+
+              {/* Divider between nav links and actions */}
+              <div
+                style={{
+                  height: '1px',
+                  background: 'var(--landing-line)',
+                  margin: '6px 4px',
+                }}
+              />
+
+              {/* Admin Login Button */}
+              <Link
+                to={ROUTES.ADMIN_LOGIN}
+                onClick={() => setIsMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--landing-green)',
+                  background: 'var(--landing-green)',
+                  color: 'var(--landing-green-ink)',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(25, 212, 106, 0.25)',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translate3d(0, -1px, 0)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(25, 212, 106, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translate3d(0, 0, 0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(25, 212, 106, 0.25)';
+                }}
+              >
+                <span>Admin login</span>
+                <ArrowUpRight size={14} strokeWidth={2.4} />
+              </Link>
+
+              {/* Theme Toggle in Menu */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '9px 14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--landing-ink)',
+                  fontWeight: 600,
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--landing-soft)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+                  <span>Appearance</span>
+                </span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'var(--landing-soft)',
+                    color: 'var(--landing-ink)',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {theme}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
