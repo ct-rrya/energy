@@ -6,14 +6,13 @@ import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartReal
 import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './chartUtils';
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
-import { subHours } from 'date-fns';
 import {
   ResponsiveContainer,
-  BarChart,
+  LineChart,
   CartesianGrid,
   XAxis,
   YAxis,
-  Bar,
+  Line,
   Tooltip,
 } from 'recharts';
 
@@ -24,13 +23,13 @@ export interface StepsChartProps {
 /**
  * StepsChart Component
  * 
- * Displays step count over time as a bar chart.
+ * Displays step count over time as a line chart.
  * Shows detected footsteps on the piezoelectric tile.
  * 
  * Features:
  * - Real-time updates via WebSocket
- * - Last 24 hours with hourly granularity
- * - Bar chart (not line) for discrete step counts
+ * - Last 7 days with daily granularity
+ * - Line chart for trend visualization (changed from bar chart)
  * - Steps are summed per time period
  * - Proper empty state when no data available
  * - Responsive design
@@ -45,10 +44,11 @@ export function StepsChart({ className = '' }: StepsChartProps) {
   // Subscribe to real-time WebSocket updates
   useChartRealTimeUpdates();
 
-  // Calculate last 24 hours date range
+  // Calculate last 7 days date range (changed from 24 hours to see historical data)
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
-    const start = subHours(now, 24);
+    const start = new Date(now);
+    start.setDate(now.getDate() - 7);
     return {
       startDate: start.toISOString(),
       endDate: now.toISOString(),
@@ -93,7 +93,7 @@ export function StepsChart({ className = '' }: StepsChartProps) {
       className={className}
     >
       <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
-        <BarChart 
+        <LineChart 
           data={chartData}
           margin={{ 
             top: 5, 
@@ -105,7 +105,7 @@ export function StepsChart({ className = '' }: StepsChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
           <XAxis
             dataKey="timestamp"
-            tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'hour')}
+            tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'day')}
             stroke={colors.textColor}
             tick={{ fontSize: isMobile ? 11 : 12 }}
             angle={isMobile ? -45 : 0}
@@ -129,14 +129,16 @@ export function StepsChart({ className = '' }: StepsChartProps) {
             position={{ y: 0 }}
             wrapperStyle={{ zIndex: 1000 }}
           />
-          <Bar
+          <Line
+            type="monotone"
             dataKey="value"
-            fill={colors.bar}
+            stroke={colors.bar}
+            strokeWidth={isMobile ? 2 : 3}
             name="Steps"
-            animationDuration={300}
-            radius={[4, 4, 0, 0]}
+            dot={false}
+            activeDot={{ r: 4 }}
           />
-        </BarChart>
+        </LineChart>
       </ResponsiveContainer>
     </ChartContainer>
   );

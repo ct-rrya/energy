@@ -192,11 +192,16 @@ export function AnalyticsPage() {
 
       {/* Content based on active view */}
       {activeView === 'charts' ? (
-        /* Chart View - Layout matching reference image */
+        /* Chart View - Optimized Layout */
         <div className="space-y-6">
-          {/* 1. Power Generation Over Time - Full Width */}
-          <div className="w-full">
-            <PowerGenerationChart />
+          {/* 1. Power Generation (wider) | Steps (narrower) - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+            <div className="lg:col-span-2">
+              <PowerGenerationChart defaultTimeFilter="7days" />
+            </div>
+            <div className="lg:col-span-1">
+              <StepsChart />
+            </div>
           </div>
 
           {/* 2. Voltage Trend | Current Trend - 2 Column Row */}
@@ -208,18 +213,6 @@ export function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             <EnergyPeriodChart />
             <CumulativeEnergyChart />
-          </div>
-
-          {/* 4. Steps Over Time - Full Width */}
-          <div className="w-full">
-            <StepsChart />
-          </div>
-
-          {/* 5. Step Activity vs. Energy Output - Full Width */}
-          {/* Note: This chart component will be created if it doesn't exist, or we use existing StepsChart as placeholder */}
-          <div className="w-full">
-            {/* Placeholder for Step Activity vs Energy correlation chart */}
-            {/* Using existing components for now as this specific chart may need to be built */}
           </div>
         </div>
       ) : (

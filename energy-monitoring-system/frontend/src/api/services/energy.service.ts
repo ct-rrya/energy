@@ -17,6 +17,18 @@ export interface EnergyReading {
   stepCount?: number;
   capacitorVoltage?: number;
   frequency?: number;
+  batteryPercentage?: number;
+}
+
+/**
+ * Paginated Energy Readings Response
+ */
+export interface PaginatedReadingsResponse {
+  data: EnergyReading[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 /**
@@ -48,4 +60,50 @@ export const energyService = {
       return null;
     }
   },
+
+  /**
+   * Get raw energy readings for date range with pagination
+   * Returns individual MongoDB documents without aggregation
+   * 
+   * @param startDate - Start date (YYYY-MM-DD or ISO format)
+   * @param endDate - End date (YYYY-MM-DD or ISO format)
+   * @param page - Page number (1-indexed)
+   * @param limit - Records per page
+   */
+  getRawReadings: async (
+    startDate: string,
+    endDate: string,
+    page: number = 1,
+    limit: number = 50
+  ): Promise<PaginatedReadingsResponse> => {
+    // Backend requires YYYY-MM-DD format, extract date portion if ISO string
+    const formatDate = (dateStr: string) => {
+      return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    };
+
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
+    // Fetch more data to support pagination
+    const response = await apiClient.get<ApiResponse<EnergyReading[]>>(
+      `/energy/readings?startDate=${formattedStartDate}&endDate=${formattedEndDate}&limit=${limit * 10}`
+    );
+    
+    // Extract array from response (handle both wrapped and unwrapped responses)
+    const allData = Array.isArray(response.data) ? response.data : (response.data as any).data || [];
+    
+    // Client-side pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = allData.slice(startIndex, endIndex);
+    
+    return {
+      data: paginatedData,
+      total: allData.length,
+      page,
+      limit,
+      totalPages: Math.ceil(allData.length / limit),
+    };
+  },
 };
+

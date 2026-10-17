@@ -127,21 +127,45 @@ export class EnergyReading {
   /**
    * Current (A)
    *
-   * Current measurement from sensor in amperes.
+   * Derived current calculated by ESP32 hardware from power and voltage.
+   * This field is calculated by ESP32 using the formula: Current = Power / Voltage
+   *
+   * Hardware Calculation Process:
+   * 1. ESP32 detects step (voltage > 1.0V threshold on GPIO34)
+   * 2. Assigns fixed energy: 1 mJ (0.001 J) per step
+   * 3. Accumulates energy over time period
+   * 4. Calculates Power = Accumulated_Energy / Elapsed_Time
+   * 5. Derives Current = Power / Voltage
+   * 6. Sends all values (voltage, current, power, energy) to backend
+   *
+   * Backend Behavior:
+   * - Accepts and stores the ESP32's calculated current value as-is
+   * - Does NOT recalculate or override the hardware's value
+   * - Maintains consistency with ESP32's power calculations
+   *
+   * Example Calculations (from ESP32):
+   * - Power 0.000648 W, Voltage 4.264V → Current = 0.000152 A = 0.152 mA
+   * - Power 0.000366 W, Voltage 3.692V → Current = 0.000099 A = 0.099 mA
+   *
+   * Physical Meaning:
+   * - Represents the average current during the energy harvesting period
+   * - Based on fixed 1 mJ energy assignment per step (not actual measurement)
+   * - Consistent with power calculation (P = V × I)
    *
    * Expected Range:
-   * - Min: 0 A
-   * - Max: 10 A (typical ESP32 ADC range)
-   * - Common: 0.01-1 A
-   *
-   * Validation:
-   * - Must be positive number
-   * - Validated by DTO and service layer
+   * - Min: 0 A (no activity)
+   * - Max: ~0.01 A (high activity, typical piezoelectric micro-scale)
+   * - Common: 0.0001-0.001 A (0.1-1.0 mA for normal footsteps)
    *
    * Usage:
-   * - Calculate power (P = V × I)
-   * - Estimate energy harvesting efficiency
-   * - Detect sensor malfunction
+   * - Display derived current in analytics
+   * - Verify P = V × I relationship
+   * - Compare energy efficiency across readings
+   *
+   * Note:
+   * - Hardware does NOT measure actual compression pulse current
+   * - Value is derived from fixed 1 mJ/step energy model
+   * - Backend trusts ESP32's calculation for consistency
    *
    * Precision: Stored as double (64-bit float)
    */

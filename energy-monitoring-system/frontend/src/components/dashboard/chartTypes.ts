@@ -125,6 +125,8 @@ export interface CustomTooltipProps {
   unit?: string;
   /** Optional secondary unit for dual-metric charts */
   secondaryUnit?: string;
+  /** Multiplier for unit conversions (e.g., 1000 to convert A to mA) */
+  valueMultiplier?: number;
   /** Theme colors for styling */
   colors?: ChartThemeColors;
   /** Coordinate position of the tooltip (provided by Recharts for positioning) */

@@ -76,7 +76,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading && (
           <LoadingSpinner size="sm" className="absolute left-4" />
         )}
-        <span className={cn(isLoading && 'opacity-0')}>{children}</span>
+        <span className={cn('inline-flex items-center justify-center gap-2', isLoading && 'opacity-0')}>
+          {children}
+        </span>
       </button>
     );
   }

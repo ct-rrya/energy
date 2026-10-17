@@ -313,11 +313,17 @@ export class IotService {
     sensorId: string,
     readingDto: CreateReadingDto,
   ): Promise<EnergyReadingDocument> {
+    // Use ESP32's derived current value (calculated as Power/Voltage by hardware)
+    // ESP32 assigns fixed 1 mJ per step, calculates Power = Energy/Time,
+    // then derives Current = Power/Voltage before transmission.
+    // We trust this calculation and store it as-is.
+    const currentFromESP32 = readingDto.current || 0;
+
     // Create reading document with all new fields
     const reading = new this.readingModel({
       sensorId, // Link to sensor
       voltage: readingDto.voltage,
-      current: readingDto.current,
+      current: currentFromESP32, // Use ESP32's calculated current (P/V)
       power: readingDto.power,
       batteryPercentage: readingDto.batteryPercentage ?? 100, // Default to 100%
       temperature: readingDto.temperature,

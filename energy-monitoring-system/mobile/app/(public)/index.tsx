@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDashboardData, useRecentReading } from '@/hooks';
-import { HeroEnergyCard, MetricCard, ErrorCard } from '@/components/dashboard';
+import { HeroEnergyCard, HeroPowerCard, MetricCard, ErrorCard } from '@/components/dashboard';
 
 /**
  * Public Dashboard Screen
@@ -109,6 +109,15 @@ export default function PublicDashboardScreen() {
         {/* Dashboard Content */}
         {!hasError && !isEmpty && (
           <>
+            {/* Hero Power Card - Primary KPI (Phase 3) */}
+            <HeroPowerCard
+              powerValue={reading?.power ?? null}
+              aiInsight={metrics?.aiInsight}
+              isLoading={recentReadingData.isLoading}
+              isError={recentReadingData.isError}
+              onRetry={recentReadingData.refetch}
+            />
+
             {/* Hero Energy Card */}
             <HeroEnergyCard
               energyValue={metrics?.dailyEnergy ?? null}
@@ -127,8 +136,17 @@ export default function PublicDashboardScreen() {
               </View>
             )}
 
-            {/* Metric Cards - Voltage, Current, Power, Energy */}
+            {/* Metric Cards - Steps, Voltage, Current, Power (W), Energy */}
             <View style={styles.metricsGrid}>
+              <MetricCard
+                label="Steps Today"
+                value={metrics?.todayTotalSteps ?? null}
+                unit=""
+                precision={0}
+                color="green"
+                isLoading={dashboardData.isLoading}
+              />
+
               <MetricCard
                 label="Voltage"
                 value={reading?.voltage ?? null}

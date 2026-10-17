@@ -221,7 +221,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Total Energy</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.total?.toFixed(2) || '0.00'} kWh
+                  {energyData.summary.total?.toFixed(2) || '0.00'} mWh
                 </p>
               </div>
             </div>
@@ -235,7 +235,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Peak Power</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.max.toFixed(2)} kWh
+                  {energyData.summary.max.toFixed(2)} mWh
                 </p>
               </div>
             </div>
@@ -249,7 +249,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Average</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.avg.toFixed(2)} kWh
+                  {energyData.summary.avg.toFixed(2)} mWh
                 </p>
               </div>
             </div>
@@ -311,7 +311,7 @@ export function HistoricalAnalytics() {
                 <YAxis 
                   stroke="#525252"
                   style={{ fontSize: '12px' }}
-                  label={{ value: 'Energy (kWh)', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#525252' } }}
+                  label={{ value: 'Energy (mWh)', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#525252' } }}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -328,7 +328,7 @@ export function HistoricalAnalytics() {
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, fill: '#3DDC97' }}
-                  name="Energy (kWh)"
+                  name="Energy (mWh)"
                   strokeOpacity={0.95}
                 />
               </RechartsLineChart>

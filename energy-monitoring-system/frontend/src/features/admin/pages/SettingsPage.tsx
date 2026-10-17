@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { EcoPageHeader } from '@/components/common/EcoPageHeader';
 import { EcoCard } from '@/components/common';
 import { Button } from '@/components/ui/Button';
@@ -167,12 +166,11 @@ export function SettingsPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <EcoPageHeader
-          title="Settings"
-          subtitle="Configure EcoStep system behavior and application preferences"
-        />
+    <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <EcoPageHeader
+        title="Settings"
+        subtitle="Configure EcoStep system behavior and application preferences"
+      />
 
         {/* System Preferences */}
         <EcoCard className="mt-6">
@@ -467,7 +465,6 @@ export function SettingsPage() {
           </div>
         </EcoCard>
       </div>
-    </DashboardLayout>
   );
 }
 

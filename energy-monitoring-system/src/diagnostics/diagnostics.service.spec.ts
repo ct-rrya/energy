@@ -12,6 +12,10 @@ import {
   DiagnosticTestDocument,
   DiagnosticResultStatus,
 } from './schemas/diagnostic-test.schema';
+import {
+  EnergyReading,
+  EnergyReadingDocument,
+} from '../iot/schemas/energy-reading.schema';
 
 /**
  * DiagnosticsService Unit Tests
@@ -32,6 +36,7 @@ describe('DiagnosticsService', () => {
   let service: DiagnosticsService;
   let referenceConfigModel: Model<ReferenceConfigDocument>;
   let diagnosticTestModel: Model<DiagnosticTestDocument>;
+  let readingModel: Model<EnergyReadingDocument>;
 
   // Mock data
   const mockReferenceConfig: Partial<ReferenceConfig> = {
@@ -75,10 +80,33 @@ describe('DiagnosticsService', () => {
         },
         {
           provide: getModelToken(DiagnosticTest.name),
+          useValue: Object.assign(
+            jest.fn().mockImplementation((data) => ({
+              ...data,
+              _id: 'mock-test-id',
+              testDate: data?.testDate || new Date(),
+              save: jest.fn().mockResolvedValue({
+                ...data,
+                _id: 'mock-test-id',
+                testDate: data?.testDate || new Date(),
+              }),
+            })),
+            {
+              find: jest.fn(),
+              countDocuments: jest.fn(),
+              save: jest.fn(),
+              exec: jest.fn(),
+            },
+          ),
+        },
+        {
+          provide: getModelToken(EnergyReading.name),
           useValue: {
-            find: jest.fn(),
-            countDocuments: jest.fn(),
-            save: jest.fn(),
+            find: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]),
+              }),
+            }),
             exec: jest.fn(),
           },
         },
@@ -91,6 +119,9 @@ describe('DiagnosticsService', () => {
     );
     diagnosticTestModel = module.get<Model<DiagnosticTestDocument>>(
       getModelToken(DiagnosticTest.name),
+    );
+    readingModel = module.get<Model<EnergyReadingDocument>>(
+      getModelToken(EnergyReading.name),
     );
   });
 
@@ -803,6 +834,94 @@ describe('DiagnosticsService', () => {
       expect(result.tests).toEqual([]); // No results for this page
       expect(result.pagination.page).toBe(10);
       expect(result.pagination.totalPages).toBe(2); // Math.ceil(25 / 20)
+    });
+  });
+
+  describe('getAutomaticBaseline', () => {
+    it('should return baseline calculated from historical readings', async () => {
+      const mockReadings = [
+        { energy: 0.051, stepCount: 10 },
+        { energy: 0.051, stepCount: 10 },
+      ];
+
+      jest.spyOn(readingModel, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockReadings),
+        }),
+      } as any);
+
+      const baseline = await service.getAutomaticBaseline(30);
+
+      expect(baseline.daysAnalyzed).toBe(30);
+      expect(baseline.totalSteps).toBe(20);
+      expect(baseline.normalStepMWh).toBe(0.0051);
+      expect(baseline.tolerancePercent).toBe(34);
+      expect(baseline.minAcceptableMWh).toBe(0.00337);
+      expect(baseline.maxAcceptableMWh).toBe(0.00683);
+    });
+
+    it('should return default specification values when no readings exist', async () => {
+      jest.spyOn(readingModel, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      } as any);
+
+      const baseline = await service.getAutomaticBaseline(30);
+
+      expect(baseline.daysAnalyzed).toBe(30);
+      expect(baseline.normalStepMWh).toBe(0.0051);
+      expect(baseline.totalSteps).toBe(1547);
+      expect(baseline.tolerancePercent).toBe(34);
+      expect(baseline.minAcceptableMWh).toBe(0.00337);
+      expect(baseline.maxAcceptableMWh).toBe(0.00683);
+    });
+  });
+
+  describe('recordStepTest', () => {
+    it('should record step test within normal range and return verdict', async () => {
+      jest.spyOn(service, 'getAutomaticBaseline').mockResolvedValue({
+        daysAnalyzed: 30,
+        totalSteps: 1547,
+        totalEnergyMWh: 7.8897,
+        normalStepMWh: 0.0051,
+        tolerancePercent: 34,
+        minAcceptableMWh: 0.00346,
+        maxAcceptableMWh: 0.00674,
+        readingCount: 120,
+      });
+
+      const result = await service.recordStepTest(
+        { actualStepEnergyMWh: 0.00418 },
+        'admin@test.com',
+      );
+
+      expect(result.actualEnergyMWh).toBe(0.00418);
+      expect(result.expectedEnergyMWh).toBe(0.0051);
+      expect(result.deviationPercentage).toBe(-18.0);
+      expect(result.result).toBe(DiagnosticResultStatus.WITHIN_RANGE);
+      expect(result.statusMessage).toBe('Tile operating normally ✅');
+    });
+
+    it('should flag step test below expected threshold', async () => {
+      jest.spyOn(service, 'getAutomaticBaseline').mockResolvedValue({
+        daysAnalyzed: 30,
+        totalSteps: 1547,
+        totalEnergyMWh: 7.8897,
+        normalStepMWh: 0.0051,
+        tolerancePercent: 34,
+        minAcceptableMWh: 0.00346,
+        maxAcceptableMWh: 0.00674,
+        readingCount: 120,
+      });
+
+      const result = await service.recordStepTest(
+        { actualStepEnergyMWh: 0.0025 },
+        'admin@test.com',
+      );
+
+      expect(result.result).toBe(DiagnosticResultStatus.BELOW_EXPECTED);
+      expect(result.statusMessage).toContain('Energy below normal range');
     });
   });
 });

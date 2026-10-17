@@ -32,13 +32,23 @@ interface EcoSidebarProps {
   children: React.ReactNode;
 }
 
+// Cache last known notch Y position across renders to maintain smooth transitions
+let lastKnownNotchY: string | null = null;
+
 export function EcoSidebar({ children }: EcoSidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
-  const [expanded, setExpanded] = useState(false);
+  // Initialize expanded synchronously from localStorage to prevent delayed expand on load
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ecostep.sidebar.v2') === 'expanded';
+    } catch {
+      return false;
+    }
+  });
   const [ready, setReady] = useState(false);
   const capRef = useRef<HTMLElement>(null);
 
@@ -74,7 +84,9 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     if (!a) return;
     const capsuleRect = el.getBoundingClientRect();
     const rowRect = a.getBoundingClientRect();
-    el.style.setProperty('--notch-y', (rowRect.top - capsuleRect.top + rowRect.height / 2) + 'px');
+    const y = (rowRect.top - capsuleRect.top + rowRect.height / 2) + 'px';
+    lastKnownNotchY = y;
+    el.style.setProperty('--notch-y', y);
   };
 
   // Auto density: count rows and recalculate layout
@@ -89,7 +101,13 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   // Call place after route changes (layout effect)
   useLayoutEffect(() => {
     place();
-  }, [location.pathname, expanded, navItems.length]);
+    if (!ready) {
+      const id = requestAnimationFrame(() => {
+        setReady(true);
+      });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [location.pathname, expanded, navItems.length, ready]);
 
   // Recalculate when nav items change (role change adds/removes items)
   useEffect(() => {
@@ -98,23 +116,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
   // Mount effect - fit and place on mount, resize, and font ready
   useEffect(() => {
-    // Read storage after mount
-    try {
-      const stored = localStorage.getItem('ecostep.sidebar.v2');
-      if (stored === 'expanded') {
-        setExpanded(true);
-      }
-    } catch {}
-
     // Initial fit
     fit();
-
-    // Add ready class after two rAFs
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setReady(true);
-      });
-    });
 
     // Place after fonts ready
     if (document.fonts?.ready) {
@@ -133,7 +136,6 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
 
     return () => {
-      cancelAnimationFrame(id);
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) {
         resizeObserver.disconnect();
@@ -183,7 +185,13 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           </span>
         </a>
 
-        <nav className="es-capsule" id="capsule" ref={capRef} aria-label="Main">
+        <nav 
+          className="es-capsule" 
+          id="capsule" 
+          ref={capRef} 
+          aria-label="Main"
+          style={lastKnownNotchY ? ({ '--notch-y': lastKnownNotchY } as React.CSSProperties) : undefined}
+        >
           <div className="es-fill"></div>
           <div className="es-ring"></div>
           <div className="es-blob"></div>

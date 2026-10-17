@@ -24,14 +24,22 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [isPressed, setIsPressed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
+  // Auto-resize textarea smoothly without unwanted scrollbars
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     textarea.style.height = 'auto';
-    const newHeight = Math.min(textarea.scrollHeight, 96); // Max 4 rows (~96px)
-    textarea.style.height = `${newHeight}px`;
+    const scrollHeight = textarea.scrollHeight;
+    if (scrollHeight > 96) {
+      textarea.style.height = '96px';
+      textarea.style.overflowY = 'auto';
+      textarea.style.borderRadius = '18px';
+    } else {
+      textarea.style.height = `${Math.max(scrollHeight, 44)}px`;
+      textarea.style.overflowY = 'hidden';
+      textarea.style.borderRadius = scrollHeight > 50 ? '18px' : '999px';
+    }
   }, [value]);
 
   const handleSend = () => {

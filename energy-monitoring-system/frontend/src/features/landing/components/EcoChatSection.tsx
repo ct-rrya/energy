@@ -37,12 +37,12 @@ export function EcoChatSection() {
         </p>
         <button
           onClick={handleAskEcoStep}
-          className="btn"
+          className="btn btn-micro"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '11px 20px',
+            padding: '12px 22px',
             borderRadius: '999px',
             fontWeight: 700,
             fontSize: '15px',
@@ -50,18 +50,11 @@ export function EcoChatSection() {
             background: 'var(--landing-surface)',
             color: 'var(--landing-ink)',
             cursor: 'pointer',
-            transition: 'transform 0.25s cubic-bezier(0.65, 0, 0.15, 1), box-shadow 0.25s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'none';
+            boxShadow: 'var(--landing-shadow)',
           }}
         >
           Ask EcoStep
+          <span className="arrow-micro">→</span>
         </button>
       </div>
 

@@ -9,7 +9,7 @@
  * - 5.1: Render as AreaChart using Recharts AreaChart component
  * - 5.2: Fetch data from Time_Series_API with metric parameter set to "energy"
  * - 5.3: Calculate cumulative values by summing energy from all previous data points
- * - 5.4: Display cumulative energy in kilowatt-hours (kWh) on Y-axis
+ * - 5.4: Display cumulative energy in milliwatt-hours (mWh) on Y-axis
  * - 5.5: Display timestamps on X-axis
  * - 5.6: Use default time range of last 30 days with daily granularity
  * - 5.7: Fill area under curve with gradient from EcoStep_Design_System colors
@@ -117,7 +117,7 @@ export function CumulativeEnergyChart({
     if (isEmpty || isLoading) {
       return `Total energy harvested over the last ${daysToShow} days`;
     }
-    return `Total: ${formatValueWithUnit(totalCumulativeEnergy, 'kWh')} over the last ${daysToShow} days`;
+    return `Total: ${formatValueWithUnit(totalCumulativeEnergy, 'mWh')} over the last ${daysToShow} days`;
   }, [totalCumulativeEnergy, isEmpty, isLoading, daysToShow]);
 
   // Color system based on theme
@@ -173,10 +173,10 @@ export function CumulativeEnergyChart({
             style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
 
-          {/* Y-axis: Cumulative Energy in kWh */}
+          {/* Y-axis: Cumulative Energy in mWh */}
           <YAxis
             label={{
-              value: 'Cumulative Energy (kWh)',
+              value: 'Cumulative Energy (mWh)',
               angle: -90,
               position: 'insideLeft',
               style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
@@ -188,7 +188,7 @@ export function CumulativeEnergyChart({
 
           {/* Tooltip with custom formatting and viewport-aware positioning */}
           <Tooltip 
-            content={<CustomChartTooltip unit="kWh" />}
+            content={<CustomChartTooltip unit="mWh" />}
             position={{ y: 0 }}
             wrapperStyle={{ zIndex: 1000 }}
             allowEscapeViewBox={{ x: false, y: true }}

@@ -29,6 +29,9 @@ export interface MetricCardProps {
   
   /** Optional icon element to display with label */
   icon?: React.ReactNode;
+  
+  /** Optional subtitle text to show below the value (e.g., "No steps yet", "Last reading") */
+  subtitle?: string;
 }
 
 /**
@@ -74,6 +77,7 @@ export const MetricCard = React.memo(function MetricCard({
   precision,
   color,
   icon,
+  subtitle,
 }: MetricCardProps) {
   const { theme } = useTheme();
   
@@ -165,6 +169,20 @@ export const MetricCard = React.memo(function MetricCard({
             {unit}
           </span>
         </div>
+
+        {/* Optional subtitle text */}
+        {subtitle && (
+          <div
+            className="mt-2 text-[12px] sm:text-[13px]"
+            style={{
+              color: theme === 'dark' ? '#6B7280' : '#9CA3AF',
+              fontStyle: 'italic',
+              opacity: 0.8,
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
       </div>
     </>
   );

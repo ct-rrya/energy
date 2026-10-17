@@ -22,7 +22,7 @@
  *   ❌ "Amazing performance! You're crushing it!"
  * 
  * Fallback States:
- * - No insight: "Analysis in progress..."
+ * - No insight: "No activity detected today. Start generating to see insights!"
  * - Loading: Skeleton animation
  * - Error: Hide section entirely (not critical data)
  * 
@@ -35,6 +35,7 @@
  *   insight="Peak generation at 2pm today, 15% above average"
  *   isLoading={false}
  *   maxLength={150}
+ *   hasActivity={true}
  * />
  * ```
  */
@@ -53,16 +54,23 @@ export const AIInsightSection = React.memo(function AIInsightSection({
   insight,
   isLoading,
   maxLength = 150,
+  hasActivity = true,
 }: AIInsightSectionProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   // Truncate insight text if it exceeds maxLength
   const displayInsight = React.useMemo(() => {
+    // If no activity, show engaging empty state message
+    if (!hasActivity) {
+      return 'No activity detected today. Start generating to see insights!';
+    }
+    // If no insight but has activity, show "analyzing"
     if (!insight) return 'Analysis in progress...';
+    // Truncate if too long
     if (insight.length <= maxLength) return insight;
     return insight.slice(0, maxLength - 3) + '...';
-  }, [insight, maxLength]);
+  }, [insight, maxLength, hasActivity]);
 
   // Theme-aware colors
   const borderColor = isDark

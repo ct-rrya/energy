@@ -4,14 +4,39 @@ import type {
   DiagnosticHistoryResponse,
   CreateReferenceConfigRequest,
   RecordDiagnosticTestRequest,
+  DiagnosticBaseline,
+  RecordStepTestRequest,
+  StepTestResult,
 } from '@/types/diagnostic.types';
 
 /**
  * Diagnostics API Service
  * 
  * Handles all system diagnostics-related API calls including
- * reference configuration and diagnostic test recording.
+ * reference configuration, automatic baseline, and step tests.
  */
+
+/**
+ * Get Automatic Baseline
+ * 
+ * Retrieves the 30-day historical baseline of footstep energy.
+ */
+export const getBaseline = async (): Promise<DiagnosticBaseline> => {
+  const response = await apiClient.get<DiagnosticBaseline>('/diagnostics/baseline');
+  return response.data;
+};
+
+/**
+ * Record Step Diagnostic Test
+ * 
+ * Records a single footstep on-demand test.
+ */
+export const recordStepTest = async (
+  data: RecordStepTestRequest
+): Promise<StepTestResult> => {
+  const response = await apiClient.post<StepTestResult>('/diagnostics/test-step', data);
+  return response.data;
+};
 
 /**
  * Create or Update Reference Configuration
@@ -80,6 +105,8 @@ export const getDiagnosticHistory = async (
  * Centralized object for all diagnostics API calls.
  */
 export const diagnosticsService = {
+  getBaseline,
+  recordStepTest,
   createOrUpdateReference,
   getReferenceConfig,
   recordDiagnosticTest,

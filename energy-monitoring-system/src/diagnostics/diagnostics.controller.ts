@@ -27,6 +27,9 @@ import {
   DiagnosticTestResponseDto,
   DiagnosticHistoryQueryDto,
   DiagnosticHistoryResponseDto,
+  DiagnosticBaselineResponseDto,
+  RecordStepTestDto,
+  StepTestResponseDto,
 } from './dto';
 import type { UserDocument } from '../users/schemas/user.schema';
 
@@ -370,5 +373,64 @@ export class DiagnosticsController {
       }),
       pagination: result.pagination,
     };
+  }
+
+  /**
+   * Get Automatic Baseline from Historical Data
+   *
+   * Analyzes the last 30 days of footsteps/readings to determine:
+   * - Expected normal step energy (mean mWh per step)
+   * - Acceptable range (min to max at ±34% tolerance)
+   */
+  @Get('baseline')
+  @ApiOperation({
+    summary: 'Get automatic baseline from 30-day historical data (admin only)',
+    description:
+      'Analyzes historical footstep energy data to determine expected normal step energy (mWh) and tolerance bounds.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automatic baseline retrieved successfully',
+    type: DiagnosticBaselineResponseDto,
+  })
+  async getBaseline(): Promise<DiagnosticBaselineResponseDto> {
+    return this.diagnosticsService.getAutomaticBaseline(30);
+  }
+
+  /**
+   * Record On-Demand Step Diagnostic Test
+   *
+   * Admin tests physical footstep on the tile and receives instant comparison against expected baseline.
+   */
+  @Post('test-step')
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Record single-step on-demand diagnostic test (admin only)',
+    description:
+      'Records a measured physical footstep on the tile and compares it against expected normal baseline.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Step test recorded successfully',
+    type: StepTestResponseDto,
+  })
+  async recordStepTest(
+    @Body() dto: RecordStepTestDto,
+    @CurrentUser() user: UserDocument,
+  ): Promise<StepTestResponseDto> {
+    this.logger.log(
+      `Admin ${user.email} recording on-demand step test: ${dto.actualStepEnergyMWh} mWh`,
+    );
+
+    const result = await this.diagnosticsService.recordStepTest(
+      dto,
+      user.email,
+    );
+
+    // Broadcast WebSocket events to admin clients
+    this.dashboardGateway.emitToAdmins('diagnostic:test-completed', result);
+    this.dashboardGateway.emitToAdmins('diagnostic:step-tested', result);
+
+    return result;
   }
 }

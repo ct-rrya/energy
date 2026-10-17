@@ -7,7 +7,6 @@ import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './ch
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
 import type { VoltageCurrentChartProps } from './chartTypes';
-import { subHours } from 'date-fns';
 import {
   ResponsiveContainer,
   LineChart,
@@ -49,10 +48,11 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
   // Subscribe to real-time WebSocket updates
   useChartRealTimeUpdates();
 
-  // Calculate last 24 hours date range
+  // Calculate last 7 days date range (changed from 24 hours to see historical data)
   const { startDate, endDate } = useMemo(() => {
     const now = new Date();
-    const start = subHours(now, 24);
+    const start = new Date(now);
+    start.setDate(now.getDate() - 7);
     return {
       startDate: start.toISOString(),
       endDate: now.toISOString(),
@@ -167,8 +167,8 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
 
       {/* Current Chart */}
       <ChartContainer
-        title="Current Trend"
-        subtitle="Current flow over the last 24 hours"
+        title="Equivalent Current Trend"
+        subtitle="Equivalent current at 1-second discharge over the last 24 hours"
         isLoading={currentLoading}
         error={currentError}
         isEmpty={isCurrentEmpty}
@@ -197,7 +197,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
             />
             <YAxis
               label={{
-                value: 'Current (A)',
+                value: 'Equiv. Current (mA)',
                 angle: -90,
                 position: 'insideLeft',
                 style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
@@ -205,9 +205,10 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
+              tickFormatter={(value) => (value * 1000).toFixed(1)}
             />
             <Tooltip 
-              content={<CustomChartTooltip unit="A" />}
+              content={<CustomChartTooltip unit="mA" valueMultiplier={1000} />}
               position={{ y: 0 }}
               wrapperStyle={{ zIndex: 1000 }}
               allowEscapeViewBox={{ x: false, y: true }}
@@ -221,7 +222,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
               strokeWidth={isMobile ? 2 : 3}
               dot={false}
               activeDot={{ r: 4 }}
-              name="Current"
+              name="Equiv. Current"
             />
           </LineChart>
         </ResponsiveContainer>

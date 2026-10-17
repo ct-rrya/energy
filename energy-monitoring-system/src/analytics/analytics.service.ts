@@ -868,7 +868,8 @@ export class AnalyticsService {
     const groupId = this.buildGroupId(granularity);
 
     // For steps, we want to sum instead of average
-    const aggregationOperator = metric === MetricType.STEPS ? '$sum' : '$avg';
+    // For energy, also sum instead of average to get total energy in period
+    const aggregationOperator = (metric === MetricType.STEPS || metric === MetricType.ENERGY) ? '$sum' : '$avg';
 
     const pipeline: any[] = [
       { $match: matchStage },
@@ -890,21 +891,22 @@ export class AnalyticsService {
 
     // Map results to data points
     const dataPoints: TimeSeriesDataPointDto[] = results.map((r) => {
+      // Don't round tiny values to 0 - preserve precision for micro-scale measurements
       const value = r.value;
       const minValue = r.min;
       const maxValue = r.max;
 
       return {
         timestamp: r.timestamp,
-        value: Math.round(value * 100) / 100,
+        value: value, // Keep full precision
         label: this.formatTimeSeriesLabel(r._id, granularity),
-        min: Math.round(minValue * 100) / 100,
-        max: Math.round(maxValue * 100) / 100,
+        min: minValue,
+        max: maxValue,
         count: r.count,
       };
     });
 
-    // Calculate summary
+    // Calculate summary - preserve precision for micro-scale values
     const values = dataPoints.map((dp) => dp.value);
     const summary: TimeSeriesSummaryDto = {
       min: values.length > 0 ? Math.min(...values) : 0,
@@ -921,14 +923,7 @@ export class AnalyticsService {
       totalReadings: results.reduce((sum, r) => sum + r.count, 0),
     };
 
-    // Round summary values
-    summary.min = Math.round(summary.min * 100) / 100;
-    summary.max = Math.round(summary.max * 100) / 100;
-    summary.avg = Math.round(summary.avg * 100) / 100;
-    if (summary.total !== undefined) {
-      summary.total = Math.round(summary.total * 100) / 100;
-    }
-
+    // Don't round summary values - keep precision for micro-scale measurements
     return {
       metric,
       unit,

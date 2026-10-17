@@ -179,6 +179,8 @@ export interface AIInsightSectionProps {
   isLoading: boolean;
   /** Maximum character length for insight text */
   maxLength?: number;
+  /** Whether there's activity today (affects empty state message) */
+  hasActivity?: boolean;
 }
 
 /**

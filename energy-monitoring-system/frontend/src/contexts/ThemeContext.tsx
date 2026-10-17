@@ -23,8 +23,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('ecostep-theme', theme);
   }, [theme]);
 
+  // High-performance theme toggle: disables transition repaint stalls during color swap
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    const root = document.documentElement;
+    root.classList.add('no-transitions');
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('no-transitions');
+      });
+    });
   };
 
   return (

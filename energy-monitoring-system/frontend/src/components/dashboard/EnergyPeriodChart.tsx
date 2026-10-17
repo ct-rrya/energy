@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEnergyByPeriod, type PeriodFilter } from '@/features/dashboard/hooks/useEnergyByPeriod';
@@ -29,7 +29,7 @@ import {
  * - 4.2: Fetch data from Time_Series_API with metric parameter set to "energy"
  * - 4.3: Display three period filter options: "Hourly", "Daily", "Weekly"
  * - 4.4-4.6: Fetch appropriate data based on period filter selection
- * - 4.7: Display energy values in kilowatt-hours (kWh) on Y-axis
+ * - 4.7: Display energy values in milliwatt-hours (mWh) on Y-axis
  * - 4.8: Display time period labels on X-axis
  * - 4.9: Use bar colors from EcoStep Design System with theme-appropriate shading
  * - 4.10: Use TanStack_Query for data fetching with appropriate caching
@@ -43,12 +43,13 @@ import {
  * ```
  */
 export function EnergyPeriodChart({ 
-  className = '', 
-  defaultPeriodFilter = 'daily' 
+  className = ''
 }: EnergyPeriodChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(defaultPeriodFilter);
+  
+  // Use fixed 'daily' granularity - Analytics page controls the unified period
+  const periodFilter: PeriodFilter = 'daily';
   
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
@@ -64,17 +65,8 @@ export function EnergyPeriodChart({
   // Determine if dataset is empty
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
 
-  // Determine granularity based on period filter for X-axis formatting
-  const granularity = useMemo(() => {
-    switch (periodFilter) {
-      case 'hourly':
-        return 'hour' as const;
-      case 'daily':
-        return 'day' as const;
-      case 'weekly':
-        return 'week' as const;
-    }
-  }, [periodFilter]);
+  // Determine granularity - fixed to 'day' for Analytics page
+  const granularity = 'day' as const;
 
   // Color system based on theme following EcoStep Design System
   const colors = {
@@ -89,57 +81,8 @@ export function EnergyPeriodChart({
   };
 
   /**
-   * Filter button configuration
+   * Filter controls removed - Analytics page controls unified period for all charts
    */
-  const filterButtons: Array<{ value: PeriodFilter; label: string }> = [
-    { value: 'hourly', label: 'Hourly' },
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-  ];
-
-  /**
-   * Handle period filter change
-   */
-  const handleFilterChange = (filter: PeriodFilter) => {
-    setPeriodFilter(filter);
-  };
-
-  /**
-   * Render period filter controls - Responsive button sizing
-   */
-  const filterControls = (
-    <div
-      className="flex gap-1 rounded-xl p-1 w-full"
-      role="group"
-      aria-label="Period filter options"
-      style={{
-        backgroundColor: colors.filterBg,
-        border: `1px solid ${colors.border}`,
-      }}
-    >
-      {filterButtons.map((button) => (
-        <button
-          key={button.value}
-          onClick={() => handleFilterChange(button.value)}
-          className="flex-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap"
-          style={{
-            backgroundColor:
-              periodFilter === button.value
-                ? colors.filterActiveBg
-                : 'transparent',
-            color:
-              periodFilter === button.value
-                ? colors.accent
-                : colors.filterText,
-          }}
-          aria-pressed={periodFilter === button.value}
-          aria-label={`Show ${button.label.toLowerCase()} energy data`}
-        >
-          {button.label}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <ChartContainer
@@ -149,7 +92,6 @@ export function EnergyPeriodChart({
       error={error}
       isEmpty={isEmpty}
       onRetry={refetch}
-      actions={filterControls}
       height={isMobile ? 250 : 350}
       className={className}
     >
@@ -175,7 +117,7 @@ export function EnergyPeriodChart({
           />
           <YAxis
             label={{
-              value: 'Energy (kWh)',
+              value: 'Energy (mWh)',
               angle: -90,
               position: 'insideLeft',
               style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
@@ -185,7 +127,7 @@ export function EnergyPeriodChart({
             style={{ fontSize: isMobile ? '11px' : '12px' }}
           />
           <Tooltip 
-            content={<CustomChartTooltip unit="kWh" />}
+            content={<CustomChartTooltip unit="mWh" />}
             position={{ y: 0 }}
             wrapperStyle={{ zIndex: 1000 }}
             allowEscapeViewBox={{ x: false, y: true }}

@@ -2,7 +2,7 @@
  * HowItWorks Component
  * 
  * Four-step process cards with CSS counter numbered circles.
- * Hover lift animation.
+ * GPU-accelerated micro-interaction hover lift.
  */
 export function HowItWorks() {
   const steps = [
@@ -41,23 +41,16 @@ export function HowItWorks() {
         {steps.map((step, index) => (
           <div
             key={index}
-            className="card"
+            className="card card-micro"
             style={{
               background: 'var(--landing-surface)',
               border: '1px solid var(--landing-line)',
               borderRadius: '28px',
               padding: '26px',
               counterIncrement: 's',
-              transition: 'transform 0.35s cubic-bezier(0.65, 0, 0.15, 1), box-shadow 0.35s',
               position: 'relative',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.boxShadow = 'var(--landing-shadow)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
+              boxShadow: 'var(--landing-shadow)',
+              cursor: 'default',
             }}
           >
             <div
@@ -85,7 +78,7 @@ export function HowItWorks() {
             >
               {step.title}
             </h3>
-            <p style={{ margin: 0, color: 'var(--landing-mute)' }}>{step.desc}</p>
+            <p style={{ margin: 0, color: 'var(--landing-mute)', lineHeight: 1.5 }}>{step.desc}</p>
           </div>
         ))}
       </div>

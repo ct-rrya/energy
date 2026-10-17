@@ -100,6 +100,16 @@ function DashboardPageContent() {
 
   // Use cached data as fallback when validation fails (Requirements 19.2, 19.6)
   const displayReading = (() => {
+    // If no activity today, don't show stale readings from previous days
+    const todaySteps = metrics?.todayTotalSteps ?? lastGoodMetrics?.todayTotalSteps;
+    const hasActivityToday = todaySteps !== undefined && todaySteps > 0;
+    
+    if (!hasActivityToday) {
+      // No activity today - return undefined to show empty state
+      return undefined;
+    }
+    
+    // Has activity today - validate and use current or cached reading
     if (lastReading) {
       const validationResult = validateSensorData(lastReading);
       if (validationResult.isValid) {
@@ -223,6 +233,7 @@ function DashboardPageContent() {
               previousPower={undefined}
               aiInsight={displayMetrics?.aiInsight}
               isLoading={false}
+              todaySteps={displayMetrics?.todayTotalSteps}
             />
           </div>
 
@@ -237,6 +248,11 @@ function DashboardPageContent() {
                 unit=""
                 precision={0}
                 color="accent"
+                subtitle={
+                  displayMetrics?.todayTotalSteps === undefined || displayMetrics?.todayTotalSteps === 0
+                    ? "No steps yet"
+                    : undefined
+                }
               />
             </div>
 
@@ -248,17 +264,27 @@ function DashboardPageContent() {
                 unit="V"
                 precision={2}
                 color="accent"
+                subtitle={
+                  displayReading?.voltage === undefined
+                    ? "Waiting for data"
+                    : undefined
+                }
               />
             </div>
 
-            {/* Current */}
+            {/* Equivalent Current (at 1-second discharge) */}
             <div className="metric-current">
               <MetricCard
-                label="Current"
-                value={displayReading?.current}
-                unit="A"
-                precision={4}
+                label="Equiv. Current"
+                value={displayReading?.current ? displayReading.current * 1000 : undefined}
+                unit="mA"
+                precision={1}
                 color="blue"
+                subtitle={
+                  displayReading?.current === undefined || displayReading?.current === 0
+                    ? "Start generating"
+                    : undefined
+                }
               />
             </div>
 

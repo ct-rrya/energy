@@ -98,3 +98,6 @@ mobile/.expo/
 mobile/dist/
 mobile/web-build/
 mobile/.env.local
+
+#unwanted bs
+docs/

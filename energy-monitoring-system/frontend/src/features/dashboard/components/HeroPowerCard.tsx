@@ -46,6 +46,8 @@ export interface HeroPowerCardProps {
   aiInsight: string | undefined;
   /** Loading state indicator */
   isLoading: boolean;
+  /** Today's total steps count (used to determine if there's any activity today) */
+  todaySteps?: number | undefined;
 }
 
 /**
@@ -60,6 +62,7 @@ export const HeroPowerCard = React.memo(
     previousPower,
     aiInsight,
     isLoading,
+    todaySteps,
   }: HeroPowerCardProps) {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -78,7 +81,9 @@ export const HeroPowerCard = React.memo(
     }
 
     // Determine if we should show empty state
-    const showEmptyState = powerValue === undefined && !isLoading;
+    // Show empty state when there's no activity today (steps = 0 or undefined)
+    const hasNoActivityToday = todaySteps === undefined || todaySteps === 0;
+    const showEmptyState = hasNoActivityToday && !isLoading;
 
     // Theme-aware colors for card container
     const cardBgColor = isDark ? '#080E22' : '#FFFFFF';
@@ -244,21 +249,21 @@ export const HeroPowerCard = React.memo(
               {/* Empty state message */}
               <div className="text-center">
                 <p
-                  className="text-[15px] font-medium"
+                  className="text-[18px] font-semibold"
                   style={{
                     color: labelColor,
                   }}
                 >
-                  Waiting for data...
+                  Be the first to interact with EcoStep today!
                 </p>
                 <p
-                  className="text-[13px] mt-1"
+                  className="text-[14px] mt-2"
                   style={{
                     color: labelColor,
                     opacity: 0.7,
                   }}
                 >
-                  Power data will appear once available
+                  Start walking on your piezoelectric tiles to generate power
                 </p>
               </div>
             </div>
@@ -317,6 +322,7 @@ export const HeroPowerCard = React.memo(
                 insight={aiInsight}
                 isLoading={false}
                 maxLength={150}
+                hasActivity={!hasNoActivityToday}
               />
             </>
           )}

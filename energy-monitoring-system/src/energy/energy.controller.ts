@@ -208,6 +208,7 @@ export class EnergyController {
    * Get Readings for Date Range
    *
    * Retrieves all readings within a date range.
+   * This endpoint is PUBLIC - accessible without authentication for analytics.
    * Use with caution - can return large datasets.
    *
    * @param query - Start date, end date, and limit
@@ -221,12 +222,14 @@ export class EnergyController {
    * - For statistics, use /range endpoint instead
    * - For large date ranges, consider pagination
    */
+  @Public() // Allow public access for guest mode analytics
   @Get('readings')
   @ApiOperation({
-    summary: 'Get readings for date range',
+    summary: 'Get readings for date range (PUBLIC)',
     description:
       'Retrieves all readings within a date range. Use with caution for large ranges. ' +
-      'Default limit: 1000, max: 10000. For statistics, use /range endpoint instead.',
+      'Default limit: 1000, max: 10000. For statistics, use /range endpoint instead. ' +
+      'PUBLIC endpoint - no authentication required.',
   })
   @ApiResponse({
     status: 200,
@@ -235,9 +238,6 @@ export class EnergyController {
   })
   @ApiBadRequestResponse({
     description: 'Invalid date format or limit',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - JWT token required',
   })
   async getReadingsRange(
     @Query() query: DateRangeLimitQueryDto,

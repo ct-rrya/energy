@@ -1,5 +1,6 @@
-import { Controller, Get, Query, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Query, Post, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { Public } from '../auth/decorators/public.decorator';
 import { AnalyticsService } from './analytics.service';
 import { GeminiAIService } from '../ai/gemini-ai.service';
 import {
@@ -40,6 +41,7 @@ import {
  */
 @ApiTags('Analytics')
 @Controller('analytics')
+@Public() // Make all analytics endpoints public for Guest Mode
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,

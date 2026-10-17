@@ -448,7 +448,8 @@
   width: 100%;
   min-height: 44px;
   max-height: 96px;
-  padding: 12px 20px;
+  padding: 11px 20px;
+  line-height: 20px;
   border-radius: 999px;
   border: 1px solid var(--landing-line);
   background: var(--landing-surface);
@@ -456,8 +457,17 @@
   font-size: 15px;
   font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
   resize: none;
-  overflow-y: auto;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow-y: hidden;
+  box-sizing: border-box;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  transition: border-color 0.2s, box-shadow 0.2s, border-radius 0.2s;
+}
+
+.chat-input-textarea::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .chat-input-textarea::placeholder {

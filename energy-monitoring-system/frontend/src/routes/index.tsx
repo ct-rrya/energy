@@ -79,148 +79,134 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Admin Management (SUPER_ADMIN only)
+  // Dashboard App Layout with persistent EcoSidebar
   {
-    path: ROUTES.ADMIN_MANAGEMENT,
-    element: (
-      <AdminRoute requireSuperAdmin={true}>
-        <DashboardLayout>
-          <AdminManagementPage />
-        </DashboardLayout>
-      </AdminRoute>
-    ),
-  },
+    element: <DashboardLayout />,
+    children: [
+      // Dashboard - Public access (read-only for public users, full access for admins)
+      {
+        path: ROUTES.DASHBOARD,
+        element: (
+          <LazyRoute>
+            <DashboardPage />
+          </LazyRoute>
+        ),
+      },
 
-  // Dashboard - Public access (read-only for public users, full access for admins)
-  {
-    path: ROUTES.DASHBOARD,
-    element: (
-      <LazyRoute>
-        <DashboardLayout>
-          <DashboardPage />
-        </DashboardLayout>
-      </LazyRoute>
-    ),
-  },
+      // Analytics - Public access
+      {
+        path: ROUTES.ANALYTICS,
+        element: (
+          <LazyRoute>
+            <AnalyticsPage />
+          </LazyRoute>
+        ),
+      },
 
-  // Analytics - Public access
-  {
-    path: ROUTES.ANALYTICS,
-    element: (
-      <LazyRoute>
-        <DashboardLayout>
-          <AnalyticsPage />
-        </DashboardLayout>
-      </LazyRoute>
-    ),
-  },
+      // Energy Monitoring - Public access
+      {
+        path: ROUTES.ENERGY,
+        element: (
+          <LazyRoute>
+            <EnergyMonitoringPage />
+          </LazyRoute>
+        ),
+      },
 
-  // Energy Monitoring - Public access
-  {
-    path: ROUTES.ENERGY,
-    element: (
-      <LazyRoute>
-        <DashboardLayout>
-          <EnergyMonitoringPage />
-        </DashboardLayout>
-      </LazyRoute>
-    ),
-  },
+      // ADMIN-ONLY ROUTES - Require authentication (SYSTEM_ADMIN or SUPER_ADMIN)
+      {
+        path: ROUTES.SENSORS_MONITORING,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <SensorMonitoringPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // ADMIN-ONLY ROUTES - Require authentication (SYSTEM_ADMIN or SUPER_ADMIN)
-  {
-    path: ROUTES.SENSORS_MONITORING,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <SensorMonitoringPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // Alerts (Admin only)
+      {
+        path: ROUTES.ALERTS,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <AlertsPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // Alerts (Admin only)
-  {
-    path: ROUTES.ALERTS,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <AlertsPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // Reports (Admin only)
+      {
+        path: ROUTES.REPORTS,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <ReportsPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // Reports (Admin only)
-  {
-    path: ROUTES.REPORTS,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <ReportsPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // System Diagnostics (Admin only)
+      {
+        path: ROUTES.ADMIN_DIAGNOSTICS,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <DiagnosticsPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // System Diagnostics (Admin only)
-  {
-    path: ROUTES.ADMIN_DIAGNOSTICS,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <DiagnosticsPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // Profile (Admin only)
+      {
+        path: ROUTES.PROFILE,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // Profile (Admin only)
-  {
-    path: ROUTES.PROFILE,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <DashboardLayout>
-            <ProfilePage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // Settings (Admin only)
+      {
+        path: ROUTES.SETTINGS,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // Settings (Admin only)
-  {
-    path: ROUTES.SETTINGS,
-    element: (
-      <LazyRoute>
-        <ProtectedRoute>
-          <SettingsPage />
-        </ProtectedRoute>
-      </LazyRoute>
-    ),
-  },
+      // Sensors Management (SYSTEM_ADMIN only)
+      {
+        path: ROUTES.SENSORS,
+        element: (
+          <LazyRoute>
+            <AdminRoute>
+              <SensorsManagementPage />
+            </AdminRoute>
+          </LazyRoute>
+        ),
+      },
 
-  // Sensors Management (SYSTEM_ADMIN only)
-  {
-    path: ROUTES.SENSORS,
-    element: (
-      <LazyRoute>
-        <AdminRoute>
-          <DashboardLayout>
-            <SensorsManagementPage />
-          </DashboardLayout>
-        </AdminRoute>
-      </LazyRoute>
-    ),
+      // Admin Management (SUPER_ADMIN only)
+      {
+        path: ROUTES.ADMIN_MANAGEMENT,
+        element: (
+          <AdminRoute requireSuperAdmin={true}>
+            <AdminManagementPage />
+          </AdminRoute>
+        ),
+      },
+    ],
   },
 
   // 404 Not Found

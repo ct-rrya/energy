@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { usePowerGeneration } from '@/features/dashboard/hooks/usePowerGeneration';
@@ -37,10 +37,13 @@ import {
  * <PowerGenerationChart />
  * ```
  */
-export function PowerGenerationChart({ className = '', defaultTimeFilter = 'today' }: PowerGenerationChartProps) {
+export function PowerGenerationChart({ className = '' }: PowerGenerationChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
+  
+  // Use fixed 7-day range instead of user-selectable filters
+  // The Analytics page controls the unified period for all charts
+  const timeFilter: TimeFilter = '7days';
   
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
@@ -51,32 +54,18 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
   const { data: timeSeries, isLoading, error, refetch } = usePowerGeneration(timeFilter);
   
   // Transform API data to chart format and apply data point limiting for performance
-  // Limit to max 100 points for "Today" view to prevent performance degradation
-  // during real-time updates (Requirement 9.8)
+  // Limit to max 100 points for 7-day view to prevent performance degradation (Requirement 9.8)
   const chartData = useMemo(() => {
     const transformed = transformToChartData(timeSeries);
-    
-    // Apply limiting only for "Today" view which has real-time updates
-    if (timeFilter === 'today') {
-      return limitDataPoints(transformed, 100);
-    }
-    
-    return transformed;
-  }, [timeSeries, timeFilter]);
+    // Always limit since we're using 7-day view
+    return limitDataPoints(transformed, 100);
+  }, [timeSeries]);
   
   // Determine if dataset is empty
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
 
-  // Determine granularity based on time filter for X-axis formatting
-  const granularity = useMemo(() => {
-    switch (timeFilter) {
-      case 'today':
-        return 'hour' as const;
-      case '7days':
-      case '30days':
-        return 'day' as const;
-    }
-  }, [timeFilter]);
+  // Determine granularity - fixed to 'day' for 7-day period
+  const granularity = 'day' as const;
 
   // Color system based on theme
   const colors = {
@@ -90,57 +79,9 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
   };
 
   /**
-   * Filter button configuration
+   * Filter button configuration - REMOVED
+   * Charts now controlled by unified Analytics page period selector
    */
-  const filterButtons: Array<{ value: TimeFilter; label: string }> = [
-    { value: 'today', label: 'Today' },
-    { value: '7days', label: '7 Days' },
-    { value: '30days', label: '30 Days' },
-  ];
-
-  /**
-   * Handle time filter change
-   */
-  const handleFilterChange = (filter: TimeFilter) => {
-    setTimeFilter(filter);
-  };
-
-  /**
-   * Render time filter controls - Responsive button sizing
-   */
-  const filterControls = (
-    <div
-      className="flex gap-1 rounded-xl p-1 w-full"
-      role="group"
-      aria-label="Time range filter options"
-      style={{
-        backgroundColor: colors.filterBg,
-        border: `1px solid ${colors.border}`,
-      }}
-    >
-      {filterButtons.map((button) => (
-        <button
-          key={button.value}
-          onClick={() => handleFilterChange(button.value)}
-          className="flex-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap"
-          style={{
-            backgroundColor:
-              timeFilter === button.value
-                ? colors.filterActiveBg
-                : 'transparent',
-            color:
-              timeFilter === button.value
-                ? colors.accent
-                : colors.filterText,
-          }}
-          aria-pressed={timeFilter === button.value}
-          aria-label={`Show data for ${button.label}`}
-        >
-          {button.label}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <ChartContainer
@@ -150,7 +91,6 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
       error={error}
       isEmpty={isEmpty}
       onRetry={refetch}
-      actions={filterControls}
       height={isMobile ? 250 : 400}
       className={className}
     >
@@ -176,7 +116,7 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
           />
           <YAxis
             label={{
-              value: 'Power (W)',
+              value: 'Power (mW)',
               angle: -90,
               position: 'insideLeft',
               style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
@@ -184,9 +124,10 @@ export function PowerGenerationChart({ className = '', defaultTimeFilter = 'toda
             stroke={colors.textColor}
             tick={{ fontSize: isMobile ? 11 : 12 }}
             style={{ fontSize: isMobile ? '11px' : '12px' }}
+            tickFormatter={(value) => (value * 1000).toFixed(2)}
           />
           <Tooltip 
-            content={<CustomChartTooltip unit="W" />}
+            content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
             position={{ y: 0 }}
             wrapperStyle={{ zIndex: 1000 }}
             allowEscapeViewBox={{ x: false, y: true }}

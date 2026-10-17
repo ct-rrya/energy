@@ -19,5 +19,6 @@ export interface DashboardMetrics {
   lastReadingAt: string | null;     // ISO 8601
   lastReadingPower: number | null;  // Last reading power (W)
   lastReadingSensorId?: string | null;
+  todayTotalSteps?: number;         // Today's cumulative step count (NEW Phase 3)
   aiInsight?: string;               // AI-generated insight (optional)
 }

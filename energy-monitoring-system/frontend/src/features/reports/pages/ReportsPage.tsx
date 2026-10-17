@@ -139,7 +139,7 @@ export function ReportsPage() {
   // Loading state
   if (reportsLoading && !reportsData) {
     return (
-      <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1600px] mx-auto">
           <div className="flex items-center justify-center min-h-[60vh]">
             <LoadingSpinner size="lg" />
@@ -152,7 +152,7 @@ export function ReportsPage() {
   // Error state
   if (reportsError && !reportsData) {
     return (
-      <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1600px] mx-auto">
           <div 
             className="rounded-lg p-8 text-center"
@@ -204,7 +204,7 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="w-full p-4 sm:p-6 lg:p-8 pb-16 sm:pb-24">
       <div className="max-w-[1600px] mx-auto space-y-6">
         
         {/* Page Header */}

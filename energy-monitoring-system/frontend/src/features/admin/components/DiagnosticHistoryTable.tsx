@@ -20,7 +20,7 @@ export function DiagnosticHistoryTable() {
   const [selectedTest, setSelectedTest] = useState<DiagnosticTest | null>(null);
   const limit = 20;
 
-  const { data, isLoading, error } = useDiagnosticHistory(currentPage, limit);
+  const { data, isLoading, error, refetch } = useDiagnosticHistory(currentPage, limit);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
@@ -113,19 +113,30 @@ export function DiagnosticHistoryTable() {
   if (error) {
     return (
       <div 
-        className="rounded-lg p-6"
+        className="rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border"
         style={{
           backgroundColor: theme === 'light' ? '#FEF2F2' : 'rgba(127, 29, 29, 0.2)',
-          border: `1px solid ${theme === 'light' ? '#FCA5A5' : '#991B1B'}`,
+          borderColor: theme === 'light' ? '#FCA5A5' : '#991B1B',
           boxShadow: colors.shadow
         }}
       >
-        <p 
-          className="text-sm"
-          style={{ color: theme === 'light' ? '#991B1B' : '#FCA5A5' }}
+        <div>
+          <h4 className="text-sm font-semibold" style={{ color: theme === 'light' ? '#991B1B' : '#FCA5A5' }}>
+            Diagnostic History Unavailable
+          </h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Unable to fetch previous diagnostic records. Please ensure the backend is connected and you are logged in.
+          </p>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => refetch()}
+          className="text-xs border"
+          style={{ borderColor: theme === 'light' ? '#FCA5A5' : '#991B1B' }}
         >
-          Failed to load diagnostic history. Please try again.
-        </p>
+          Retry Sync
+        </Button>
       </div>
     );
   }

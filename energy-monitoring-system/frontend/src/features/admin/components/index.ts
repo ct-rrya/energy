@@ -7,3 +7,4 @@
 export { ReferenceConfigForm } from './ReferenceConfigForm';
 export { DiagnosticTestForm } from './DiagnosticTestForm';
 export { DiagnosticHistoryTable } from './DiagnosticHistoryTable';
+export { StepDiagnosticTestCard } from './StepDiagnosticTestCard';

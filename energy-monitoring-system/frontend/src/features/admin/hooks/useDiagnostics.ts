@@ -6,6 +6,9 @@ import type {
   CreateReferenceConfigRequest,
   RecordDiagnosticTestRequest,
   DiagnosticTest,
+  DiagnosticBaseline,
+  RecordStepTestRequest,
+  StepTestResult,
 } from '@/types/diagnostic.types';
 
 /**
@@ -14,9 +17,24 @@ import type {
 const DIAGNOSTICS_KEYS = {
   all: ['diagnostics'] as const,
   referenceConfig: ['diagnostics', 'referenceConfig'] as const,
+  baseline: ['diagnostics', 'baseline'] as const,
   history: (page: number, limit: number) =>
     ['diagnostics', 'history', page, limit] as const,
 };
+
+/**
+ * Use Diagnostic Baseline Hook
+ * 
+ * Fetches the 30-day historical baseline metrics.
+ */
+export function useDiagnosticBaseline() {
+  return useQuery<DiagnosticBaseline>({
+    queryKey: DIAGNOSTICS_KEYS.baseline,
+    queryFn: diagnosticsService.getBaseline,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+}
 
 /**
  * Use Reference Config Hook
@@ -97,6 +115,27 @@ export function useRecordDiagnosticTest() {
       // Invalidate all history queries to refetch with new test
       queryClient.invalidateQueries({
         queryKey: ['diagnostics', 'history'],
+      });
+    },
+  });
+}
+
+/**
+ * Use Record Step Test Hook
+ * 
+ * Mutation hook for recording an on-demand footstep test.
+ */
+export function useRecordStepTest() {
+  const queryClient = useQueryClient();
+
+  return useMutation<StepTestResult, Error, RecordStepTestRequest>({
+    mutationFn: diagnosticsService.recordStepTest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['diagnostics', 'history'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: DIAGNOSTICS_KEYS.baseline,
       });
     },
   });

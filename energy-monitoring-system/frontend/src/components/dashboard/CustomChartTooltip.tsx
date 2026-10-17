@@ -40,6 +40,7 @@ export function CustomChartTooltip({
   label,
   unit,
   secondaryUnit,
+  valueMultiplier = 1,
   // coordinate and viewBox are provided by Recharts for positioning
   // but are handled automatically by the library's positioning system
   // coordinate,
@@ -117,6 +118,7 @@ export function CustomChartTooltip({
   /**
    * Format numeric value with unit.
    * Rounds to 2 decimal places for precision without clutter.
+   * Applies valueMultiplier for unit conversions (e.g., A to mA).
    */
   const formatValue = (value: number | string, valueUnit?: string): string => {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -125,8 +127,12 @@ export function CustomChartTooltip({
       return String(value);
     }
 
-    // Format with 2 decimal places
-    const formatted = numericValue.toFixed(2);
+    // Apply multiplier for unit conversion
+    const convertedValue = numericValue * valueMultiplier;
+
+    // Format with 1 decimal place for mA, 2 for others
+    const decimals = valueUnit === 'mA' ? 1 : 2;
+    const formatted = convertedValue.toFixed(decimals);
     
     // Append unit if provided
     return valueUnit ? `${formatted} ${valueUnit}` : formatted;

@@ -53,3 +53,34 @@ export interface RecordDiagnosticTestRequest {
   actualEnergy: number;
   notes?: string;
 }
+
+export interface DiagnosticBaseline {
+  daysAnalyzed: number;
+  totalSteps: number;
+  totalEnergyMWh: number;
+  normalStepMWh: number;
+  tolerancePercent: number;
+  minAcceptableMWh: number;
+  maxAcceptableMWh: number;
+  readingCount: number;
+}
+
+export interface RecordStepTestRequest {
+  actualStepEnergyMWh: number;
+  notes?: string;
+}
+
+export interface StepTestResult {
+  id: string;
+  testDate: string;
+  performedBy: string;
+  actualEnergyMWh: number;
+  expectedEnergyMWh: number;
+  deviationPercentage: number;
+  performancePercentage: number;
+  minAcceptableMWh: number;
+  maxAcceptableMWh: number;
+  result: DiagnosticResultStatus;
+  statusMessage: string;
+  notes?: string;
+}

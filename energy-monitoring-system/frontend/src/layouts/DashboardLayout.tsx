@@ -1,11 +1,12 @@
 import { type ReactNode } from 'react';
+import { Outlet } from 'react-router-dom';
 import { EcoSidebar } from '@/components/layout/EcoSidebar';
 
 /**
  * Dashboard Layout Props
  */
 interface DashboardLayoutProps {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 /**
@@ -19,5 +20,5 @@ interface DashboardLayoutProps {
  * - Theme toggle
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  return <EcoSidebar>{children}</EcoSidebar>;
+  return <EcoSidebar>{children ?? <Outlet />}</EcoSidebar>;
 }
