@@ -9,6 +9,15 @@ interface MobileBottomNavProps {
   onOpenMenu?: () => void;
 }
 
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  isActive: boolean;
+  ariaLabel?: string;
+  onClick: () => void;
+}
+
 /**
  * MobileBottomNav Component
  * 
@@ -45,7 +54,7 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
     }
   };
 
-  const adminNavItems = [
+  const adminNavItems: NavItem[] = [
     {
       id: 'central',
       label: 'Central',
@@ -76,7 +85,7 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
     },
   ];
 
-  const guestNavItems = [
+  const guestNavItems: NavItem[] = [
     {
       id: 'central',
       label: 'Central',
