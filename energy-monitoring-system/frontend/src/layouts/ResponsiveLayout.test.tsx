@@ -51,7 +51,7 @@ describe('Responsive Dashboard Layout Architecture', () => {
     expect(screen.getByLabelText(/toggle sidebar/i)).toBeInTheDocument();
   });
 
-  it('renders Mobile layout with MobileHeader when width < 768px', async () => {
+  it('renders Mobile layout with MobileHeader and 4 admin tabs when width < 768px', () => {
     window.innerWidth = 375;
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -61,20 +61,17 @@ describe('Responsive Dashboard Layout Architecture', () => {
       </MemoryRouter>
     );
 
-    // Mobile header elements
-    expect(screen.getByLabelText(/open navigation menu/i)).toBeInTheDocument();
+    // Mobile admin elements
     expect(screen.getByText('Mobile Content')).toBeInTheDocument();
-
-    // Clicking menu button opens MobileNavDrawer
-    const menuButton = screen.getByLabelText(/open navigation menu/i);
-    await user.click(menuButton);
-
-    expect(screen.getByLabelText(/mobile navigation drawer/i)).toBeInTheDocument();
-    expect(screen.getByText('Admin User')).toBeInTheDocument();
-    expect(screen.getByText('System Administrator')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^central$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^analytics$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^diagnostics$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^reports$/i })).toBeInTheDocument();
+    // Redundant menu button is cleanly removed on admin mobile
+    expect(screen.queryByLabelText(/open navigation menu/i)).not.toBeInTheDocument();
   });
 
-  it('renders Tablet layout when width is between 768px and 1023px', () => {
+  it('renders Tablet layout with MobileHeader menu button when width is between 768px and 1023px', () => {
     window.innerWidth = 834;
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -88,8 +85,8 @@ describe('Responsive Dashboard Layout Architecture', () => {
     expect(screen.getByText('Tablet Content')).toBeInTheDocument();
   });
 
-  it('closes mobile drawer when close button or backdrop is clicked', async () => {
-    window.innerWidth = 414;
+  it('closes drawer when close button or backdrop is clicked', async () => {
+    window.innerWidth = 834;
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <DashboardLayout>

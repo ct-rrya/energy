@@ -38,7 +38,7 @@ export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) 
       }}
     >
       {/* Mobile Top Header */}
-      <MobileHeader onOpenMenu={() => setDrawerOpen(true)} />
+      <MobileHeader onOpenMenu={() => setDrawerOpen(true)} showMenuButton={false} />
 
       {/* Slide-out Navigation Drawer */}
       <MobileNavDrawer 

@@ -1,6 +1,22 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Zap, Footprints, Activity, Sparkles } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/routes/routes.config';
+import { 
+  Zap, 
+  Footprints, 
+  Activity, 
+  Sparkles,
+  Stethoscope,
+  FileText,
+  Users,
+  Settings,
+  Shield,
+  ArrowRight,
+  Lock,
+  ChevronRight
+} from 'lucide-react';
 import type { SensorReading, DashboardMetrics } from '../types/dashboard.types';
 
 interface MobileEnergyHarvestingDashboardProps {
@@ -25,8 +41,17 @@ export function MobileEnergyHarvestingDashboard({
   displayMetrics,
   systemStatus = 'connected',
   isWebSocketConnected = true,
+  isPublicUser,
 }: MobileEnergyHarvestingDashboardProps) {
   const { theme } = useTheme();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const userRoleStr = (user?.role || '').toLowerCase();
+  const isSuperAdmin = isAuthenticated && (userRoleStr === 'super_admin' || userRoleStr === 'admin');
+  const isSystemAdmin = isAuthenticated && userRoleStr === 'system_admin';
+  const isAnyAdmin = isSuperAdmin || isSystemAdmin;
+  const isGuest = Boolean(isPublicUser) || !isAnyAdmin;
+
   const statusContainerRef = useRef<HTMLDivElement>(null);
   const [isTooltipOpen, setIsTooltipOpen] = useState(true);
 
@@ -452,6 +477,208 @@ export function MobileEnergyHarvestingDashboard({
           </p>
         </div>
       </div>
+
+      {/* 4. Admin Operations & Quick Action Cards (for Authenticated Administrators) */}
+      {!isGuest && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88] flex items-center justify-center">
+                <Shield size={14} strokeWidth={2.4} />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-200">
+                Admin Controls & Features
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25">
+              {isSuperAdmin ? 'Super Admin' : 'System Admin'}
+            </span>
+          </div>
+
+          {/* 2-Column Action Tiles */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Tile Diagnostics Action */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.ADMIN_DIAGNOSTICS)}
+              className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(57, 255, 136, 0.2)' : 'rgba(22, 163, 74, 0.2)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88] flex items-center justify-center">
+                    <Stethoscope size={18} strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88]">
+                    Run Test
+                  </span>
+                </div>
+                <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-500 transition-colors">
+                  Tile Diagnostics
+                </div>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
+                  Single-step test & tile health analysis
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-[#39FF88] mt-3">
+                <span>Launch</span>
+                <ChevronRight size={13} strokeWidth={2.4} />
+              </div>
+            </button>
+
+            {/* Reports Action */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.REPORTS)}
+              className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <FileText size={18} strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    Export
+                  </span>
+                </div>
+                <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-blue-500 transition-colors">
+                  Energy Reports
+                </div>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
+                  Harvesting summaries & audit logs
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 mt-3">
+                <span>View</span>
+                <ChevronRight size={13} strokeWidth={2.4} />
+              </div>
+            </button>
+
+            {/* Admin Management (if Super Admin) */}
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.ADMIN_MANAGEMENT)}
+                className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
+                style={{
+                  backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                  borderColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(147, 51, 234, 0.2)',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+                }}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Users size={18} strokeWidth={2.2} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      Manage
+                    </span>
+                  </div>
+                  <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-purple-500 transition-colors">
+                    Admin Accounts
+                  </div>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
+                    Access codes & security privileges
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-3">
+                  <span>Configure</span>
+                  <ChevronRight size={13} strokeWidth={2.4} />
+                </div>
+              </button>
+            )}
+
+            {/* System Settings Action */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.SETTINGS)}
+              className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(217, 119, 6, 0.2)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Settings size={18} strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    Settings
+                  </span>
+                </div>
+                <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-amber-500 transition-colors">
+                  System Config
+                </div>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
+                  Thresholds, alert limits & offsets
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-3">
+                <span>Adjust</span>
+                <ChevronRight size={13} strokeWidth={2.4} />
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Administrator Portal Callout Card (when in guest / unauthenticated mode) */}
+      {isGuest && (
+        <div
+          className="rounded-2xl p-4 sm:p-5 border transition-all"
+          style={{
+            background: theme === 'dark'
+              ? 'linear-gradient(135deg, rgba(22, 38, 30, 0.9) 0%, rgba(17, 27, 48, 0.9) 100%)'
+              : 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
+            borderColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.25)' : '#bbf7d0',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Shield size={19} strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                  Administrator Controls
+                </h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88]">
+                  Protected
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                Sign in with your 12-character admin access code to run on-demand tile diagnostics, calibrate thresholds, and download audit reports.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.ADMIN_LOGIN)}
+                className="mt-3 inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] shadow-sm cursor-pointer"
+                style={{
+                  backgroundColor: theme === 'dark' ? '#16a34a' : '#15803d',
+                }}
+              >
+                <Lock size={14} strokeWidth={2.2} />
+                <span>Admin Portal Sign In</span>
+                <ArrowRight size={14} strokeWidth={2.2} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

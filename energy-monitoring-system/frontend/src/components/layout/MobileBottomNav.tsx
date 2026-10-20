@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Activity, MessageSquare, Stethoscope, FileText, Menu } from 'lucide-react';
+import { Home, Activity, MessageSquare, Stethoscope, FileText, Menu, Shield } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -14,7 +14,7 @@ interface MobileBottomNavProps {
  * 
  * Persistent bottom navigation bar with role-optimized tabs:
  * - Admin view: Central, Analytics, Tile Diagnostics, Reports, More/Menu
- * - Guest view: Central, Analytics, EcoChat, Menu
+ * - Guest view: Central, Analytics, EcoChat, Admin, Menu
  */
 export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavProps) {
   const { theme } = useTheme();
@@ -22,14 +22,16 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
-  const isSystemAdmin = isAuthenticated && user && user.role === 'SYSTEM_ADMIN';
+  const userRoleStr = (user?.role || '').toLowerCase();
+  const isSuperAdmin = isAuthenticated && (userRoleStr === 'super_admin' || userRoleStr === 'admin');
+  const isSystemAdmin = isAuthenticated && userRoleStr === 'system_admin';
   const isAnyAdmin = isSuperAdmin || isSystemAdmin;
 
   const isCentral = location.pathname === ROUTES.DASHBOARD || location.pathname === '/';
   const isAnalytics = location.pathname.startsWith(ROUTES.ANALYTICS);
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
+  const isAdminLogin = location.pathname.startsWith(ROUTES.ADMIN_LOGIN);
 
   const handleOpenEcoChat = () => {
     window.dispatchEvent(new CustomEvent('ecostep:openchat', { bubbles: true }));
@@ -72,14 +74,6 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
       isActive: isReports,
       onClick: () => navigate(ROUTES.REPORTS),
     },
-    {
-      id: 'more',
-      label: 'More',
-      icon: Menu,
-      isActive: false,
-      ariaLabel: 'Open navigation menu',
-      onClick: handleOpenMenu,
-    },
   ];
 
   const guestNavItems = [
@@ -103,6 +97,14 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
       icon: MessageSquare,
       isActive: false,
       onClick: handleOpenEcoChat,
+    },
+    {
+      id: 'admin',
+      label: 'Admin',
+      icon: Shield,
+      isActive: isAdminLogin,
+      ariaLabel: 'Admin Sign In',
+      onClick: () => navigate(ROUTES.ADMIN_LOGIN),
     },
     {
       id: 'menu',

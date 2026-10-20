@@ -46,21 +46,24 @@ describe('Viewport Breakpoint Verification (320px, 375px, 430px, 768px, 1024px, 
 
   it('verifies 320px mobile viewport (iPhone SE compact)', () => {
     renderLayoutAtWidth(320);
-    expect(screen.getByLabelText(/open navigation menu/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/open navigation menu/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/toggle sidebar/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^central$/i })).toBeInTheDocument();
     expect(screen.getByTestId('page-content')).toBeInTheDocument();
   });
 
   it('verifies 375px mobile viewport (Standard phone)', () => {
     renderLayoutAtWidth(375);
-    expect(screen.getByLabelText(/open navigation menu/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/open navigation menu/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/toggle sidebar/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^central$/i })).toBeInTheDocument();
   });
 
   it('verifies 430px mobile viewport (Large phone)', () => {
     renderLayoutAtWidth(430);
-    expect(screen.getByLabelText(/open navigation menu/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/open navigation menu/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/toggle sidebar/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^central$/i })).toBeInTheDocument();
   });
 
   it('verifies 768px tablet viewport (iPad Mini/Tablet portrait)', () => {
@@ -84,7 +87,8 @@ describe('Viewport Breakpoint Verification (320px, 375px, 430px, 768px, 1024px, 
 
   it('verifies dynamic switching when resizing window from 375px to 1440px', async () => {
     const { rerender } = renderLayoutAtWidth(375);
-    expect(screen.getByLabelText(/open navigation menu/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/toggle sidebar/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^central$/i })).toBeInTheDocument();
 
     act(() => {
       window.innerWidth = 1440;

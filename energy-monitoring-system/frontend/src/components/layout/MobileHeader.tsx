@@ -9,8 +9,6 @@ import {
   LogOut, 
   LogIn, 
   User, 
-  Stethoscope, 
-  FileText, 
   Menu, 
   X,
   ChevronRight,
@@ -35,8 +33,9 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
-  const isSystemAdmin = isAuthenticated && user && user.role === 'SYSTEM_ADMIN';
+  const userRoleStr = (user?.role || '').toLowerCase();
+  const isSuperAdmin = isAuthenticated && (userRoleStr === 'super_admin' || userRoleStr === 'admin');
+  const isSystemAdmin = isAuthenticated && userRoleStr === 'system_admin';
   const isAnyAdmin = isSuperAdmin || isSystemAdmin;
 
   // Close dropdown on route change
@@ -126,6 +125,18 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
 
       {/* Right: Quick Action & Expandable Menu Icon */}
       <div className="flex items-center gap-1.5 sm:gap-2 relative">
+        {/* Quick Admin Sign In Link (when unauthenticated) */}
+        {!isAuthenticated && (
+          <Link
+            to={ROUTES.ADMIN_LOGIN}
+            aria-label="Admin Sign In"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25 hover:bg-emerald-500/20 active:scale-95 transition-all shadow-xs"
+          >
+            <Shield size={13} strokeWidth={2.4} />
+            <span>Admin</span>
+          </Link>
+        )}
+
         {/* Quick Home / Landing Link */}
         <Link
           to={ROUTES.HOME}
@@ -135,7 +146,7 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
           <Home size={17} strokeWidth={2} />
         </Link>
 
-        {/* Navigation Drawer Button (shown only when explicitly requested, e.g. on tablet) */}
+        {/* Navigation Drawer Button */}
         {showMenuButton && onOpenMenu && (
           <button
             type="button"

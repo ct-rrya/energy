@@ -36,12 +36,18 @@ type Period = 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
 export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
+  const { isMobile } = useDeviceLayout();
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
 
   // Determine user role
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
+
+  // Dedicated Mobile Analytics Layout (< 768px)
+  if (isMobile) {
+    return <MobileAnalyticsDashboard isPublicUser={isPublicUser} />;
+  }
 
   // Calculate date range based on period
   const dateRange = useMemo(() => {
