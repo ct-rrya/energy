@@ -316,6 +316,13 @@ export class ChatbotCoreService {
     this.logger.log('Handling natural language query via AI');
 
     try {
+      // 1. Guardrail Check: Enforce EcoStep domain boundary, no keys, no backend code, no unrelated trivia, no unrelated math
+      const scopeCheck = this.checkEcoStepScope(message);
+      if (!scopeCheck.allowed && scopeCheck.refusal) {
+        this.logger.log(`Query intercepted by EcoStep scope guardrail: "${message.substring(0, 50)}"`);
+        return scopeCheck.refusal;
+      }
+
       // Determine what data to fetch based on message intent
       const intent = this.detectIntent(message);
       const dataContext = await this.buildDataContext(intent);
@@ -358,6 +365,188 @@ export class ChatbotCoreService {
         suggestions: ['status', 'energy', 'help'],
       };
     }
+  }
+
+  /**
+   * Check if query is within EcoStep scope and complies with security/content restrictions
+   *
+   * Enforces:
+   * 1. No requests for API keys, secrets, tokens, credentials, or environment variables
+   * 2. No coding questions related to codebase, backend, schemas, or programming
+   * 3. No unrelated trivia, politics, public figures, or "who is who" questions
+   * 4. No math equations unless directly related to EcoStep energy/power calculations
+   */
+  public checkEcoStepScope(message: string): {
+    allowed: boolean;
+    refusal?: ChatbotResponse;
+  } {
+    const trimmed = message.trim();
+    const lower = trimmed.toLowerCase();
+
+    // 1. Check for Keys, Secrets, Credentials, and Environment Variables
+    const keyPatterns = [
+      /\b(?:api[_\s-]?keys?|secret[_\s-]?keys?|jwt[_\s-]?secrets?|private[_\s-]?keys?)\b/i,
+      /\b(?:passwords?|credentials?|auth[_\s-]?tokens?|access[_\s-]?tokens?)\b/i,
+      /\b(?:\.env|env(?:ironment)?\s*(?:files?|vars?|variables?))\b/i,
+      /\b(?:gemini[_\s-]?api[_\s-]?key|groq[_\s-]?api[_\s-]?key|iot[_\s-]?api[_\s-]?key|mongodb[_\s-]?uri)\b/i,
+      /\b(?:give|show|reveal|display|tell|print|what\s+is|what're|get)\b.*\b(?:keys?|secrets?|tokens?|passwords?|credentials?)\b/i,
+    ];
+
+    if (keyPatterns.some((pattern) => pattern.test(lower))) {
+      return {
+        allowed: false,
+        refusal: {
+          text: '🔒 For security reasons, I cannot disclose any API keys, credentials, secrets, or internal configurations. I can only assist with questions regarding the EcoStep energy harvesting system.',
+          suggestions: ['status', 'energy', 'help'],
+          metadata: {
+            commandType: 'security_restriction',
+            dataSource: 'guardrail',
+          },
+        },
+      };
+    }
+
+    // 2. Check for Coding, Programming, or Backend Inquiries
+    const codePatterns = [
+      /\b(?:source\s*code|backend\s*code|frontend\s*code|codebase|repository|repo|github)\b/i,
+      /\b(?:show|write|give|generate|explain|display)\s+(?:me\s+)?(?:the\s+|a\s+|an\s+)?(?:[a-z0-9_-]+\s+)?(?:code|script|function|class|program|algorithm|query|controller|service|endpoint)\b/i,
+      /\b(?:nestjs|express|mongodb|mongoose|postgres|mysql|sqlite|prisma|typeorm)\b/i,
+      /\b(?:database|db)\s+(?:schema|model|table|collection|structure)\b/i,
+      /\b(?:schema|model)\s+for\s+(?:database|mongodb|mongoose|db)\b/i,
+      /\b(?:python|javascript|typescript|java|c\+\+|golang|rust|php|bash|powershell|sql|html|css)\s+(?:code|script|program|function|file)\b/i,
+      /\b(?:how\s+is\s+(?:the\s+)?(?:backend|frontend|code|controller|service|api|database)\s+(?:coded|implemented|written|structured|built))\b/i,
+      /\b(?:debug|fix|write|refactor)\s+(?:my|this|a|the)\s+(?:code|script|program|function|bug)\b/i,
+      /\b(?:backend|frontend|server)\s+(?:implementation|architecture|logic|files?)\b/i,
+    ];
+
+    if (codePatterns.some((pattern) => pattern.test(lower))) {
+      return {
+        allowed: false,
+        refusal: {
+          text: '💻 I cannot answer coding, programming, or backend implementation questions. I am exclusively designed to help you monitor and understand EcoStep\'s footstep energy generation and dashboard metrics.',
+          suggestions: ['status', 'today', 'help'],
+          metadata: {
+            commandType: 'code_restriction',
+            dataSource: 'guardrail',
+          },
+        },
+      };
+    }
+
+    // 3. Check for Unrelated People, Presidents, Politics, and General Trivia ("who is who")
+    // Allow questions asking about EcoStep itself (e.g. "who is ecostep", "who made ecostep", "who are you")
+    const isAskingAboutSelf =
+      lower.includes('ecostep') ||
+      lower.includes('ecochat') ||
+      lower.includes('who are you') ||
+      lower.includes('what are you');
+
+    if (!isAskingAboutSelf) {
+      const unrelatedPeopleTriviaPatterns = [
+        /\bwho\s+is\s+(?:the\s+)?(?:current\s+)?(?:president|vice\s*president|prime\s*minister|governor|mayor|king|queen|senator|leader|ceo|founder)\b/i,
+        /\bwho\s+is\s+who\b/i,
+        /\bwho\s+is\s+[a-z]+/i,
+        /\bwho\s+was\s+[a-z]+/i,
+        /\bwho\s+are\s+[a-z]+/i,
+        /\b(?:who\s+won|who\s+invented|who\s+discovered)\b/i,
+        /\b(?:what\s+is\s+the\s+capital\s+of|tell\s+me\s+a\s+(?:joke|story|poem)|how\s+to\s+cook|recipe\s+for|weather\s+in)\b/i,
+        /\b(?:politics|presidential|election|democrat|republican|celebrity|hollywood|movie|song|actor|actress)\b/i,
+      ];
+
+      if (unrelatedPeopleTriviaPatterns.some((pattern) => pattern.test(lower))) {
+        return {
+          allowed: false,
+          refusal: {
+            text: '🌿 I am EcoChat, the dedicated AI assistant for EcoStep. I can only answer questions related to the EcoStep energy harvesting system (such as power generation, footsteps, voltage, and dashboard statistics). How can I assist you with EcoStep today?',
+            suggestions: ['status', 'energy', 'today'],
+            metadata: {
+              commandType: 'trivia_restriction',
+              dataSource: 'guardrail',
+            },
+          },
+        };
+      }
+    }
+
+    // 4. Check for Math Equations
+    // Math is permitted ONLY if it's related to EcoStep calculation concepts
+    const ecostepCalculationTerms = [
+      'ecostep',
+      'energy',
+      'power',
+      'watt',
+      'watts',
+      'w',
+      'mw',
+      'milliwatt',
+      'milliwatts',
+      'kw',
+      'kilowatt',
+      'kilowatts',
+      'wh',
+      'mwh',
+      'kwh',
+      'watt-hour',
+      'watthour',
+      'milliwatt-hour',
+      'volt',
+      'volts',
+      'v',
+      'mv',
+      'millivolt',
+      'amp',
+      'amps',
+      'a',
+      'ma',
+      'milliamp',
+      'milliamps',
+      'step',
+      'steps',
+      'footstep',
+      'footsteps',
+      'tile',
+      'tiles',
+      'piezo',
+      'piezoelectric',
+      'battery',
+      'joule',
+      'joules',
+      'j',
+      'harvest',
+      'harvesting',
+      'kinetic',
+      'generation',
+      'reading',
+      'readings',
+    ];
+
+    const hasEcoStepTerm = ecostepCalculationTerms.some((term) =>
+      new RegExp(`\\b${term}\\b`, 'i').test(lower),
+    );
+
+    const mathPatterns = [
+      /\b(?:solve|evaluate|simplify)\b.*\b(?:equation|integral|derivative|algebra|polynomial|fraction|math)\b/i,
+      /\b(?:solve|calculate|compute|what\s+is)\s+[\d\s\+\-\*\/\^\(\)\=\.xXyYzZ]{3,}\b/i,
+      /^\s*(?:what\s+is\s+)?\d+\s*[\+\-\*\/xX\^]\s*\d+\s*\??\s*$/i,
+      /\b\d+x\s*[\+\-]\s*\d+\s*\=/i,
+      /\b(?:solve\s+for\s+[a-z])\b/i,
+    ];
+
+    if (mathPatterns.some((pattern) => pattern.test(lower)) && !hasEcoStepTerm) {
+      return {
+        allowed: false,
+        refusal: {
+          text: '⚡ I can only assist with math calculations directly related to EcoStep metrics (such as calculating power, voltage, current, and footstep energy generation).',
+          suggestions: ['energy', 'status', 'help'],
+          metadata: {
+            commandType: 'math_restriction',
+            dataSource: 'guardrail',
+          },
+        },
+      };
+    }
+
+    return { allowed: true };
   }
 
   /**
@@ -598,7 +787,7 @@ export class ChatbotCoreService {
       prompt += `\n`;
     }
 
-    prompt += `Answer the user's question directly and concisely using the actual data provided above. If no data is available, explain that the system hasn't received readings yet.`;
+    prompt += `**STRICT DOMAIN RULES:** Answer the user's question directly and concisely using the actual EcoStep data provided above. If the question is unrelated to EcoStep, asking for source code or backend details, asking for keys/credentials, or asking for general math not calculating EcoStep metrics, you MUST politely decline and clarify that you only assist with EcoStep. If no data is available, explain that the system hasn't received readings yet.`;
 
     return prompt;
   }
@@ -629,47 +818,15 @@ export class ChatbotCoreService {
   /**
    * OLD Handle natural language - REPLACED ABOVE
    * 
-   * This method has been replaced with data-enriched version
+   * Delegates to data-enriched and guarded handleNaturalLanguage
    */
   private async handleNaturalLanguageOld(
     message: string,
     context: MessageContext,
   ): Promise<ChatbotResponse> {
-    this.logger.log('Handling natural language query via AI');
-
-    try {
-      const aiResponse = await this.geminiAIService.processQuery(message);
-
-      // Handle null response from AI
-      if (!aiResponse) {
-        this.logger.warn('AI service returned null, using fallback');
-        return {
-          text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
-          suggestions: ['status', 'energy', 'help'],
-        };
-      }
-
-      return {
-        text: aiResponse,
-        suggestions: ['status', 'help'],
-        metadata: {
-          commandType: 'natural_language',
-          dataSource: 'gemini_ai',
-        },
-      };
-    } catch (error) {
-      this.logger.warn(
-        'AI service failed, falling back to default response',
-        error.message,
-      );
-
-      // Graceful fallback when AI fails
-      return {
-        text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
-        suggestions: ['status', 'energy', 'help'],
-      };
-    }
+    return this.handleNaturalLanguage(message, context);
   }
+
 
   /**
    * Handle Welcome Message

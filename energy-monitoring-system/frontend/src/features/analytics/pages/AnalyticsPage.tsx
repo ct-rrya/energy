@@ -22,37 +22,36 @@ type ViewType = 'charts' | 'historical';
 /**
  * Period Type for date filtering
  */
-type Period = 'today' | 'last7days' | 'last30days' | 'last90days';
+type Period = 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
 
 /**
  * Analytics Page Component
  * 
  * Comprehensive analytics dashboard with:
- * - Dedicated Mobile Layout (< 768px) matching the EcoStep mobile design specification
- * - Desktop/Tablet Layout (>= 768px):
- *   - Chart View: Visual analytics with all 7 chart types
- *   - Historical View: Tabular data display
- *   - Date range filtering
- *   - Real data from analytics APIs
+ * - Chart View: Real-time and historical analytics with all desktop charts
+ * - Historical View: Tabular & mobile card data display with MongoDB raw data
+ * - Fully responsive across mobile, tablet, and desktop viewports
+ * - Date range filtering including All Time
  */
 export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
-  const { isMobile } = useDeviceLayout();
   const [activeView, setActiveView] = useState<ViewType>('charts');
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('last7days');
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
 
   // Determine user role
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
 
-  // Dedicated Mobile Layout matching design specification (< 768px)
-  if (isMobile) {
-    return <MobileAnalyticsDashboard isPublicUser={isPublicUser} />;
-  }
-
   // Calculate date range based on period
   const dateRange = useMemo(() => {
+    if (selectedPeriod === 'all') {
+      return {
+        startDate: undefined,
+        endDate: undefined,
+      };
+    }
+
     const end = new Date();
     const start = new Date();
 
@@ -88,6 +87,7 @@ export function AnalyticsPage() {
         return 'day';
       case 'last90days':
         return 'week';
+      case 'all':
       default:
         return 'day';
     }
@@ -165,6 +165,7 @@ export function AnalyticsPage() {
               Time Period:
             </span>
             {[
+              { value: 'all' as Period, label: 'All Time' },
               { value: 'today' as Period, label: 'Today' },
               { value: 'last7days' as Period, label: 'Last 7 Days' },
               { value: 'last30days' as Period, label: 'Last 30 Days' },

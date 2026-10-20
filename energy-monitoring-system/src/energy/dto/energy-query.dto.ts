@@ -94,21 +94,23 @@ export class LimitQueryDto {
  * ?startDate=2026-07-01&endDate=2026-07-17&limit=500
  */
 export class DateRangeLimitQueryDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Start date (ISO 8601 format)',
     example: '2026-07-01',
     type: String,
   })
+  @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'End date (ISO 8601 format)',
     example: '2026-07-17',
     type: String,
   })
+  @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate?: string;
 
   @ApiPropertyOptional({
     description: 'Maximum number of readings to retrieve',

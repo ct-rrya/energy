@@ -36,9 +36,9 @@ interface HistoricalDataRecord {
  */
 interface HistoricalDataViewProps {
   /** Date range start */
-  startDate: string;
+  startDate?: string;
   /** Date range end */
-  endDate: string;
+  endDate?: string;
   /** Granularity for data aggregation */
   granularity: Granularity;
   /** Whether the current user is a public user (read-only) */
@@ -266,16 +266,40 @@ export function HistoricalDataView({
   const totalPages = viewMode === 'raw' && rawReadingsData ? rawReadingsData.totalPages : 1;
 
   return (
-    <EcoCard>
-      <div className="eco-card-header">
+    <EcoCard
+      style={{
+        backgroundColor: theme === 'dark' ? '#080E22' : '#FFFFFF',
+        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+      }}
+    >
+      <div
+        className="eco-card-header pb-4 mb-4 border-b"
+        style={{
+          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+        }}
+      >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="eco-icon-container-lg">
+            <div
+              className="p-2.5 rounded-xl flex items-center justify-center"
+              style={{
+                backgroundColor: theme === 'dark' ? 'rgba(57, 255, 136, 0.12)' : 'rgba(34, 197, 94, 0.1)',
+                color: theme === 'dark' ? '#39FF88' : '#16A34A',
+              }}
+            >
               <Calendar className="h-5 w-5" strokeWidth={2} />
             </div>
             <div>
-              <h3 className="eco-card-title">Historical Records</h3>
-              <p className="text-sm text-[rgb(var(--color-neutral-600))] mt-1">
+              <h3
+                className="text-lg font-bold"
+                style={{ color: theme === 'dark' ? '#FFFFFF' : '#0B132B' }}
+              >
+                Historical Records
+              </h3>
+              <p
+                className="text-sm mt-0.5"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 {totalRecords} {viewMode === 'raw' ? 'raw readings' : 'data points'}
               </p>
             </div>
@@ -286,11 +310,12 @@ export function HistoricalDataView({
             <div 
               className="flex items-center gap-1 rounded-xl p-1 w-full sm:w-auto"
               style={{
-                backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6',
-                border: `1px solid ${theme === 'dark' ? '#374151' : '#E5E7EB'}`,
+                backgroundColor: theme === 'dark' ? '#111B30' : '#F3F4F6',
+                border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'}`,
               }}
             >
               <button
+                type="button"
                 onClick={() => {
                   setViewMode('aggregated');
                   setCurrentPage(1);
@@ -311,6 +336,7 @@ export function HistoricalDataView({
                 Aggregated
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setViewMode('raw');
                   setCurrentPage(1);
@@ -334,6 +360,7 @@ export function HistoricalDataView({
 
             {/* Export Button (Disabled for public users) */}
             <button
+              type="button"
               onClick={isPublic ? undefined : handleExport}
               disabled={isPublic}
               title={isPublic ? 'Exporting CSV is unavailable to public users' : 'Export CSV'}
@@ -341,8 +368,26 @@ export function HistoricalDataView({
               className={`flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm rounded-lg font-medium transition-all w-full sm:w-auto ${
                 isPublic
                   ? 'opacity-40 cursor-not-allowed bg-neutral-200/50 dark:bg-neutral-800/50 text-neutral-400 dark:text-neutral-500 border border-neutral-300 dark:border-neutral-700 pointer-events-auto'
-                  : 'eco-btn-secondary cursor-pointer'
+                  : 'cursor-pointer hover:opacity-90'
               }`}
+              style={{
+                backgroundColor: isPublic
+                  ? undefined
+                  : theme === 'dark'
+                  ? '#111B30'
+                  : '#FFFFFF',
+                borderColor: isPublic
+                  ? undefined
+                  : theme === 'dark'
+                  ? 'rgba(255, 255, 255, 0.15)'
+                  : '#D1D5DB',
+                color: isPublic
+                  ? undefined
+                  : theme === 'dark'
+                  ? '#FFFFFF'
+                  : '#0B132B',
+                border: isPublic ? undefined : '1px solid',
+              }}
             >
               <Download className="h-4 w-4" strokeWidth={2} />
               <span>Export CSV</span>
@@ -353,28 +398,57 @@ export function HistoricalDataView({
 
       {/* Pagination Controls (Raw Mode Only) */}
       {viewMode === 'raw' && rawReadingsData && totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
-          <p className="text-xs sm:text-sm text-[rgb(var(--color-neutral-600))] text-center sm:text-left">
+        <div
+          className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-6 py-3 border-b mb-4"
+          style={{
+            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+          }}
+        >
+          <p
+            className="text-xs sm:text-sm text-center sm:text-left font-medium"
+            style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+          >
             Page {currentPage} of {totalPages} • Showing {(currentPage - 1) * recordsPerPage + 1} to{' '}
             {Math.min(currentPage * recordsPerPage, totalRecords)} of {totalRecords} records
           </p>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="eco-btn-secondary px-3 py-1.5 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#D1D5DB',
+                color: theme === 'dark' ? '#FFFFFF' : '#1F2937',
+              }}
+              className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
+              aria-label="Previous Page"
             >
-              <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
             </button>
-            <span className="text-xs sm:text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] px-2 font-medium">
+            <span
+              className="text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold border"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#F3F4F6',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#E5E7EB',
+                color: theme === 'dark' ? '#39FF88' : '#0F172A',
+              }}
+            >
               {currentPage}
             </span>
             <button
+              type="button"
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="eco-btn-secondary px-3 py-1.5 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#D1D5DB',
+                color: theme === 'dark' ? '#FFFFFF' : '#1F2937',
+              }}
+              className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
+              aria-label="Next Page"
             >
-              <ChevronRight className="h-4 w-4" strokeWidth={2} />
+              <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
             </button>
           </div>
         </div>
@@ -384,29 +458,53 @@ export function HistoricalDataView({
       <div className="hidden md:block overflow-x-auto -mx-6 px-6">
         <table className="w-full text-left border-collapse" style={{ minWidth: '680px' }}>
           <thead>
-            <tr className="border-b border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))]">
+            <tr
+              className="border-b"
+              style={{
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+              }}
+            >
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Date
               </th>
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))]">
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Time
               </th>
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))] text-right">
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Energy
               </th>
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))] text-right">
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Voltage
               </th>
               <th 
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))] text-right"
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                 title="Equivalent current if capacitor discharges in 1 second"
               >
                 Equiv. Current
               </th>
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))] text-right">
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Power
               </th>
-              <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--color-neutral-600))] text-right">
+              <th
+                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+              >
                 Steps
               </th>
             </tr>
@@ -415,30 +513,52 @@ export function HistoricalDataView({
             {displayRecords.map((record, index) => (
               <tr
                 key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
-                className="border-b border-[rgb(var(--color-neutral-100))] dark:border-[rgb(var(--color-neutral-800))] hover:bg-[rgb(var(--color-neutral-50))] dark:hover:bg-[rgb(var(--color-neutral-900))] transition-colors"
+                className="border-b transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                style={{
+                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F3F4F6',
+                }}
               >
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-900))] dark:text-[rgb(var(--color-neutral-100))] font-medium">
+                <td
+                  className="py-3 px-4 text-sm font-semibold"
+                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                >
                   {record.date}
                 </td>
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] tabular-nums">
+                <td
+                  className="py-3 px-4 text-sm tabular-nums"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#475569' }}
+                >
                   {record.time}
                 </td>
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-900))] dark:text-[rgb(var(--color-neutral-100))] text-right tabular-nums font-medium">
+                <td
+                  className="py-3 px-4 text-sm text-right tabular-nums font-bold"
+                  style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
+                >
                   {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
                 </td>
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] text-right tabular-nums">
+                <td
+                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                  style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
+                >
                   {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
                 </td>
                 <td 
-                  className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] text-right tabular-nums"
+                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                  style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
                   title="Equivalent current if capacitor discharges in 1 second"
                 >
                   {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
                 </td>
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] text-right tabular-nums">
+                <td
+                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                  style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
+                >
                   {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
                 </td>
-                <td className="py-3 px-4 text-sm text-[rgb(var(--color-neutral-700))] dark:text-[rgb(var(--color-neutral-300))] text-right tabular-nums">
+                <td
+                  className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
+                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                >
                   {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
                 </td>
               </tr>
@@ -448,48 +568,112 @@ export function HistoricalDataView({
       </div>
 
       {/* Mobile Card List View */}
-      <div className="md:hidden space-y-2.5">
+      <div className="md:hidden space-y-3">
         {displayRecords.map((record, index) => (
           <div
             key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
-            className="p-3.5 rounded-xl border border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-800))] bg-[rgb(var(--color-neutral-50))]/60 dark:bg-[rgb(var(--color-neutral-900))]/60 transition-colors"
+            className="p-4 rounded-2xl border transition-all duration-200"
+            style={{
+              backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+              boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(0, 0, 0, 0.04)',
+            }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-[rgb(var(--color-neutral-900))] dark:text-[rgb(var(--color-neutral-100))]">
+            {/* Card Header: Timestamp & Energy Badge */}
+            <div
+              className="flex items-center justify-between pb-3 mb-3 border-b"
+              style={{
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : '#F3F4F6',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-sm font-bold tracking-tight"
+                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                >
                   {record.date}
                 </span>
-                <span className="text-xs text-[rgb(var(--color-neutral-500))] dark:text-[rgb(var(--color-neutral-400))]">
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                >
                   • {record.time}
                 </span>
               </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
+              <span
+                className="text-xs font-bold px-2.5 py-0.5 rounded-full tabular-nums"
+                style={{
+                  backgroundColor: theme === 'dark' ? 'rgba(5, 150, 105, 0.25)' : '#ECFDF5',
+                  color: theme === 'dark' ? '#39FF88' : '#059669',
+                  border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
+                }}
+              >
                 {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[rgb(var(--color-neutral-200))]/70 dark:border-[rgb(var(--color-neutral-800))] text-xs">
+            {/* 4-Metric Grid */}
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
+              {/* VOLTAGE */}
               <div>
-                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Voltage</span>
-                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                <span
+                  className="block text-[10px] font-bold tracking-wider uppercase"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                >
+                  Voltage
+                </span>
+                <span
+                  className="text-base font-extrabold tabular-nums mt-0.5 block"
+                  style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
+                >
                   {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
                 </span>
               </div>
+
+              {/* CURRENT */}
               <div>
-                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Current</span>
-                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                <span
+                  className="block text-[10px] font-bold tracking-wider uppercase"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                >
+                  Current
+                </span>
+                <span
+                  className="text-base font-extrabold tabular-nums mt-0.5 block"
+                  style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
+                >
                   {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
                 </span>
               </div>
+
+              {/* POWER */}
               <div>
-                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Power</span>
-                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                <span
+                  className="block text-[10px] font-bold tracking-wider uppercase"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                >
+                  Power
+                </span>
+                <span
+                  className="text-base font-extrabold tabular-nums mt-0.5 block"
+                  style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
+                >
                   {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
                 </span>
               </div>
+
+              {/* STEPS */}
               <div>
-                <span className="block text-[10.5px] uppercase tracking-wider text-[rgb(var(--color-neutral-500))]">Steps</span>
-                <span className="font-semibold text-[rgb(var(--color-neutral-800))] dark:text-[rgb(var(--color-neutral-200))] tabular-nums">
+                <span
+                  className="block text-[10px] font-bold tracking-wider uppercase"
+                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                >
+                  Steps
+                </span>
+                <span
+                  className="text-base font-extrabold tabular-nums mt-0.5 block"
+                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                >
                   {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
                 </span>
               </div>
@@ -499,17 +683,25 @@ export function HistoricalDataView({
       </div>
 
       {/* Summary footer */}
-      <div className="mt-4 pt-4 border-t border-[rgb(var(--color-neutral-200))] dark:border-[rgb(var(--color-neutral-700))]">
-        <p className="text-xs text-[rgb(var(--color-neutral-600))]">
+      <div
+        className="mt-4 pt-4 border-t"
+        style={{
+          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+        }}
+      >
+        <p
+          className="text-xs font-medium"
+          style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+        >
           {viewMode === 'aggregated' ? (
             <>
-              Showing {displayRecords.length} aggregated records from {format(new Date(startDate), 'MMM dd, yyyy')} to{' '}
-              {format(new Date(endDate), 'MMM dd, yyyy')}
+              Showing {displayRecords.length} aggregated records
+              {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ''}
             </>
           ) : (
             <>
-              Showing raw sensor readings from {format(new Date(startDate), 'MMM dd, yyyy')} to{' '}
-              {format(new Date(endDate), 'MMM dd, yyyy')} • {totalRecords} total records
+              Showing raw sensor readings
+              {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ' across all time'} • {totalRecords} total records
             </>
           )}
         </p>

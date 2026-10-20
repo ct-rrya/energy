@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
@@ -21,6 +21,13 @@ interface MobileDashboardLayoutProps {
 export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { theme } = useTheme();
+
+  // Also support custom event for drawer opening
+  useEffect(() => {
+    const handleOpenDrawerEvent = () => setDrawerOpen(true);
+    window.addEventListener('ecostep:opendrawer', handleOpenDrawerEvent);
+    return () => window.removeEventListener('ecostep:opendrawer', handleOpenDrawerEvent);
+  }, []);
 
   return (
     <div 
@@ -45,7 +52,7 @@ export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) 
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <MobileBottomNav />
+      <MobileBottomNav onOpenMenu={() => setDrawerOpen(true)} />
     </div>
   );
 }

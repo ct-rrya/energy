@@ -386,4 +386,59 @@ describe('GeminiAIService', () => {
       expect(shouldFallback).toBe(true);
     });
   });
+
+  describe('EcoChat Guardrails and Domain Constraints', () => {
+    it('should include strict guardrails in prompt when sending to Gemini with EcoChat context', async () => {
+      mockGeminiModel.generateContent.mockResolvedValue({
+        response: { text: () => 'EcoStep response from Gemini' },
+      });
+
+      await service.processQuery('How much energy today?', true);
+
+      expect(mockGeminiModel.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('NO UNRELATED QUESTIONS, PUBLIC FIGURES, OR TRIVIA'),
+      );
+      expect(mockGeminiModel.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('NO GENERAL MATH EQUATIONS'),
+      );
+      expect(mockGeminiModel.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('NO CODING OR BACKEND IMPLEMENTATION'),
+      );
+      expect(mockGeminiModel.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('NEVER DISCLOSE KEYS, SECRETS, OR CREDENTIALS'),
+      );
+      expect(mockGeminiModel.generateContent).toHaveBeenCalledWith(
+        expect.stringContaining('How much energy today?'),
+      );
+    });
+
+    it('should include system message guardrails when sending to Groq with EcoChat context', async () => {
+      // Force Gemini failure to fallback to Groq
+      const quotaError = new Error('Resource exhausted');
+      (quotaError as any).status = 429;
+      mockGeminiModel.generateContent.mockRejectedValue(quotaError);
+
+      mockGroq.chat.completions.create.mockResolvedValue({
+        choices: [{ message: { content: 'EcoStep response from Groq' } }],
+      });
+
+      await service.processQuery('How many steps recorded?', true);
+
+      expect(mockGroq.chat.completions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: [
+            expect.objectContaining({
+              role: 'system',
+              content: expect.stringContaining('NO UNRELATED QUESTIONS, PUBLIC FIGURES, OR TRIVIA'),
+            }),
+            expect.objectContaining({
+              role: 'user',
+              content: 'How many steps recorded?',
+            }),
+          ],
+          temperature: 0.3,
+        }),
+      );
+    });
+  });
 });

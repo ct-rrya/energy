@@ -35,8 +35,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
-  // SYSTEM_ADMIN only routes (operational features)
-  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'System Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
+  // Operational features for all admins
+  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
   // SUPER_ADMIN only route (admin management)
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
@@ -117,8 +117,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       if (!item.systemAdminOnly && !item.superAdminOnly) {
         return true;
       }
-      // SYSTEM_ADMIN only routes
-      if (item.systemAdminOnly && isSystemAdmin) {
+      // Operational features: visible to all administrators
+      if (item.systemAdminOnly && isAnyAdmin) {
         return true;
       }
       // SUPER_ADMIN only routes
@@ -127,7 +127,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       }
       return false;
     });
-  }, [isSystemAdmin, isSuperAdmin]);
+  }, [isAnyAdmin, isSuperAdmin]);
 
   // Place notch function - uses getBoundingClientRect for fractional precision
   const place = () => {

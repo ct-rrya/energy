@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
@@ -20,6 +20,13 @@ export function TabletDashboardLayout({ children }: TabletDashboardLayoutProps) 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { theme } = useTheme();
 
+  // Support custom event for drawer opening
+  useEffect(() => {
+    const handleOpenDrawerEvent = () => setDrawerOpen(true);
+    window.addEventListener('ecostep:opendrawer', handleOpenDrawerEvent);
+    return () => window.removeEventListener('ecostep:opendrawer', handleOpenDrawerEvent);
+  }, []);
+
   return (
     <div 
       className="min-h-screen w-full flex flex-col overflow-x-hidden"
@@ -29,7 +36,7 @@ export function TabletDashboardLayout({ children }: TabletDashboardLayoutProps) 
       }}
     >
       {/* Tablet Header */}
-      <MobileHeader onOpenMenu={() => setDrawerOpen(true)} />
+      <MobileHeader onOpenMenu={() => setDrawerOpen(true)} showMenuButton={true} />
 
       {/* Slide-out Navigation Drawer */}
       <MobileNavDrawer 

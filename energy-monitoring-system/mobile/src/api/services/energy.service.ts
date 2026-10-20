@@ -184,25 +184,29 @@ export async function getRecentReadings(
    * @throws Error if unauthorized or network fails
    */
   export async function getReadingsRange(
-    startDate: string,
-    endDate: string,
+    startDate?: string,
+    endDate?: string,
     limit: number = 1000
   ): Promise<EnergyReading[]> {
     try {
-      const response = await apiClient.get<ApiResponse<EnergyReading[]>>(
+      const params: Record<string, any> = { limit };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await apiClient.get<any>(
         '/energy/readings',
-        {
-          params: { startDate, endDate, limit },
-        }
+        { params }
       );
 
-      if (!response.data.success) {
-        throw new Error(
-          response.data.message || 'Failed to fetch readings range'
-        );
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
 
-      return response.data.data;
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+
+      return [];
     } catch (error: any) {
       const message =
         error.response?.data?.message ||

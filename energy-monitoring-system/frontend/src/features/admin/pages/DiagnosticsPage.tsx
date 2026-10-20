@@ -75,24 +75,24 @@ export function DiagnosticsPage() {
   }, [socket, isConnected, queryClient]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.pageBackground }}>
+    <div className="w-full" style={{ backgroundColor: colors.pageBackground }}>
       {/* Page Container */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+      <div className="container mx-auto px-1 sm:px-6 lg:px-8 py-2 sm:py-8 lg:py-10">
         {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="mb-5 sm:mb-8">
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
             <div 
-              className="p-3 rounded-lg" 
+              className="p-2.5 sm:p-3 rounded-xl" 
               style={{ backgroundColor: colors.accentSubtle }}
             >
               <Activity 
-                className="h-6 w-6" 
+                className="h-5 w-5 sm:h-6 sm:w-6" 
                 style={{ color: colors.accent }} 
               />
             </div>
             <div>
               <h1 
-                className="text-2xl sm:text-3xl font-bold"
+                className="text-xl sm:text-3xl font-bold"
                 style={{ 
                   color: colors.textPrimary,
                   fontWeight: TYPOGRAPHY.fontWeight.bold
@@ -103,10 +103,9 @@ export function DiagnosticsPage() {
             </div>
           </div>
           <p 
-            className="text-sm sm:text-base max-w-3xl leading-relaxed"
+            className="text-xs sm:text-base max-w-3xl leading-relaxed"
             style={{ 
               color: colors.textSecondary,
-              fontSize: TYPOGRAPHY.fontSize.base
             }}
           >
             On-demand health verification for your piezoelectric footstep tile. Automatically evaluates harvested energy per step against your 30-day historical baseline to detect hardware degradation, loose wiring, or tile fatigue.

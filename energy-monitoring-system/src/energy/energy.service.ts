@@ -854,23 +854,28 @@ export class EnergyService {
    * - Limit to < 1 week for raw data queries
    */
   async getReadingsRange(
-    startDate: string,
-    endDate: string,
+    startDate?: string,
+    endDate?: string,
     limit: number = 1000,
   ): Promise<EnergyReadingDocument[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const filter: Record<string, any> = {};
 
-    const safeLimit = Math.min(limit, 10000);
+    if (startDate || endDate) {
+      filter.timestamp = {};
+      if (startDate) {
+        filter.timestamp.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.timestamp.$lte = end;
+      }
+    }
+
+    const safeLimit = Math.min(limit || 1000, 10000);
 
     return this.readingModel
-      .find({
-        timestamp: {
-          $gte: start,
-          $lte: end,
-        },
-      })
+      .find(filter)
       .sort({ timestamp: -1 })
       .limit(safeLimit)
       .populate('sensorId', 'name location')

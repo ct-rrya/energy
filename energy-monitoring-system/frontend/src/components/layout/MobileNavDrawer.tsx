@@ -38,7 +38,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
-  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'System Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
+  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
 ];
@@ -57,7 +57,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
   // Filter nav items based on user role
   const navItems = ALL_NAV_ITEMS.filter((item) => {
     if (!item.systemAdminOnly && !item.superAdminOnly) return true;
-    if (item.systemAdminOnly && isSystemAdmin) return true;
+    if (item.systemAdminOnly && isAnyAdmin) return true;
     if (item.superAdminOnly && isSuperAdmin) return true;
     return false;
   });

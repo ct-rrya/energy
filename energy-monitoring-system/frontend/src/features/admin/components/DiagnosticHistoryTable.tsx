@@ -206,7 +206,7 @@ export function DiagnosticHistoryTable() {
     >
       {/* Header with View Tabs */}
       <div 
-        className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
+        className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
         style={{ borderColor: colors.border }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">

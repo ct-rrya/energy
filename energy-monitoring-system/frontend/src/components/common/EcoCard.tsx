@@ -9,6 +9,7 @@ interface EcoCardProps {
   className?: string;
   compact?: boolean;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -25,6 +26,7 @@ export function EcoCard({
   className,
   compact = false,
   onClick,
+  style,
 }: EcoCardProps) {
   const isClickable = Boolean(onClick);
 
@@ -38,6 +40,7 @@ export function EcoCard({
       onClick={onClick}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
+      style={style}
     >
       {children}
     </div>

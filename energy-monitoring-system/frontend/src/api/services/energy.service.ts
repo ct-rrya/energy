@@ -71,22 +71,27 @@ export const energyService = {
    * @param limit - Records per page
    */
   getRawReadings: async (
-    startDate: string,
-    endDate: string,
+    startDate?: string,
+    endDate?: string,
     page: number = 1,
     limit: number = 50
   ): Promise<PaginatedReadingsResponse> => {
     // Backend requires YYYY-MM-DD format, extract date portion if ISO string
-    const formatDate = (dateStr: string) => {
+    const formatDate = (dateStr?: string) => {
+      if (!dateStr) return undefined;
       return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
     };
 
     const formattedStartDate = formatDate(startDate);
     const formattedEndDate = formatDate(endDate);
 
-    // Fetch more data to support pagination
+    const params = new URLSearchParams();
+    if (formattedStartDate) params.append('startDate', formattedStartDate);
+    if (formattedEndDate) params.append('endDate', formattedEndDate);
+    params.append('limit', String(Math.max(limit * 20, 1000)));
+
     const response = await apiClient.get<ApiResponse<EnergyReading[]>>(
-      `/energy/readings?startDate=${formattedStartDate}&endDate=${formattedEndDate}&limit=${limit * 10}`
+      `/energy/readings?${params.toString()}`
     );
     
     // Extract array from response (handle both wrapped and unwrapped responses)
@@ -102,7 +107,7 @@ export const energyService = {
       total: allData.length,
       page,
       limit,
-      totalPages: Math.ceil(allData.length / limit),
+      totalPages: Math.ceil(allData.length / limit) || 1,
     };
   },
 };

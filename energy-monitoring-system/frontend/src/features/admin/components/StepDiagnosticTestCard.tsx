@@ -240,7 +240,7 @@ export function StepDiagnosticTestCard() {
 
   return (
     <div 
-      className="rounded-2xl p-6 sm:p-8 border shadow-xs transition-all"
+      className="rounded-2xl p-3.5 sm:p-8 border shadow-xs transition-all"
       style={{
         backgroundColor: colors.cardBackground,
         borderColor: colors.border,
@@ -250,7 +250,7 @@ export function StepDiagnosticTestCard() {
       {/* 1. DAILY DIAGNOSTIC TASK BANNER (SHARED MULTI-ADMIN) */}
       {/* ============================================================ */}
       <div 
-        className="mb-6 p-4 sm:p-5 rounded-2xl border transition-all"
+        className="mb-6 p-3.5 sm:p-5 rounded-2xl border transition-all"
         style={{
           backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
             ? (theme === 'light' ? '#F0FDF4' : 'rgba(6, 78, 59, 0.2)')

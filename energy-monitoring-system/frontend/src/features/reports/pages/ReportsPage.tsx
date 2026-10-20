@@ -204,20 +204,20 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 pb-16 sm:pb-24">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="w-full p-1 sm:p-6 lg:p-8 pb-16 sm:pb-24">
+      <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
         
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
           <div>
             <h1 
-              className="text-[32px] font-bold mb-2"
+              className="text-2xl sm:text-[32px] font-bold mb-1 sm:mb-2"
               style={{ color: colors.textPrimary }}
             >
               Reports
             </h1>
             <p 
-              className="text-sm max-w-2xl"
+              className="text-xs sm:text-sm max-w-2xl"
               style={{ color: colors.textSecondary }}
             >
               Generate, view, and export reports from EcoStep monitoring, analytics, and diagnostic data.
@@ -228,7 +228,7 @@ export function ReportsPage() {
           {!isPublicUser && (
             <button
               onClick={() => setIsGenerateDialogOpen(true)}
-              className="px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors duration-200 whitespace-nowrap"
+              className="px-4 sm:px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors duration-200 whitespace-nowrap self-start sm:self-auto cursor-pointer"
               style={{
                 backgroundColor: colors.accent,
                 color: 'white',
@@ -240,15 +240,15 @@ export function ReportsPage() {
                 e.currentTarget.style.backgroundColor = colors.accent;
               }}
             >
-              <Plus className="w-5 h-5" strokeWidth={2} />
-              <span>Generate Report</span>
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+              <span className="text-xs sm:text-sm font-semibold">Generate Report</span>
             </button>
           )}
         </div>
 
         {/* Filters Section */}
         <div 
-          className="rounded-lg p-6 transition-colors duration-300"
+          className="rounded-xl p-4 sm:p-6 transition-colors duration-300"
           style={{
             backgroundColor: colors.cardBackground,
             border: `1px solid ${colors.border}`,
