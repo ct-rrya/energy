@@ -327,7 +327,6 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
           pointerEvents: 'auto',
           position: 'relative',
           flexShrink: 0,
-          marginLeft: 'auto',
         }}
       >
         {/* Mobile View: Dedicated Expandable Menu Button (Handled via CSS .landing-mobile-menu-btn) */}

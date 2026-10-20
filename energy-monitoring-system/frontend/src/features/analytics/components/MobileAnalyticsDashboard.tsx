@@ -491,11 +491,16 @@ export function MobileAnalyticsDashboard({
             return (
               <div
                 key={cfg.id}
-                className="rounded-3xl transition-all duration-300 overflow-hidden"
+                className="rounded-3xl overflow-hidden transition-all duration-300"
                 style={{
                   backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
-                  border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
-                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+                  border: isExpanded
+                    ? (theme === 'dark' ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid rgba(22, 163, 74, 0.28)')
+                    : (theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB'),
+                  boxShadow: isExpanded
+                    ? (theme === 'dark' ? '0 10px 28px rgba(0, 0, 0, 0.45), 0 0 16px rgba(34, 197, 94, 0.1)' : '0 10px 28px rgba(22, 163, 74, 0.09), 0 2px 8px rgba(0, 0, 0, 0.04)')
+                    : '0 2px 10px rgba(0, 0, 0, 0.03)',
+                  transition: 'border-color 300ms ease, box-shadow 300ms ease, background-color 300ms ease',
                 }}
               >
                 {/* Collapsible Card Header: Tap anywhere to expand or collapse */}
@@ -534,9 +539,25 @@ export function MobileAnalyticsDashboard({
                   </div>
                 </button>
 
-                {/* Expanded Chart Canvas & Details */}
-                {isExpanded && (
-                  <div className="px-5 pb-5 pt-0 border-t border-neutral-100 dark:border-white/5 animate-in fade-in duration-300">
+                {/* Smooth Animated Accordion Expansion Wrapper */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                    transition: 'grid-template-rows 320ms cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  className="overflow-hidden"
+                >
+                  <div
+                    style={{
+                      minHeight: 0,
+                      opacity: isExpanded ? 1 : 0,
+                      transform: isExpanded ? 'translate3d(0, 0, 0)' : 'translate3d(0, -8px, 0)',
+                      transition:
+                        'opacity 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  >
+                    <div className="px-5 pb-5 pt-0 border-t border-neutral-100 dark:border-white/5">
                     {/* SVG Chart Canvas */}
                     <div className="w-full h-44 pt-2">
                       <svg className="w-full h-full" viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
@@ -622,8 +643,9 @@ export function MobileAnalyticsDashboard({
                     <p className="text-[11.5px] text-neutral-400 dark:text-neutral-400 text-center mt-3">
                       {cfg.readingCountText}
                     </p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Zap, Footprints, Activity, Sparkles } from 'lucide-react';
 import type { SensorReading, DashboardMetrics } from '../types/dashboard.types';
 
 interface MobileEnergyHarvestingDashboardProps {
@@ -14,7 +15,7 @@ interface MobileEnergyHarvestingDashboardProps {
  * MobileEnergyHarvestingDashboard Component
  * 
  * Implements the exact mobile dashboard layout specified in the design mockup:
- * - Date/Time line + "Energy harvesting" title + Status pill badge (Warning · Idle / Live)
+ * - Date/Time line + "Energy harvesting" title + Status pill badge (Warning / Live with explanatory tooltip)
  * - Hero Card: Dark forest green card with circular step progress ring + step motivational text
  * - Secondary Metrics: 2 columns (VOLTAGE and CURRENT) with live/empty readings & subtitles
  * - LAST 12 HOURS: 12-hour activity visual (dashed lines when empty, rounded green bars when active)
@@ -26,6 +27,24 @@ export function MobileEnergyHarvestingDashboard({
   isWebSocketConnected = true,
 }: MobileEnergyHarvestingDashboardProps) {
   const { theme } = useTheme();
+  const statusContainerRef = useRef<HTMLDivElement>(null);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(true);
+
+  // Close tooltip on outside click/tap
+  useEffect(() => {
+    if (!isTooltipOpen) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (statusContainerRef.current && !statusContainerRef.current.contains(e.target as Node)) {
+        setIsTooltipOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isTooltipOpen]);
 
   // Determine if active from real telemetry/metrics and connection status
   const isOnline = systemStatus === 'connected' && isWebSocketConnected;
@@ -60,10 +79,15 @@ export function MobileEnergyHarvestingDashboard({
     return `${dateStr} · ${timeStr}`;
   }, []);
 
-  // Compute metrics values for active vs empty state
-  const stepCount = isActive ? (realSteps > 0 ? realSteps : 620) : 0;
-  const stepGoal = 1000;
-  const stepProgress = Math.min(stepCount / stepGoal, 1);
+  // Compute metrics values for active vs empty state (Matching Desktop HeroPowerCard & MetricCards)
+  const stepCount = isActive ? (realSteps > 0 ? realSteps : 35) : 0;
+
+  // Power (in mW)
+  const rawPower = displayReading?.power !== undefined ? displayReading.power * 1000 : undefined;
+  const powerValNum = isActive
+    ? (rawPower !== undefined && rawPower > 0 ? rawPower : 0.508)
+    : 0;
+  const formattedPower = powerValNum > 0 ? powerValNum.toFixed(4) : '0.0000';
 
   // Voltage
   const voltageValue = isActive
@@ -85,14 +109,6 @@ export function MobileEnergyHarvestingDashboard({
     ? (displayMetrics.todayAvgCurrent * 1000).toFixed(1)
     : '9.6';
 
-  // 12-hour bar heights (percentages matching mock rhythm)
-  const twelveHourBars = [18, 18, 22, 34, 48, 28, 38, 62, 88, 70, 80, 92];
-
-  // SVG Circular Ring calculation
-  const radius = 38;
-  const circumference = 2 * Math.PI * radius; // ~238.76
-  const strokeDashoffset = circumference - stepProgress * circumference;
-
   return (
     <div className="w-full max-w-md mx-auto space-y-4 pb-20">
       {/* 1. Header Section: Date & Title & Status Pill */}
@@ -101,253 +117,339 @@ export function MobileEnergyHarvestingDashboard({
           {currentFormattedDate}
         </p>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 relative">
           <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50">
             Energy harvesting
           </h1>
 
-          {/* Interactive status pill: toggles between Active & Empty state on tap */}
-          <button
-            type="button"
-            onClick={() => setManualState((prev) => (prev === 'active' ? 'empty' : 'active'))}
-            title="Tap to preview Empty vs Active state"
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition-all ${
-              isActive
-                ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                : 'bg-amber-100/90 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            />
-            <span>{isActive ? 'Live' : 'Warning · Idle'}</span>
-          </button>
+          {/* Interactive status pill with speech-bubble tooltip matching design */}
+          <div ref={statusContainerRef} className="relative flex-shrink-0 z-30">
+            {/* Tooltip speech bubble */}
+            {isTooltipOpen && (
+              <div
+                role="tooltip"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 10px)',
+                  right: 0,
+                  width: 'min(240px, calc(100vw - 48px))',
+                  background: '#16261e',
+                  color: '#ffffff',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  fontSize: '12.5px',
+                  lineHeight: '1.4',
+                  fontWeight: 450,
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.45)',
+                  zIndex: 50,
+                  pointerEvents: 'auto',
+                }}
+              >
+                <span>
+                  {isActive
+                    ? 'System is active and currently harvesting kinetic footstep energy.'
+                    : 'This status indicates that there is a potential issue or requires attention.'}
+                </span>
+
+                {/* Upward pointer triangle pointing directly at the status badge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-7px',
+                    right: '34px',
+                    width: 0,
+                    height: 0,
+                    borderLeft: '7px solid transparent',
+                    borderRight: '7px solid transparent',
+                    borderBottom: '7px solid #16261e',
+                  }}
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+
+            {/* Status Pill Badge */}
+            <button
+              type="button"
+              onClick={() => setIsTooltipOpen((prev) => !prev)}
+              onDoubleClick={() => setManualState((prev) => (prev === 'active' ? 'empty' : 'active'))}
+              aria-label={isActive ? 'Status: Live' : 'Status: Warning'}
+              title="Tap to view status details"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 14px 4px 5px',
+                borderRadius: '9999px',
+                background: theme === 'dark' ? 'rgba(25, 55, 38, 0.75)' : '#ebf7ee',
+                border: theme === 'dark' ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(46, 125, 50, 0.15)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease, background-color 0.2s ease',
+              }}
+            >
+              {/* Circular Icon */}
+              {isActive ? (
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    boxShadow: '0 2px 6px rgba(34, 197, 94, 0.35)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      animation: 'pulse 1.8s infinite',
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    boxShadow: '0 2px 6px rgba(245, 158, 11, 0.35)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#111827',
+                      fontWeight: 900,
+                      fontSize: '14px',
+                      lineHeight: 1,
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                      marginTop: '-1px',
+                    }}
+                  >
+                    !
+                  </span>
+                </div>
+              )}
+
+              {/* Text Label */}
+              <span
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  color: theme === 'dark' ? '#86efac' : '#234d35',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {isActive ? 'Live' : 'Warning'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Hero Card: Dark Forest Green Card */}
+      {/* 2. Hero Card: Matching Desktop Hero Empty/Active State */}
       <div
-        className="rounded-3xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-300"
+        className="rounded-3xl p-6 transition-all duration-300 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(145deg, #0d291d 0%, #081d14 100%)',
-          border: '1px solid rgba(34, 197, 94, 0.25)',
-          boxShadow: '0 12px 32px rgba(5, 41, 24, 0.3)',
+          backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+          border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
         }}
       >
-        <div className="flex items-center gap-4.5">
-          {/* Circular Step Progress Ring */}
-          <div className="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 96 96">
-              {/* Background Ring */}
-              <circle
-                cx="48"
-                cy="48"
-                r={radius}
-                stroke="rgba(255, 255, 255, 0.12)"
-                strokeWidth="7"
-                fill="transparent"
+        {!isActive ? (
+          /* Empty State: Matching Desktop Attachment 2 */
+          <div className="py-2 flex flex-col items-center justify-center text-center">
+            {/* Amber Circular Zap Icon */}
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-105"
+              style={{
+                backgroundColor: theme === 'dark' ? 'rgba(251, 191, 36, 0.12)' : 'rgba(254, 243, 199, 0.75)',
+                border: theme === 'dark' ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid rgba(245, 158, 11, 0.2)',
+              }}
+            >
+              <Zap
+                size={32}
+                className="text-amber-500 dark:text-amber-400"
+                style={{ opacity: 0.9 }}
               />
-              {/* Active Progress Arc */}
-              {isActive && (
-                <circle
-                  cx="48"
-                  cy="48"
-                  r={radius}
-                  stroke="#22c55e"
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  fill="transparent"
-                  style={{
-                    filter: 'drop-shadow(0 0 6px rgba(34, 197, 94, 0.6))',
-                    transition: 'stroke-dashoffset 0.8s ease-in-out',
-                  }}
-                />
-              )}
-            </svg>
+            </div>
 
-            {/* Centered Steps Numbers */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-2xl font-black tracking-tight leading-none text-white tabular-nums">
-                {stepCount}
+            <h2 className="text-[17px] font-bold text-neutral-900 dark:text-neutral-100 leading-snug">
+              Be the first to interact with EcoStep today!
+            </h2>
+            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-2 max-w-[280px] leading-relaxed">
+              Start walking on your piezoelectric tiles to generate power
+            </p>
+          </div>
+        ) : (
+          /* Active State: Hero Power Reading */
+          <div className="text-left">
+            <div className="flex items-center justify-between">
+              <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                POWER OUTPUT
               </span>
-              <span className="text-[10px] text-emerald-200/80 font-medium mt-0.5 leading-none">
-                steps today
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live
               </span>
             </div>
-          </div>
 
-          {/* Text Content */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[17px] font-extrabold text-white leading-tight">
-              {isActive ? 'Nice, tiles are charging' : 'Be the first to step on today'}
-            </h2>
-            <p className="text-[12.5px] text-emerald-100/75 mt-1 leading-snug">
-              {isActive
-                ? 'Your steps are being converted into usable energy.'
-                : 'Walk across a piezoelectric tile to start generating power.'}
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span
+                className="text-4xl font-black tabular-nums tracking-tight"
+                style={{
+                  color: theme === 'dark' ? '#39FF88' : '#16a34a',
+                }}
+              >
+                {formattedPower}
+              </span>
+              <span
+                className="text-base font-bold"
+                style={{
+                  color: theme === 'dark' ? '#39FF88' : '#16a34a',
+                }}
+              >
+                mW
+              </span>
+            </div>
+
+            <p className="text-[12px] text-neutral-400 dark:text-neutral-400 mt-1">
+              Live piezoelectric power harvesting
             </p>
-            <span className="inline-block mt-2 text-xs font-bold text-[#39FF88] tracking-tight">
-              Goal 1,000 steps
-            </span>
+
+            {/* AI Insight Section */}
+            {displayMetrics?.aiInsight && (
+              <div
+                className="mt-4 pt-3.5 border-t flex items-start gap-2.5"
+                style={{
+                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#F3F4F6',
+                }}
+              >
+                <Sparkles size={16} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed font-normal">
+                  {displayMetrics.aiInsight}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* 3. Secondary Metrics: 2 Columns (Voltage & Current) */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Voltage Card */}
+      {/* 3. Secondary Metrics: Matching Desktop 1:1 */}
+      <div className="space-y-3">
+        {/* Steps Today Card */}
         <div
-          className="rounded-2xl p-4 transition-colors"
+          className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
           style={{
             backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
             border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
             boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
           }}
         >
-          <span className="block text-[10.5px] font-semibold tracking-wider text-neutral-400 dark:text-neutral-400 uppercase">
-            VOLTAGE
-          </span>
-          <div className="mt-1 flex items-baseline gap-0.5">
+          <div className="flex items-center justify-between">
+            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+              STEPS TODAY
+            </span>
+            <Footprints size={16} className="text-neutral-400 opacity-60" />
+          </div>
+          <div className="mt-1 flex items-baseline">
             <span
-              className="text-2xl font-extrabold tabular-nums tracking-tight"
+              className="text-3xl font-extrabold tabular-nums tracking-tight"
               style={{
-                color: isActive
-                  ? theme === 'dark'
-                    ? '#39FF88'
-                    : '#16a34a'
-                  : theme === 'dark'
-                  ? '#94a3b8'
-                  : '#64748b',
+                color: theme === 'dark' ? '#39FF88' : '#10b981',
+              }}
+            >
+              {stepCount}
+            </span>
+          </div>
+          <p className="text-[12px] text-neutral-400 dark:text-neutral-400 mt-1 italic font-medium">
+            {isActive ? 'Active footsteps today' : 'No steps yet'}
+          </p>
+        </div>
+
+        {/* Voltage Card */}
+        <div
+          className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
+          style={{
+            backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+            border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+              VOLTAGE
+            </span>
+            <Zap size={16} className="text-neutral-400 opacity-60" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span
+              className="text-3xl font-extrabold tabular-nums tracking-tight"
+              style={{
+                color: theme === 'dark' ? '#39FF88' : '#10b981',
               }}
             >
               {voltageValue}
             </span>
             <span
-              className="text-xs font-semibold"
+              className="text-sm font-bold"
               style={{
-                color: isActive
-                  ? theme === 'dark'
-                    ? '#39FF88'
-                    : '#16a34a'
-                  : theme === 'dark'
-                  ? '#94a3b8'
-                  : '#64748b',
+                color: theme === 'dark' ? '#39FF88' : '#10b981',
               }}
             >
               V
             </span>
           </div>
-          <p className="text-[11.5px] text-neutral-400 dark:text-neutral-400 mt-1">
+          <p className="text-[12px] text-neutral-400 dark:text-neutral-400 mt-1 italic font-medium">
             {isActive ? `Peak ${peakVoltage} V` : 'Waiting for data'}
           </p>
         </div>
 
-        {/* Current Card */}
+        {/* Equiv. Current Card */}
         <div
-          className="rounded-2xl p-4 transition-colors"
+          className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
           style={{
             backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
             border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
             boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
           }}
         >
-          <span className="block text-[10.5px] font-semibold tracking-wider text-neutral-400 dark:text-neutral-400 uppercase">
-            CURRENT
-          </span>
-          <div className="mt-1 flex items-baseline gap-0.5">
+          <div className="flex items-center justify-between">
+            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+              EQUIV. CURRENT
+            </span>
+            <Activity size={16} className="text-neutral-400 opacity-60" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
             <span
-              className="text-2xl font-extrabold tabular-nums tracking-tight"
+              className="text-3xl font-extrabold tabular-nums tracking-tight"
               style={{
-                color: isActive
-                  ? theme === 'dark'
-                    ? '#39FF88'
-                    : '#16a34a'
-                  : theme === 'dark'
-                  ? '#94a3b8'
-                  : '#64748b',
+                color: theme === 'dark' ? '#60a5fa' : '#3b82f6',
               }}
             >
               {currentValueMA}
             </span>
             <span
-              className="text-xs font-semibold"
+              className="text-sm font-bold"
               style={{
-                color: isActive
-                  ? theme === 'dark'
-                    ? '#39FF88'
-                    : '#16a34a'
-                  : theme === 'dark'
-                  ? '#94a3b8'
-                  : '#64748b',
+                color: theme === 'dark' ? '#60a5fa' : '#3b82f6',
               }}
             >
               mA
             </span>
           </div>
-          <p className="text-[11.5px] text-neutral-400 dark:text-neutral-400 mt-1">
+          <p className="text-[12px] text-neutral-400 dark:text-neutral-400 mt-1 italic font-medium">
             {isActive ? `Avg ${avgCurrentMA} mA` : 'Start generating'}
           </p>
-        </div>
-      </div>
-
-      {/* 4. Chart Card: LAST 12 HOURS */}
-      <div
-        className="rounded-2xl p-4 sm:p-5 transition-colors"
-        style={{
-          backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
-          border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-            LAST 12 HOURS
-          </span>
-          <span className="text-xs text-neutral-400 dark:text-neutral-400 font-medium">
-            {isActive ? 'Sample data' : 'No activity yet'}
-          </span>
-        </div>
-
-        {/* Bar Chart Visualization */}
-        <div className="h-16 w-full flex items-end justify-between gap-1.5 pt-1">
-          {twelveHourBars.map((heightPercent, idx) => {
-            if (!isActive) {
-              // Empty State: 12 dashed line markers
-              return (
-                <div
-                  key={idx}
-                  className="flex-1 flex items-center justify-center"
-                >
-                  <div
-                    className="w-full h-1 rounded-full transition-colors"
-                    style={{
-                      backgroundColor: theme === 'dark' ? '#334155' : '#D1D5DB',
-                    }}
-                  />
-                </div>
-              );
-            }
-
-            // Active State: 12 vertical rounded green bars
-            return (
-              <div
-                key={idx}
-                className="flex-1 h-full flex items-end justify-center"
-              >
-                <div
-                  className="w-full rounded-md transition-all duration-500"
-                  style={{
-                    height: `${heightPercent}%`,
-                    backgroundColor: theme === 'dark' ? '#22c55e' : '#16a34a',
-                  }}
-                />
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>

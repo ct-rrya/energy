@@ -9,12 +9,18 @@ import {
   DiagnosticTestSchema,
 } from './schemas/diagnostic-test.schema';
 import {
+  DailyDiagnosticTask,
+  DailyDiagnosticTaskSchema,
+} from './schemas/daily-diagnostic-task.schema';
+import {
   EnergyReading,
   EnergyReadingSchema,
 } from '../iot/schemas/energy-reading.schema';
 import { DiagnosticsService } from './diagnostics.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { AlertsModule } from '../alerts/alerts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * DiagnosticsModule
@@ -45,9 +51,12 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     MongooseModule.forFeature([
       { name: ReferenceConfig.name, schema: ReferenceConfigSchema },
       { name: DiagnosticTest.name, schema: DiagnosticTestSchema },
+      { name: DailyDiagnosticTask.name, schema: DailyDiagnosticTaskSchema },
       { name: EnergyReading.name, schema: EnergyReadingSchema },
     ]),
     DashboardModule, // For DashboardGateway WebSocket broadcasting
+    AlertsModule,
+    NotificationsModule,
   ],
   controllers: [DiagnosticsController],
   providers: [DiagnosticsService],

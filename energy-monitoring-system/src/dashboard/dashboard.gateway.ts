@@ -376,7 +376,8 @@ export class DashboardGateway
 
     // Iterate through all connected sockets and emit only to admins
     this.server.sockets.sockets.forEach((socket) => {
-      if (socket.data.user?.role === 'admin') {
+      const role = socket.data.user?.role;
+      if (role === 'admin' || role === 'SYSTEM_ADMIN' || role === 'SUPER_ADMIN') {
         socket.emit(event, data);
         adminCount++;
       }

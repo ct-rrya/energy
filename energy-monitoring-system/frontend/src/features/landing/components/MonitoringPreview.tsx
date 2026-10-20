@@ -195,7 +195,7 @@ export function MonitoringPreview() {
       }}
     >
       {/* Section Header */}
-      <div style={{ textAlign: 'center', marginBottom: isMobile ? '14px' : '20px', width: '100%' }}>
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? '18px' : '28px', width: '100%' }}>
         <h2
           className="landing-h2"
           style={{
@@ -219,71 +219,6 @@ export function MonitoringPreview() {
         >
           Energy, electrical measurements, system status and analytics in one live dashboard.
         </p>
-      </div>
-
-      {/* Promotional Callout Tags Bar (Unified Green) */}
-      <div
-        className="callout-tags-bar"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: isMobile ? '6px' : '10px',
-          marginBottom: isMobile ? '14px' : '18px',
-        }}
-      >
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            padding: isMobile ? '3px 10px' : '4px 12px',
-            borderRadius: '999px',
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.25)',
-            fontSize: isMobile ? '11px' : '12px',
-            fontWeight: 600,
-            color: '#22c55e',
-          }}
-        >
-          <Zap size={isMobile ? 11 : 13} />
-          Key Electrical Metrics
-        </span>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            padding: isMobile ? '3px 10px' : '4px 12px',
-            borderRadius: '999px',
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.25)',
-            fontSize: isMobile ? '11px' : '12px',
-            fontWeight: 600,
-            color: '#22c55e',
-          }}
-        >
-          <Activity size={isMobile ? 11 : 13} />
-          Interactive Generation Chart
-        </span>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            padding: isMobile ? '3px 10px' : '4px 12px',
-            borderRadius: '999px',
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.25)',
-            fontSize: isMobile ? '11px' : '12px',
-            fontWeight: 600,
-            color: '#22c55e',
-          }}
-        >
-          <Sparkles size={isMobile ? 11 : 13} />
-          Tile System Diagnostics
-        </span>
       </div>
 
       {/* Laptop Showcase Frame (Responsive & Scaled to fit normal phone screens) */}

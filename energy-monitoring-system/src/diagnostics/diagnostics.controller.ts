@@ -30,6 +30,7 @@ import {
   DiagnosticBaselineResponseDto,
   RecordStepTestDto,
   StepTestResponseDto,
+  CompleteDailyDiagnosticDto,
 } from './dto';
 import type { UserDocument } from '../users/schemas/user.schema';
 
@@ -73,7 +74,7 @@ import type { UserDocument } from '../users/schemas/user.schema';
 @ApiBearerAuth()
 @Controller('diagnostics')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'SYSTEM_ADMIN', 'SUPER_ADMIN')
 export class DiagnosticsController {
   private readonly logger = new Logger(DiagnosticsController.name);
 
@@ -432,5 +433,125 @@ export class DiagnosticsController {
     this.dashboardGateway.emitToAdmins('diagnostic:step-tested', result);
 
     return result;
+  }
+
+  // ============================================================
+  // DAILY DIAGNOSTIC TASK ENDPOINTS
+  // ============================================================
+
+  /**
+   * Get Today's Shared Daily Diagnostic Task
+   *
+   * Retrieves or automatically initializes the single shared daily task for all admins.
+   */
+  @Get('daily-task/today')
+  @ApiOperation({
+    summary: 'Get today shared daily diagnostic task (admin only)',
+    description:
+      'Retrieves the shared daily diagnostic task for today, including its status and any active testing session lock.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Today daily diagnostic task retrieved successfully',
+  })
+  async getTodayDailyTask() {
+    return this.diagnosticsService.getOrCreateTodayTask();
+  }
+
+  /**
+   * Start Diagnostic Session (Lock Test Mode)
+   *
+   * Allows an admin to claim the testing session for today.
+   * Rejects concurrent sessions by another admin with 409 Conflict.
+   */
+  @Post('daily-task/start-session')
+  @ApiOperation({
+    summary: 'Acquire active session lock for daily diagnostic test (admin only)',
+    description:
+      'Locks the diagnostic session to the calling admin for 5 minutes to prevent concurrent testing on the physical tile.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Diagnostic session locked successfully',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Another admin is currently performing the diagnostic test',
+  })
+  async startDailySession(@CurrentUser() user: UserDocument) {
+    this.logger.log(`Admin ${user.email} acquiring diagnostic session lock`);
+    return this.diagnosticsService.startDiagnosticSession({
+      email: user.email,
+      name: user.name,
+    });
+  }
+
+  /**
+   * Cancel Diagnostic Session (Release Session Lock)
+   */
+  @Post('daily-task/cancel-session')
+  @ApiOperation({
+    summary: 'Cancel active session and release lock (admin only)',
+    description: 'Releases the session lock so another admin or session can test.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session released successfully',
+  })
+  async cancelDailySession(@CurrentUser() user: UserDocument) {
+    this.logger.log(`Admin ${user.email} releasing diagnostic session lock`);
+    return this.diagnosticsService.cancelDiagnosticSession({
+      email: user.email,
+    });
+  }
+
+  /**
+   * Complete Daily Diagnostic Task
+   *
+   * Submits the footstep test reading, verifies against established baseline,
+   * updates the daily task status, and notifies all connected admins.
+   */
+  @Post('daily-task/complete')
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Complete today daily diagnostic test (admin only)',
+    description:
+      'Evaluates tile sensor reading against established baseline, completes the shared task, and immediately notifies admins of results or anomalies.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily diagnostic completed successfully',
+  })
+  async completeDailyTask(
+    @Body() dto: CompleteDailyDiagnosticDto,
+    @CurrentUser() user: UserDocument,
+  ) {
+    this.logger.log(
+      `Admin ${user.email} completing daily diagnostic: ${dto.actualStepEnergyMWh} mWh`,
+    );
+
+    return this.diagnosticsService.completeDailyDiagnostic(dto, {
+      email: user.email,
+      name: user.name,
+    });
+  }
+
+  /**
+   * Get Daily Task History
+   *
+   * Retrieves previous daily diagnostic tasks to monitor performance trends.
+   */
+  @Get('daily-task/history')
+  @ApiOperation({
+    summary: 'Get daily diagnostic task history (admin only)',
+    description:
+      'Retrieves previous daily diagnostic task records and performance verdicts.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily diagnostic history retrieved successfully',
+  })
+  async getDailyTaskHistory(@Query('limit') limit?: number) {
+    return this.diagnosticsService.getDailyTaskHistory(limit ? Number(limit) : 30);
   }
 }
