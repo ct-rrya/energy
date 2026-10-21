@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ChartContainer Component
  * 
  * Wrapper component providing consistent styling and state handling for all chart components.
@@ -108,19 +108,19 @@ export function ChartContainer({
     >
       {/* Header Section - Responsive layout wraps on mobile */}
       <div
-        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-4"
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-4 px-4 sm:px-6 pt-3.5 sm:pt-6 pb-3 sm:pb-4"
         style={{ borderBottom: `1px solid ${themeColors.border}` }}
       >
         <div className="flex-1 min-w-0">
           <h2
-            className="text-lg sm:text-xl font-bold mb-1"
+            className="text-base sm:text-xl font-bold mb-0.5 sm:mb-1 tracking-tight"
             style={{ color: themeColors.text }}
           >
             {title}
           </h2>
           {subtitle && (
             <p
-              className="text-sm"
+              className="text-xs sm:text-sm leading-relaxed"
               style={{ color: themeColors.textSecondary }}
             >
               {subtitle}
@@ -136,8 +136,8 @@ export function ChartContainer({
         )}
       </div>
 
-      {/* Content Section */}
-      <div className="px-4 sm:px-6 py-4">
+      {/* Content Section - responsive horizontal padding */}
+      <div className="px-2 sm:px-6 py-3 sm:py-4">
         {renderContent()}
       </div>
     </div>

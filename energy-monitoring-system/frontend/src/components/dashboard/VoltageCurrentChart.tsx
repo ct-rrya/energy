@@ -102,7 +102,7 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
   };
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${className}`}>
+    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 ${className}`}>
       {/* Voltage Chart */}
       <ChartContainer
         title="Voltage Trend"
@@ -118,9 +118,9 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
             data={voltageData}
             margin={{ 
               top: 5, 
-              right: isMobile ? 5 : 20, 
-              left: isMobile ? -20 : 0, 
-              bottom: 5 
+              right: isMobile ? 8 : 20, 
+              left: isMobile ? -18 : 0, 
+              bottom: isMobile ? 15 : 5 
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
@@ -180,9 +180,9 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
             data={currentData}
             margin={{ 
               top: 5, 
-              right: isMobile ? 5 : 20, 
-              left: isMobile ? -20 : 0, 
-              bottom: 5 
+              right: isMobile ? 8 : 20, 
+              left: isMobile ? -18 : 0, 
+              bottom: isMobile ? 15 : 5 
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />

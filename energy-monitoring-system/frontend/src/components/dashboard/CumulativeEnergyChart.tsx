@@ -146,9 +146,9 @@ export function CumulativeEnergyChart({
           data={cumulativeData}
           margin={{ 
             top: 5, 
-            right: isMobile ? 5 : 20, 
-            left: isMobile ? -20 : 0, 
-            bottom: 5 
+            right: isMobile ? 8 : 20, 
+            left: isMobile ? -18 : 0, 
+            bottom: isMobile ? 15 : 5 
           }}
         >
           {/* Define linear gradient for area fill */}

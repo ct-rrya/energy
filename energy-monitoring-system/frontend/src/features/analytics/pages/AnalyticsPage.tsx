@@ -10,8 +10,6 @@ import { EnergyPeriodChart } from '@/components/dashboard/EnergyPeriodChart';
 import { CumulativeEnergyChart } from '@/components/dashboard/CumulativeEnergyChart';
 import { StepsChart } from '@/components/dashboard/StepsChart';
 import { VoltageCurrentChart } from '@/components/dashboard/VoltageCurrentChart';
-import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import { MobileAnalyticsDashboard } from '../components/MobileAnalyticsDashboard';
 import type { Granularity } from '../types';
 
 /**
@@ -30,24 +28,18 @@ type Period = 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
  * Comprehensive analytics dashboard with:
  * - Chart View: Real-time and historical analytics with all desktop charts
  * - Historical View: Tabular & mobile card data display with MongoDB raw data
- * - Fully responsive across mobile, tablet, and desktop viewports
+ * - Fully responsive across mobile, tablet, and desktop viewports (using the exact same charts)
  * - Date range filtering including All Time
  */
 export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
-  const { isMobile } = useDeviceLayout();
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
 
   // Determine user role
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
-
-  // Dedicated Mobile Analytics Layout (< 768px)
-  if (isMobile) {
-    return <MobileAnalyticsDashboard isPublicUser={isPublicUser} />;
-  }
 
   // Calculate date range based on period
   const dateRange = useMemo(() => {
@@ -135,19 +127,19 @@ export function AnalyticsPage() {
         {/* View Toggle and Period Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* View Toggle */}
-          <div style={{ backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6' }} className="flex items-center gap-2 rounded-lg p-1">
+          <div style={{ backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6' }} className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-1 sm:gap-2 rounded-xl p-1">
             <button
               onClick={() => setActiveView('charts')}
               style={{
                 backgroundColor: activeView === 'charts' ? (theme === 'dark' ? '#374151' : '#FFFFFF') : 'transparent',
                 color: activeView === 'charts' ? (theme === 'dark' ? '#F9FAFB' : '#0B132B') : (theme === 'dark' ? '#9CA3AF' : '#4B5563')
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-xs"
               aria-pressed={activeView === 'charts'}
               aria-label="Switch to chart view"
             >
-              <BarChart3 className="h-4 w-4" strokeWidth={2} />
-              Chart View
+              <BarChart3 className="h-4 w-4 shrink-0" strokeWidth={2} />
+              <span>Chart View</span>
             </button>
 
             <button
@@ -156,18 +148,18 @@ export function AnalyticsPage() {
                 backgroundColor: activeView === 'historical' ? (theme === 'dark' ? '#374151' : '#FFFFFF') : 'transparent',
                 color: activeView === 'historical' ? (theme === 'dark' ? '#F9FAFB' : '#0B132B') : (theme === 'dark' ? '#9CA3AF' : '#4B5563')
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-xs"
               aria-pressed={activeView === 'historical'}
               aria-label="Switch to historical data view"
             >
-              <Table className="h-4 w-4" strokeWidth={2} />
-              Historical View
+              <Table className="h-4 w-4 shrink-0" strokeWidth={2} />
+              <span>Historical View</span>
             </button>
           </div>
 
           {/* Period Filter */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span style={{ color: theme === 'dark' ? '#D1D5DB' : '#374151' }} className="text-sm font-medium mr-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span style={{ color: theme === 'dark' ? '#D1D5DB' : '#374151' }} className="text-xs sm:text-sm font-medium mr-1 sm:mr-2">
               Time Period:
             </span>
             {[
@@ -188,7 +180,7 @@ export function AnalyticsPage() {
                     ? '#0B132B'
                     : (theme === 'dark' ? '#D1D5DB' : '#374151')
                 }}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:opacity-90"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-90 active:scale-95 shadow-xs"
                 aria-pressed={selectedPeriod === option.value}
               >
                 {option.label}
@@ -200,8 +192,8 @@ export function AnalyticsPage() {
 
       {/* Content based on active view */}
       {activeView === 'charts' ? (
-        /* Chart View - Optimized Layout */
-        <div className="space-y-6">
+        /* Chart View - Optimized Responsive Layout */
+        <div className="space-y-4 sm:space-y-6">
           {/* 1. Power Generation (wider) | Steps (narrower) - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             <div className="lg:col-span-2">

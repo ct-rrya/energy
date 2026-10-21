@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEnergyByPeriod, type PeriodFilter } from '@/features/dashboard/hooks/useEnergyByPeriod';
@@ -100,9 +100,9 @@ export function EnergyPeriodChart({
           data={chartData}
           margin={{ 
             top: 5, 
-            right: isMobile ? 5 : 20, 
-            left: isMobile ? -20 : 0, 
-            bottom: 5 
+            right: isMobile ? 8 : 20, 
+            left: isMobile ? -18 : 0, 
+            bottom: isMobile ? 15 : 5 
           }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />

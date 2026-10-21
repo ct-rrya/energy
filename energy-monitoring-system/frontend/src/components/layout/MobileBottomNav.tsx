@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Activity, MessageSquare, Stethoscope, FileText, Menu, Shield } from 'lucide-react';
+import { Home, Activity, MessageSquare, Stethoscope, FileText } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -22,10 +22,10 @@ interface NavItem {
  * MobileBottomNav Component
  * 
  * Persistent bottom navigation bar with role-optimized tabs:
- * - Admin view: Central, Analytics, Tile Diagnostics, Reports, More/Menu
- * - Guest view: Central, Analytics, EcoChat, Admin, Menu
+ * - Admin view: Central, Analytics, Diagnostics, Reports
+ * - Guest view: Central, Analytics, EcoChat
  */
-export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavProps) {
+export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const { theme } = useTheme();
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
@@ -40,18 +40,9 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
   const isAnalytics = location.pathname.startsWith(ROUTES.ANALYTICS);
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
-  const isAdminLogin = location.pathname.startsWith(ROUTES.ADMIN_LOGIN);
 
   const handleOpenEcoChat = () => {
     window.dispatchEvent(new CustomEvent('ecostep:openchat', { bubbles: true }));
-  };
-
-  const handleOpenMenu = () => {
-    if (onOpenMenu) {
-      onOpenMenu();
-    } else {
-      window.dispatchEvent(new CustomEvent('ecostep:opendrawer', { bubbles: true }));
-    }
   };
 
   const adminNavItems: NavItem[] = [
@@ -106,22 +97,6 @@ export function MobileBottomNav({ className = '', onOpenMenu }: MobileBottomNavP
       icon: MessageSquare,
       isActive: false,
       onClick: handleOpenEcoChat,
-    },
-    {
-      id: 'admin',
-      label: 'Admin',
-      icon: Shield,
-      isActive: isAdminLogin,
-      ariaLabel: 'Admin Sign In',
-      onClick: () => navigate(ROUTES.ADMIN_LOGIN),
-    },
-    {
-      id: 'menu',
-      label: 'Menu',
-      icon: Menu,
-      isActive: false,
-      ariaLabel: 'Open navigation menu',
-      onClick: handleOpenMenu,
     },
   ];
 

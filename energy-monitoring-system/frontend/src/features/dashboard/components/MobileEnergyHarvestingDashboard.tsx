@@ -13,8 +13,6 @@ import {
   Users,
   Settings,
   Shield,
-  ArrowRight,
-  Lock,
   ChevronRight
 } from 'lucide-react';
 import type { SensorReading, DashboardMetrics } from '../types/dashboard.types';
@@ -630,52 +628,6 @@ export function MobileEnergyHarvestingDashboard({
                 <ChevronRight size={13} strokeWidth={2.4} />
               </div>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Administrator Portal Callout Card (when in guest / unauthenticated mode) */}
-      {isGuest && (
-        <div
-          className="rounded-2xl p-4 sm:p-5 border transition-all"
-          style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(135deg, rgba(22, 38, 30, 0.9) 0%, rgba(17, 27, 48, 0.9) 100%)'
-              : 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
-            borderColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.25)' : '#bbf7d0',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
-          }}
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Shield size={19} strokeWidth={2.2} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
-                  Administrator Controls
-                </h3>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88]">
-                  Protected
-                </span>
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed">
-                Sign in with your 12-character admin access code to run on-demand tile diagnostics, calibrate thresholds, and download audit reports.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.ADMIN_LOGIN)}
-                className="mt-3 inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] shadow-sm cursor-pointer"
-                style={{
-                  backgroundColor: theme === 'dark' ? '#16a34a' : '#15803d',
-                }}
-              >
-                <Lock size={14} strokeWidth={2.2} />
-                <span>Admin Portal Sign In</span>
-                <ArrowRight size={14} strokeWidth={2.2} />
-              </button>
-            </div>
           </div>
         </div>
       )}

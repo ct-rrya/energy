@@ -125,18 +125,6 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
 
       {/* Right: Quick Action & Expandable Menu Icon */}
       <div className="flex items-center gap-1.5 sm:gap-2 relative">
-        {/* Quick Admin Sign In Link (when unauthenticated) */}
-        {!isAuthenticated && (
-          <Link
-            to={ROUTES.ADMIN_LOGIN}
-            aria-label="Admin Sign In"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25 hover:bg-emerald-500/20 active:scale-95 transition-all shadow-xs"
-          >
-            <Shield size={13} strokeWidth={2.4} />
-            <span>Admin</span>
-          </Link>
-        )}
-
         {/* Quick Home / Landing Link */}
         <Link
           to={ROUTES.HOME}
