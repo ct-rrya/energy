@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
-import { Server, Database, Activity, Clock, Calendar, RefreshCw } from 'lucide-react';
+import { Server, Database, Activity, Clock, Calendar, RefreshCw, Bluetooth } from 'lucide-react';
 import { COLORS, SPACING, TYPOGRAPHY, getTextColor } from '@/styles/design-tokens';
+import { EcoStepBleButton } from '@/features/ble';
+
 
 interface SystemPreferences {
   timezone: string;
@@ -462,6 +464,45 @@ export function SettingsPage() {
                 )}
               </>
             )}
+          </div>
+        </EcoCard>
+
+        {/* EcoStep Harvester Web Bluetooth Provisioning */}
+        <EcoCard className="mt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div 
+                className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0 mt-0.5 border"
+                style={{
+                  backgroundColor: isDark ? 'rgba(57, 255, 136, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                  borderColor: isDark ? 'rgba(57, 255, 136, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+                  color: isDark ? '#39FF88' : '#059669',
+                }}
+              >
+                <Bluetooth className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 
+                  className="text-base font-semibold"
+                  style={{ color: colors.textPrimary }}
+                >
+                  EcoStep Harvester Wi-Fi Provisioning
+                </h3>
+                <p 
+                  className="text-xs sm:text-sm mt-0.5"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Directly pair with your EcoStep Harvester ESP32 over Web Bluetooth Low Energy to configure local Wi-Fi credentials in-browser.
+                </p>
+                <div className="flex items-center gap-2 mt-2 text-[11px]" style={{ color: colors.textMuted }}>
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span>GATT Service: EcoStep-Harvester (0x4FAFC201)</span>
+                </div>
+              </div>
+            </div>
+            <div className="shrink-0 sm:self-center">
+              <EcoStepBleButton label="📶 Setup Harvester Wi-Fi" />
+            </div>
           </div>
         </EcoCard>
       </div>
