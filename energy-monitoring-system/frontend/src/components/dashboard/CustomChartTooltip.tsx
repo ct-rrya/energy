@@ -57,19 +57,19 @@ export function CustomChartTooltip({
   const colors = theme === 'light'
     ? {
         // Light mode colors
-        tooltipBg: 'rgba(255, 255, 255, 0.95)',
-        tooltipBorder: 'rgba(255, 255, 255, 0.6)',
-        textPrimary: '#1A312C',
-        textSecondary: '#737373',
-        shadow: 'rgba(26, 49, 44, 0.12)',
+        tooltipBg: '#0D1B14',
+        tooltipBorder: 'transparent',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.7)',
+        shadow: 'rgba(0, 0, 0, 0.25)',
       }
     : {
         // Dark mode colors
-        tooltipBg: 'rgba(28, 31, 38, 0.95)',
-        tooltipBorder: 'rgba(42, 46, 55, 0.8)',
-        textPrimary: '#EDEEF0',
-        textSecondary: '#9CA3AF',
-        shadow: 'rgba(0, 0, 0, 0.3)',
+        tooltipBg: '#1B3326',
+        tooltipBorder: 'rgba(255, 255, 255, 0.15)',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.7)',
+        shadow: 'rgba(0, 0, 0, 0.35)',
       };
 
   /**
@@ -162,12 +162,13 @@ export function CustomChartTooltip({
     const baseStyle: React.CSSProperties = {
       backgroundColor: colors.tooltipBg,
       border: `1px solid ${colors.tooltipBorder}`,
-      borderRadius: '12px',
-      padding: '12px 16px',
-      boxShadow: `0 8px 30px ${colors.shadow}`,
+      borderRadius: '10px',
+      padding: '8px 10px',
+      boxShadow: `0 8px 20px ${colors.shadow}`,
       backdropFilter: 'blur(16px)',
       minWidth: '140px',
-      maxWidth: '280px', // Prevent tooltip from being too wide on small screens
+      maxWidth: '210px', // Matches 210px redesign spec
+      fontSize: '12px',
       wordWrap: 'break-word',
       overflowWrap: 'break-word',
       // Ensure tooltip stays within viewport on mobile

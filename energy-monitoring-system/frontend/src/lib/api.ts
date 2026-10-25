@@ -104,6 +104,22 @@ export const chat = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Add guest player session token if active
+      try {
+        const storedSession = localStorage.getItem('ecostep_player_session');
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          if (parsed?.sessionToken) {
+            headers['x-guest-session'] = parsed.sessionToken;
+            if (!headers['Authorization']) {
+              headers['Authorization'] = `Bearer ${parsed.sessionToken}`;
+            }
+          }
+        }
+      } catch {
+        // Ignore localStorage parse errors
+      }
+
       const requestBody: SendMessageRequest = {
         message,
       };

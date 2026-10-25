@@ -406,7 +406,7 @@ export function MonitoringPreview() {
 
               {/* Bar Chart Container */}
               <div style={{ width: '100%', height: isMobile ? '110px' : '140px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" debounce={250}>
                   <BarChart
                     data={SAMPLE_CHART_DATA}
                     margin={{ top: 4, right: 4, left: isMobile ? -30 : -25, bottom: 0 }}

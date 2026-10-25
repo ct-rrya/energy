@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Activity, MessageSquare, Stethoscope, FileText } from 'lucide-react';
+import { Home, Activity, MessageSquare, Stethoscope, FileText, GraduationCap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -23,7 +23,7 @@ interface NavItem {
  * 
  * Persistent bottom navigation bar with role-optimized tabs:
  * - Admin view: Central, Analytics, Diagnostics, Reports
- * - Guest view: Central, Analytics, EcoChat
+ * - Guest view: Central, Analytics, Missions, EcoChat
  */
 export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const { theme } = useTheme();
@@ -38,6 +38,7 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
 
   const isCentral = location.pathname === ROUTES.DASHBOARD || location.pathname === '/';
   const isAnalytics = location.pathname.startsWith(ROUTES.ANALYTICS);
+  const isMissions = location.pathname.startsWith(ROUTES.MISSIONS) || location.pathname.startsWith(ROUTES.LEADERBOARD);
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
 
@@ -92,8 +93,15 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.ANALYTICS),
     },
     {
+      id: 'missions',
+      label: 'Missions',
+      icon: GraduationCap,
+      isActive: isMissions,
+      onClick: () => navigate(ROUTES.MISSIONS),
+    },
+    {
       id: 'ecochat',
-      label: 'EcoChat',
+      label: 'EcoGuide',
       icon: MessageSquare,
       isActive: false,
       onClick: handleOpenEcoChat,

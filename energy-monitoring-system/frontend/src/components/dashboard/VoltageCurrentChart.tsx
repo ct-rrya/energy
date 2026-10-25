@@ -106,14 +106,20 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
       {/* Voltage Chart */}
       <ChartContainer
         title="Voltage Trend"
-        subtitle="Electrical potential over the last 24 hours"
+        subtitle="Electrical potential (V) produced during compressions over the last 24 hours"
+        tooltip={{
+          title: "Voltage Trend (V)",
+          description: "Shows how much electrical push is created when students step on the tiles. Higher peaks indicate stronger footstep impacts on the piezoelectric discs.",
+          analogy: "Like recording water pressure spikes each time a pump is compressed.",
+          technicalNote: "Measured in Volts (V) across the bridge rectifier output."
+        }}
         isLoading={voltageLoading}
         error={voltageError}
         isEmpty={isVoltageEmpty}
         onRetry={refetchVoltage}
         height={isMobile ? 250 : 350}
       >
-        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
           <LineChart 
             data={voltageData}
             margin={{ 
@@ -167,15 +173,21 @@ export function VoltageCurrentChart({ className = '' }: VoltageCurrentChartProps
 
       {/* Current Chart */}
       <ChartContainer
-        title="Equivalent Current Trend"
-        subtitle="Equivalent current at 1-second discharge over the last 24 hours"
+        title="Current Trend"
+        subtitle="Electrical charge flow rate (mA) over the last 24 hours"
+        tooltip={{
+          title: "Current Trend (mA)",
+          description: "Tracks the rate at which electrical charge moves through the circuit when tiles discharge into the storage capacitor.",
+          analogy: "Like water volume flowing through a pipe: current tells us how many electrons are moving.",
+          technicalNote: "Calculated based on equivalent 1-second pulse duration: I = P / V."
+        }}
         isLoading={currentLoading}
         error={currentError}
         isEmpty={isCurrentEmpty}
         onRetry={refetchCurrent}
         height={isMobile ? 250 : 350}
       >
-        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
           <LineChart 
             data={currentData}
             margin={{ 

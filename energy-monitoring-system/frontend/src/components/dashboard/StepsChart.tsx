@@ -85,6 +85,12 @@ export function StepsChart({ className = '' }: StepsChartProps) {
     <ChartContainer
       title="Steps Over Time"
       subtitle="Detected footsteps on the piezoelectric tile"
+      tooltip={{
+        title: "Steps Over Time",
+        description: "Counts the number of physical compressions detected on the floor tiles. Higher step counts correlate directly with higher total energy harvested.",
+        analogy: "Like a turnstile at a train station: counts every person passing through.",
+        technicalNote: "Processed through noise-filtering threshold logic on the ESP32."
+      }}
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
@@ -92,7 +98,7 @@ export function StepsChart({ className = '' }: StepsChartProps) {
       height={isMobile ? 250 : 350}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
         <LineChart 
           data={chartData}
           margin={{ 

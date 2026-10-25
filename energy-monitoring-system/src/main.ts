@@ -80,7 +80,13 @@ async function bootstrap() {
   app.enableCors({
     origin: isDevelopment ? true : allowedOrigins.filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ All HTTP methods
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'], // ✅ Include Authorization
+    allowedHeaders: [
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-Guest-Session',
+      'x-guest-session',
+    ], // ✅ Include Authorization and Guest Session headers
     credentials: true, // ✅ Enable credentials
     maxAge: 3600,
   });

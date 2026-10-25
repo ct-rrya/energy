@@ -239,6 +239,13 @@ export interface ChartContainerProps {
   height?: number | string;
   /** Optional CSS class name for custom styling */
   className?: string;
+  /** Optional educational tooltip explaining what this chart represents */
+  tooltip?: {
+    title: string;
+    description: string;
+    analogy?: string;
+    technicalNote?: string;
+  };
 }
 
 /**

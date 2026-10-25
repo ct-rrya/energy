@@ -4,6 +4,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { EnergyModule } from '../energy/energy.module';
 import { SubscribersModule } from '../subscribers/subscribers.module';
 import { AiModule } from '../ai/ai.module';
+import { GamificationModule } from '../gamification/gamification.module';
 
 /**
  * ChatbotModule
@@ -11,7 +12,7 @@ import { AiModule } from '../ai/ai.module';
  * Provides shared chatbot core logic for all channels (Messenger, Web)
  *
  * Architecture:
- * - Imports service modules (Analytics, Energy, Subscribers)
+ * - Imports service modules (Analytics, Energy, Subscribers, Gamification)
  * - Uses AiModule for Gemini/Groq AI services
  * - Exports ChatbotCoreService for use by MessengerService and ChatController
  *
@@ -23,6 +24,7 @@ import { AiModule } from '../ai/ai.module';
     EnergyModule,
     SubscribersModule,
     AiModule, // Centralized AI services (Gemini with Groq fallback)
+    GamificationModule, // Educational missions, player progress, badges
   ],
   providers: [ChatbotCoreService],
   exports: [ChatbotCoreService],

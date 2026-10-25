@@ -20,6 +20,9 @@ import { ChatResponseDto } from './dto/chat-response.dto';
 import { ChatbotCoreService } from '../chatbot/chatbot-core.service';
 import { SessionManager } from './session.manager';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+import { OptionalPlayerSessionGuard } from '../gamification/guards/optional-player-session.guard';
+import { CurrentPlayer } from '../players/decorators/current-player.decorator';
+import { Player } from '../players/schemas/player.schema';
 
 /**
  * ChatController
@@ -31,12 +34,13 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
  * - Input validation (max 2000 characters)
  * - Session management for conversation context
  * - Error handling with user-friendly messages
+ * - Optional player session detection for personalized learning progress
  *
  * Requirements: 5.1, 5.2, 5.6, 5.7, 5.11, 5.12, 8.4, 13.5
  */
 @ApiTags('Public Chat')
 @Controller('chat')
-@UseGuards(RateLimitGuard)
+@UseGuards(RateLimitGuard, OptionalPlayerSessionGuard)
 @Throttle({ chat: { limit: 20, ttl: 60000 } }) // Increased to 20 messages per minute for natural conversation flow
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
@@ -289,10 +293,11 @@ export class ChatController {
   async sendMessage(
     @Body() dto: SendMessageDto,
     @Ip() ip: string,
+    @CurrentPlayer() player?: Player,
   ): Promise<ChatResponseDto> {
     const messagePreview = dto.message.substring(0, 50);
     this.logger.log(
-      `Chat request from IP ${ip}: "${messagePreview}${dto.message.length > 50 ? '...' : ''}"`,
+      `Chat request from IP ${ip}: "${messagePreview}${dto.message.length > 50 ? '...' : ''}" (Player: ${player ? player.username : 'Anonymous visitor'})`,
     );
 
     try {
@@ -319,12 +324,13 @@ export class ChatController {
         timestamp: new Date(),
       });
 
-      // Process message through chatbot core
+      // Process message through chatbot core with optional player context
       const response = await this.chatbotCore.processMessage(dto.message, {
         userId: session.sessionId,
         channel: 'web',
         sessionData: session.messageHistory,
         originalText: dto.message,
+        player,
       });
 
       // Add bot response to session history

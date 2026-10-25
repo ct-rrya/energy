@@ -22,7 +22,9 @@
  * - 11.2: Applies theme-appropriate colors for all elements
  */
 
+import { useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { InfoTooltip } from '@/components/common/InfoTooltip';
 import { ChartLoadingState } from './ChartLoadingState';
 import { ChartEmptyState } from './ChartEmptyState';
 import { ChartErrorState } from './ChartErrorState';
@@ -31,6 +33,7 @@ import type { ChartContainerProps } from './chartTypes';
 export function ChartContainer({
   title,
   subtitle,
+  tooltip,
   isLoading = false,
   error = null,
   isEmpty = false,
@@ -41,24 +44,45 @@ export function ChartContainer({
   className = '',
 }: ChartContainerProps) {
   const { theme } = useTheme();
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Theme-aware color palette following EcoStep Design System
+  // ResizeObserver ensures charts refit whenever panel width transitions or resizes
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    let prevWidth = el.getBoundingClientRect().width;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newWidth = entry.contentRect.width;
+        if (Math.abs(newWidth - prevWidth) > 1) {
+          prevWidth = newWidth;
+          window.dispatchEvent(new Event('resize'));
+        }
+      }
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Theme-aware color palette following EcoStep Design System tokens
   const colors = {
     light: {
-      cardBg: 'rgba(255, 255, 255, 0.45)', // Glassmorphic white
-      text: '#1A312C', // Deep Forest Green
-      textSecondary: 'rgba(26, 49, 44, 0.7)',
-      border: 'rgba(255, 255, 255, 0.55)', // Subtle white border for glass effect
-      shadow: '0 8px 30px rgba(26, 49, 44, 0.06)',
-      shadowHover: '0 12px 40px rgba(26, 49, 44, 0.1)',
+      cardBg: 'rgba(255, 255, 255, 0.78)',
+      text: '#0D1B14',
+      textSecondary: '#5B6B62',
+      border: 'rgba(255, 255, 255, 0.7)',
+      shadow: '8px 10px 24px rgba(30, 80, 50, 0.14), -4px -4px 12px rgba(255, 255, 255, 0.6)',
+      shadowHover: '8px 12px 28px rgba(30, 80, 50, 0.18), -4px -4px 12px rgba(255, 255, 255, 0.7)',
     },
     dark: {
-      cardBg: 'rgba(28, 31, 38, 0.7)', // Semi-transparent dark background
-      text: '#EDEEF0',
-      textSecondary: '#9CA3AF',
-      border: 'rgba(42, 46, 55, 0.8)',
-      shadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-      shadowHover: '0 12px 40px rgba(0, 0, 0, 0.4)',
+      cardBg: 'rgba(255, 255, 255, 0.05)',
+      text: '#E4F7EA',
+      textSecondary: '#93A89C',
+      border: 'rgba(255, 255, 255, 0.09)',
+      shadow: '8px 10px 24px rgba(0, 0, 0, 0.35), -4px -4px 12px rgba(255, 255, 255, 0.08)',
+      shadowHover: '8px 14px 28px rgba(0, 0, 0, 0.45), -4px -4px 12px rgba(255, 255, 255, 0.1)',
     },
   };
 
@@ -87,14 +111,14 @@ export function ChartContainer({
 
   return (
     <div
-      className={`transition-all duration-200 ${className}`}
+      ref={containerRef}
+      className={`cd transition-all duration-200 ${className}`}
       style={{
-        borderRadius: '22px', // Chart container specific border radius per EcoStep Design System
+        borderRadius: '22px',
         backgroundColor: themeColors.cardBg,
         border: `1px solid ${themeColors.border}`,
         boxShadow: themeColors.shadow,
-        backdropFilter: 'blur(16px)', // Glassmorphic effect
-        WebkitBackdropFilter: 'blur(16px)', // Safari support
+        padding: '22px 24px',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = themeColors.shadowHover;
@@ -106,18 +130,29 @@ export function ChartContainer({
       aria-label={`${title} chart`}
       role="region"
     >
-      {/* Header Section - Responsive layout wraps on mobile */}
+      {/* Header Section */}
       <div
-        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-4 px-4 sm:px-6 pt-3.5 sm:pt-6 pb-3 sm:pb-4"
-        style={{ borderBottom: `1px solid ${themeColors.border}` }}
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-4 pb-3 sm:pb-4 mb-3 sm:mb-4"
+        style={{ borderBottom: `1px solid var(--line)` }}
       >
         <div className="flex-1 min-w-0">
-          <h2
-            className="text-base sm:text-xl font-bold mb-0.5 sm:mb-1 tracking-tight"
-            style={{ color: themeColors.text }}
-          >
-            {title}
-          </h2>
+          <div className="flex items-center gap-2 mb-1">
+            <h3
+              className="font-semibold tracking-tight"
+              style={{ fontSize: '16px', color: themeColors.text, marginBottom: '4px' }}
+            >
+              {title}
+            </h3>
+            {tooltip && (
+              <InfoTooltip
+                title={tooltip.title}
+                description={tooltip.description}
+                analogy={tooltip.analogy}
+                technicalNote={tooltip.technicalNote}
+                size={16}
+              />
+            )}
+          </div>
           {subtitle && (
             <p
               className="text-xs sm:text-sm leading-relaxed"

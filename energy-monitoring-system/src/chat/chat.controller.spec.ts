@@ -8,6 +8,7 @@ import { ChatbotCoreService } from '../chatbot/chatbot-core.service';
 import { SessionManager } from './session.manager';
 import { SendMessageDto } from './dto/send-message.dto';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+import { OptionalPlayerSessionGuard } from '../gamification/guards/optional-player-session.guard';
 
 /**
  * Unit tests for ChatController
@@ -60,6 +61,8 @@ describe('ChatController', () => {
       ],
     })
       .overrideGuard(RateLimitGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(OptionalPlayerSessionGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .compile();
 

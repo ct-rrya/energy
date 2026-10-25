@@ -122,18 +122,21 @@ export function CumulativeEnergyChart({
 
   // Color system based on theme
   const colors = {
-    // Primary accent color (Fresh Mint for energy charts)
-    accent: theme === 'light' ? '#89D7B7' : '#89D7B7',
-    // Grid line color with theme-appropriate opacity
-    gridColor: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : 'rgba(42, 46, 55, 0.3)',
-    // Axis text color
-    textColor: theme === 'light' ? '#1A312C' : '#9CA3AF',
+    line: theme === 'dark' ? '#19D46A' : '#13B95C',
+    gridColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(13, 27, 20, 0.12)',
+    textColor: theme === 'dark' ? '#93A89C' : '#5B6B62',
   };
 
   return (
     <ChartContainer
       title="Cumulative Energy Generated"
       subtitle={subtitle}
+      tooltip={{
+        title: "Cumulative Energy (mWh)",
+        description: "Shows the continuous accumulation of harvested energy over time. Unlike power (which fluctuates with every step), this line only goes upwards as footsteps add more electricity to the system.",
+        analogy: "Like a savings piggy bank: each footstep deposits a few milliwatt-hours into the total balance.",
+        technicalNote: "Calculated by running a running cumulative sum of daily energy yields."
+      }}
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
@@ -141,7 +144,7 @@ export function CumulativeEnergyChart({
       height={isMobile ? 250 : 350}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350}>
+      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
         <AreaChart 
           data={cumulativeData}
           margin={{ 
@@ -154,13 +157,13 @@ export function CumulativeEnergyChart({
           {/* Define linear gradient for area fill */}
           <defs>
             <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3DDC97" stopOpacity={0.15} />
-              <stop offset="100%" stopColor="#3DDC97" stopOpacity={0} />
+              <stop offset="0%" stopColor="#19D46A" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#19D46A" stopOpacity={0} />
             </linearGradient>
           </defs>
 
           {/* Grid lines */}
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
+          <CartesianGrid strokeDasharray="4 4" stroke={colors.gridColor} />
 
           {/* X-axis: Dates */}
           <XAxis
@@ -200,12 +203,12 @@ export function CumulativeEnergyChart({
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#3DDC97"
-            strokeWidth={isMobile ? 2 : 3}
+            stroke={colors.line}
+            strokeWidth={2.5}
             fill="url(#energyGradient)"
             fillOpacity={1}
             dot={false}
-            activeDot={{ r: 4 }}
+            activeDot={{ r: 4, stroke: colors.line, fill: '#FFFFFF' }}
           />
         </AreaChart>
       </ResponsiveContainer>

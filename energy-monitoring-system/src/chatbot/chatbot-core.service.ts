@@ -3,6 +3,8 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { GeminiAIService } from '../ai/gemini-ai.service';
+import { GamificationService } from '../gamification/gamification.service';
+import { Player } from '../players/schemas/player.schema';
 
 /**
  * Channel types for chat processing
@@ -17,6 +19,7 @@ export interface MessageContext {
   channel: ChatChannel;
   sessionData?: any; // For web channel conversation context
   originalText?: string; // Preserve for AI
+  player?: Player; // Optional authenticated guest player
 }
 
 /**
@@ -51,6 +54,7 @@ export interface QuickReply {
  * - Consumes Energy Service for data queries
  * - Consumes Subscribers Service for subscriptions
  * - Consumes Gemini AI Service for natural language
+ * - Consumes Gamification Service for missions, levels, and progress
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 2.8, 6.8, 9.9
  */
@@ -64,6 +68,8 @@ export class ChatbotCoreService {
     private readonly subscribersService: SubscribersService,
     @Inject(forwardRef(() => GeminiAIService))
     private readonly geminiAIService: GeminiAIService,
+    @Inject(forwardRef(() => GamificationService))
+    private readonly gamificationService: GamificationService,
   ) {}
 
   /**
@@ -129,6 +135,18 @@ export class ChatbotCoreService {
       money: 'savings',
       current: 'energy',
       info: 'about',
+      missions: 'missions',
+      mission: 'missions',
+      learning: 'missions',
+      academy: 'missions',
+      progress: 'progress',
+      level: 'progress',
+      xp: 'progress',
+      badges: 'progress',
+      rank: 'progress',
+      guide: 'guide',
+      ecoguide: 'guide',
+      learn: 'guide',
     };
 
     return commandMap[normalized] || normalized;
@@ -169,6 +187,9 @@ export class ChatbotCoreService {
       'help',
       'hello',
       'analytics_menu',
+      'missions',
+      'progress',
+      'guide',
     ];
 
     if (informationalCommands.includes(command)) {
@@ -177,6 +198,12 @@ export class ChatbotCoreService {
 
     // Handle natural language with AI
     if (this.geminiAIService.isAvailable()) {
+      return this.handleNaturalLanguage(originalMessage, context);
+    }
+
+    // Even if AI provider is offline, handle recognized EcoStep intents gracefully
+    const detectedIntent = this.detectIntent(originalMessage);
+    if (detectedIntent !== 'general') {
       return this.handleNaturalLanguage(originalMessage, context);
     }
 
@@ -289,6 +316,15 @@ export class ChatbotCoreService {
       case 'about':
         return this.handleAbout();
 
+      case 'missions':
+        return this.handleMissions(context);
+
+      case 'progress':
+        return this.handleProgress(context);
+
+      case 'guide':
+        return this.handleGuide();
+
       default:
         return {
           text: `Command "${command}" recognized but not yet implemented.\n\nTry: status, today, or help`,
@@ -325,10 +361,15 @@ export class ChatbotCoreService {
 
       // Determine what data to fetch based on message intent
       const intent = this.detectIntent(message);
-      const dataContext = await this.buildDataContext(intent);
+      const dataContext = await this.buildDataContext(intent, context);
 
       // Build enriched prompt with EcoStep data
-      const enrichedPrompt = this.buildEnrichedPrompt(message, dataContext);
+      const enrichedPrompt = this.buildEnrichedPrompt(
+        message,
+        dataContext,
+        intent,
+        context,
+      );
 
       // Query AI with EcoChat context enabled
       const aiResponse = await this.geminiAIService.processQuery(
@@ -338,11 +379,8 @@ export class ChatbotCoreService {
 
       // Handle null response from AI
       if (!aiResponse) {
-        this.logger.warn('AI service returned null, using fallback');
-        return {
-          text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
-          suggestions: ['status', 'energy', 'help'],
-        };
+        this.logger.warn('AI service returned null, using graceful fallback');
+        return this.getGracefulFallback(message, intent, context, dataContext);
       }
 
       return {
@@ -360,11 +398,84 @@ export class ChatbotCoreService {
       );
 
       // Graceful fallback when AI fails
+      const intent = this.detectIntent(message);
+      return this.getGracefulFallback(message, intent, context, {});
+    }
+  }
+
+  /**
+   * Graceful intelligent fallback when AI is temporarily unavailable or returns null
+   * Enforces 1–3 concise sentences (30–60 words) and direct answers.
+   */
+  private getGracefulFallback(
+    message: string,
+    intent: string,
+    context: MessageContext,
+    dataContext: any,
+  ): ChatbotResponse {
+    if (intent === 'greeting') {
       return {
-        text: `I'm having trouble understanding that right now. Try one of these commands:\n\n• status\n• energy\n• today\n• help`,
-        suggestions: ['status', 'energy', 'help'],
+        text: `Hey there! 👋 I'm EcoGuide, your energy and physics companion. Ready to explore footstep kinetic harvesting whenever you are!`,
+        suggestions: ['status', 'energy', 'guide', 'missions'],
       };
     }
+
+    if (intent === 'player_progress') {
+      if (context.player && dataContext.playerProgress) {
+        const p = dataContext.playerProgress;
+        const lp = p.levelProgress;
+        let text = `${p.username}, you are Level ${p.level} (${lp.levelTitle}) with ${p.xp} XP! `;
+        if (lp.isMaxLevel) {
+          text += `You have reached the maximum level!`;
+        } else {
+          text += `You need ${lp.xpToNextLevel} XP to reach Level ${p.level + 1} (${lp.progressPercentage}% progress).`;
+        }
+        return {
+          text,
+          suggestions: ['missions', 'guide', 'status'],
+        };
+      } else {
+        return {
+          text: `Tracking personal XP, levels, and badges requires an active guest session in the EcoStep Mission Hub! You can still explore all physics lessons and live floor readings freely.`,
+          suggestions: ['missions', 'guide', 'status'],
+        };
+      }
+    }
+
+    if (intent === 'mission_recommendation') {
+      const allMissions = dataContext.allMissions || [];
+      const unfinished = allMissions.filter((m: any) => !m.isCompleted);
+      if (unfinished.length > 0) {
+        const next = unfinished[0];
+        return {
+          text: `I recommend tackling **${next.title}** (+${next.xpReward} XP)! It covers ${next.subtitle} and will give your progress bar a nice boost.`,
+          suggestions: ['progress', 'guide', 'status'],
+        };
+      }
+    }
+
+    const lower = message.toLowerCase();
+    if (lower.includes('1 mw') || lower.includes('1mw') || lower.includes('milliwatt')) {
+      return {
+        text: `1 milliwatt (1 mW) is 0.001 Watts—a micro-scale energy amount! A single footstep generates milliwatt pulses that store up in capacitors to power clean IoT electronics without batteries.`,
+        suggestions: ['energy', 'status', 'guide'],
+      };
+    }
+
+    if (
+      lower.includes('difference between power and energy') ||
+      (lower.includes('power') && lower.includes('energy'))
+    ) {
+      return {
+        text: `Power ($P = V \\times I$, in Watts or mW) is how fast energy is generated right now, like your car's speedometer. Energy ($E = P \\times t$, in mWh or Joules) is the total work accumulated over time, like your odometer!`,
+        suggestions: ['energy', 'status', 'guide'],
+      };
+    }
+
+    return {
+      text: `I'm having a brief connection hiccup reaching my AI brain, but I'm still here! Feel free to ask about energy, missions, or check 'status' anytime.`,
+      suggestions: ['status', 'energy', 'guide'],
+    };
   }
 
   /**
@@ -434,14 +545,31 @@ export class ChatbotCoreService {
     }
 
     // 3. Check for Unrelated People, Presidents, Politics, and General Trivia ("who is who")
-    // Allow questions asking about EcoStep itself (e.g. "who is ecostep", "who made ecostep", "who are you")
-    const isAskingAboutSelf =
+    // Allow questions asking about EcoStep, EcoGuide, Academy missions, or educational physics (e.g. Pierre & Jacques Curie, PZT)
+    const isAllowedTopic =
       lower.includes('ecostep') ||
       lower.includes('ecochat') ||
+      lower.includes('ecoguide') ||
+      lower.includes('curie') ||
+      lower.includes('jacques') ||
+      lower.includes('pierre') ||
+      lower.includes('piezo') ||
+      lower.includes('piezoelectric') ||
+      lower.includes('footstep') ||
+      lower.includes('harvest') ||
+      lower.includes('mission') ||
+      lower.includes('quiz') ||
+      lower.includes('badge') ||
+      lower.includes('level') ||
+      lower.includes('xp') ||
+      lower.includes('energy') ||
+      lower.includes('power') ||
+      lower.includes('voltage') ||
+      lower.includes('current') ||
       lower.includes('who are you') ||
       lower.includes('what are you');
 
-    if (!isAskingAboutSelf) {
+    if (!isAllowedTopic) {
       const unrelatedPeopleTriviaPatterns = [
         /\bwho\s+is\s+(?:the\s+)?(?:current\s+)?(?:president|vice\s*president|prime\s*minister|governor|mayor|king|queen|senator|leader|ceo|founder)\b/i,
         /\bwho\s+is\s+who\b/i,
@@ -457,8 +585,8 @@ export class ChatbotCoreService {
         return {
           allowed: false,
           refusal: {
-            text: '🌿 I am EcoChat, the dedicated AI assistant for EcoStep. I can only answer questions related to the EcoStep energy harvesting system (such as power generation, footsteps, voltage, and dashboard statistics). How can I assist you with EcoStep today?',
-            suggestions: ['status', 'energy', 'today'],
+            text: '🌿 I am EcoGuide, the learning and energy assistant for EcoStep. I can answer questions related to the EcoStep kinetic energy harvesting system, piezoelectric physics, electrical formulas, and EcoStep Academy missions. How can I assist you with EcoStep today?',
+            suggestions: ['status', 'missions', 'guide'],
             metadata: {
               commandType: 'trivia_restriction',
               dataSource: 'guardrail',
@@ -472,6 +600,7 @@ export class ChatbotCoreService {
     // Math is permitted ONLY if it's related to EcoStep calculation concepts
     const ecostepCalculationTerms = [
       'ecostep',
+      'ecoguide',
       'energy',
       'power',
       'watt',
@@ -518,6 +647,19 @@ export class ChatbotCoreService {
       'generation',
       'reading',
       'readings',
+      'formula',
+      'formulas',
+      'ohm',
+      'ohms',
+      'resistance',
+      'resistor',
+      'capacitor',
+      'capacitance',
+      'farad',
+      'rectifier',
+      'pzt',
+      'efficiency',
+      'work',
     ];
 
     const hasEcoStepTerm = ecostepCalculationTerms.some((term) =>
@@ -536,7 +678,7 @@ export class ChatbotCoreService {
       return {
         allowed: false,
         refusal: {
-          text: '⚡ I can only assist with math calculations directly related to EcoStep metrics (such as calculating power, voltage, current, and footstep energy generation).',
+          text: '⚡ I can only assist with math calculations directly related to EcoStep metrics and electrical physics (such as calculating power $P = V \\times I$, voltage, current, and energy $E = P \\times t$).',
           suggestions: ['energy', 'status', 'help'],
           metadata: {
             commandType: 'math_restriction',
@@ -553,7 +695,102 @@ export class ChatbotCoreService {
    * Detect user intent from message
    */
   private detectIntent(message: string): string {
-    const lowerMessage = message.toLowerCase();
+    const trimmed = message.trim();
+    const lowerMessage = trimmed.toLowerCase();
+
+    // 1. Greeting or test message
+    const isGreeting =
+      /^(hello|hi|hey|howdy|sup|greetings|good\s+(morning|afternoon|evening))\b/i.test(trimmed) ||
+      /\b(hello\s+test|test\s+message|hello\s+there)\b/i.test(trimmed) ||
+      lowerMessage === 'test' ||
+      lowerMessage === 'test!' ||
+      lowerMessage === 'testing' ||
+      lowerMessage === 'testing!' ||
+      lowerMessage === 'hello world';
+
+    if (isGreeting) {
+      return 'greeting';
+    }
+
+    // 2. Player progress, XP, Level, Badges
+    if (
+      lowerMessage.includes('my progress') ||
+      lowerMessage.includes('my level') ||
+      lowerMessage.includes('what level') ||
+      lowerMessage.includes('what is my level') ||
+      lowerMessage.includes('my xp') ||
+      lowerMessage.includes('how much xp') ||
+      lowerMessage.includes('how many xp') ||
+      lowerMessage.includes('my points') ||
+      lowerMessage.includes('next level') ||
+      lowerMessage.includes('how close am i') ||
+      lowerMessage.includes('my badge') ||
+      lowerMessage.includes('my badges') ||
+      lowerMessage.includes('which badges') ||
+      lowerMessage.includes('unlocked badges') ||
+      lowerMessage.includes('my rank') ||
+      lowerMessage.includes('player progress') ||
+      /\b(how much xp|what level am i|check my progress|how many points)\b/i.test(lowerMessage)
+    ) {
+      return 'player_progress';
+    }
+
+    // 3. Mission recommendations
+    if (
+      lowerMessage.includes('next mission') ||
+      lowerMessage.includes('what mission') ||
+      lowerMessage.includes('which mission') ||
+      lowerMessage.includes('recommend a mission') ||
+      lowerMessage.includes('recommend mission') ||
+      lowerMessage.includes('should i complete next') ||
+      lowerMessage.includes('should i do next') ||
+      lowerMessage.includes('what should i do next') ||
+      lowerMessage.includes('what to do next') ||
+      lowerMessage.includes('complete next')
+    ) {
+      return 'mission_recommendation';
+    }
+
+    // 4. Quiz guidance
+    if (
+      lowerMessage.includes('quiz') ||
+      lowerMessage.includes('wrong answer') ||
+      lowerMessage.includes('answer wrong') ||
+      lowerMessage.includes('why did i get') ||
+      lowerMessage.includes('quiz question') ||
+      lowerMessage.includes('quiz explanation')
+    ) {
+      return 'quiz_guidance';
+    }
+
+    // 5. Educational physics & concepts
+    if (
+      lowerMessage.includes('1 mw') ||
+      lowerMessage.includes('1mw') ||
+      lowerMessage.includes('milliwatt') ||
+      lowerMessage.includes('difference between power and energy') ||
+      lowerMessage.includes('power and energy') ||
+      lowerMessage.includes('power vs energy') ||
+      lowerMessage.includes('piezo') ||
+      lowerMessage.includes('curie') ||
+      lowerMessage.includes('formula') ||
+      lowerMessage.includes('formulas') ||
+      lowerMessage.includes('ohm') ||
+      lowerMessage.includes('dipole') ||
+      lowerMessage.includes('kinetic') ||
+      lowerMessage.includes('harvesting') ||
+      lowerMessage.includes('rectifier') ||
+      lowerMessage.includes('capacitor') ||
+      lowerMessage.includes('storage') ||
+      lowerMessage.includes('architecture') ||
+      lowerMessage.includes('difference between') ||
+      lowerMessage.includes('what does power generation mean') ||
+      lowerMessage.includes('how does piezoelectricity work') ||
+      lowerMessage.includes('how do footsteps') ||
+      lowerMessage.includes('how does footstep')
+    ) {
+      return 'educational_physics';
+    }
 
     // Current status / latest readings
     if (
@@ -626,50 +863,46 @@ export class ChatbotCoreService {
   }
 
   /**
-   * Build data context based on intent
+   * Build data context based on intent and optional player session
    */
-  private async buildDataContext(intent: string): Promise<any> {
+  private async buildDataContext(
+    intent: string,
+    context?: MessageContext,
+  ): Promise<any> {
     try {
-      const context: any = {};
+      const dataContext: any = {};
 
-      // For most intents, fetch latest readings and today's stats
-      if (
-        intent === 'current_status' ||
-        intent === 'power_query' ||
-        intent === 'energy_query' ||
-        intent === 'steps_query' ||
-        intent === 'electrical_query' ||
-        intent === 'general'
-      ) {
-        // Get latest reading
-        const latestReadings = await this.energyService.getRecentReadings(1);
-        context.latestReading = latestReadings[0] || null;
-
-        // Get today's raw statistics (unrounded for accuracy)
-        context.todayStats = await this.energyService.getTodayRawStatistics();
-        
-        // Log what we retrieved for debugging
-        this.logger.debug(`Data Context - Latest Reading: ${context.latestReading ? 'Found' : 'None'}`);
-        if (context.latestReading) {
-          this.logger.debug(`  Power: ${context.latestReading.powerW || context.latestReading.power || 0}W`);
-          this.logger.debug(`  Voltage: ${context.latestReading.voltageV || context.latestReading.voltage || 0}V`);
-          this.logger.debug(`  Steps: ${context.latestReading.stepCount || 0}`);
-          this.logger.debug(`  Timestamp: ${context.latestReading.timestamp}`);
+      // 1. Authoritative Gamification Context
+      if (context?.player) {
+        try {
+          dataContext.hasPlayer = true;
+          dataContext.playerProgress = await this.gamificationService.getPlayerProgress(context.player);
+          dataContext.allMissions = this.gamificationService.getAllMissions(context.player);
+        } catch (pErr) {
+          this.logger.warn(`Failed to fetch player gamification progress: ${pErr.message}`);
+          dataContext.hasPlayer = false;
         }
-        this.logger.debug(`Data Context - Today Stats:`);
-        this.logger.debug(`  Energy: ${context.todayStats?.totalEnergyMWh || 0} mWh`);
-        this.logger.debug(`  Avg Power: ${context.todayStats?.avgPowerW || 0} W`);
-        this.logger.debug(`  Peak Power: ${context.todayStats?.peakPowerW || 0} W`);
-        this.logger.debug(`  Reading Count: ${context.todayStats?.readingCount || 0}`);
+      } else {
+        dataContext.hasPlayer = false;
+        try {
+          dataContext.allMissions = this.gamificationService.getAllMissions();
+        } catch (mErr) {
+          this.logger.warn(`Failed to fetch public educational missions: ${mErr.message}`);
+        }
       }
 
-      // For historical queries, get detailed stats
+      // 2. Telemetry and Analytics Context
+      // For almost all queries, include latest readings and today's telemetry stats
+      const latestReadings = await this.energyService.getRecentReadings(1);
+      dataContext.latestReading = latestReadings[0] || null;
+      dataContext.todayStats = await this.energyService.getTodayRawStatistics();
+
+      // For historical queries, also fetch detailed breakdown
       if (intent === 'historical') {
-        context.todayStats = await this.energyService.getTodayRawStatistics();
-        context.todayDetailed = await this.energyService.getTodayDetailedStats();
+        dataContext.todayDetailed = await this.energyService.getTodayDetailedStats();
       }
 
-      return context;
+      return dataContext;
     } catch (error) {
       this.logger.error('Failed to build data context', error);
       return {};
@@ -677,117 +910,131 @@ export class ChatbotCoreService {
   }
 
   /**
-   * Build enriched prompt with EcoStep data
+   * Build enriched prompt with EcoStep data, educational curriculum, and player progress
    */
-  private buildEnrichedPrompt(message: string, dataContext: any): string {
-    let prompt = `User Question: ${message}\n\n`;
+  private buildEnrichedPrompt(
+    message: string,
+    dataContext: any,
+    intent: string,
+    context?: MessageContext,
+  ): string {
+    let prompt = `User Query: "${message}"\nDetected Intent: ${intent}\n\n`;
 
-    // Add latest reading data if available
-    if (dataContext.latestReading) {
-      const reading = dataContext.latestReading;
-      const timestamp = new Date(reading.timestamp);
-      const now = new Date();
-      const ageSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
-      const ageMinutes = Math.floor(ageSeconds / 60);
-      
-      // Extract power value (try both field names for compatibility)
-      const powerW = reading.powerW ?? reading.power ?? 0;
-      const voltageV = reading.voltageV ?? reading.voltage ?? 0;
-      const currentA = reading.currentA ?? reading.current ?? 0;
-      const steps = reading.stepCount ?? 0;
-      
-      prompt += `**Latest EcoStep Reading:**\n`;
-      prompt += `- Power: ${powerW.toFixed(6)} W (${(powerW * 1000).toFixed(3)} mW)\n`;
-      prompt += `- Voltage: ${voltageV.toFixed(3)} V\n`;
-      prompt += `- Current: ${currentA.toFixed(6)} A (${(currentA * 1000).toFixed(3)} mA)\n`;
-      prompt += `- Steps in this reading: ${steps}\n`;
-      prompt += `- Timestamp: ${timestamp.toISOString()} (${ageMinutes < 1 ? 'just now' : ageMinutes < 60 ? `${ageMinutes} minutes ago` : `${Math.floor(ageMinutes/60)} hours ago`})\n`;
-      
-      if (reading.sensorId && typeof reading.sensorId === 'object') {
-        const sensor = reading.sensorId as any;
-        prompt += `- Sensor: ${sensor.name || 'Unknown'} at ${sensor.location || 'Unknown location'}\n`;
-      }
-      
-      // Add data freshness assessment
-      const isStale = ageMinutes > 30;
-      if (isStale) {
-        prompt += `- **Note:** This reading is ${Math.floor(ageMinutes/60)} hours old and may not reflect current conditions\n`;
-      }
-      prompt += `\n`;
-    } else {
-      prompt += `**Latest EcoStep Reading:**\n`;
-      prompt += `No recent readings available. The system has not received any sensor data yet.\n\n`;
-    }
-
-    // Add today's statistics if available
-    if (dataContext.todayStats) {
-      const stats = dataContext.todayStats;
-      prompt += `**Today's EcoStep Statistics:**\n`;
-      prompt += `- Total Energy: ${stats.totalEnergyMWh?.toFixed(6) || '0.000000'} mWh (${((stats.totalEnergyMWh || 0) / 1000).toFixed(9)} Wh)\n`;
-      prompt += `- Average Power: ${stats.avgPowerW?.toFixed(6) || '0.000000'} W (${((stats.avgPowerW || 0) * 1000).toFixed(3)} mW)\n`;
-      prompt += `- Peak Power: ${stats.peakPowerW?.toFixed(6) || '0.000000'} W (${((stats.peakPowerW || 0) * 1000).toFixed(3)} mW)\n`;
-      prompt += `- Steps Recorded: ${stats.readingCount || 0}\n`;
-      
-      const totalEnergy = stats.totalEnergyMWh || 0;
-      const readingCount = stats.readingCount || 0;
-      
-      // Determine data status with context from latest reading
-      let dataStatus: string;
-      if (readingCount === 0) {
-        // Check if we have recent readings from yesterday
-        if (dataContext.latestReading) {
-          const reading = dataContext.latestReading;
-          const timestamp = new Date(reading.timestamp);
-          const now = new Date();
-          const ageHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
-          
-          if (ageHours < 24) {
-            dataStatus = 'NO_READINGS_TODAY_BUT_RECENT_DATA';
-          } else {
-            dataStatus = 'NO_READINGS';
-          }
-        } else {
-          dataStatus = 'NO_READINGS';
+    // 1. Conversation History (if available from session)
+    if (
+      context?.sessionData &&
+      Array.isArray(context.sessionData) &&
+      context.sessionData.length > 0
+    ) {
+      const history = context.sessionData.slice(-4);
+      prompt += `**Recent Conversation Context:**\n`;
+      for (const item of history) {
+        if (item && item.text && item.text !== message) {
+          prompt += `- ${item.role === 'user' ? 'User' : 'EcoGuide'}: "${item.text}"\n`;
         }
-      } else if (totalEnergy === 0) {
-        dataStatus = 'ZERO_GENERATION';
-      } else if (totalEnergy < 0.001) {
-        dataStatus = 'MINIMAL_GENERATION';
+      }
+      prompt += `(Use this context to maintain flow and avoid repeating explanations)\n\n`;
+    }
+
+    // 2. Intent-Specific Guidance & Data
+    if (intent === 'greeting') {
+      prompt += `**Special Directive for Greeting / Test Message:**\n`;
+      prompt += `- The user is saying hello or testing the connection.\n`;
+      prompt += `- Respond warmly, briefly, and with a touch of wit as EcoGuide in 1-2 conversational sentences.\n`;
+      prompt += `- DO NOT list levels, XP, badges, missions, or system statistics.\n`;
+      prompt += `- Invite them to ask about footstep energy or physics whenever they are ready.\n\n`;
+    } else if (intent === 'player_progress') {
+      prompt += `**Authoritative Player Progress Data:**\n`;
+      if (dataContext.hasPlayer && dataContext.playerProgress) {
+        const p = dataContext.playerProgress;
+        const lp = p.levelProgress;
+        prompt += `- Authenticated Player: "${p.username}"\n`;
+        prompt += `- Current Level: ${p.level} (${lp.levelTitle})\n`;
+        prompt += `- Total XP: ${p.xp} XP\n`;
+        if (lp.isMaxLevel) {
+          prompt += `- Next Level: Max Level reached!\n`;
+        } else {
+          prompt += `- Next Level: Level ${p.level + 1} (${lp.xpToNextLevel} XP needed, ${lp.progressPercentage}% progress)\n`;
+        }
+        prompt += `- Completed Missions: ${p.completedMissions.length} of ${p.totalMissions}\n`;
+        const unlockedBadges = (p.badges || []).filter((b: any) => b.isUnlocked);
+        prompt += `- Unlocked Badges: ${unlockedBadges.map((b: any) => `${b.icon} ${b.name}`).join(', ') || 'None yet'}\n`;
+        prompt += `- Directive: Answer the user's progress question directly and accurately using these authoritative numbers. Be positive, encouraging, and clear.\n\n`;
       } else {
-        dataStatus = 'NORMAL_GENERATION';
+        prompt += `- Player Session: No active guest session is authenticated.\n`;
+        prompt += `- Directive: Explain politely and helpfully that personal XP, level, and badge tracking requires starting or resuming a guest session in the EcoStep Mission Hub. Reassure them that all science lessons and energy readings can still be explored freely. NEVER invent or guess player XP or levels.\n\n`;
       }
-      
-      prompt += `- Data Status: ${dataStatus}\n`;
-      
-      if (dataStatus === 'NO_READINGS_TODAY_BUT_RECENT_DATA') {
-        prompt += `- **Important:** Today's stats are zero because it's a new day and no readings have been received yet today. However, the system was active recently (see latest reading above from yesterday).\n`;
+    } else if (intent === 'mission_recommendation') {
+      prompt += `**Mission Recommendation Context:**\n`;
+      const allMissions = dataContext.allMissions || [];
+      const unfinished = allMissions.filter((m: any) => !m.isCompleted);
+      if (unfinished.length > 0) {
+        const next = unfinished[0];
+        prompt += `- Recommended Next Mission: "${next.title}" (+${next.xpReward} XP)\n`;
+        prompt += `- Focus / Subtitle: ${next.subtitle}\n`;
+        prompt += `- Description: ${next.description}\n`;
+        prompt += `- Directive: Suggest this mission with genuine enthusiasm! Highlight why it's interesting and mention the +${next.xpReward} XP reward. Keep it concise (1 short paragraph).\n\n`;
+      } else if (dataContext.hasPlayer) {
+        prompt += `- Status: All available missions are completed!\n`;
+        prompt += `- Directive: Congratulate the student warmly on finishing every Academy mission!\n\n`;
+      } else {
+        prompt += `- Status: Visitor asking for mission recommendation without an active session.\n`;
+        prompt += `- Directive: Suggest starting with Mission 1: "Introduction to Piezoelectricity" (+50 XP). Mention that logging into a guest session in the Mission Hub will save their quiz progress and award XP.\n\n`;
       }
-      prompt += `\n`;
+    } else {
+      // General, Science, or Status query:
+      // STRICT RULE: Do not dump player progress unless asked!
+      if (dataContext.hasPlayer && dataContext.playerProgress) {
+        prompt += `*(Note: Player "${dataContext.playerProgress.username}" is active. DO NOT display their level, XP, or missions unless they asked.)*\n\n`;
+      }
     }
 
-    // Add detailed stats for historical queries
-    if (dataContext.todayDetailed) {
-      const detailed = dataContext.todayDetailed;
-      prompt += `**Detailed Today's Stats:**\n`;
-      prompt += `- Min Power: ${detailed.minPowerW?.toFixed(6) || '0.000000'} W\n`;
-      prompt += `- Max Power: ${detailed.peakPowerW?.toFixed(6) || '0.000000'} W\n`;
-      prompt += `- Total Readings: ${detailed.readingCount || 0}\n`;
-      prompt += `\n`;
+    const wantsDetail = /\b(explain in detail|detailed|elaborate|deep dive|comprehensive|full explanation|in depth|step by step)\b/i.test(message);
+
+    if (wantsDetail) {
+      prompt += `**User Requested Deep Explanation:** The user explicitly requested an in-depth explanation. Provide a thorough, well-structured explanation while keeping the concepts accessible.\n\n`;
+    } else {
+      prompt += `**STRICT LENGTH RULE (MANDATORY):**\n`;
+      prompt += `- Respond in strictly 1–3 short sentences (around 30–60 words total).\n`;
+      prompt += `- Answer the user's specific question or state the single most relevant data point FIRST.\n`;
+      prompt += `- Include at most ONE simple analogy or explanation.\n`;
+      prompt += `- Do NOT narrate every sensor reading or explain multiple concepts at once.\n`;
+      prompt += `- Do NOT end with a question or call to action unless specifically relevant.\n\n`;
     }
 
-    // Add dashboard help context for dashboard queries
-    if (message.toLowerCase().includes('dashboard')) {
-      prompt += `**EcoStep Dashboard Components:**\n`;
-      prompt += `- Power Output: Shows latest power reading in watts or milliwatts\n`;
-      prompt += `- Steps Counter: Total footsteps recorded by sensors\n`;
-      prompt += `- Voltage Display: Current electrical potential in volts\n`;
-      prompt += `- Current Display: Measured or calculated current in amps or milliamps\n`;
-      prompt += `- Energy Charts: Historical power generation over time\n`;
-      prompt += `- Daily/Weekly/Monthly views: Aggregated statistics\n`;
-      prompt += `\n`;
+    // 3. Telemetry Grounding (distinguish actual measurements from hypothetical)
+    if (dataContext.todayStats && dataContext.todayStats.readingCount > 0) {
+      const stats = dataContext.todayStats;
+      const mWh = stats.totalEnergyMWh?.toFixed(2) || '0.00';
+      const steps = stats.readingCount || 0;
+      prompt += `**Telemetry Context (Today's Key Metric):**\n`;
+      prompt += `- Total Energy: ${mWh} mWh across ${steps} footstep events.\n`;
+      if (dataContext.latestReading) {
+        const r = dataContext.latestReading;
+        const pMw = (((r.powerW ?? r.power ?? 0) * 1000)).toFixed(1);
+        prompt += `- Latest Power Spike: ${pMw} mW\n`;
+      }
+      prompt += `- Directive: Mention ONLY the single most relevant measurement (e.g. today's energy or recent spike) in 1 sentence with an encouraging observation. Do NOT narrate all voltage, current, and step fields.\n\n`;
+    } else {
+      prompt += `**Telemetry Context (No Readings Yet):**\n`;
+      prompt += `- Today's readings: 0 mWh (tiles in standby, waiting for footsteps).\n`;
+      prompt += `- Directive: If asked about generation right now, state concisely and cheerfully that tiles are idle waiting for steps to generate clean milliwatts. Do not invent readings.\n\n`;
     }
 
-    prompt += `**STRICT DOMAIN RULES:** Answer the user's question directly and concisely using the actual EcoStep data provided above. If the question is unrelated to EcoStep, asking for source code or backend details, asking for keys/credentials, or asking for general math not calculating EcoStep metrics, you MUST politely decline and clarify that you only assist with EcoStep. If no data is available, explain that the system hasn't received readings yet.`;
+    // 4. Core Educational Science Reference (Use at most ONE per response)
+    prompt += `**Core Physics Reference (Use at most ONE per response):**\n`;
+    prompt += `- Power ($P = V \\times I$, Watts or mW): Instantaneous generation rate (like a speedometer).\n`;
+    prompt += `- Energy ($E = P \\times t$, mWh or Joules): Accumulated work over time (like an odometer).\n`;
+    prompt += `- 1 mW ($0.001\\text{ W}$): Micro-power scale typical of kinetic pulses; footsteps store up in capacitors to run clean IoT sensors.\n`;
+    prompt += `- Piezoelectric effect (Curie brothers, 1880): Compressing crystal lattices (PZT ceramic) generates potential difference.\n\n`;
+
+    // 5. EcoGuide Persona Directives
+    prompt += `**EcoGuide Persona & Directives:**\n`;
+    prompt += `1. Answer the user's specific question FIRST.\n`;
+    prompt += `2. Tone: Positive, witty, and encouraging—even when output is low or zero.\n`;
+    prompt += `3. Default Length: 1–3 short sentences (~30–60 words) unless user explicitly requested detail.\n`;
+    prompt += `4. DO NOT recommend a mission or list XP unless the user specifically asked for them.\n`;
+    prompt += `5. Do NOT end every response with a question or call to action.\n`;
 
     return prompt;
   }
@@ -797,6 +1044,16 @@ export class ChatbotCoreService {
    */
   private getSuggestionsForIntent(intent: string): string[] {
     switch (intent) {
+      case 'greeting':
+        return ['status', 'energy', 'guide', 'missions'];
+      case 'mission_recommendation':
+        return ['progress', 'guide', 'status'];
+      case 'player_progress':
+        return ['missions', 'guide', 'status'];
+      case 'quiz_guidance':
+        return ['missions', 'guide', 'help'];
+      case 'educational_physics':
+        return ['energy', 'status', 'missions'];
       case 'current_status':
         return ['today', 'energy', 'help'];
       case 'dashboard_help':
@@ -811,7 +1068,7 @@ export class ChatbotCoreService {
       case 'electrical_query':
         return ['status', 'energy', 'help'];
       default:
-        return ['status', 'help', 'today'];
+        return ['missions', 'status', 'guide'];
     }
   }
 
@@ -827,14 +1084,13 @@ export class ChatbotCoreService {
     return this.handleNaturalLanguage(message, context);
   }
 
-
   /**
    * Handle Welcome Message
    */
   private async handleWelcome(): Promise<ChatbotResponse> {
     return {
-      text: `👋 Welcome to EcoStep!\n\nMonitor your piezoelectric energy generation system in real time.\n\nChoose an option below to get started:`,
-      suggestions: ['status', 'energy', 'battery', 'help'],
+      text: `👋 Hey there! Welcome to EcoGuide—your companion for kinetic energy, piezoelectric physics, and EcoStep Academy missions. What would you like to explore today?`,
+      suggestions: ['status', 'missions', 'guide', 'help'],
     };
   }
 
@@ -843,8 +1099,155 @@ export class ChatbotCoreService {
    */
   private async handleHelp(): Promise<ChatbotResponse> {
     return {
-      text: `🌞 EcoStep Energy Assistant\n\nHere's what you can ask me:\n\n📊 Energy Monitoring\n• Status\n• Energy\n• Battery\n\n📈 Analytics\n• Today\n• This Week\n• This Month\n• Peak Generation\n\n🌱 Environmental Impact\n• Savings\n• Impact\n\n🔔 Notifications\n• Subscribe\n• Unsubscribe\n\nℹ️ Other\n• Help\n• About`,
-      suggestions: ['status', 'today', 'energy'],
+      text: `🌿 **EcoGuide Learning & Energy Assistant**\n\nHere is what you can ask me:\n\n🎓 **EcoStep Academy**\n• Missions — View learning missions & XP rewards\n• Progress — Check your level, XP, and badges\n• Guide — Learn piezoelectric physics & formulas\n\n📊 **Energy Monitoring**\n• Status — Real-time power and overall stats\n• Energy — Generation metrics and readings\n• Battery — Energy storage and status\n\n📈 **Analytics**\n• Today — Today's energy summary\n• Week / Month — Extended generation trends\n• Peak — Peak power performance\n\n🌱 **Environmental Impact**\n• Impact — CO₂ avoided & tree equivalents\n• Savings — Estimated electricity cost savings\n\n💡 *Try asking: "What mission should I complete next?" or "How does piezoelectricity work?"*`,
+      suggestions: ['missions', 'progress', 'status', 'guide'],
+    };
+  }
+
+  /**
+   * Handle Missions Command
+   * Recommends missions and displays completion status
+   */
+  private async handleMissions(context: MessageContext): Promise<ChatbotResponse> {
+    try {
+      const missions = this.gamificationService.getAllMissions(context.player);
+
+      if (context.player) {
+        const progress = await this.gamificationService.getPlayerProgress(context.player);
+        const completedCount = progress.completedMissions.length;
+        const totalCount = missions.length;
+        const nextUnfinished = missions.find((m) => !m.isCompleted);
+
+        let text = `🎯 **EcoStep Academy Missions for ${progress.username}**\n\n`;
+        text += `📊 **Progress:** ${completedCount}/${totalCount} completed • Level ${progress.level} (${progress.levelProgress.levelTitle})\n\n`;
+
+        if (nextUnfinished) {
+          text += `👉 **Recommended Next:** **${nextUnfinished.title}**\n`;
+          text += `• Focus: ${nextUnfinished.subtitle}\n`;
+          text += `• Reward: +${nextUnfinished.xpReward} XP\n`;
+          text += `• Description: ${nextUnfinished.description}\n\n`;
+        } else {
+          text += `🏆 **Incredible work!** You have completed all available Academy missions!\n\n`;
+        }
+
+        text += `**All Missions:**\n`;
+        missions.forEach((m) => {
+          const status = m.isCompleted ? '✅ Completed' : `⏳ Available (+${m.xpReward} XP)`;
+          text += `• **${m.title}** — ${status}\n`;
+        });
+
+        text += `\n💡 Ask me: *"How does piezoelectricity work?"* or *"Why is energy stored in capacitors?"*`;
+
+        return {
+          text,
+          suggestions: ['progress', 'guide', 'status'],
+          metadata: {
+            commandType: 'missions',
+            dataSource: 'gamification_service',
+          },
+        };
+      }
+
+      // Unauthenticated guest visitor
+      let text = `🎓 **EcoStep Academy Missions**\n\n`;
+      text += `Learn piezoelectricity, electrical circuits, and clean energy harvesting through interactive missions and quizzes.\n\n`;
+      text += `**Available Missions:**\n`;
+      missions.forEach((m) => {
+        text += `• **${m.title}** (+${m.xpReward} XP) — ${m.subtitle}\n`;
+      });
+      text += `\n💡 *Tip: Start or restore a guest player session in the Mission Hub to track your XP, earn badges, and get personalized recommendations!*`;
+
+      return {
+        text,
+        suggestions: ['progress', 'guide', 'status'],
+        metadata: {
+          commandType: 'missions',
+          dataSource: 'gamification_service',
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to retrieve missions', error);
+      return {
+        text: 'Educational missions are temporarily unavailable. Please try again shortly.',
+        suggestions: ['status', 'help'],
+      };
+    }
+  }
+
+  /**
+   * Handle Progress Command
+   * Displays player XP, level, next level gap, and badges
+   */
+  private async handleProgress(context: MessageContext): Promise<ChatbotResponse> {
+    try {
+      if (context.player) {
+        const progress = await this.gamificationService.getPlayerProgress(context.player);
+        const lp = progress.levelProgress;
+        const unlockedBadges = progress.badges.filter((b) => b.isUnlocked);
+
+        let text = `⭐ **Player Progress — ${progress.username}**\n\n`;
+        text += `🏅 **Level ${progress.level}** — *${lp.levelTitle}*\n`;
+        text += `⚡ **Total XP:** ${progress.xp} XP\n`;
+
+        if (lp.isMaxLevel) {
+          text += `🌟 **Max Level Reached!** You are an EcoStep Master!\n`;
+        } else {
+          text += `📈 **Next Level:** Level ${progress.level + 1} (${lp.xpToNextLevel} XP needed, ${lp.progressPercentage}% progress)\n`;
+        }
+
+        text += `🎯 **Missions:** ${progress.completedMissions.length}/${progress.totalMissions} completed\n`;
+        text += `🎖️ **Badges Unlocked (${unlockedBadges.length}/${progress.badges.length}):**\n`;
+
+        if (unlockedBadges.length > 0) {
+          unlockedBadges.forEach((b) => {
+            text += `• ${b.icon} **${b.name}** — ${b.description}\n`;
+          });
+        } else {
+          text += `• *No badges unlocked yet. Complete your first mission to earn the Curie Apprentice badge!*\n`;
+        }
+
+        text += `\n💡 Type "missions" to see available learning challenges!`;
+
+        return {
+          text,
+          suggestions: ['missions', 'guide', 'status'],
+          metadata: {
+            commandType: 'progress',
+            dataSource: 'gamification_service',
+          },
+        };
+      }
+
+      // Unauthenticated visitor
+      return {
+        text: `⭐ **Player Progress**\n\nPersonal progress tracking requires an active guest session.\n\nTo view your XP, level, badges, and personalized mission recommendations, start or resume a guest session in the EcoStep Mission Hub.\n\nIn the meantime, you can ask me any educational question about piezoelectricity and energy harvesting!`,
+        suggestions: ['missions', 'guide', 'status'],
+        metadata: {
+          commandType: 'progress',
+          dataSource: 'gamification_service',
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to get player progress', error);
+      return {
+        text: 'Player progress is temporarily unavailable. Please try again shortly.',
+        suggestions: ['status', 'help'],
+      };
+    }
+  }
+
+  /**
+   * Handle Guide Command
+   * Explains educational concepts covered by EcoGuide
+   */
+  private async handleGuide(): Promise<ChatbotResponse> {
+    return {
+      text: `🌿 **EcoGuide — Your EcoStep Learning Assistant**\n\nI am here to help you master clean kinetic energy concepts:\n\n• ⚡ **Piezoelectricity:** How mechanical compression of crystal dipoles (PZT ceramics) generates electrical potential.\n• 📐 **Electrical Formulas:**\n  - Power: $P = V \\times I$ (Watts = Volts × Amperes)\n  - Energy: $E = P \\times t$ (Joules or Watt-hours)\n  - Ohm's Law: $V = I \\times R$\n• 🛠️ **EcoStep Architecture:** Kinetic footstep tiles ➔ Bridge Rectifier (AC to DC) ➔ Smoothing Capacitor / Storage ➔ ESP32 / PZEM Sensors ➔ Real-time Dashboard.\n• 🎯 **Academy Missions:** Concepts, study guides, and quiz assistance.\n\nAsk me anything! For example:\n- *"How does a piezoelectric tile generate electricity?"*\n- *"What is the difference between power and energy?"*\n- *"What mission should I complete next?"*`,
+      suggestions: ['missions', 'status', 'energy'],
+      metadata: {
+        commandType: 'guide',
+        dataSource: 'system',
+      },
     };
   }
 
@@ -1180,6 +1583,9 @@ export class ChatbotCoreService {
       about: 'ℹ️ About',
       subscribe: '🔔 Subscribe',
       hello: '🏠 Main Menu',
+      missions: '🎯 Missions',
+      progress: '⭐ Progress',
+      guide: '🌿 EcoGuide',
     };
 
     return titleMap[suggestion] || suggestion;

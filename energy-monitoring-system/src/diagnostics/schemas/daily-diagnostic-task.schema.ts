@@ -116,6 +116,7 @@ export class DailyDiagnosticTask {
    * Categorical test result status
    */
   @Prop({
+    type: String,
     required: false,
     enum: Object.values(DiagnosticResultStatus),
   })

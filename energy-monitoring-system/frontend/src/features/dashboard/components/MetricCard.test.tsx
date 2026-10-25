@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MetricCard } from './MetricCard';
-import { Zap } from 'lucide-react';
 
 /**
  * MetricCard Unit Tests
@@ -32,19 +31,20 @@ describe('MetricCard', () => {
       expect(screen.getByText('V')).toBeInTheDocument();
     });
 
-    it('renders with icon', () => {
-      render(
+    it('renders with status dot', () => {
+      const { container } = render(
         <MetricCard
           label="Power"
           value={2867}
           unit="W"
           precision={1}
           color="blue"
-          icon={<Zap size={16} data-testid="icon" />}
+          dotColor="#19D46A"
         />
       );
 
-      expect(screen.getByTestId('icon')).toBeInTheDocument();
+      const dot = container.querySelector('.stat-dot');
+      expect(dot).toBeInTheDocument();
     });
   });
 

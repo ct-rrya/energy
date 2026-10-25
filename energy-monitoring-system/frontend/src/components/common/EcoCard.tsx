@@ -34,6 +34,7 @@ export function EcoCard({
     <div
       className={cn(
         compact ? 'eco-card-compact' : 'eco-card',
+        'min-w-0',
         isClickable && 'cursor-pointer',
         className
       )}

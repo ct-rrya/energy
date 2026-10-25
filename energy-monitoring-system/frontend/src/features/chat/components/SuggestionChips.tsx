@@ -8,10 +8,12 @@
 import '../chat.css';
 
 const DEFAULT_CHIPS = [
-  'How does a footstep make power?',
-  "What's the current energy status?",
-  'What does the ESP32 do?',
-  'How do I read the dashboard?',
+  'What mission should I complete next?',
+  'How does piezoelectricity work?',
+  'How close am I to the next level?',
+  'What does power generation mean?',
+  'Explain voltage vs current vs power',
+  "What's today's energy status?",
 ];
 
 interface SuggestionChipsProps {

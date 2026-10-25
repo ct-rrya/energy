@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { SessionManager } from './session.manager';
 import { ChatbotModule } from '../chatbot/chatbot.module';
+import { PlayersModule } from '../players/players.module';
 
 /**
  * ChatModule
@@ -13,6 +14,7 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
 @Module({
   imports: [
     ChatbotModule, // For ChatbotCoreService
+    PlayersModule, // For OptionalPlayerSessionGuard
     // ThrottlerModule will be configured at app level
   ],
   controllers: [ChatController],

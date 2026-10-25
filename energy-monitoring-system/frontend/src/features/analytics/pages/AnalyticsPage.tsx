@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
-import { BarChart3, Table, Calendar } from 'lucide-react';
+import { BarChart3, Table } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { getUserRole } from '@/lib/permissions';
-import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 import { HistoricalDataView } from '../components/HistoricalDataView';
 import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChart';
 import { EnergyPeriodChart } from '@/components/dashboard/EnergyPeriodChart';
 import { CumulativeEnergyChart } from '@/components/dashboard/CumulativeEnergyChart';
 import { StepsChart } from '@/components/dashboard/StepsChart';
 import { VoltageCurrentChart } from '@/components/dashboard/VoltageCurrentChart';
+import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import { useSystemHealth } from '@/features/dashboard/hooks/useSystemHealth';
+import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData';
 import type { Granularity } from '../types';
 
 /**
@@ -33,7 +34,6 @@ type Period = 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
  */
 export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
-  const { theme } = useTheme();
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
 
@@ -91,133 +91,122 @@ export function AnalyticsPage() {
     }
   }, [selectedPeriod]);
 
-  // Get current date and time for header
-  const currentDateTime = new Date().toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const { data: systemStatusData } = useSystemHealth();
+  const { isConnected: isWebSocketConnected } = useLiveSensorData();
+
+  const systemStatus = (() => {
+    if (systemStatusData?.database === 'connected') return 'connected' as const;
+    if (systemStatusData?.database === 'disconnected') return 'disconnected' as const;
+    return 'unknown' as const;
+  })();
 
   return (
-    <div className="eco-page-container">
-      {/* Public User Banner */}
-      {isPublicUser && <PublicUserBanner className="mb-6" />}
-
+    <div className="page">
       {/* Page Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <div>
-            <h1 style={{ color: theme === 'dark' ? '#F9FAFB' : '#0B132B' }} className="text-3xl font-bold">
-              Analytics
-            </h1>
-            <p style={{ color: theme === 'dark' ? '#9CA3AF' : '#374151' }} className="text-sm mt-1">
-              Historical data and trends for the EcoStep energy harvesting system
-            </p>
-          </div>
+      <DashboardHeader
+        greeting="System Insights"
+        title="Analytics"
+        subtitle="Energy trends and historical data."
+        systemStatus={systemStatus}
+        isPublicUser={isPublicUser}
+        isWebSocketConnected={isWebSocketConnected}
+      />
 
-          {/* Date/Time Display */}
-          <div style={{ color: theme === 'dark' ? '#9CA3AF' : '#374151' }} className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4" strokeWidth={2} />
-            <span>{currentDateTime}</span>
-          </div>
-        </div>
-
-        {/* View Toggle and Period Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* View Toggle */}
-          <div style={{ backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6' }} className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-1 sm:gap-2 rounded-xl p-1">
+      {/* View Toggle and Period Filter */}
+      <div className="analytics-toolbar mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* View Toggle - Segmented Control */}
+          <div className="sgc grid grid-cols-2 sm:inline-flex flex-shrink-0" role="tablist">
             <button
+              type="button"
               onClick={() => setActiveView('charts')}
-              style={{
-                backgroundColor: activeView === 'charts' ? (theme === 'dark' ? '#374151' : '#FFFFFF') : 'transparent',
-                color: activeView === 'charts' ? (theme === 'dark' ? '#F9FAFB' : '#0B132B') : (theme === 'dark' ? '#9CA3AF' : '#4B5563')
-              }}
-              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-xs"
+              className={activeView === 'charts' ? 'on' : ''}
               aria-pressed={activeView === 'charts'}
               aria-label="Switch to chart view"
             >
-              <BarChart3 className="h-4 w-4 shrink-0" strokeWidth={2} />
+              <BarChart3 className="inline-block mr-1.5 h-3.5 w-3.5" strokeWidth={2} />
               <span>Chart View</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveView('historical')}
-              style={{
-                backgroundColor: activeView === 'historical' ? (theme === 'dark' ? '#374151' : '#FFFFFF') : 'transparent',
-                color: activeView === 'historical' ? (theme === 'dark' ? '#F9FAFB' : '#0B132B') : (theme === 'dark' ? '#9CA3AF' : '#4B5563')
-              }}
-              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-xs"
+              className={activeView === 'historical' ? 'on' : ''}
               aria-pressed={activeView === 'historical'}
               aria-label="Switch to historical data view"
             >
-              <Table className="h-4 w-4 shrink-0" strokeWidth={2} />
+              <Table className="inline-block mr-1.5 h-3.5 w-3.5" strokeWidth={2} />
               <span>Historical View</span>
             </button>
           </div>
 
           {/* Period Filter */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <span style={{ color: theme === 'dark' ? '#D1D5DB' : '#374151' }} className="text-xs sm:text-sm font-medium mr-1 sm:mr-2">
-              Time Period:
+          <div className="analytics-period-bar flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span
+              style={{
+                color: 'var(--mu)',
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '.08em',
+              }}
+              className="shrink-0 mr-1 period-label"
+            >
+              Period:
             </span>
-            {[
-              { value: 'all' as Period, label: 'All Time' },
-              { value: 'today' as Period, label: 'Today' },
-              { value: 'last7days' as Period, label: 'Last 7 Days' },
-              { value: 'last30days' as Period, label: 'Last 30 Days' },
-              { value: 'last90days' as Period, label: '3 Months' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSelectedPeriod(option.value)}
-                style={{
-                  backgroundColor: selectedPeriod === option.value
-                    ? '#39FF88'
-                    : (theme === 'dark' ? '#1F2937' : '#F3F4F6'),
-                  color: selectedPeriod === option.value
-                    ? '#0B132B'
-                    : (theme === 'dark' ? '#D1D5DB' : '#374151')
-                }}
-                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all hover:opacity-90 active:scale-95 shadow-xs"
-                aria-pressed={selectedPeriod === option.value}
-              >
-                {option.label}
-              </button>
-            ))}
+            <div className="sgc flex period-sgc">
+              {[
+                { value: 'all' as Period, label: 'All Time' },
+                { value: 'today' as Period, label: 'Today' },
+                { value: 'last7days' as Period, label: 'Last 7 Days' },
+                { value: 'last30days' as Period, label: 'Last 30 Days' },
+                { value: 'last90days' as Period, label: '3 Months' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedPeriod(option.value)}
+                  className={`shrink-0 whitespace-nowrap ${selectedPeriod === option.value ? 'on' : ''}`}
+                  aria-pressed={selectedPeriod === option.value}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Content based on active view */}
       {activeView === 'charts' ? (
         /* Chart View - Optimized Responsive Layout */
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3.5 sm:space-y-6">
           {/* 1. Power Generation (wider) | Steps (narrower) - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 lg:gap-6">
+            <div className="lg:col-span-2 min-w-0">
               <PowerGenerationChart defaultTimeFilter="7days" />
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 min-w-0">
               <StepsChart />
             </div>
           </div>
 
           {/* 2. Voltage Trend | Current Trend - 2 Column Row */}
-          <div className="w-full">
+          <div className="w-full min-w-0">
             <VoltageCurrentChart />
           </div>
 
           {/* 3. Energy Generated by Period | Cumulative Energy Generated - 2 Column Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            <EnergyPeriodChart />
-            <CumulativeEnergyChart />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 lg:gap-6">
+            <div className="min-w-0">
+              <EnergyPeriodChart />
+            </div>
+            <div className="min-w-0">
+              <CumulativeEnergyChart />
+            </div>
           </div>
         </div>
       ) : (
         /* Historical View - Tabular Data Display */
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <HistoricalDataView
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}

@@ -12,10 +12,15 @@ import {
   DiagnosticTestDocument,
   DiagnosticResultStatus,
 } from './schemas/diagnostic-test.schema';
+import { DailyDiagnosticTask } from './schemas/daily-diagnostic-task.schema';
 import {
   EnergyReading,
   EnergyReadingDocument,
 } from '../iot/schemas/energy-reading.schema';
+import { AlertsService } from '../alerts/alerts.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { DashboardGateway } from '../dashboard/dashboard.gateway';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * DiagnosticsService Unit Tests
@@ -108,6 +113,41 @@ describe('DiagnosticsService', () => {
               }),
             }),
             exec: jest.fn(),
+          },
+        },
+        {
+          provide: getModelToken(DailyDiagnosticTask.name),
+          useValue: {
+            findOne: jest.fn(),
+            findOneAndUpdate: jest.fn(),
+            find: jest.fn(),
+            create: jest.fn(),
+            exec: jest.fn(),
+          },
+        },
+        {
+          provide: AlertsService,
+          useValue: {
+            createAlert: jest.fn().mockResolvedValue({}),
+          },
+        },
+        {
+          provide: NotificationsService,
+          useValue: {
+            sendNotification: jest.fn().mockResolvedValue({}),
+          },
+        },
+        {
+          provide: DashboardGateway,
+          useValue: {
+            server: { emit: jest.fn() },
+            broadcastDailyDiagnosticStatus: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue(null),
           },
         },
       ],

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Calendar } from 'lucide-react';
+import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { PlayerNavPill } from '@/features/gamification';
 
 /**
  * System Status Type
@@ -18,18 +20,19 @@ export interface DashboardHeaderProps {
   isPublicUser: boolean;
   onAlertsClick?: () => void;
   isWebSocketConnected?: boolean;
+  greeting?: string;
 }
 
 /**
- * Dashboard Header Component - Compact version with minimal spacing
+ * Dashboard Header Component - Clean, uncluttered header with subtle live status indicator
  */
 export const DashboardHeader = React.memo(function DashboardHeader({
   title,
   subtitle,
   systemStatus,
   isWebSocketConnected = true,
+  greeting = 'Welcome to EcoStep',
 }: DashboardHeaderProps) {
-  const { theme } = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   }, []);
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
@@ -53,85 +56,62 @@ export const DashboardHeader = React.memo(function DashboardHeader({
 
   return (
     <header 
-      className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_auto] items-start sm:items-center justify-between gap-3 sm:gap-6 mb-4"
+      className="top flex flex-col sm:flex-row mb-5"
     >
       {/* Title and Subtitle Section */}
-      <div className="flex flex-col">
+      <div className="title flex flex-col min-w-0">
+        <div className="gr text-[15px] font-medium text-[var(--greeting)]">
+          {greeting}
+        </div>
         <h1 
-          className="text-xl sm:text-2xl font-bold uppercase"
-          style={{
-            color: theme === 'dark' ? '#F9FAFB' : '#0B132B',
-            letterSpacing: '0.05em',
-            marginBottom: '2px', // Reduced from 4px
-          }}
+          className="text-[44px] font-[500] tracking-[-0.02em] mt-1 text-[var(--t)] leading-tight"
         >
           {title}
         </h1>
-        <p 
-          className="text-xs uppercase"
-          style={{
-            color: theme === 'dark' ? '#9CA3AF' : '#374151',
-            letterSpacing: '0.05em',
-          }}
-        >
+        <p className="sub text-[15px] text-[var(--mu)] mt-1.5">
           {subtitle}
         </p>
       </div>
 
-      <div className="flex items-center justify-between w-full sm:w-auto gap-3 sm:contents">
-        {/* Date/Time Section */}
-        <div className="flex flex-col items-start sm:items-center">
-          <div 
-            className="text-xs sm:text-sm font-semibold uppercase"
-            style={{
-              color: theme === 'dark' ? '#F9FAFB' : '#0B132B',
-              letterSpacing: '0.05em',
-            }}
-          >
-            TODAY
-          </div>
-          <div 
-            className="text-[11px] sm:text-xs"
-            style={{
-              color: theme === 'dark' ? '#9CA3AF' : '#374151',
-            }}
-          >
-            {formattedDate}
-          </div>
-          <div 
-            className="text-[11px] sm:text-xs"
-            style={{
-              color: theme === 'dark' ? '#9CA3AF' : '#374151',
-            }}
-          >
-            {formattedTime}
-          </div>
-        </div>
+      {/* Date/Time, Status Pill, and User Chip Section */}
+      <div className="meta flex items-center">
+        {/* Date & Time Display */}
+        <span className="meta-time text-[13px] text-[var(--mu)] font-normal tabular-nums flex items-center whitespace-nowrap">
+          <Calendar className="h-3.5 w-3.5 opacity-70 shrink-0 mr-1.5 date-icon" strokeWidth={2} />
+          <span className="date-text">{formattedDate}</span>
+          <span className="date-sep mx-1.5 opacity-40">·</span>
+          <span className="time-text">{formattedTime}</span>
+        </span>
 
-        {/* System Status Badge */}
-        <SystemStatusBadge 
+        {/* Subtle Live System Status Pill */}
+        <SystemStatusInfo
           status={systemStatus} 
           isWebSocketConnected={isWebSocketConnected}
         />
+
+        {/* Guest Gamification Player Entry / Profile Pill */}
+        <PlayerNavPill />
       </div>
     </header>
   );
 });
 
-interface SystemStatusBadgeProps {
+interface SystemStatusInfoProps {
   status: SystemStatusType;
   isWebSocketConnected: boolean;
 }
 
-function SystemStatusBadge({ status, isWebSocketConnected }: SystemStatusBadgeProps) {
+function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProps) {
   const getStatusConfig = () => {
     if (!isWebSocketConnected) {
       return {
         label: 'Offline',
-        bgColor: 'bg-red-50 dark:bg-red-900/20',
-        textColor: 'text-red-700 dark:text-red-400',
-        borderColor: 'border-red-200 dark:border-red-800',
-        dotColor: 'bg-red-500',
+        statusKey: 'disconnected',
+        dotColor: 'bg-[#EF4444]',
+        statusClass: 'status-offline',
+        title: 'System Status: Offline',
+        description: 'The real-time connection to the EcoStep IoT stream is currently disconnected. The system will automatically attempt to reconnect.',
+        technicalNote: 'WebSocket telemetry link is disconnected.',
       };
     }
 
@@ -139,27 +119,34 @@ function SystemStatusBadge({ status, isWebSocketConnected }: SystemStatusBadgePr
       case 'connected':
         return {
           label: 'Online',
-          bgColor: 'bg-green-50 dark:bg-green-900/20',
-          textColor: 'text-green-700 dark:text-green-400',
-          borderColor: 'border-green-200 dark:border-green-800',
+          statusKey: 'connected',
           dotColor: 'bg-[#3ED98A]',
+          pulseColor: 'bg-[#3ED98A]',
+          statusClass: 'status-online',
+          title: 'System Status: Online',
+          description: 'All EcoStep hardware telemetry and database services are connected and operating normally. As students walk across the piezoelectric tiles, live readings stream in real time.',
+          technicalNote: 'WebSocket telemetry: Connected. Database: Healthy. (Zero footsteps is normal when the tile is at rest).',
         };
       case 'disconnected':
         return {
           label: 'Offline',
-          bgColor: 'bg-red-50 dark:bg-red-900/20',
-          textColor: 'text-red-700 dark:text-red-400',
-          borderColor: 'border-red-200 dark:border-red-800',
-          dotColor: 'bg-red-500',
+          statusKey: 'disconnected',
+          dotColor: 'bg-[#EF4444]',
+          statusClass: 'status-offline',
+          title: 'System Status: Disconnected',
+          description: 'The backend database or telemetry service is reporting a disconnection. Data updates may be paused until connectivity restores.',
+          technicalNote: 'Database service is disconnected or unreachable.',
         };
       case 'unknown':
       default:
         return {
-          label: 'Warning',
-          bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-          textColor: 'text-amber-700 dark:text-amber-400',
-          borderColor: 'border-amber-200 dark:border-amber-800',
-          dotColor: 'bg-amber-500',
+          label: 'Standby',
+          statusKey: 'unknown',
+          dotColor: 'bg-[#F59E0B] bg-[#F5A623]',
+          statusClass: 'status-standby',
+          title: 'System Status: Standby',
+          description: 'EcoStep is in active standby and ready for footsteps. Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault.',
+          technicalNote: 'Telemetry receiver is listening. Sensor heartbeat pending next active compression.',
         };
     }
   };
@@ -168,29 +155,31 @@ function SystemStatusBadge({ status, isWebSocketConnected }: SystemStatusBadgePr
 
   return (
     <div 
-      className={`flex items-center justify-center gap-2 sm:gap-3 min-w-0 sm:min-w-[180px] h-12 sm:h-[80px] px-3.5 sm:px-6 ${config.bgColor} ${config.textColor} border sm:border-2 ${config.borderColor} rounded-lg`}
+      className={`status-pill ${config.statusClass}`}
     >
-      <div className="flex flex-col items-center">
-        <div 
-          className="hidden sm:block text-xs uppercase font-semibold"
-          style={{
-            letterSpacing: '0.1em',
-            marginBottom: '8px',
-          }}
-        >
-          SYSTEM STATUS
-        </div>
-        <div className="flex items-center gap-2">
-          <div 
-            className={`w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full ${config.dotColor}`}
-            role="status"
-            aria-label={`System status: ${config.label}`}
-          />
-          <span className="font-bold text-xs sm:text-sm">
-            {config.label}
-          </span>
-        </div>
-      </div>
+      <span className="relative flex h-2 w-2 flex-shrink-0">
+        {config.pulseColor && (
+          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${config.pulseColor}`} />
+        )}
+        <span
+          className={`relative inline-flex rounded-full h-2 w-2 ${config.dotColor}`}
+          role="status"
+          aria-label={`System status: ${config.statusKey}`}
+          style={config.statusKey === 'unknown' ? { backgroundColor: '#F5A623' } : undefined}
+        />
+      </span>
+      <span>{config.label}</span>
+      <span className="status-pill-info inline-flex items-center">
+        <InfoTooltip
+          title={config.title}
+          description={config.description}
+          technicalNote={config.technicalNote}
+          size={16}
+          position="bottom"
+          align="right"
+          ariaLabel={`View operating status details for ${config.label}`}
+        />
+      </span>
     </div>
   );
 }

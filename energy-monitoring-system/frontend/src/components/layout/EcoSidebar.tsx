@@ -1,8 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Footprints, 
-  Menu, 
   House, 
   Activity, 
   TrendingUp, 
@@ -13,12 +12,18 @@ import {
   Stethoscope, 
   FileText, 
   Settings, 
-  Users,
-  ChevronUp 
+  Users, 
+  ChevronUp, 
+  ChevronLeft,
+  Gamepad2, 
+  GraduationCap,
+  Trophy,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlayer } from '@/contexts/PlayerContext';
 import { ROUTES } from '@/routes/routes.config';
+import { ChatPanel } from '@/features/chat';
 import '@/styles/eco-sidebar.css';
 
 interface NavItem {
@@ -35,6 +40,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
+  { to: ROUTES.MISSIONS, label: 'Educational Missions', Icon: GraduationCap },
+  { to: ROUTES.LEADERBOARD, label: 'Leaderboard', Icon: Trophy },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
@@ -46,64 +53,269 @@ interface EcoSidebarProps {
   children: React.ReactNode;
 }
 
-// Cache last known notch Y position across renders to maintain smooth transitions
-let lastKnownNotchY: string | null = null;
-
 export function EcoSidebar({ children }: EcoSidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
+  const { player, openPlayerModal, logout: playerLogout } = usePlayer();
   const location = useLocation();
   const navigate = useNavigate();
-  
-  // Initialize expanded synchronously from localStorage to prevent delayed expand on load
-  const [expanded, setExpanded] = useState<boolean>(() => {
+
+  // Left panel collapsed state with localStorage persistence
+  const [leftCollapsed, setLeftCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('ecostep.sidebar.v2') === 'expanded';
+      const stored = localStorage.getItem('ecostep.leftCollapsed');
+      if (stored !== null) return stored === 'true';
+      if (typeof window !== 'undefined') {
+        return window.innerWidth < 1024;
+      }
+      return false;
     } catch {
       return false;
     }
   });
-  const [ready, setReady] = useState(false);
+
+  // Right EcoGuide panel collapsed state with localStorage persistence
+  const [rightCollapsed, setRightCollapsed] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('ecostep.rightCollapsed');
+      if (stored !== null) return stored === 'true';
+      if (typeof window !== 'undefined') {
+        return window.innerWidth < 1280;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  });
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const capRef = useRef<HTMLElement>(null);
+  const [popoverPos, setPopoverPos] = useState<{ left: number; bottom: number }>({ left: 0, bottom: 0 });
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userTriggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startAnimation = useCallback(() => {
+    setIsAnimating(true);
+    if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    animTimerRef.current = setTimeout(() => {
+      setIsAnimating(false);
+      window.dispatchEvent(new Event('resize'));
+    }, 270);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    };
+  }, []);
+
+  // Toggle Left panel
+  const toggleLeft = useCallback(() => {
+    startAnimation();
+    setLeftCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('ecostep.leftCollapsed', String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, [startAnimation]);
+
+  // Toggle Right panel
+  const toggleRight = useCallback(() => {
+    startAnimation();
+    setRightCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('ecostep.rightCollapsed', String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, [startAnimation]);
+
+  // Compute portal popover coordinates from user card bounding rect
+  const updatePopoverPosition = useCallback(() => {
+    if (!userTriggerRef.current) return;
+    const card = userTriggerRef.current.getBoundingClientRect();
+    const popoverWidth = 250;
+    const margin = 12;
+
+    let left: number;
+    let bottom: number;
+
+    if (leftCollapsed) {
+      // Collapsed rail (72px): anchor to right edge + 8px, bottom-aligned with avatar
+      left = card.right + 8;
+      bottom = window.innerHeight - card.bottom;
+    } else {
+      // Expanded: sit 8px above the user card
+      left = card.left;
+      bottom = (window.innerHeight - card.top) + 8;
+    }
+
+    // Viewport clamping with 12px margin
+    if (left + popoverWidth > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - margin - popoverWidth);
+    }
+    if (left < margin) {
+      left = margin;
+    }
+
+    const popoverHeight = popoverRef.current?.offsetHeight || 230;
+    const maxBottom = window.innerHeight - popoverHeight - margin;
+    if (bottom > maxBottom) {
+      bottom = Math.max(margin, maxBottom);
+    }
+    if (bottom < margin) {
+      bottom = margin;
+    }
+
+    setPopoverPos({ left, bottom });
+  }, [leftCollapsed]);
+
+  // Keyboard shortcuts: [ toggles left, ] toggles right (ignore while typing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === '[') {
+        e.preventDefault();
+        toggleLeft();
+      } else if (e.key === ']') {
+        e.preventDefault();
+        toggleRight();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleLeft, toggleRight]);
 
   // Close menu on route changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUserMenuOpen(false);
   }, [location.pathname]);
 
-  // Click outside and Escape key handler for user menu popover
+  // Outside click, window resize, scroll, and keyboard handlers for portal popover
   useEffect(() => {
     if (!userMenuOpen) return;
 
+    updatePopoverPosition();
+    const frameId = requestAnimationFrame(() => {
+      updatePopoverPosition();
+      const firstItem = popoverRef.current?.querySelector<HTMLButtonElement>('button[role="menuitem"]');
+      firstItem?.focus();
+    });
+
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
       if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(e.target as Node)
+        popoverRef.current &&
+        !popoverRef.current.contains(target) &&
+        userTriggerRef.current &&
+        !userTriggerRef.current.contains(target)
       ) {
         setUserMenuOpen(false);
       }
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setUserMenuOpen(false);
-        userTriggerRef.current?.focus();
-      }
+    const handleResize = () => {
+      updatePopoverPosition();
     };
 
+    const handleScroll = () => {
+      setUserMenuOpen(false);
+    };
+
+    window.addEventListener('resize', handleResize);
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScroll, true);
 
     return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [userMenuOpen]);
+  }, [userMenuOpen, updatePopoverPosition]);
+
+  // Keyboard navigation within the user menu
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      popoverRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]') || []
+    );
+    if (!items.length) return;
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[nextIndex]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[prevIndex]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setUserMenuOpen(false);
+      userTriggerRef.current?.focus();
+    } else if (e.key === 'Tab') {
+      setUserMenuOpen(false);
+    }
+  };
+
+  const closeMenu = (returnFocus = true) => {
+    setUserMenuOpen(false);
+    if (returnFocus) {
+      userTriggerRef.current?.focus();
+    }
+  };
+
+  // Listen for custom events to toggle panels
+  useEffect(() => {
+    const handleToggleRight = () => toggleRight();
+    window.addEventListener('ecostep:toggleright', handleToggleRight);
+    return () => window.removeEventListener('ecostep:toggleright', handleToggleRight);
+  }, [toggleRight]);
+
+  // Set scrollTop = 0 on sidebar and guide on mount and on every route change
+  useEffect(() => {
+    if (sidebarRef.current) {
+      sidebarRef.current.scrollTop = 0;
+    }
+    const guideEl = document.getElementById('ecoguide-panel');
+    if (guideEl) {
+      guideEl.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   // Determine user role
   const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
@@ -113,15 +325,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   // Filter nav items based on role
   const navItems = useMemo(() => {
     return ALL_NAV_ITEMS.filter(item => {
-      // Public routes: show to everyone
       if (!item.systemAdminOnly && !item.superAdminOnly) {
         return true;
       }
-      // Operational features: visible to all administrators
       if (item.systemAdminOnly && isAnyAdmin) {
         return true;
       }
-      // SUPER_ADMIN only routes
       if (item.superAdminOnly && isSuperAdmin) {
         return true;
       }
@@ -129,298 +338,261 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     });
   }, [isAnyAdmin, isSuperAdmin]);
 
-  // Place notch function - uses getBoundingClientRect for fractional precision
-  const place = () => {
-    const el = capRef.current;
-    if (!el) return;
-    const a = el.querySelector<HTMLElement>('.es-row[aria-current="page"]');
-    if (!a) return;
-    const capsuleRect = el.getBoundingClientRect();
-    const rowRect = a.getBoundingClientRect();
-    const y = (rowRect.top - capsuleRect.top + rowRect.height / 2) + 'px';
-    lastKnownNotchY = y;
-    el.style.setProperty('--notch-y', y);
-  };
-
-  // Auto density: count rows and recalculate layout
-  const fit = () => {
-    const el = capRef.current;
-    if (!el) return;
-    const rowCount = el.querySelectorAll('.es-row').length;
-    el.style.setProperty('--rows', String(rowCount));
-    place();
-  };
-
-  // Call place after route changes (layout effect)
-  useLayoutEffect(() => {
-    place();
-    if (!ready) {
-      const id = requestAnimationFrame(() => {
-        setReady(true);
-      });
-      return () => cancelAnimationFrame(id);
-    }
-  }, [location.pathname, expanded, navItems.length, ready]);
-
-  // Recalculate when nav items change (role change adds/removes items)
-  useEffect(() => {
-    fit();
-  }, [navItems.length]);
-
-  // Mount effect - fit and place on mount, resize, and font ready
-  useEffect(() => {
-    // Initial fit
-    fit();
-
-    // Place after fonts ready
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(fit);
-    }
-
-    // Fit on resize (row heights change with viewport height)
-    const handleResize = () => fit();
-    window.addEventListener('resize', handleResize);
-
-    // Observe capsule size changes (row heights are dynamic)
-    let resizeObserver: ResizeObserver | null = null;
-    if (capRef.current && window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(() => place());
-      resizeObserver.observe(capRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-    };
-  }, []);
-
-  // Persist expanded state
-  const handleToggle = () => {
-    setExpanded((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('ecostep.sidebar.v2', next ? 'expanded' : 'collapsed');
-      } catch {}
-      return next;
-    });
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
-      // Redirect to landing page after logout
       navigate(ROUTES.HOME);
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
-  const userName = user?.name || 'Guest';
+  const userName = user?.name || (player ? player.username : 'Guest');
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
 
   return (
     <div
-      className={`es-shell${ready ? ' es-ready' : ''}`}
+      ref={shellRef}
+      className={`es-shell sh ${isAnimating ? 'is-animating' : ''}`}
       id="shell"
       data-theme={theme}
-      data-expanded={String(expanded)}
+      style={{
+        '--left-w': leftCollapsed ? '72px' : '200px',
+        '--left-panel-w': leftCollapsed ? '72px' : '200px',
+        '--right-w': rightCollapsed ? '56px' : '330px',
+        '--right-panel-w': rightCollapsed ? '56px' : '330px',
+      } as React.CSSProperties}
     >
-      <aside className="es-side">
-        <a className="es-badge" href="/" aria-label="EcoStep home">
-          <span className="es-ico">
-            <Footprints size={26} strokeWidth={1.75} />
-          </span>
-          <span className="es-brand">
-            <b>EcoStep</b>
-            <small>Energy monitoring</small>
-          </span>
-        </a>
+      {/* Left Navigation */}
+      <nav 
+        ref={sidebarRef}
+        className={`es-side nv sidebar ${leftCollapsed ? 'collapsed nv-collapsed' : ''}`}
+        id="left-sidebar"
+        aria-label="Main"
+      >
+        {/* Header with Wordmark and Collapse Toggle */}
+        <div className="es-nav-header">
+          <a href="/" className="es-brand-link" aria-label="EcoStep home" title="EcoStep">
+            <span className="es-brand-mark-circle">E</span>
+            <span className="es-brand-text">EcoStep</span>
+          </a>
+          <button
+            type="button"
+            className="es-toggle-btn ib"
+            onClick={toggleLeft}
+            aria-expanded={!leftCollapsed}
+            aria-controls="left-sidebar"
+            aria-label={leftCollapsed ? "Expand sidebar (Toggle sidebar)" : "Collapse sidebar (Toggle sidebar)"}
+            title={leftCollapsed ? "Expand sidebar ( [ )" : "Collapse sidebar ( [ )"}
+          >
+            <ChevronLeft size={16} strokeWidth={2} className="es-toggle-icon" />
+          </button>
+        </div>
 
-        <nav 
-          className="es-capsule" 
-          id="capsule" 
-          ref={capRef} 
-          aria-label="Main"
-          style={lastKnownNotchY ? ({ '--notch-y': lastKnownNotchY } as React.CSSProperties) : undefined}
-        >
-          <div className="es-fill"></div>
-          <div className="es-ring"></div>
-          <div className="es-blob"></div>
-          <div className="es-content">
-            <button
-              className="es-row"
-              id="toggle"
-              aria-expanded={expanded}
-              aria-label="Toggle sidebar"
-              onClick={handleToggle}
+        {/* Navigation Items */}
+        <div className="es-nav-list">
+          {navItems.map(({ to, label, Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => `es-nav-item nav-link ${isActive ? 'active on' : ''}`}
+              title={leftCollapsed ? label : undefined}
+              aria-label={label}
             >
-              <span className="es-ico">
-                <Menu size={22} strokeWidth={1.5} />
+              <span className="es-nav-icon">
+                <Icon size={18} strokeWidth={1.8} />
               </span>
-              <span className="es-label">Collapse</span>
-            </button>
-            <div className="es-sep"></div>
-            
-            {navItems.map(({ to, label, Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className="es-row"
-                data-route
-              >
-                <span className="es-ico">
-                  <Icon size={22} strokeWidth={1.5} />
-                </span>
-                <span className="es-label">{label}</span>
-              </NavLink>
-            ))}
-            
-            <div className="es-grow"></div>
-            <div className="es-sep"></div>
+              <span className="es-nav-label">
+                {label}
+              </span>
+            </NavLink>
+          ))}
+        </div>
 
-            {/* Expandable User / Settings / Theme Row */}
-            <div className="es-user-anchor" ref={userMenuRef}>
-              {userMenuOpen && (
-                <div 
-                  className="es-user-popover" 
-                  role="menu"
-                  aria-label="User settings and account menu"
+        {/* Pinned Bottom User Card */}
+        <div className="es-user-anchor" ref={userMenuRef}>
+          <button
+            ref={userTriggerRef}
+            type="button"
+            className="es-user-card uc"
+            id="user-menu-trigger"
+            aria-label="User account and settings"
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+            onClick={() => setUserMenuOpen((prev) => !prev)}
+            title={leftCollapsed ? `${userName} (${userRole})` : undefined}
+          >
+            <div className="es-user-avatar av">
+              {isAuthenticated && (user?.name || user?.email) ? (
+                <span>{(user.name || user.email || 'A')[0].toUpperCase()}</span>
+              ) : player ? (
+                <span>{(player.username || 'P')[0].toUpperCase()}</span>
+              ) : (
+                <span>T</span>
+              )}
+            </div>
+            <div className="es-user-info info">
+              <div className="es-user-name">{userName}</div>
+              <div className="es-user-sub">{player ? 'Guest Player' : userRole}</div>
+            </div>
+            <ChevronUp 
+              size={16} 
+              strokeWidth={1.8} 
+              className="es-user-chevron"
+              style={{
+                transform: userMenuOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease',
+                color: 'var(--mu)',
+                flexShrink: 0
+              }}
+            />
+          </button>
+        </div>
+
+        {/* User Menu Popover in Document Portal */}
+        {userMenuOpen && typeof document !== 'undefined' && createPortal(
+          <div 
+            ref={popoverRef}
+            className="user-menu es-user-popover pop" 
+            role="menu"
+            aria-label="User settings and account menu"
+            onKeyDown={handleMenuKeyDown}
+            style={{
+              position: 'fixed',
+              left: `${popoverPos.left}px`,
+              bottom: `${popoverPos.bottom}px`,
+              zIndex: 50,
+            }}
+          >
+            {/* Header: avatar 40px | name (15px/600) + role (12px muted) */}
+            <div className="um-head es-popover-header h">
+              <div className="um-avatar es-popover-avatar c">
+                {isAuthenticated && (user?.name || user?.email) ? (
+                  <span>{(user.name || user.email || 'A')[0].toUpperCase()}</span>
+                ) : (
+                  <User size={18} strokeWidth={2} />
+                )}
+              </div>
+              <div className="um-info es-popover-user-info">
+                <div className="um-name es-popover-name font-semibold text-sm">{userName}</div>
+                <div className="um-role es-popover-role text-xs text-[var(--mu)]">{player ? 'Guest Player' : userRole}</div>
+                {user?.email && (
+                  <div className="text-[11px] text-[var(--mu)] truncate">{user.email}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Flat Menu Body (single buttons, no second dividers) */}
+            <div className="um-body es-popover-body">
+              {/* Settings Navigation (Admin only) */}
+              {isAnyAdmin && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="um-item es-popover-item it"
+                  onClick={() => {
+                    closeMenu(false);
+                    navigate(ROUTES.SETTINGS);
+                  }}
                 >
-                  <div className="es-popover-header">
-                    <div className="es-popover-avatar">
-                      <User size={18} strokeWidth={2} />
-                    </div>
-                    <div className="es-popover-user-info">
-                      <div className="es-popover-name">{userName}</div>
-                      <div className="es-popover-role">{userRole}</div>
-                      {user?.email && (
-                        <div className="es-popover-email">{user.email}</div>
-                      )}
-                    </div>
-                  </div>
+                  <Settings size={18} strokeWidth={1.8} />
+                  <span>Settings</span>
+                  {isSettingsActive && (
+                    <span className="um-badge es-popover-badge tg">Active</span>
+                  )}
+                </button>
+              )}
 
-                  <div className="es-popover-sep" />
+              {/* Theme Toggle */}
+              <button
+                type="button"
+                role="menuitem"
+                className="um-item es-popover-item it"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
+                <span>Theme</span>
+                <span className="um-badge es-popover-badge tg">
+                  {theme === 'dark' ? 'Dark' : 'Light'}
+                </span>
+              </button>
 
-                  <div className="es-popover-body">
-                    {/* Settings Navigation */}
-                    {isAnyAdmin && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className={`es-popover-item ${isSettingsActive ? 'es-active' : ''}`}
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          navigate(ROUTES.SETTINGS);
-                        }}
-                      >
-                        <span className="es-popover-icon">
-                          <Settings size={18} strokeWidth={1.75} />
-                        </span>
-                        <span className="es-popover-label">Settings</span>
-                        {isSettingsActive && (
-                          <span className="es-popover-pill">Active</span>
-                        )}
-                      </button>
-                    )}
-
-                    {/* Theme Toggle */}
+              {/* Auth / Player Actions */}
+              {isAnyAdmin ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="um-item es-popover-item it"
+                  onClick={() => {
+                    closeMenu(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut size={18} strokeWidth={1.8} />
+                  <span>Sign Out</span>
+                </button>
+              ) : (
+                <>
+                  {player ? (
                     <button
                       type="button"
                       role="menuitem"
-                      className="es-popover-item"
-                      onClick={toggleTheme}
+                      className="um-item es-popover-item it"
+                      onClick={async () => {
+                        closeMenu(false);
+                        await playerLogout();
+                      }}
                     >
-                      <span className="es-popover-icon">
-                        {theme === 'dark' ? (
-                          <Sun size={18} strokeWidth={1.75} />
-                        ) : (
-                          <Moon size={18} strokeWidth={1.75} />
-                        )}
-                      </span>
-                      <span className="es-popover-label">Theme</span>
-                      <span className="es-popover-badge">
-                        {theme === 'dark' ? 'Dark' : 'Light'}
-                      </span>
+                      <LogOut size={18} strokeWidth={1.8} />
+                      <span>Switch Player</span>
                     </button>
-
-                    {/* Auth Action */}
-                    {isAnyAdmin ? (
-                      <>
-                        <div className="es-popover-sep" />
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="es-popover-item es-popover-logout"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                        >
-                          <span className="es-popover-icon">
-                            <LogOut size={18} strokeWidth={1.75} />
-                          </span>
-                          <span className="es-popover-label">Sign Out</span>
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="es-popover-item"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          navigate(ROUTES.LOGIN);
-                        }}
-                      >
-                        <span className="es-popover-icon">
-                          <User size={18} strokeWidth={1.75} />
-                        </span>
-                        <span className="es-popover-label">Sign In</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <button
-                ref={userTriggerRef}
-                className={`es-row es-user-trigger ${userMenuOpen ? 'es-open' : ''}`}
-                id="user-menu-trigger"
-                aria-label="User account and settings"
-                aria-haspopup="true"
-                aria-expanded={userMenuOpen}
-                aria-current={isSettingsActive ? 'page' : undefined}
-                onClick={() => setUserMenuOpen((prev) => !prev)}
-              >
-                <span className="es-avatar">
-                  <span className="es-ico">
-                    <User size={22} strokeWidth={1.5} />
-                  </span>
-                </span>
-                <span className="es-label">
-                  {isAnyAdmin ? (
-                    <>
-                      {userName}<small>{userRole}</small>
-                    </>
                   ) : (
-                    <>
-                      Guest<small>Read-only access</small>
-                    </>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="um-item es-popover-item it text-[#087A3A] dark:text-[#19D46A]"
+                      onClick={() => {
+                        closeMenu(false);
+                        openPlayerModal();
+                      }}
+                    >
+                      <Gamepad2 size={18} strokeWidth={1.8} />
+                      <span>Play &amp; Learn</span>
+                    </button>
                   )}
-                </span>
-                <span className={`es-user-chevron ${userMenuOpen ? 'es-open' : ''}`}>
-                  <ChevronUp size={16} strokeWidth={2} />
-                </span>
-              </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="um-item es-popover-item it"
+                    onClick={() => {
+                      closeMenu(false);
+                      navigate(ROUTES.LOGIN);
+                    }}
+                  >
+                    <User size={18} strokeWidth={1.8} />
+                    <span>Admin Sign In</span>
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-        </nav>
-      </aside>
-      <main className="es-main">{children}</main>
+          </div>,
+          document.body
+        )}
+      </nav>
+
+      {/* Main Column */}
+      <main ref={mainRef} className="es-main mn es-main-col main">
+        {children}
+      </main>
+
+      {/* Right EcoGuide Panel */}
+      <ChatPanel 
+        isCollapsed={rightCollapsed} 
+        onToggleCollapse={toggleRight} 
+      />
     </div>
   );
 }

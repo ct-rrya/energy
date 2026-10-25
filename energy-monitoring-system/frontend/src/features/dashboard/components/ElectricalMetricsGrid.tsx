@@ -1,4 +1,3 @@
-import { Zap, Activity, TrendingUp } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 import { MetricCardSkeleton } from './MetricCardSkeleton';
 
@@ -102,7 +101,7 @@ export function ElectricalMetricsGrid({
             unit="V"
             precision={1}
             color="accent"
-            icon={<Zap size={16} />}
+            dotColor="#13B95C"
           />
 
           {/* Current Metric */}
@@ -112,7 +111,7 @@ export function ElectricalMetricsGrid({
             unit="A"
             precision={2}
             color="amber"
-            icon={<Activity size={16} />}
+            dotColor="#7FE0A8"
           />
 
           {/* Power Metric */}
@@ -122,7 +121,7 @@ export function ElectricalMetricsGrid({
             unit="W"
             precision={1}
             color="blue"
-            icon={<Zap size={16} />}
+            dotColor="#19D46A"
           />
 
           {/* Energy Today Metric */}
@@ -132,7 +131,7 @@ export function ElectricalMetricsGrid({
             unit="kWh"
             precision={2}
             color="amber"
-            icon={<TrendingUp size={16} />}
+            dotColor="#A6DC3C"
           />
         </>
       )}

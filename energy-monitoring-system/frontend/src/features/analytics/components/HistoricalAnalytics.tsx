@@ -299,7 +299,7 @@ export function HistoricalAnalytics() {
               </p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={250}>
               <RechartsLineChart data={energyChartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 49, 44, 0.1)" />
                 <XAxis 
@@ -391,7 +391,7 @@ export function HistoricalAnalytics() {
               </p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={250}>
               <RechartsLineChart data={electricalChartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 49, 44, 0.1)" />
                 <XAxis 

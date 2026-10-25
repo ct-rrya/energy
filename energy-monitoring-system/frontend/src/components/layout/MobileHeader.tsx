@@ -13,10 +13,12 @@ import {
   X,
   ChevronRight,
   Shield,
-  SlidersHorizontal
+  SlidersHorizontal,
+  MessageSquare
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { PlayerNavPill } from '@/features/gamification';
 import { ROUTES } from '@/routes/routes.config';
 
 interface MobileHeaderProps {
@@ -125,6 +127,19 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
 
       {/* Right: Quick Action & Expandable Menu Icon */}
       <div className="flex items-center gap-1.5 sm:gap-2 relative">
+        {/* Guest Gamification Player Pill */}
+        <PlayerNavPill />
+
+        {/* Chat / EcoGuide Trigger Button */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('ecostep:openchat'))}
+          aria-label="Toggle chat"
+          className="w-9 h-9 rounded-full border border-neutral-200 dark:border-white/10 flex items-center justify-center text-current/80 hover:text-current hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs cursor-pointer"
+        >
+          <MessageSquare size={17} strokeWidth={2} />
+        </button>
+
         {/* Quick Home / Landing Link */}
         <Link
           to={ROUTES.HOME}

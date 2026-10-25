@@ -63,7 +63,7 @@ export function CircularGauge({
     <div className={cn('relative flex flex-col items-center', className)}>
       {/* Gauge */}
       <div style={{ width: config.diameter, height: config.diameter }} className="relative">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" debounce={250}>
           <PieChart>
             <Pie
               data={data}

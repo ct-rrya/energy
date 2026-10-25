@@ -122,7 +122,7 @@ export function ChartsLayoutContainer() {
           onRetry={refetchVoltage}
           height={chartHeight}
         >
-          <ResponsiveContainer width="100%" height={chartHeight}>
+          <ResponsiveContainer width="100%" height={chartHeight} debounce={250}>
             <LineChart 
               data={voltageData}
               margin={{ 
@@ -184,7 +184,7 @@ export function ChartsLayoutContainer() {
           onRetry={refetchCurrent}
           height={chartHeight}
         >
-          <ResponsiveContainer width="100%" height={chartHeight}>
+          <ResponsiveContainer width="100%" height={chartHeight} debounce={250}>
             <LineChart 
               data={currentData}
               margin={{ 

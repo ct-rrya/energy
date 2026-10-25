@@ -13,8 +13,10 @@ import {
   Users,
   Settings,
   Shield,
-  ChevronRight
+  ChevronRight,
+  BatteryCharging,
 } from 'lucide-react';
+import { InfoTooltip } from '@/components/common/InfoTooltip';
 import type { SensorReading, DashboardMetrics } from '../types/dashboard.types';
 
 interface MobileEnergyHarvestingDashboardProps {
@@ -155,8 +157,8 @@ export function MobileEnergyHarvestingDashboard({
                   position: 'absolute',
                   top: 'calc(100% + 10px)',
                   right: 0,
-                  width: 'min(240px, calc(100vw - 48px))',
-                  background: '#16261e',
+                  width: 'min(280px, calc(100vw - 48px))',
+                  background: isOnline ? '#16261e' : '#2a1215',
                   color: '#ffffff',
                   borderRadius: '12px',
                   padding: '10px 14px',
@@ -169,9 +171,11 @@ export function MobileEnergyHarvestingDashboard({
                 }}
               >
                 <span>
-                  {isActive
-                    ? 'System is active and currently harvesting kinetic footstep energy.'
-                    : 'This status indicates that there is a potential issue or requires attention.'}
+                  {!isOnline
+                    ? 'The real-time connection to the EcoStep IoT stream is currently disconnected. Attempting to reconnect.'
+                    : isActive
+                    ? 'All EcoStep hardware telemetry and database services are connected and operating normally.'
+                    : 'EcoStep is in active standby and ready for footsteps. Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault.'}
                 </span>
 
                 {/* Upward pointer triangle pointing directly at the status badge */}
@@ -184,7 +188,7 @@ export function MobileEnergyHarvestingDashboard({
                     height: 0,
                     borderLeft: '7px solid transparent',
                     borderRight: '7px solid transparent',
-                    borderBottom: '7px solid #16261e',
+                    borderBottom: `7px solid ${isOnline ? '#16261e' : '#2a1215'}`,
                   }}
                   aria-hidden="true"
                 />
@@ -196,7 +200,7 @@ export function MobileEnergyHarvestingDashboard({
               type="button"
               onClick={() => setIsTooltipOpen((prev) => !prev)}
               onDoubleClick={() => setManualState((prev) => (prev === 'active' ? 'empty' : 'active'))}
-              aria-label={isActive ? 'Status: Live' : 'Status: Warning'}
+              aria-label={!isOnline ? 'Status: Offline' : isActive ? 'Status: Live' : 'Status: Standby'}
               title="Tap to view status details"
               style={{
                 display: 'inline-flex',
@@ -204,15 +208,45 @@ export function MobileEnergyHarvestingDashboard({
                 gap: '8px',
                 padding: '4px 14px 4px 5px',
                 borderRadius: '9999px',
-                background: theme === 'dark' ? 'rgba(25, 55, 38, 0.75)' : '#ebf7ee',
-                border: theme === 'dark' ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(46, 125, 50, 0.15)',
+                background: !isOnline
+                  ? theme === 'dark' ? 'rgba(69, 26, 26, 0.75)' : '#fee2e2'
+                  : isActive
+                  ? theme === 'dark' ? 'rgba(25, 55, 38, 0.75)' : '#ebf7ee'
+                  : theme === 'dark' ? 'rgba(69, 50, 18, 0.75)' : '#fef3c7',
+                border: !isOnline
+                  ? theme === 'dark' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(239, 68, 68, 0.2)'
+                  : isActive
+                  ? theme === 'dark' ? '1px solid rgba(34, 197, 94, 0.25)' : '1px solid rgba(46, 125, 50, 0.15)'
+                  : theme === 'dark' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                 cursor: 'pointer',
                 transition: 'transform 0.15s ease, background-color 0.2s ease',
               }}
             >
               {/* Circular Icon */}
-              {isActive ? (
+              {!isOnline ? (
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                    }}
+                  />
+                </div>
+              ) : isActive ? (
                 <div
                   style={{
                     width: '24px',
@@ -250,16 +284,12 @@ export function MobileEnergyHarvestingDashboard({
                 >
                   <span
                     style={{
-                      color: '#111827',
-                      fontWeight: 900,
-                      fontSize: '14px',
-                      lineHeight: 1,
-                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                      marginTop: '-1px',
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
                     }}
-                  >
-                    !
-                  </span>
+                  />
                 </div>
               )}
 
@@ -268,11 +298,15 @@ export function MobileEnergyHarvestingDashboard({
                 style={{
                   fontSize: '13.5px',
                   fontWeight: 600,
-                  color: theme === 'dark' ? '#86efac' : '#234d35',
+                  color: !isOnline
+                    ? theme === 'dark' ? '#fca5a5' : '#991b1b'
+                    : isActive
+                    ? theme === 'dark' ? '#86efac' : '#234d35'
+                    : theme === 'dark' ? '#fcd34d' : '#92400e',
                   letterSpacing: '-0.01em',
                 }}
               >
-                {isActive ? 'Live' : 'Warning'}
+                {!isOnline ? 'Offline' : isActive ? 'Live' : 'Standby'}
               </span>
             </button>
           </div>
@@ -317,9 +351,18 @@ export function MobileEnergyHarvestingDashboard({
           /* Active State: Hero Power Reading */
           <div className="text-left">
             <div className="flex items-center justify-between">
-              <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-                POWER OUTPUT
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                  POWER OUTPUT
+                </span>
+                <InfoTooltip
+                  title="Power Output (mW)"
+                  description="Shows how quickly EcoStep is generating electrical power at this moment. Power may rise when someone steps on a tile and decrease when no steps are detected."
+                  analogy="Like a car's speedometer, it shows how fast—not the total amount."
+                  technicalNote="Measured in milliwatts (mW), where 1 mW = 0.001 W. Calculated using voltage and current: P = V × I."
+                  size={14}
+                />
+              </div>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live
@@ -367,7 +410,7 @@ export function MobileEnergyHarvestingDashboard({
         )}
       </div>
 
-      {/* 3. Secondary Metrics: Matching Desktop 1:1 */}
+      {/* 3. Secondary Metrics: Matching Desktop with Plain-Language Clarity */}
       <div className="space-y-3">
         {/* Steps Today Card */}
         <div
@@ -379,10 +422,24 @@ export function MobileEnergyHarvestingDashboard({
           }}
         >
           <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-              STEPS TODAY
-            </span>
-            <Footprints size={16} className="text-neutral-400 opacity-60" />
+            <div className="flex items-center gap-1.5">
+              <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                STEPS TODAY
+              </span>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                • Footstep Count
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <InfoTooltip
+                title="Steps Today"
+                description="The number of footsteps recorded by EcoStep today."
+                analogy="Like counting how many times a button is pressed!"
+                technicalNote="Counts detected steps using the system's step-detection algorithm, which filters out baseline mechanical noise."
+                size={14}
+              />
+              <Footprints size={16} className="text-neutral-400 opacity-60" />
+            </div>
           </div>
           <div className="mt-1 flex items-baseline">
             <span
@@ -399,6 +456,60 @@ export function MobileEnergyHarvestingDashboard({
           </p>
         </div>
 
+        {/* Harvested Energy Card (NEW) */}
+        <div
+          className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
+          style={{
+            backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+            border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E5E7EB',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          {(() => {
+            const rawWh = displayMetrics?.dailyEnergy ?? 0;
+            const isMilli = rawWh < 1;
+            const valStr = isMilli ? (rawWh * 1000).toFixed(2) : rawWh.toFixed(3);
+            const unitStr = isMilli ? 'mWh' : 'Wh';
+            return (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                      ENERGY TODAY
+                    </span>
+                    <span className="text-[10px] font-semibold text-amber-500">
+                      • Total Stored
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip
+                      title="Energy Today (mWh)"
+                      description="The total electrical energy EcoStep has recorded today from detected footsteps."
+                      analogy="If power is how fast electricity is being generated, energy is the total amount generated over time."
+                      technicalNote="Calculated by accumulating power over time. Measured in milliwatt-hours (mWh)."
+                      size={14}
+                    />
+                    <BatteryCharging size={16} className="text-amber-500 opacity-70" />
+                  </div>
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span
+                    className="text-3xl font-extrabold tabular-nums tracking-tight text-amber-500"
+                  >
+                    {valStr}
+                  </span>
+                  <span className="text-sm font-bold text-amber-500">
+                    {unitStr}
+                  </span>
+                </div>
+                <p className="text-[12px] text-neutral-400 dark:text-neutral-400 mt-1 italic font-medium">
+                  {rawWh > 0 ? 'Accumulated from footstep activity' : 'Awaiting collection'}
+                </p>
+              </>
+            );
+          })()}
+        </div>
+
         {/* Voltage Card */}
         <div
           className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
@@ -409,10 +520,24 @@ export function MobileEnergyHarvestingDashboard({
           }}
         >
           <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-              VOLTAGE
-            </span>
-            <Zap size={16} className="text-neutral-400 opacity-60" />
+            <div className="flex items-center gap-1.5">
+              <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                VOLTAGE
+              </span>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                • Electrical Push
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <InfoTooltip
+                title="Voltage (Volts)"
+                description="The electric potential difference generated across the piezoelectric discs when compressed by a footstep."
+                analogy="Think of voltage as the water pressure in a hose: higher pressure pushes the charge forward."
+                technicalNote="Measured across the tile conditioning circuit prior to regulator input."
+                size={14}
+              />
+              <Zap size={16} className="text-neutral-400 opacity-60" />
+            </div>
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span
@@ -437,7 +562,7 @@ export function MobileEnergyHarvestingDashboard({
           </p>
         </div>
 
-        {/* Equiv. Current Card */}
+        {/* Current Card */}
         <div
           className="rounded-2xl p-4 sm:p-5 transition-all duration-200"
           style={{
@@ -447,10 +572,24 @@ export function MobileEnergyHarvestingDashboard({
           }}
         >
           <div className="flex items-center justify-between">
-            <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
-              EQUIV. CURRENT
-            </span>
-            <Activity size={16} className="text-neutral-400 opacity-60" />
+            <div className="flex items-center gap-1.5">
+              <span className="block text-[11px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">
+                CURRENT
+              </span>
+              <span className="text-[10px] font-semibold text-blue-500">
+                • Charge Flow Rate
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <InfoTooltip
+                title="Current (Milliamps)"
+                description="The rate at which electrical charge flows through the circuit during tile discharge."
+                analogy="Like the volume of water flowing through the hose per second."
+                technicalNote="Equivalent current computed over a 1-second discharge interval: I = P / V."
+                size={14}
+              />
+              <Activity size={16} className="text-neutral-400 opacity-60" />
+            </div>
           </div>
           <div className="mt-1 flex items-baseline gap-1">
             <span

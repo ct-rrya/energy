@@ -1,46 +1,68 @@
 /**
  * ChatHeader Component
  * 
- * Panel header with Sprout icon, title, and controls.
+ * EcoGuide header with title (17px), subtitle (13px muted),
+ * and 32x32 circular icon buttons (.ib style).
  */
 
-import { X, RotateCcw, Sprout } from 'lucide-react';
+import { X, RotateCcw, ChevronRight } from 'lucide-react';
 import '../chat.css';
 
 interface ChatHeaderProps {
-  onClose: () => void;
+  onClose?: () => void;
+  onCollapse?: () => void;
   onNewChat: () => void;
+  isExpanded?: boolean;
+  isMobile?: boolean;
 }
 
-export function ChatHeader({ onClose, onNewChat }: ChatHeaderProps) {
+export function ChatHeader({
+  onClose,
+  onCollapse,
+  onNewChat,
+  isExpanded = true,
+  isMobile = false,
+}: ChatHeaderProps) {
+  const handleToggleOrClose = () => {
+    if (isMobile && onClose) {
+      onClose();
+    } else if (onCollapse) {
+      onCollapse();
+    } else if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="chat-header">
-      <div className="chat-header-left">
-        <div className="chat-avatar-tile">
-          <Sprout size={20} strokeWidth={2} />
-        </div>
-        <div className="chat-header-text">
-          <div className="chat-header-title">EcoChat</div>
-          <div className="chat-header-subtitle">EcoStep assistant</div>
-        </div>
+    <div className="chat-header row">
+      <div>
+        <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--t)' }}>EcoGuide</h2>
+        <div className="sub text-[13px] text-[var(--mu)]">Learning assistant</div>
       </div>
       
-      <div className="chat-header-actions">
+      <div className="ibs flex items-center gap-2">
         <button
-          className="chat-icon-button"
+          className="ib"
           onClick={onNewChat}
           aria-label="Start new chat"
           type="button"
+          title="New conversation"
         >
-          <RotateCcw size={20} strokeWidth={2} />
+          <RotateCcw size={16} strokeWidth={1.8} />
         </button>
         <button
-          className="chat-icon-button"
-          onClick={onClose}
-          aria-label="Close"
+          className="ib"
+          onClick={handleToggleOrClose}
+          aria-label={isMobile ? 'Close chat' : 'Collapse EcoGuide'}
+          aria-expanded={isExpanded}
           type="button"
+          title={isMobile ? 'Close' : 'Collapse EcoGuide ( ] )'}
         >
-          <X size={20} strokeWidth={2} />
+          {isMobile ? (
+            <X size={16} strokeWidth={1.8} />
+          ) : (
+            <ChevronRight size={16} strokeWidth={1.8} />
+          )}
         </button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -34,6 +34,8 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
+import { PlayersModule } from './players/players.module';
+import { GamificationModule } from './gamification/gamification.module';
 
 /**
  * Root Application Module
@@ -133,6 +135,8 @@ import { ChatModule } from './chat/chat.module';
     AlertsModule, // Phase 8: Alert Management System
     ChatbotModule, // EcoChat: AI-powered chatbot with Gemini/Groq fallback
     ChatModule, // Public web chat interface
+    PlayersModule, // Gamification Phase 2: Guest Player Foundation
+    GamificationModule, // Gamification Phase 3: Missions, Quizzes, XP & Badges
 
     PublicModule, // Public telemetry API
 

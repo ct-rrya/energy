@@ -47,8 +47,7 @@ export function EnergyMonitoringPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="page">
         
         {/* Public User Banner */}
         {isPublicUser && (
@@ -297,8 +296,6 @@ export function EnergyMonitoringPage() {
           {/* 2×2 Grid Layout: Voltage Trend, Current Trend, Energy Period, Cumulative Energy */}
           <HistoricalAnalyticsGrid />
         </div>
-
       </div>
-    </div>
   );
 }

@@ -81,11 +81,14 @@ vi.mock('@/routes/routes.config', () => ({
     HOME: '/',
     DASHBOARD: '/dashboard',
     ANALYTICS: '/dashboard/analytics',
+    MISSIONS: '/missions',
     REPORTS: '/dashboard/reports',
     ALERTS: '/dashboard/alerts',
     SETTINGS: '/dashboard/settings',
     PROFILE: '/dashboard/profile',
     LOGIN: '/login',
+    ADMIN_DIAGNOSTICS: '/admin/diagnostics',
+    ADMIN_MANAGEMENT: '/admin-management',
   },
 }));
 

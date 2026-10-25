@@ -69,13 +69,9 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
 
   // Color system based on theme
   const colors = {
-    accent: theme === 'light' ? '#428475' : '#3ED98A',
-    gridColor: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : 'rgba(42, 46, 55, 0.3)',
-    textColor: theme === 'light' ? '#1A312C' : '#9CA3AF',
-    filterBg: theme === 'light' ? '#F5F6F8' : '#12141A',
-    filterActiveBg: theme === 'light' ? '#E8F8EF' : '#1E2B24',
-    filterText: theme === 'light' ? 'rgba(26, 49, 44, 0.7)' : '#9CA3AF',
-    border: theme === 'light' ? 'rgba(26, 49, 44, 0.1)' : '#2A2E37',
+    line: theme === 'dark' ? '#19D46A' : '#13B95C',
+    gridColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(13, 27, 20, 0.12)',
+    textColor: theme === 'dark' ? '#93A89C' : '#5B6B62',
   };
 
   /**
@@ -86,7 +82,13 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
   return (
     <ChartContainer
       title="Power Generation Over Time"
-      subtitle="Real-time power output from piezoelectric floor tiles"
+      subtitle="Instantaneous power output (mW) showing peaks of footstep activity"
+      tooltip={{
+        title: "Power Generation (mW)",
+        description: "Visualizes the speed of energy generation. Peaks represent periods of active walking across the tiles, while flat areas represent quiet times.",
+        analogy: "Like watching traffic surges on a highway: spikes represent busy rushes of footsteps.",
+        technicalNote: "Measured in milliwatts (mW). Calculated from voltage and equivalent load current."
+      }}
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
@@ -94,7 +96,7 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
       height={isMobile ? 250 : 400}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 400}>
+      <ResponsiveContainer width="100%" height={isMobile ? 250 : 400} debounce={250}>
         <LineChart 
           data={chartData}
           margin={{ 
@@ -104,7 +106,7 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
             bottom: isMobile ? 15 : 5 
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
+          <CartesianGrid strokeDasharray="4 4" stroke={colors.gridColor} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
@@ -137,8 +139,8 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#3DDC97"
-            strokeWidth={isMobile ? 2 : 3}
+            stroke={colors.line}
+            strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 4 }}
           />

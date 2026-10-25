@@ -2,12 +2,12 @@
  * ChatInput Component
  * 
  * Auto-growing textarea with send button.
+ * Single flat container: <form class="chat-input"> with <textarea> and <button>.
  * Enter sends, Shift+Enter adds newline.
- * 500 char limit with counter appearing at 400+.
  */
 
 import { useState, useRef, useEffect } from 'react';
-import type { KeyboardEvent, ChangeEvent } from 'react';
+import type { KeyboardEvent, ChangeEvent, FormEvent } from 'react';
 import { SendHorizontal } from 'lucide-react';
 import '../chat.css';
 
@@ -17,28 +17,30 @@ interface ChatInputProps {
 }
 
 const MAX_CHARS = 500;
-const COUNTER_THRESHOLD = 400;
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
-  const [isPressed, setIsPressed] = useState(false);
+  const [isMultiLine, setIsMultiLine] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea smoothly without unwanted scrollbars
+  // Auto-resize textarea smoothly without borders or unwanted scrollbars
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     textarea.style.height = 'auto';
     const scrollHeight = textarea.scrollHeight;
-    if (scrollHeight > 96) {
-      textarea.style.height = '96px';
+    const maxHeight = 96;
+    const minHeight = 24;
+
+    if (scrollHeight > maxHeight) {
+      textarea.style.height = `${maxHeight}px`;
       textarea.style.overflowY = 'auto';
-      textarea.style.borderRadius = '18px';
+      setIsMultiLine(true);
     } else {
-      textarea.style.height = `${Math.max(scrollHeight, 44)}px`;
+      textarea.style.height = `${Math.max(scrollHeight, minHeight)}px`;
       textarea.style.overflowY = 'hidden';
-      textarea.style.borderRadius = scrollHeight > 50 ? '18px' : '999px';
+      setIsMultiLine(scrollHeight > 36 || value.includes('\n'));
     }
   }, [value]);
 
@@ -47,7 +49,13 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     if (trimmed && !disabled) {
       onSend(trimmed);
       setValue('');
+      setIsMultiLine(false);
     }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    handleSend();
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -63,44 +71,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   };
 
-  const showCounter = value.length >= COUNTER_THRESHOLD;
   const canSend = value.trim().length > 0 && !disabled;
 
   return (
-    <div className="chat-input-wrapper">
-      <div className="chat-input-container">
-        <textarea
-          ref={textareaRef}
-          className="chat-input-textarea"
-          placeholder="Type your message..."
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          rows={1}
-          aria-label="Type your message"
-        />
-        {showCounter && (
-          <span className="chat-input-counter">
-            {value.length}/{MAX_CHARS}
-          </span>
-        )}
-      </div>
+    <form
+      className={`chat-input ${isMultiLine ? 'is-multiline' : ''}`}
+      onSubmit={handleSubmit}
+    >
+      <textarea
+        ref={textareaRef}
+        placeholder="Type your message..."
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        rows={1}
+        aria-label="Type your message"
+        maxLength={MAX_CHARS}
+      />
       <button
-        className="chat-input-send"
-        onClick={handleSend}
+        type="submit"
+        className="send chat-input-send"
         disabled={!canSend}
-        onMouseDown={() => setIsPressed(true)}
-        onMouseUp={() => setIsPressed(false)}
-        onMouseLeave={() => setIsPressed(false)}
-        style={{
-          transform: isPressed && canSend ? 'scale(0.95)' : 'scale(1)',
-        }}
         aria-label="Send message"
-        type="button"
       >
-        <SendHorizontal size={20} strokeWidth={2} />
+        <SendHorizontal size={16} strokeWidth={2} />
       </button>
-    </div>
+    </form>
   );
 }

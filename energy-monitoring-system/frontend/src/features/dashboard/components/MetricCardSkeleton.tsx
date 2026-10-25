@@ -21,10 +21,15 @@
 export function MetricCardSkeleton() {
   return (
     <div
-      className="eco-card"
+      className="cd st stat eco-card"
       style={{
-        padding: '24px', // Match MetricCard padding
-        borderRadius: '12px',
+        padding: '18px 22px',
+        borderRadius: '22px',
+        minHeight: '130px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        boxSizing: 'border-box',
       }}
       aria-busy="true"
       aria-label="Loading metric"

@@ -1,48 +1,9 @@
 /**
- * ChatLauncher Component
+ * ChatLauncher Component (Deprecated / Removed)
  * 
- * 56px floating green circle button with MessageSquare icon.
- * Opens ChatPanel via custom event.
+ * Floating chat button removed in favor of docked right-hand ChatPanel layout.
  */
 
-import { MessageSquare } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import '../chat.css';
-
 export function ChatLauncher() {
-  const [isOpen, setIsOpen] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 767px)');
-
-  // Listen for open/close events
-  useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
-    const handleClose = () => setIsOpen(false);
-    
-    window.addEventListener('ecostep:openchat', handleOpen);
-    window.addEventListener('ecostep:closechat', handleClose);
-    
-    return () => {
-      window.removeEventListener('ecostep:openchat', handleOpen);
-      window.removeEventListener('ecostep:closechat', handleClose);
-    };
-  }, []);
-
-  const handleClick = () => {
-    window.dispatchEvent(new CustomEvent('ecostep:openchat', { bubbles: true }));
-  };
-
-  // Hide launcher while panel is open or on mobile (since EcoChat is in the bottom navigation)
-  if (isOpen || isMobile) return null;
-
-  return (
-    <button
-      className="chat-launcher"
-      onClick={handleClick}
-      aria-label="Open EcoChat assistant"
-      type="button"
-    >
-      <MessageSquare size={20} strokeWidth={2} />
-    </button>
-  );
+  return null;
 }

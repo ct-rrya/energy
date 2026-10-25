@@ -76,7 +76,7 @@ export const MiniTrendGraph = React.memo(function MiniTrendGraph({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height={height} debounce={250}>
       <LineChart
         data={filteredData}
         margin={{ top: 5, right: 5, bottom: 5, left: 5 }}

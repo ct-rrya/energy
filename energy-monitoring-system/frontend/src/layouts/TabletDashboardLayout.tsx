@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ChatPanel } from '@/features/chat';
 
 interface TabletDashboardLayoutProps {
   children?: ReactNode;
@@ -13,8 +14,8 @@ interface TabletDashboardLayoutProps {
  * 
  * Tablet-adapted layout for viewports 768px - 1023px:
  * - Clean header with title context and navigation drawer
- * - Spacious tablet padding (px-6 py-6) allowing charts and tables full breathing room
- * - Prevents awkward narrow sidebar squeeze on 768px screens
+ * - Middle main panel flex: 1, min-width: 0, scrolls independently
+ * - Docked ChatPanel to the right edge (defaults to collapsed slim rail)
  */
 export function TabletDashboardLayout({ children }: TabletDashboardLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -29,7 +30,7 @@ export function TabletDashboardLayout({ children }: TabletDashboardLayoutProps) 
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col overflow-x-hidden"
+      className="h-screen h-[100dvh] w-full flex flex-col overflow-hidden"
       style={{
         backgroundColor: theme === 'dark' ? '#0b132b' : '#f5f7fa',
         color: theme === 'dark' ? '#eaf3ee' : '#0d1b14',
@@ -44,10 +45,13 @@ export function TabletDashboardLayout({ children }: TabletDashboardLayoutProps) 
         onClose={() => setDrawerOpen(false)} 
       />
 
-      {/* Tablet Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto overflow-x-hidden px-6 py-6">
-        {children ?? <Outlet />}
-      </main>
+      {/* Tablet Content Area & Docked Chat Panel */}
+      <div className="flex-1 flex flex-row overflow-hidden min-h-0">
+        <main className="flex-1 min-w-0 overflow-y-auto px-6 py-6">
+          {children ?? <Outlet />}
+        </main>
+        <ChatPanel />
+      </div>
     </div>
   );
 }

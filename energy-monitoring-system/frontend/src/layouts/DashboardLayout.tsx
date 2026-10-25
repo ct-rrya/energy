@@ -2,7 +2,6 @@ import { type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { DesktopDashboardLayout } from './DesktopDashboardLayout';
-import { TabletDashboardLayout } from './TabletDashboardLayout';
 import { MobileDashboardLayout } from './MobileDashboardLayout';
 
 interface DashboardLayoutProps {
@@ -20,15 +19,11 @@ interface DashboardLayoutProps {
  * Reuses all existing routes, Socket.IO connections, queries, and business logic without duplication.
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isDesktop, isTablet } = useDeviceLayout();
+  const { isMobile } = useDeviceLayout();
 
-  if (isDesktop) {
-    return <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>;
+  if (isMobile) {
+    return <MobileDashboardLayout>{children ?? <Outlet />}</MobileDashboardLayout>;
   }
 
-  if (isTablet) {
-    return <TabletDashboardLayout>{children ?? <Outlet />}</TabletDashboardLayout>;
-  }
-
-  return <MobileDashboardLayout>{children ?? <Outlet />}</MobileDashboardLayout>;
+  return <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>;
 }

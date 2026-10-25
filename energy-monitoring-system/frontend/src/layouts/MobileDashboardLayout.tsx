@@ -4,6 +4,7 @@ import { MobileHeader } from '@/components/layout/MobileHeader';
 import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ChatPanel } from '@/features/chat';
 
 interface MobileDashboardLayoutProps {
   children?: ReactNode;
@@ -13,10 +14,11 @@ interface MobileDashboardLayoutProps {
  * MobileDashboardLayout Component
  * 
  * Dedicated mobile layout for viewports < 768px:
- * - Fixed 56px touch header with title and quick actions
+ * - Fixed 56px touch header with title, quick actions, and chat trigger
  * - Slide-out navigation drawer with role-based routing and account menu
- * - Persistent bottom navigation bar (Home, Activity, Assistant, Settings)
+ * - Persistent bottom navigation bar (Home, Activity, Missions, EcoGuide)
  * - Zero horizontal overflow container with touch-friendly spacing
+ * - Full-screen slide-over ChatPanel
  */
 export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -31,7 +33,7 @@ export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) 
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col overflow-x-hidden"
+      className="h-full h-[100dvh] w-full flex flex-col overflow-x-hidden overflow-y-auto"
       style={{
         backgroundColor: theme === 'dark' ? '#0b132b' : '#f5f7fa',
         color: theme === 'dark' ? '#eaf3ee' : '#0d1b14',
@@ -53,6 +55,9 @@ export function MobileDashboardLayout({ children }: MobileDashboardLayoutProps) 
 
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav onOpenMenu={() => setDrawerOpen(true)} />
+
+      {/* Mobile Full-Screen Slide-over Chat Panel */}
+      <ChatPanel />
     </div>
   );
 }

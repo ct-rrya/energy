@@ -11,8 +11,18 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('ecostep-theme');
-    return (stored === 'dark' ? 'dark' : 'light') as Theme;
+    try {
+      const stored = localStorage.getItem('ecostep-theme');
+      if (stored === 'dark' || stored === 'light') {
+        return stored;
+      }
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {
+      /* ignore storage error */
+    }
+    return 'light';
   });
 
   useEffect(() => {

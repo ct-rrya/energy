@@ -6,9 +6,10 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { InactivityProvider } from '@/contexts/InactivityContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { PlayerProvider } from '@/contexts/PlayerContext';
+import { GuestPlayerModal } from '@/features/gamification';
 import { SessionWarningModal } from '@/components/common/SessionWarningModal';
 import { router } from '@/routes';
-import { ChatLauncher, ChatPanel } from '@/features/chat';
 
 /**
  * TanStack Query Client Configuration
@@ -50,25 +51,20 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <InactivityProvider timeout={10 * 60 * 1000} warningThreshold={1 * 60 * 1000}>
-              <SocketProvider>
-                <RouterProvider router={router} />
-                <ToastContainer />
-                {/* 
-                  ChatLauncher and ChatPanel rendered outside routing container
-                  to appear globally across all routes.
-                  z-index: 9999+ (launcher) and 10000+ (panel) ensures proper stacking.
-                  Requirements: 4.1
-                */}
-                <ChatLauncher />
-                <ChatPanel />
-                {/* 
-                  SessionWarningModal for admin inactivity timeout
-                  Shows at 9 minutes (1 minute before auto-logout)
-                */}
-                <SessionWarningModal />
-              </SocketProvider>
-            </InactivityProvider>
+            <PlayerProvider>
+              <InactivityProvider timeout={10 * 60 * 1000} warningThreshold={1 * 60 * 1000}>
+                <SocketProvider>
+                  <RouterProvider router={router} />
+                  <ToastContainer />
+                  <GuestPlayerModal />
+                  {/* 
+                    SessionWarningModal for admin inactivity timeout
+                    Shows at 9 minutes (1 minute before auto-logout)
+                  */}
+                  <SessionWarningModal />
+                </SocketProvider>
+              </InactivityProvider>
+            </PlayerProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

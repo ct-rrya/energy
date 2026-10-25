@@ -1,6 +1,5 @@
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { getUserRole } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
@@ -14,6 +13,9 @@ import { useEffect, useState } from 'react';
 import type { SensorReading } from '../types/dashboard.types';
 import { useDeviceLayout } from '@/hooks/useDeviceLayout';
 import { MobileEnergyHarvestingDashboard } from '../components/MobileEnergyHarvestingDashboard';
+import { EcoStepAtAGlance } from '../components/EcoStepAtAGlance';
+import { HowHarvestingWorksCard } from '../components/HowHarvestingWorksCard';
+import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChart';
 
 /**
  * EcoStep Dashboard Page - Hero Power Dashboard
@@ -48,22 +50,21 @@ import { MobileEnergyHarvestingDashboard } from '../components/MobileEnergyHarve
  */
 function DashboardPageContent() {
   const { isAuthenticated, user } = useAuth();
-  const { theme } = useTheme();
   const { isMobile } = useDeviceLayout();
-  
+
   // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
 
   // Fetch dashboard data with error and loading states (Requirements 16.1-16.3, 17.1-17.5)
-  const { 
+  const {
     data: metrics,
   } = useDashboardMetrics();
-  
-  const { 
+
+  const {
     data: systemStatus,
   } = useSystemHealth();
-  
+
   const { lastReading, isConnected: isWebSocketConnected } = useLiveSensorData();
 
   // Last known good data cache for fallback (Requirements 19.2, 19.5)
@@ -75,6 +76,7 @@ function DashboardPageContent() {
     if (lastReading) {
       const validationResult = validateSensorData(lastReading);
       if (validationResult.isValid) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLastGoodReading(lastReading);
       } else {
         console.warn('[Dashboard] Sensor reading validation failed:', validationResult.errors);
@@ -82,36 +84,37 @@ function DashboardPageContent() {
     }
   }, [lastReading]);
 
-  useEffect(() => {
-    if (metrics && validateMetrics(metrics)) {
-      setLastGoodMetrics(metrics);
-    }
-  }, [metrics]);
-
   // Metrics validation function (Requirement 17.6)
   const validateMetrics = (data: typeof metrics): boolean => {
     if (!data) return false;
-    
+
     // Validate dailyEnergy is reasonable (0-1000 kWh)
     if (data.dailyEnergy !== undefined && (data.dailyEnergy < 0 || data.dailyEnergy > 1000)) {
       console.warn('[Dashboard] Invalid daily energy value:', data.dailyEnergy);
       return false;
     }
-    
+
     return true;
   };
+
+  useEffect(() => {
+    if (metrics && validateMetrics(metrics)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLastGoodMetrics(metrics);
+    }
+  }, [metrics]);
 
   // Use cached data as fallback when validation fails (Requirements 19.2, 19.6)
   const displayReading = (() => {
     // If no activity today, don't show stale readings from previous days
     const todaySteps = metrics?.todayTotalSteps ?? lastGoodMetrics?.todayTotalSteps;
     const hasActivityToday = todaySteps !== undefined && todaySteps > 0;
-    
+
     if (!hasActivityToday) {
       // No activity today - return undefined to show empty state
       return undefined;
     }
-    
+
     // Has activity today - validate and use current or cached reading
     if (lastReading) {
       const validationResult = validateSensorData(lastReading);
@@ -121,7 +124,7 @@ function DashboardPageContent() {
     }
     return lastGoodReading;
   })();
-  
+
   const displayMetrics = metrics && validateMetrics(metrics)
     ? metrics
     : lastGoodMetrics;
@@ -147,24 +150,9 @@ function DashboardPageContent() {
   }
 
   return (
-    <div 
-      className="min-h-screen transition-colors duration-300"
-      style={{
-        backgroundColor: theme === 'dark' ? '#0B132B' : '#F5F7FA',
-        padding: '16px 24px', // Page padding (Requirements 1.7)
-      }}
-    >
-      <div 
-        className="max-w-[1600px] mx-auto"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px', // Reduced section gap for compact layout (Requirements 1.7)
-        }}
-      >
-        
-        {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
-        <DashboardHeader
+    <div className="page">
+      {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
+      <DashboardHeader
           title="EcoStep Central"
           subtitle="Real-time monitoring of piezoelectric energy harvesting system"
           systemStatus={getSystemStatus()}
@@ -172,83 +160,51 @@ function DashboardPageContent() {
           isWebSocketConnected={isWebSocketConnected}
         />
 
-        {/* Main Metrics Grid - Power as hero, then Steps, Voltage, Current */}
-        
-        {/* Global responsive layout styles */}
+        {/* EcoStep at a Glance: Plain-language live summary without duplicate metric cards */}
+        <EcoStepAtAGlance
+          todaySteps={displayMetrics?.todayTotalSteps}
+          dailyEnergy={displayMetrics?.dailyEnergy}
+          isOnline={getSystemStatus() === 'connected'}
+        />
+
+        {/* Main Metrics Grid - Container Query Driven */}
         <style>{`
-          /* Mobile: Stacked layout with compact gap */
           .dashboard-metrics-grid {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
+            width: 100%;
+            min-width: 0;
           }
           
           .metric-hero-power {
             width: 100%;
+            min-width: 0;
           }
           
           .dashboard-secondary-metrics {
             width: 100%;
+            min-width: 0;
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
           }
 
-          @media (min-width: 480px) and (max-width: 767px) {
+          @container (max-width: 899px) {
             .dashboard-secondary-metrics {
-              grid-template-columns: repeat(3, 1fr);
-              gap: 12px;
+              grid-template-columns: repeat(2, 1fr);
             }
           }
-          
-          /* Tablet: Power hero above, 3 metrics in row below */
-          @media (min-width: 768px) and (max-width: 1023px) {
-            .dashboard-metrics-grid {
-              display: flex;
-              flex-direction: column;
-              gap: 24px;
-            }
-            
-            .metric-hero-power {
-              width: 100%;
-            }
-            
+
+          @container (max-width: 479px) {
             .dashboard-secondary-metrics {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 16px;
-            }
-          }
-          
-          /* Desktop: Power hero (60%) left, 3 metrics stacked (40%) right */
-          @media (min-width: 1024px) {
-            .dashboard-metrics-grid {
-              display: flex;
-              flex-direction: row;
-              gap: 24px;
-            }
-            
-            .metric-hero-power {
-              width: 60%;
-              flex-basis: 60%;
-              flex-grow: 0;
-              flex-shrink: 1;
-            }
-            
-            .dashboard-secondary-metrics {
-              width: 40%;
-              flex-basis: 40%;
-              flex-grow: 0;
-              flex-shrink: 1;
-              display: flex;
-              flex-direction: column;
-              gap: 16px;
+              grid-template-columns: 1fr;
             }
           }
         `}</style>
-        
+
         <div className="dashboard-metrics-grid">
-          
+
           {/* Hero Power Card - Prominent display with AI analysis */}
           <div className="metric-hero-power">
             <HeroPowerCard
@@ -260,33 +216,80 @@ function DashboardPageContent() {
             />
           </div>
 
-          {/* Secondary Metrics - Steps, Voltage, Current */}
+          {/* Secondary Metrics - Steps, Energy Today, Voltage, Current */}
           <div className="dashboard-secondary-metrics">
-            
+
             {/* Step Count */}
-            <div className="metric-steps">
+            <div className="metric-steps min-w-0">
               <MetricCard
                 label="Steps Today"
+                plainDescription="Footsteps on Tile"
+                tooltip={{
+                  title: "Steps Today",
+                  description: "The number of footsteps recorded by EcoStep today.",
+                  analogy: "Like counting how many times a button is pressed!",
+                  technicalNote: "Counts detected steps using the system's step-detection algorithm, which filters out baseline mechanical noise."
+                }}
                 value={displayMetrics?.todayTotalSteps}
                 unit=""
                 precision={0}
                 color="accent"
+                dotColor="#19D46A"
                 subtitle={
                   displayMetrics?.todayTotalSteps === undefined || displayMetrics?.todayTotalSteps === 0
-                    ? "No steps yet"
+                    ? "No steps yet today"
                     : undefined
                 }
               />
             </div>
 
+            {/* Daily Harvested Energy -> Explicitly "Energy Today" */}
+            <div className="metric-energy min-w-0">
+              {(() => {
+                const rawEnergy = displayMetrics?.dailyEnergy ?? 0;
+                const isMilliWh = rawEnergy < 1;
+                const displayVal = isMilliWh ? rawEnergy * 1000 : rawEnergy;
+                return (
+                  <MetricCard
+                    label="Energy Today"
+                    plainDescription="Total Stored Clean Energy"
+                    tooltip={{
+                      title: "Energy Today (mWh)",
+                      description: "The total accumulated electrical energy generated by all footsteps today and stored in the capacitor bank. Unlike Power Output (which is the speed right now), Energy Today is the running total that keeps increasing with every step.",
+                      analogy: "If Power Output is your car speed (km/h), Energy Today is the total distance traveled (km).",
+                      technicalNote: "Energy = ∫ Power(t) dt. Measured in Watt-hours (Wh) or milliwatt-hours (mWh)."
+                    }}
+                    value={displayMetrics?.dailyEnergy !== undefined ? displayVal : undefined}
+                    unit={isMilliWh ? "mWh" : "Wh"}
+                    precision={isMilliWh ? 2 : 3}
+                    color="amber"
+                    dotColor="#A6DC3C"
+                    subtitle={
+                      displayMetrics?.dailyEnergy === undefined || displayMetrics?.dailyEnergy === 0
+                        ? "Awaiting footsteps"
+                        : undefined
+                    }
+                  />
+                );
+              })()}
+            </div>
+
             {/* Voltage */}
-            <div className="metric-voltage">
+            <div className="metric-voltage min-w-0">
               <MetricCard
                 label="Voltage"
+                plainDescription="Electrical Push"
+                tooltip={{
+                  title: "Voltage (Volts)",
+                  description: "The electric potential difference generated across the piezoelectric discs when compressed by a footstep.",
+                  analogy: "Think of voltage as the water pressure in a hose: higher pressure pushes the charge forward.",
+                  technicalNote: "Measured across the tile conditioning circuit prior to regulator input."
+                }}
                 value={displayReading?.voltage}
                 unit="V"
                 precision={2}
                 color="accent"
+                dotColor="#13B95C"
                 subtitle={
                   displayReading?.voltage === undefined
                     ? "Waiting for data"
@@ -295,17 +298,25 @@ function DashboardPageContent() {
               />
             </div>
 
-            {/* Equivalent Current (at 1-second discharge) */}
-            <div className="metric-current">
+            {/* Current */}
+            <div className="metric-current min-w-0">
               <MetricCard
-                label="Equiv. Current"
+                label="Current"
+                plainDescription="Charge Flow Rate"
+                tooltip={{
+                  title: "Current (Milliamps)",
+                  description: "The rate at which electrical charge flows through the circuit during tile discharge.",
+                  analogy: "Like the volume of water flowing through the hose per second.",
+                  technicalNote: "Equivalent current computed over a 1-second discharge interval: I = P / V."
+                }}
                 value={displayReading?.current ? displayReading.current * 1000 : undefined}
                 unit="mA"
                 precision={1}
                 color="blue"
+                dotColor="#7FE0A8"
                 subtitle={
                   displayReading?.current === undefined || displayReading?.current === 0
-                    ? "Start generating"
+                    ? "Discharge at rest"
                     : undefined
                 }
               />
@@ -315,7 +326,14 @@ function DashboardPageContent() {
 
         </div>
 
-      </div>
+        {/* Real-Time Power Generation Waveform Chart (Recovered space) */}
+        <div className="w-full min-w-0">
+          <PowerGenerationChart />
+        </div>
+
+        {/* Educational Process: How EcoStep Footstep Harvesting Works */}
+        <HowHarvestingWorksCard />
+
     </div>
   );
 }

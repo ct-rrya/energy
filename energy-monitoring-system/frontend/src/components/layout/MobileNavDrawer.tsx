@@ -14,7 +14,9 @@ import {
   Settings, 
   Users,
   X,
-  ChevronRight
+  ChevronRight,
+  GraduationCap,
+  Trophy,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +40,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
+  { to: ROUTES.MISSIONS, label: 'Educational Missions', Icon: GraduationCap },
+  { to: ROUTES.LEADERBOARD, label: 'Leaderboard', Icon: Trophy },
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
