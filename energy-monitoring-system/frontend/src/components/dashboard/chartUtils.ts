@@ -31,11 +31,18 @@ export function transformToChartData(
     return [];
   }
   
-  return timeSeries.dataPoints.map((point: TimeSeriesDataPoint) => ({
-    timestamp: point.timestamp,
-    value: point.value,
-    label: point.label,
-  }));
+  return timeSeries.dataPoints
+    .map((point: TimeSeriesDataPoint) => ({
+      timestamp: point.timestamp,
+      value: point.value,
+      label: point.label,
+    }))
+    .sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      if (isNaN(timeA) || isNaN(timeB)) return 0;
+      return timeA - timeB;
+    });
 }
 
 /**

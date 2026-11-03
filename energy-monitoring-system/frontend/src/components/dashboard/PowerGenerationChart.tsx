@@ -10,10 +10,12 @@ import type { TimeFilter, PowerGenerationChartProps } from './chartTypes';
 import {
   ResponsiveContainer,
   LineChart,
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
   Line,
+  Bar,
   Tooltip,
 } from 'recharts';
 
@@ -37,21 +39,29 @@ import {
  * <PowerGenerationChart />
  * ```
  */
-export function PowerGenerationChart({ className = '' }: PowerGenerationChartProps) {
+export function PowerGenerationChart({
+  className = '',
+  defaultTimeFilter = '7days',
+  startDate,
+  endDate,
+  granularity: propGranularity,
+}: PowerGenerationChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
   
-  // Use fixed 7-day range instead of user-selectable filters
-  // The Analytics page controls the unified period for all charts
-  const timeFilter: TimeFilter = '7days';
+  // Use defaultTimeFilter unless overridden by unified Analytics page period
+  const timeFilter: TimeFilter = defaultTimeFilter;
   
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
   // triggering automatic refetch of chart data for live updates
   useChartRealTimeUpdates();
   
-  // Fetch power generation data based on current time filter
-  const { data: timeSeries, isLoading, error, refetch } = usePowerGeneration(timeFilter);
+  // Fetch power generation data based on current time filter or unified page period
+  const { data: timeSeries, isLoading, error, refetch } = usePowerGeneration(
+    timeFilter,
+    startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
+  );
   
   // Transform API data to chart format and apply data point limiting for performance
   // Limit to max 100 points for 7-day view to prevent performance degradation (Requirement 9.8)
@@ -61,11 +71,13 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
     return limitDataPoints(transformed, 100);
   }, [timeSeries]);
   
-  // Determine if dataset is empty
+  // Determine if dataset is empty or sparse (< 2 points)
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
+  const isSparse = chartData.length > 0 && chartData.length < 2;
+  const chartHeight = isMobile ? 240 : 270;
 
-  // Determine granularity - fixed to 'day' for 7-day period
-  const granularity = 'day' as const;
+  // Determine granularity from prop or timeFilter
+  const granularity = propGranularity ?? (timeFilter === 'today' ? 'hour' : 'day');
 
   // Color system based on theme
   const colors = {
@@ -78,6 +90,13 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
    * Filter button configuration - REMOVED
    * Charts now controlled by unified Analytics page period selector
    */
+
+  const chartMargin = {
+    top: 8,
+    right: isMobile ? 8 : 16,
+    left: isMobile ? -12 : 0,
+    bottom: isMobile ? 8 : 0,
+  };
 
   return (
     <ChartContainer
@@ -92,59 +111,95 @@ export function PowerGenerationChart({ className = '' }: PowerGenerationChartPro
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
+      isSparse={isSparse}
       onRetry={refetch}
-      height={isMobile ? 250 : 400}
+      height={chartHeight}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 400} debounce={250}>
-        <LineChart 
-          data={chartData}
-          margin={{ 
-            top: 5, 
-            right: isMobile ? 8 : 20, 
-            left: isMobile ? -18 : 0, 
-            bottom: isMobile ? 15 : 5 
-          }}
-        >
-          <CartesianGrid strokeDasharray="4 4" stroke={colors.gridColor} />
-          <XAxis
-            dataKey="timestamp"
-            tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
-            stroke={colors.textColor}
-            tick={{ fontSize: isMobile ? 11 : 12 }}
-            angle={isMobile ? -45 : 0}
-            textAnchor={isMobile ? 'end' : 'middle'}
-            style={{ fontSize: isMobile ? '11px' : '12px' }}
-          />
-          <YAxis
-            label={{
-              value: 'Power (mW)',
-              angle: -90,
-              position: 'insideLeft',
-              style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-            }}
-            stroke={colors.textColor}
-            tick={{ fontSize: isMobile ? 11 : 12 }}
-            style={{ fontSize: isMobile ? '11px' : '12px' }}
-            tickFormatter={(value) => (value * 1000).toFixed(2)}
-          />
-          <Tooltip 
-            content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
-            position={{ y: 0 }}
-            wrapperStyle={{ zIndex: 1000 }}
-            allowEscapeViewBox={{ x: false, y: true }}
-            cursor={{ strokeDasharray: '3 3' }}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke={colors.line}
-            strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
-        </LineChart>
+      <ResponsiveContainer width="100%" height={chartHeight} debounce={32}>
+        {isSparse ? (
+          <BarChart data={chartData} margin={chartMargin}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+            />
+            <YAxis
+              label={{
+                value: 'Power (mW)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
+              }}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+              tickCount={4}
+              domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : 0.0001)]}
+              tickFormatter={(value) => (value * 1000).toFixed(3)}
+            />
+            <Tooltip
+              content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
+              position={{ y: 0 }}
+              wrapperStyle={{ zIndex: 1000 }}
+              allowEscapeViewBox={{ x: false, y: true }}
+              cursor={{ fill: 'rgba(19, 185, 92, 0.08)' }}
+              isAnimationActive={false}
+            />
+            <Bar
+              dataKey="value"
+              fill={colors.line}
+              maxBarSize={48}
+              radius={[8, 8, 0, 0]}
+            />
+          </BarChart>
+        ) : (
+          <LineChart data={chartData} margin={chartMargin}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+            />
+            <YAxis
+              label={{
+                value: 'Power (mW)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
+              }}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+              tickCount={4}
+              domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : 0.0001)]}
+              tickFormatter={(value) => (value * 1000).toFixed(3)}
+            />
+            <Tooltip
+              content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
+              position={{ y: 0 }}
+              wrapperStyle={{ zIndex: 1000 }}
+              allowEscapeViewBox={{ x: false, y: true }}
+              cursor={{ strokeDasharray: '3 3' }}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={colors.line}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          </LineChart>
+        )}
       </ResponsiveContainer>
     </ChartContainer>
   );

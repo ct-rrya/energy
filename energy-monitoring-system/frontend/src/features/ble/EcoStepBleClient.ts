@@ -41,6 +41,10 @@ export class EcoStepBleClient {
   private onNotificationListener: ((event: any) => void) | null = null;
   private onDisconnectListener: (() => void) | null = null;
 
+  public isSimulation: boolean = false;
+  private simulationTimer: any = null;
+  private telemetryTimer: any = null;
+
   constructor(onStatusChange: (status: BleStatusMessage) => void = () => {}) {
     this.onStatusChange = onStatusChange;
   }
@@ -70,18 +74,44 @@ export class EcoStepBleClient {
     return window.isSecureContext ?? true;
   }
 
-
   /**
-   * Check if currently connected to the GATT server.
+   * Check if currently connected to the GATT server (or simulated).
    */
   public isConnected(): boolean {
+    if (this.isSimulation) return true;
     return Boolean(this.server && this.server.connected);
+  }
+
+  /**
+   * Connect to simulated EcoStep Harvester device for testing or demonstration
+   */
+  public async connectSimulated(): Promise<boolean> {
+    this.disconnect();
+    this.isSimulation = true;
+
+    this.onStatusChange({
+      state: 'connecting',
+      message: 'Connecting to simulated EcoStep-Harvester...',
+      type: 'info',
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    this.onStatusChange({
+      state: 'connected',
+      message: 'Connected to EcoStep-Harvester (Demo / Simulated)!',
+      type: 'success',
+    });
+
+    return true;
   }
 
   /**
    * Connect to the EcoStep Harvester device via Web Bluetooth
    */
   public async connect(): Promise<boolean> {
+    this.isSimulation = false;
+
     if (!this.isSupported()) {
       throw new Error(
         'Web Bluetooth is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Bluefy on iOS.'
@@ -180,9 +210,19 @@ export class EcoStepBleClient {
 
       return true;
     } catch (err: any) {
+      const rawMsg = err?.message || '';
+      let displayMessage = rawMsg || 'Bluetooth connection cancelled or failed.';
+
+      // Preserve the specific keywords while providing actionable clarity
+      if (rawMsg.includes('globally disabled')) {
+        displayMessage = 'Web Bluetooth API globally disabled.';
+      } else if (rawMsg.includes('User cancelled') || rawMsg.includes('cancelled')) {
+        displayMessage = 'Bluetooth pairing cancelled by user.';
+      }
+
       this.onStatusChange({
         state: 'error',
-        message: err?.message || 'Bluetooth connection cancelled or failed.',
+        message: displayMessage,
         type: 'error',
       });
       throw err;
@@ -196,6 +236,62 @@ export class EcoStepBleClient {
     const trimmedSsid = ssid.trim();
     if (!trimmedSsid) {
       throw new Error('Please enter a valid Wi-Fi SSID.');
+    }
+
+    if (this.isSimulation) {
+      this.onStatusChange({
+        state: 'provisioning',
+        message: `Sending Wi-Fi credentials for "${trimmedSsid}"...`,
+        type: 'info',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      this.onStatusChange({
+        state: 'notification',
+        payload: {
+          event: 'wifi_status',
+          status: 'CONNECTING',
+          ssid: trimmedSsid,
+        },
+        message: `ESP32 is attempting to connect to "${trimmedSsid}"...`,
+        type: 'info',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      this.onStatusChange({
+        state: 'notification',
+        payload: {
+          event: 'wifi_status',
+          status: 'CONNECTED',
+          ssid: trimmedSsid,
+          ip: '192.168.1.188',
+        },
+        message: `✓ Successfully connected to Wi-Fi! Assigned IP: 192.168.1.188`,
+        type: 'success',
+      });
+
+      // Emitting simulated live telemetry pulses
+      let simSteps = 1240;
+      if (this.telemetryTimer) clearInterval(this.telemetryTimer);
+      this.telemetryTimer = setInterval(() => {
+        simSteps += Math.floor(Math.random() * 4) + 1;
+        this.onStatusChange({
+          state: 'notification',
+          payload: {
+            event: 'step',
+            steps: simSteps,
+            voltage: +(3.25 + (Math.random() * 0.1 - 0.05)).toFixed(2),
+            power: +(0.042 + (Math.random() * 0.008 - 0.004)).toFixed(4),
+            freq: +(1.8 + (Math.random() * 0.2 - 0.1)).toFixed(1),
+          },
+          message: 'Live telemetry received from EcoStep-Harvester',
+          type: 'info',
+        });
+      }, 3000);
+
+      return;
     }
 
     if (!this.writeChar || !this.isConnected()) {
@@ -243,6 +339,16 @@ export class EcoStepBleClient {
    * Disconnect from device and clean up event listeners
    */
   public disconnect(): void {
+    if (this.simulationTimer) {
+      clearTimeout(this.simulationTimer);
+      this.simulationTimer = null;
+    }
+    if (this.telemetryTimer) {
+      clearInterval(this.telemetryTimer);
+      this.telemetryTimer = null;
+    }
+    this.isSimulation = false;
+
     if (this.notifyChar && this.onNotificationListener) {
       try {
         this.notifyChar.removeEventListener('characteristicvaluechanged', this.onNotificationListener);

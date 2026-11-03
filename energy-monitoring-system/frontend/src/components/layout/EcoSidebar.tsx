@@ -306,15 +306,80 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     return () => window.removeEventListener('ecostep:toggleright', handleToggleRight);
   }, [toggleRight]);
 
-  // Set scrollTop = 0 on sidebar and guide on mount and on every route change
+  // Set scrollTop = 0 on sidebar, main, and guide on mount and on every route change,
+  // and observe page cards/sections for entrance blur-fade motion
   useEffect(() => {
     if (sidebarRef.current) {
       sidebarRef.current.scrollTop = 0;
+    }
+    const mainEl = mainRef.current;
+    if (mainEl) {
+      mainEl.scrollTop = 0;
     }
     const guideEl = document.getElementById('ecoguide-panel');
     if (guideEl) {
       guideEl.scrollTop = 0;
     }
+
+    if (!mainEl || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      return;
+    }
+
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) return;
+
+    const observedSet = new WeakSet<Element>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('es-blur-in');
+          }
+        });
+      },
+      { root: mainEl, threshold: 0.01, rootMargin: '40px 0px 40px 0px' }
+    );
+
+    const registerTargets = () => {
+      const selectors = [
+        '.page > *',
+        '.analytics-charts-grid > *',
+        '.dashboard-secondary-metrics > *',
+        '.g4 > *',
+        '.g3 > *',
+        '.g2 > *',
+      ].join(', ');
+
+      const nodes = mainEl.querySelectorAll<HTMLElement>(selectors);
+      nodes.forEach((el, idx) => {
+        if (observedSet.has(el)) return;
+        observedSet.add(el);
+        // Do not hide a wrapper that itself holds a grid whose children we animate
+        if (
+          el.classList.contains('analytics-charts-grid') ||
+          el.classList.contains('dashboard-secondary-metrics') ||
+          el.classList.contains('g4') ||
+          el.classList.contains('g3') ||
+          el.classList.contains('g2')
+        ) {
+          return;
+        }
+        el.classList.add('es-blur-reveal');
+        el.style.animationDelay = `${Math.min(idx % 6, 3) * 20}ms`;
+        io.observe(el);
+      });
+    };
+
+    registerTargets();
+    const mo = new MutationObserver(() => {
+      registerTargets();
+    });
+    mo.observe(mainEl, { childList: true, subtree: true });
+
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
   }, [location.pathname]);
 
   // Determine user role
@@ -585,7 +650,9 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
       {/* Main Column */}
       <main ref={mainRef} className="es-main mn es-main-col main">
+        <div className="es-main-edge-top" aria-hidden="true" />
         {children}
+        <div className="es-main-edge-bottom" aria-hidden="true" />
       </main>
 
       {/* Right EcoGuide Panel */}

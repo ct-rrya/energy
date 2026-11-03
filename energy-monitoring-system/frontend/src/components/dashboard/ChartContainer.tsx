@@ -37,10 +37,11 @@ export function ChartContainer({
   isLoading = false,
   error = null,
   isEmpty = false,
+  isSparse = false,
   onRetry,
   children,
   actions,
-  height = 400,
+  height = 270,
   className = '',
 }: ChartContainerProps) {
   const { theme } = useTheme();
@@ -106,19 +107,41 @@ export function ChartContainer({
       return <ChartEmptyState height={height} />;
     }
 
-    return children;
+    return (
+      <div
+        className="relative w-full min-w-0"
+        style={{ height: typeof height === 'number' ? `${height}px` : height }}
+      >
+        {isSparse && (
+          <div
+            className="absolute top-0 right-1 z-10 px-2.5 py-1 rounded-md text-[11px] leading-tight pointer-events-none"
+            style={{
+              backgroundColor: theme === 'light' ? 'rgba(232, 248, 239, 0.92)' : 'rgba(18, 36, 26, 0.92)',
+              color: themeColors.textSecondary,
+              border: `1px solid ${theme === 'light' ? 'rgba(19, 185, 92, 0.22)' : 'rgba(25, 212, 106, 0.25)'}`,
+            }}
+            data-testid="chart-sparse-hint"
+          >
+            <span>Not enough data yet, walk on the tile to log more</span>
+          </div>
+        )}
+        {children}
+      </div>
+    );
   };
 
   return (
     <div
       ref={containerRef}
-      className={`cd transition-all duration-200 ${className}`}
+      className={`cd transition-all duration-200 flex flex-col justify-between h-full w-full ${className}`}
       style={{
         borderRadius: '22px',
         backgroundColor: themeColors.cardBg,
         border: `1px solid ${themeColors.border}`,
         boxShadow: themeColors.shadow,
-        padding: '22px 24px',
+        padding: '16px 20px',
+        height: '100%',
+        width: '100%',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = themeColors.shadowHover;
@@ -132,14 +155,14 @@ export function ChartContainer({
     >
       {/* Header Section */}
       <div
-        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-4 pb-3 sm:pb-4 mb-3 sm:mb-4"
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 pb-2.5 mb-2.5"
         style={{ borderBottom: `1px solid var(--line)` }}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3
               className="font-semibold tracking-tight"
-              style={{ fontSize: '16px', color: themeColors.text, marginBottom: '4px' }}
+              style={{ fontSize: '16px', color: themeColors.text, marginBottom: 0 }}
             >
               {title}
             </h3>
@@ -155,8 +178,8 @@ export function ChartContainer({
           </div>
           {subtitle && (
             <p
-              className="text-xs sm:text-sm leading-relaxed"
-              style={{ color: themeColors.textSecondary }}
+              className="text-xs sm:text-sm leading-snug line-clamp-2"
+              style={{ color: themeColors.textSecondary, minHeight: '36px' }}
             >
               {subtitle}
             </p>
@@ -171,8 +194,8 @@ export function ChartContainer({
         )}
       </div>
 
-      {/* Content Section - responsive horizontal padding */}
-      <div className="px-2 sm:px-6 py-3 sm:py-4">
+      {/* Content Section */}
+      <div className="w-full min-w-0 pt-1 pb-0 flex-1 flex flex-col justify-end">
         {renderContent()}
       </div>
     </div>

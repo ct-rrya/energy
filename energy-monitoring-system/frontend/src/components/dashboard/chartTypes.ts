@@ -146,6 +146,14 @@ export interface CustomTooltipProps {
 export interface BaseChartProps {
   /** Optional CSS class name for custom styling */
   className?: string;
+  /** Optional start date (ISO 8601) from unified page period filter */
+  startDate?: string;
+  /** Optional end date (ISO 8601) from unified page period filter */
+  endDate?: string;
+  /** Optional aggregation granularity from unified page period filter */
+  granularity?: 'hour' | 'day' | 'week' | 'month';
+  /** Optional human-readable label for the selected period */
+  periodLabel?: string;
 }
 
 /**
@@ -229,6 +237,8 @@ export interface ChartContainerProps {
   error?: Error | null;
   /** Whether the dataset is empty (no data points) */
   isEmpty?: boolean;
+  /** Whether the dataset has fewer than 2 data points (sparse state) */
+  isSparse?: boolean;
   /** Callback function when retry button is clicked */
   onRetry?: () => void;
   /** Chart content to render when data is available */

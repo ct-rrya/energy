@@ -1,40 +1,46 @@
-import { useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/routes.config';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { LandingNav } from '../components/LandingNav';
-import { PiezoTileDemo } from '../components/PiezoTileDemo';
-import { HowItWorks } from '../components/HowItWorks';
-import { MonitoringPreview } from '../components/MonitoringPreview';
-import { EcoChatSection } from '../components/EcoChatSection';
-import { useScrollSpy } from '../hooks/useScrollSpy';
+import { useTheme } from '@/contexts/ThemeContext';
 import '@/styles/landing.css';
 
-/**
- * LandingPage Component
- * 
- * Performance & Motion Architecture:
- * - GPU-accelerated: Only animates `transform` and `opacity`
- * - Staggered Hero entrance (finishes in <850ms)
- * - Single-play scroll reveals via IntersectionObserver (no scroll listeners)
- * - Slow ambient background drift in pure CSS
- * - Interactive piezo tile demo and responsive device mockup
- * - Full prefers-reduced-motion accessibility support
- */
+const DEMO_VALUES = [12, 18, 14, 25, 21, 30, 17, 26, 15, 32, 24, 19];
+const DEMO_LABELS = [
+  '8:00 AM',
+  '9:00 AM',
+  '10:00 AM',
+  '11:00 AM',
+  '12:00 PM',
+  '1:00 PM',
+  '2:00 PM',
+  '3:00 PM',
+  '4:00 PM',
+  '5:00 PM',
+  '6:00 PM',
+  '7:00 PM',
+];
+
+const SECTIONS = [
+  { id: 'home', label: 'Home' },
+  { id: 'how', label: 'How it works' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'ecochat', label: 'EcoChat' },
+  { id: 'about', label: 'About' },
+] as const;
+
 export function LandingPage() {
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const { toggleTheme } = useTheme();
+  const [stepsCount, setStepsCount] = useState(0);
+  const [energyVal, setEnergyVal] = useState(0);
+  const [isPressed, setIsPressed] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  // Section refs for scroll-spy and scroll reveals
-  const homeRef = useRef<HTMLElement | null>(null);
-  const howRef = useRef<HTMLElement | null>(null);
-  const monitoringRef = useRef<HTMLElement | null>(null);
-  const ecochatRef = useRef<HTMLElement | null>(null);
-  const aboutRef = useRef<HTMLElement | null>(null);
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sectionRefs = [homeRef, howRef, monitoringRef, ecochatRef, aboutRef];
-  const activeIndex = useScrollSpy(sectionRefs);
-
-  // Enable smooth scroll only on landing page
+  // Enable landing page styling while mounted
   useEffect(() => {
     document.documentElement.classList.add('landing-page-active');
     return () => {
@@ -42,352 +48,397 @@ export function LandingPage() {
     };
   }, []);
 
-  // High-performance single-play scroll reveals using IntersectionObserver
+  // Header collapse on scroll (> 40px)
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 40;
+      setIsScrolled(scrolled);
+      if (!scrolled) {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Active section observer (threshold: 0.55) + entrance blur-fade reveal observer (threshold: 0.16)
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
-      // Fallback: immediately reveal all sections
-      [howRef, monitoringRef, ecochatRef, aboutRef].forEach((ref) => {
-        ref.current?.classList.add('is-revealed');
-      });
+      sectionRefs.current.forEach((sec) => sec?.classList.add('in-view'));
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries, obs) => {
+    const activeIo = new IntersectionObserver(
+      (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-revealed');
-            // Unobserve immediately so animation only plays once and costs zero runtime CPU
-            obs.unobserve(entry.target);
+            const idx = sectionRefs.current.indexOf(entry.target as HTMLElement);
+            if (idx !== -1) {
+              setActiveIdx(idx);
+            }
           }
         });
       },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.55 }
     );
 
-    [howRef, monitoringRef, ecochatRef, aboutRef].forEach((ref) => {
-      if (ref.current) {
-        observer.observe(ref.current);
+    const revealIo = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+          } else if (entry.intersectionRatio === 0) {
+            entry.target.classList.remove('in-view');
+          }
+        });
+      },
+      { threshold: [0, 0.04], rootMargin: '60px 0px' }
+    );
+
+    sectionRefs.current.forEach((sec) => {
+      if (sec) {
+        activeIo.observe(sec);
+        revealIo.observe(sec);
       }
     });
 
-    return () => observer.disconnect();
+    return () => {
+      activeIo.disconnect();
+      revealIo.disconnect();
+    };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    };
+  }, []);
+
+  const handleStepClick = () => {
+    setStepsCount((c) => c + 1);
+    setEnergyVal((e) => e + 0.12);
+    setIsPressed(true);
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+    pressTimerRef.current = setTimeout(() => {
+      setIsPressed(false);
+    }, 90);
+  };
+
   return (
-    <div className="landing-page" style={{ position: 'relative' }}>
-      {/* Slow Ambient Background Drift (GPU-only pure CSS) */}
-      <div className="ambient-glow-wrapper" aria-hidden="true">
-        <div className="ambient-blob ambient-blob-1" />
-        <div className="ambient-blob ambient-blob-2" />
+    <div className={`es-lp ${isScrolled ? 'sm' : ''}`}>
+      <div className="es-bgl" aria-hidden="true" />
+      <div className="es-edge-blur-top" aria-hidden="true" />
+      <div className="es-edge-blur-bottom" aria-hidden="true" />
+
+      <header className="es-hd" id="hd">
+        <a className="es-logo" href="#home" aria-label="EcoStep home">
+          <i>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0D1B14"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
+              <ellipse cx="8" cy="8" rx="2.6" ry="3.6" />
+              <ellipse cx="16" cy="14" rx="2.6" ry="3.6" />
+              <path d="M8 13v2M16 6v1" />
+            </svg>
+          </i>
+          <b>EcoStep</b>
+        </a>
+
+        <nav className="es-nv" aria-label="Primary">
+          {SECTIONS.map((sec, idx) => (
+            <a
+              key={sec.id}
+              href={`#${sec.id}`}
+              className={activeIdx === idx ? 'on' : ''}
+            >
+              {sec.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="es-rt">
+          <Link className="es-btn p adm" to={ROUTES.ADMIN_LOGIN}>
+            Admin login
+          </Link>
+          <button
+            type="button"
+            className="es-ic"
+            id="th"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="es-mb"
+            id="mb"
+            aria-expanded={menuOpen}
+            aria-controls="pn"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+            Menu
+          </button>
+        </div>
+      </header>
+
+      <div
+        className={`es-pn ${menuOpen ? 'open' : ''}`}
+        id="pn"
+        onClick={() => setMenuOpen(false)}
+      >
+        {SECTIONS.map((sec) => (
+          <a key={sec.id} href={`#${sec.id}`}>
+            {sec.label}
+          </a>
+        ))}
+        <Link to={ROUTES.ADMIN_LOGIN}>Admin login</Link>
       </div>
 
-      {/* CTU-DB Campus Photo Watermark */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          opacity: 0.05,
-          pointerEvents: 'none',
-          zIndex: 0,
-          backgroundImage: 'url(/ctudb.svg)',
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center center',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Jitter-Style Adaptive Floating Navigation */}
-      <LandingNav activeIndex={activeIndex} sectionRefs={sectionRefs} />
-
-      <main style={{ position: 'relative', zIndex: 1 }}>
-        {/* Hero Section with Staggered Entrance (<850ms) */}
-        <section ref={homeRef} id="home" className="hero-section hero">
-          <div className="landing-page-wrap">
-            <div className="hero-grid">
+      <main>
+        <section
+          id="home"
+          className="es-hero in-view"
+          ref={(el) => {
+            sectionRefs.current[0] = el;
+          }}
+        >
+          <div className="l">
+            <div className="tag">
+              Cebu Technological University, Daanbantayan Campus
+            </div>
+            <h1>
+              Every step can make a <u>difference.</u>
+            </h1>
+            <p className="lead">
+              EcoStep turns footstep energy into measurable electricity and
+              shows it live on a web dashboard.
+            </p>
+            <div className="es-row">
+              <a className="es-btn p" href="#how">
+                See how it works &rarr;
+              </a>
+              <a className="es-btn" href="#dashboard">
+                View dashboard
+              </a>
+            </div>
+          </div>
+          <div className="r">
+            <button
+              type="button"
+              className={`step ${isPressed ? 'pr' : ''}`}
+              id="step"
+              onClick={handleStepClick}
+            >
+              Step here
+            </button>
+            <div className="stats">
               <div>
-                {/* 1. Tag (Delay: 0ms) */}
-                <span
-                  className="tag hero-stagger-1"
-                  style={{
-                    display: 'inline-block',
-                    padding: '6px 14px',
-                    borderRadius: '999px',
-                    background: 'var(--landing-soft)',
-                    fontWeight: 600,
-                    fontSize: isMobile ? '12px' : '13.5px',
-                    lineHeight: '1.4',
-                    marginBottom: isMobile ? '14px' : '20px',
-                    color: isMobile ? '#16a34a' : 'var(--landing-ink)',
-                    border: '1px solid var(--landing-line)',
-                    maxWidth: '100%',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {isMobile ? 'CTU Daanbantayan Campus' : 'Cebu Technological University, Daanbantayan Campus'}
-                </span>
+                <b id="sc">{stepsCount}</b>Steps
+              </div>
+              <div>
+                <b id="en">{energyVal.toFixed(1)}</b>mWh (demo)
+              </div>
+            </div>
+            <p className="cap">
+              Interactive demo with simulated values. Live readings are on the
+              Dashboard page.
+            </p>
+          </div>
+        </section>
 
-                {/* 2. Headline (Delay: 90ms) */}
-                <h1
-                  className="landing-h1 hero-stagger-2"
-                  style={{
-                    margin: '0 0 16px',
-                    color: 'var(--landing-ink)',
-                    fontSize: isMobile ? '34px' : undefined,
-                    lineHeight: isMobile ? '1.1' : undefined,
-                  }}
-                >
-                  Every step can make a <em className="landing-highlight" style={{ fontStyle: 'normal' }}>difference.</em>
-                </h1>
+        <section
+          id="how"
+          ref={(el) => {
+            sectionRefs.current[1] = el;
+          }}
+        >
+          <h2>From footstep to dashboard in four moves</h2>
+          <p className="lead">
+            A piezoelectric tile captures the pressure of each step. An ESP32
+            sends the readings online.
+          </p>
+          <div className="cards">
+            <div className="es-cd">
+              <div className="es-n">1</div>
+              <h3>Step</h3>
+              <p>Students walk across the piezoelectric tile.</p>
+            </div>
+            <div className="es-cd">
+              <div className="es-n">2</div>
+              <h3>Harvest</h3>
+              <p>
+                The tile converts mechanical energy into electrical energy.
+              </p>
+            </div>
+            <div className="es-cd">
+              <div className="es-n">3</div>
+              <h3>Measure</h3>
+              <p>Sensors read the voltage, current, and power generated.</p>
+            </div>
+            <div className="es-cd">
+              <div className="es-n">4</div>
+              <h3>Monitor</h3>
+              <p>The ESP32 sends the data to the EcoStep web dashboard.</p>
+            </div>
+          </div>
+        </section>
 
-                {/* 3. Lead text (Delay: 180ms) */}
-                <p
-                  className="landing-lead hero-stagger-3"
-                  style={{
-                    color: 'var(--landing-mute)',
-                    maxWidth: '34em',
-                    margin: isMobile ? '0 0 20px' : '0 0 28px',
-                    fontSize: isMobile ? '14px' : undefined,
-                    lineHeight: isMobile ? '1.45' : undefined,
-                  }}
-                >
-                  EcoStep turns footstep energy into measurable electricity and shows it live on a web dashboard.
-                </p>
-
-                {/* 4. CTA buttons (Delay: 270ms) */}
-                <div
-                  className="cta hero-stagger-4"
-                  style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    gap: isMobile ? '10px' : '12px',
-                    width: '100%',
-                  }}
-                >
-                  <a
-                    href="#how"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      howRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    className="btn go btn-micro"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: isMobile ? '13px 20px' : '12px 22px',
-                      borderRadius: '999px',
-                      fontWeight: 700,
-                      fontSize: '15px',
-                      border: '1px solid var(--landing-green)',
-                      background: 'var(--landing-green)',
-                      color: 'var(--landing-green-ink)',
-                      textDecoration: 'none',
-                      cursor: 'pointer',
-                      width: isMobile ? '100%' : 'auto',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    See how it works
-                    {!isMobile && <span className="arrow-micro">→</span>}
-                  </a>
-                  <Link
-                    to={ROUTES.DASHBOARD}
-                    className="btn btn-micro"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: isMobile ? '13px 20px' : '12px 22px',
-                      borderRadius: '999px',
-                      fontWeight: 700,
-                      fontSize: '15px',
-                      border: '1px solid var(--landing-line)',
-                      background: 'var(--landing-surface)',
-                      color: 'var(--landing-ink)',
-                      cursor: 'pointer',
-                      textDecoration: 'none',
-                      width: isMobile ? '100%' : 'auto',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    View dashboard
-                  </Link>
+        <section
+          id="dashboard"
+          className="dash"
+          ref={(el) => {
+            sectionRefs.current[2] = el;
+          }}
+        >
+          <h2>See what others are generating</h2>
+          <p className="lead">
+            Energy, electrical measurements, system status and analytics in one
+            live dashboard.
+          </p>
+          <div className="lp">
+            <div className="scr">
+              <div className="es-tb">
+                <i style={{ background: '#ff5f57' }} />
+                <i style={{ background: '#febc2e' }} />
+                <i style={{ background: '#28c840' }} />
+                <b>EcoStep Central</b>
+                <span>&middot; 100 Hz Piezoelectric Tile</span>
+                <div className="live">&#9679; LIVE PREVIEW</div>
+              </div>
+              <div className="kp">
+                <div>
+                  <small>Voltage</small>
+                  <b>4.85 V</b>
+                </div>
+                <div>
+                  <small>Current</small>
+                  <b>14.20 mA</b>
+                </div>
+                <div>
+                  <small>Power</small>
+                  <b>68.90 mW</b>
+                </div>
+                <div>
+                  <small>System</small>
+                  <b>Active</b>
                 </div>
               </div>
-
-              {/* 5. Hero Product Visual (Delay: 200ms) */}
-              <div className="hero-stagger-5" style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}>
-                <PiezoTileDemo />
+              <div className="ch">
+                <b>Energy Generation Over Time</b>{' '}
+                <span style={{ opacity: 0.6 }}>(mJ)</span>
+                <div className="bars" id="bars">
+                  {DEMO_VALUES.map((v, i) => (
+                    <i key={i} style={{ height: `${(v / 32) * 100}%` }} />
+                  ))}
+                </div>
+                <div className="xl" id="xl">
+                  {DEMO_LABELS.map((lbl) => (
+                    <span key={lbl}>{lbl.replace(':00', '')}</span>
+                  ))}
+                </div>
+                <div className="ft">
+                  <span>Illustrative Demo Data &mdash; Not Live Readings</span>
+                  <span>Sample: 243 mJ</span>
+                </div>
               </div>
             </div>
+            <div className="base" />
           </div>
+          <div className="es-row" style={{ justifyContent: 'center' }}>
+            <Link className="es-btn p" to={ROUTES.DASHBOARD}>
+              Open Dashboard &rarr;
+            </Link>
+          </div>
+          <p className="cap" style={{ maxWidth: 'none' }}>
+            Click to access live database readings &amp; diagnostics
+          </p>
         </section>
 
-        {/* How It Works (Scroll Reveal) */}
         <section
-          ref={howRef}
-          id="how"
-          className="scroll-reveal landing-section-py"
-          style={{ padding: isMobile ? '40px 0' : '80px 0' }}
-        >
-          <div className="landing-page-wrap">
-            <HowItWorks />
-          </div>
-        </section>
-
-        {/* Monitoring Preview (Scroll Reveal, Fits in single viewport on desktop) */}
-        <section
-          ref={monitoringRef}
-          id="monitoring"
-          className="scroll-reveal landing-section-monitoring"
-          style={{
-            minHeight: isMobile ? 'auto' : 'calc(100vh - 80px)',
-            display: 'flex',
-            alignItems: 'center',
-            padding: isMobile ? '36px 0' : '36px 0',
-          }}
-        >
-          <div className="landing-page-wrap">
-            <MonitoringPreview />
-          </div>
-        </section>
-
-        {/* EcoChat (Scroll Reveal) */}
-        <section
-          ref={ecochatRef}
           id="ecochat"
-          className="scroll-reveal landing-section-py"
-          style={{ padding: isMobile ? '40px 0' : '80px 0' }}
-        >
-          <div className="landing-page-wrap">
-            <EcoChatSection />
-          </div>
-        </section>
-
-        {/* About / Final CTA (Scroll Reveal) */}
-        <section
-          ref={aboutRef}
-          id="about"
-          className="end scroll-reveal landing-section-py"
-          style={{
-            textAlign: isMobile ? 'left' : 'center',
-            padding: isMobile ? '44px 0 36px' : '80px 0 60px',
-            background: isMobile ? '#0d271e' : 'transparent',
-            color: isMobile ? '#ffffff' : 'inherit',
-            marginTop: isMobile ? '32px' : 0,
+          className="es-chat"
+          ref={(el) => {
+            sectionRefs.current[3] = el;
           }}
         >
-          <div className="landing-page-wrap">
-            <h2
-              className="landing-h2"
-              style={{
-                color: isMobile ? '#ffffff' : 'var(--landing-ink)',
-                margin: '0 0 12px',
-                fontSize: isMobile ? '26px' : undefined,
-                lineHeight: 1.15,
-              }}
-            >
-              Built for CTU Daanbantayan
-            </h2>
-            <p
-              className="sub"
-              style={{
-                color: isMobile ? '#a7c2b3' : 'var(--landing-mute)',
-                fontSize: isMobile ? '14px' : '19px',
-                maxWidth: '36em',
-                margin: isMobile ? '0 0 24px' : '0 auto 30px',
-                lineHeight: 1.45,
-              }}
-            >
-              A student-developed IoT energy monitoring system for research, innovation, and awareness of the energy generated by footsteps.
+          <div className="l">
+            <h2>Ask EcoChat anything about EcoStep</h2>
+            <p className="lead">
+              The built-in AI assistant helps visitors understand the system
+              and find the energy data they need.
             </p>
-            <div
-              className="cta"
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                flexWrap: 'wrap',
-                gap: '12px',
-                justifyContent: isMobile ? 'stretch' : 'center',
-              }}
-            >
-              <a
-                href="#how"
-                onClick={(e) => {
-                  e.preventDefault();
-                  howRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-                className="btn go btn-micro"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px 22px',
-                  borderRadius: '999px',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  border: '1px solid var(--landing-green)',
-                  background: 'var(--landing-green)',
-                  color: 'var(--landing-green-ink)',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  width: isMobile ? '100%' : 'auto',
-                  boxSizing: 'border-box',
-                }}
-              >
-                Explore EcoStep
-                <span className="arrow-micro">→</span>
-              </a>
-              <Link
-                to={ROUTES.DASHBOARD}
-                className="btn btn-micro"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px 22px',
-                  borderRadius: '999px',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  border: isMobile ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid var(--landing-line)',
-                  background: isMobile ? 'rgba(255, 255, 255, 0.08)' : 'var(--landing-surface)',
-                  color: isMobile ? '#ffffff' : 'var(--landing-ink)',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  width: isMobile ? '100%' : 'auto',
-                  boxSizing: 'border-box',
-                }}
-              >
-                View Dashboard
-              </Link>
+            <Link className="es-btn" to={ROUTES.DASHBOARD}>
+              Ask EcoStep &rarr;
+            </Link>
+          </div>
+          <div className="msgs">
+            <div className="bb">
+              <b>EcoChat</b>Hi! I’m your EcoStep assistant. Ask me about energy
+              status, analytics, or system insights.
+            </div>
+            <div className="bb me">How does a footstep make power?</div>
+            <div className="bb">
+              <b>EcoChat</b>Each step presses the piezoelectric tile, which
+              turns that pressure into a small electric charge we measure.
             </div>
           </div>
         </section>
-      </main>
 
-      {/* Footer */}
-      <footer
-        style={{
-          textAlign: 'center',
-          color: isMobile ? '#6e8579' : 'var(--landing-mute)',
-          fontSize: '13px',
-          padding: isMobile ? '16px 16px 28px' : '0 16px 36px',
-          background: isMobile ? '#0d271e' : 'transparent',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        EcoStep Energy Monitoring System, Cebu Technological University
-      </footer>
+        <section
+          id="about"
+          className="abt"
+          ref={(el) => {
+            sectionRefs.current[4] = el;
+          }}
+        >
+          <h2>Built for CTU Daanbantayan</h2>
+          <p className="lead">
+            A student-developed IoT energy monitoring system for research,
+            innovation, and awareness of the energy generated by footsteps.
+          </p>
+          <div className="es-row" style={{ justifyContent: 'center' }}>
+            <a className="es-btn p" href="#how">
+              Explore EcoStep &rarr;
+            </a>
+            <a className="es-btn" href="#dashboard">
+              View Dashboard
+            </a>
+          </div>
+          <footer>
+            EcoStep Energy Monitoring System, Cebu Technological University
+          </footer>
+        </section>
+      </main>
     </div>
   );
 }

@@ -44,10 +44,12 @@ import type { CumulativeEnergyChartProps } from './chartTypes';
 import {
   ResponsiveContainer,
   AreaChart,
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
   Area,
+  Bar,
   Tooltip,
 } from 'recharts';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
@@ -68,6 +70,10 @@ import { subDays, startOfDay, endOfDay } from 'date-fns';
 export function CumulativeEnergyChart({
   className = '',
   daysToShow = 30,
+  startDate: propStartDate,
+  endDate: propEndDate,
+  granularity: propGranularity,
+  periodLabel,
 }: CumulativeEnergyChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -77,19 +83,27 @@ export function CumulativeEnergyChart({
   // triggering automatic refetch of chart data for live updates
   useChartRealTimeUpdates();
 
-  // Calculate date range for data fetching (last N days)
+  // Calculate date range for data fetching (use unified page period if provided, else last N days)
   const { startDate, endDate } = useMemo(() => {
+    if (propStartDate && propEndDate) {
+      return {
+        startDate: propStartDate,
+        endDate: propEndDate,
+      };
+    }
     const now = new Date();
     return {
       startDate: subDays(startOfDay(now), daysToShow).toISOString(),
       endDate: endOfDay(now).toISOString(),
     };
-  }, [daysToShow]);
+  }, [daysToShow, propStartDate, propEndDate]);
 
-  // Fetch energy time-series data with daily granularity
+  const granularity = propGranularity ?? 'day';
+
+  // Fetch energy time-series data
   const { data: timeSeries, isLoading, error, refetch } = useTimeSeriesData({
     metric: 'energy',
-    granularity: 'day',
+    granularity,
     startDate,
     endDate,
   });
@@ -109,22 +123,32 @@ export function CumulativeEnergyChart({
     return cumulativeData[cumulativeData.length - 1].value;
   }, [cumulativeData]);
 
-  // Determine if dataset is empty
+  // Determine if dataset is empty or sparse (< 2 points)
   const isEmpty = useMemo(() => isDatasetEmpty(cumulativeData), [cumulativeData]);
+  const isSparse = cumulativeData.length > 0 && cumulativeData.length < 2;
+  const chartHeight = isMobile ? 240 : 270;
 
   // Subtitle with total cumulative value
   const subtitle = useMemo(() => {
+    const rangeDescription = periodLabel ? `(${periodLabel})` : `over the last ${daysToShow} days`;
     if (isEmpty || isLoading) {
-      return `Total energy harvested over the last ${daysToShow} days`;
+      return `Total energy harvested ${rangeDescription}`;
     }
-    return `Total: ${formatValueWithUnit(totalCumulativeEnergy, 'mWh')} over the last ${daysToShow} days`;
-  }, [totalCumulativeEnergy, isEmpty, isLoading, daysToShow]);
+    return `Total: ${formatValueWithUnit(totalCumulativeEnergy, 'mWh')} ${rangeDescription}`;
+  }, [totalCumulativeEnergy, isEmpty, isLoading, daysToShow, periodLabel]);
 
   // Color system based on theme
   const colors = {
     line: theme === 'dark' ? '#19D46A' : '#13B95C',
     gridColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(13, 27, 20, 0.12)',
     textColor: theme === 'dark' ? '#93A89C' : '#5B6B62',
+  };
+
+  const chartMargin = {
+    top: 8,
+    right: isMobile ? 8 : 16,
+    left: isMobile ? -12 : 0,
+    bottom: isMobile ? 8 : 0,
   };
 
   return (
@@ -140,77 +164,112 @@ export function CumulativeEnergyChart({
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
+      isSparse={isSparse}
       onRetry={refetch}
-      height={isMobile ? 250 : 350}
+      height={chartHeight}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
-        <AreaChart 
-          data={cumulativeData}
-          margin={{ 
-            top: 5, 
-            right: isMobile ? 8 : 20, 
-            left: isMobile ? -18 : 0, 
-            bottom: isMobile ? 15 : 5 
-          }}
-        >
-          {/* Define linear gradient for area fill */}
-          <defs>
-            <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#19D46A" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#19D46A" stopOpacity={0} />
-            </linearGradient>
-          </defs>
+      <ResponsiveContainer width="100%" height={chartHeight} debounce={32}>
+        {isSparse ? (
+          <BarChart data={cumulativeData} margin={chartMargin}>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+            />
+            <YAxis
+              label={{
+                value: 'Cumulative Energy (mWh)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
+              }}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+              tickCount={4}
+              domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toPrecision(3)) : 1)]}
+            />
+            <Tooltip
+              content={<CustomChartTooltip unit="mWh" />}
+              position={{ y: 0 }}
+              wrapperStyle={{ zIndex: 1000 }}
+              allowEscapeViewBox={{ x: false, y: true }}
+              cursor={{ fill: 'rgba(19, 185, 92, 0.08)' }}
+              isAnimationActive={false}
+            />
+            <Bar
+              dataKey="value"
+              fill={colors.line}
+              maxBarSize={48}
+              radius={[8, 8, 0, 0]}
+            />
+          </BarChart>
+        ) : (
+          <AreaChart data={cumulativeData} margin={chartMargin}>
+            {/* Define linear gradient for area fill */}
+            <defs>
+              <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#19D46A" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#19D46A" stopOpacity={0} />
+              </linearGradient>
+            </defs>
 
-          {/* Grid lines */}
-          <CartesianGrid strokeDasharray="4 4" stroke={colors.gridColor} />
+            {/* Grid lines */}
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
 
-          {/* X-axis: Dates */}
-          <XAxis
-            dataKey="timestamp"
-            tickFormatter={(timestamp) => formatChartTimestamp(timestamp, 'day')}
-            stroke={colors.textColor}
-            tick={{ fontSize: isMobile ? 11 : 12 }}
-            angle={isMobile ? -45 : 0}
-            textAnchor={isMobile ? 'end' : 'middle'}
-            style={{ fontSize: isMobile ? '11px' : '12px' }}
-          />
+            {/* X-axis: Dates */}
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+            />
 
-          {/* Y-axis: Cumulative Energy in mWh */}
-          <YAxis
-            label={{
-              value: 'Cumulative Energy (mWh)',
-              angle: -90,
-              position: 'insideLeft',
-              style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-            }}
-            stroke={colors.textColor}
-            tick={{ fontSize: isMobile ? 11 : 12 }}
-            style={{ fontSize: isMobile ? '11px' : '12px' }}
-          />
+            {/* Y-axis: Cumulative Energy in mWh */}
+            <YAxis
+              label={{
+                value: 'Cumulative Energy (mWh)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
+              }}
+              stroke={colors.textColor}
+              tick={{ fontSize: isMobile ? 11 : 12 }}
+              style={{ fontSize: isMobile ? '11px' : '12px' }}
+              tickCount={4}
+              domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toPrecision(3)) : 1)]}
+            />
 
-          {/* Tooltip with custom formatting and viewport-aware positioning */}
-          <Tooltip 
-            content={<CustomChartTooltip unit="mWh" />}
-            position={{ y: 0 }}
-            wrapperStyle={{ zIndex: 1000 }}
-            allowEscapeViewBox={{ x: false, y: true }}
-            cursor={{ strokeDasharray: '3 3' }}
-            isAnimationActive={false}
-          />
+            {/* Tooltip with custom formatting and viewport-aware positioning */}
+            <Tooltip
+              content={<CustomChartTooltip unit="mWh" />}
+              position={{ y: 0 }}
+              wrapperStyle={{ zIndex: 1000 }}
+              allowEscapeViewBox={{ x: false, y: true }}
+              cursor={{ strokeDasharray: '3 3' }}
+              isAnimationActive={false}
+            />
 
-          {/* Area with gradient fill and smooth curve */}
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={colors.line}
-            strokeWidth={2.5}
-            fill="url(#energyGradient)"
-            fillOpacity={1}
-            dot={false}
-            activeDot={{ r: 4, stroke: colors.line, fill: '#FFFFFF' }}
-          />
-        </AreaChart>
+            {/* Area with gradient fill and smooth curve */}
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={colors.line}
+              strokeWidth={2.5}
+              fill="url(#energyGradient)"
+              fillOpacity={1}
+              dot={false}
+              activeDot={{ r: 4, stroke: colors.line, fill: '#FFFFFF' }}
+            />
+          </AreaChart>
+        )}
       </ResponsiveContainer>
     </ChartContainer>
   );

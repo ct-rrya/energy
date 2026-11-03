@@ -884,7 +884,7 @@ export class AnalyticsService {
           timestamp: { $first: '$timestamp' },
         },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.hour': 1 } },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1, '_id.hour': 1, timestamp: 1 } },
     ];
 
     const results = await this.readingModel.aggregate(pipeline).exec();

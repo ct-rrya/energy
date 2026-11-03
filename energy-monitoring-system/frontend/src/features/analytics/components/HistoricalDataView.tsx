@@ -89,62 +89,67 @@ export function HistoricalDataView({
     },
     enabled: viewMode === 'raw',
   });
+
+  // When startDate is undefined ("All Time"), pass an early epoch date to getTimeSeries
+  // because the backend /analytics/time-series endpoint defaults omitted startDate to last 24h
+  const timeSeriesStartDate = startDate ?? '2020-01-01T00:00:00.000Z';
+
   // Fetch all metrics in parallel
   const { data: energyData, isLoading: energyLoading } = useQuery({
-    queryKey: ['timeSeries', 'energy', granularity, startDate, endDate],
+    queryKey: ['timeSeries', 'energy', granularity, timeSeriesStartDate, endDate],
     queryFn: () =>
       getTimeSeries({
         metric: 'energy' as MetricType,
         granularity,
-        startDate,
+        startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
       }),
   });
 
   const { data: voltageData, isLoading: voltageLoading } = useQuery({
-    queryKey: ['timeSeries', 'voltage', granularity, startDate, endDate],
+    queryKey: ['timeSeries', 'voltage', granularity, timeSeriesStartDate, endDate],
     queryFn: () =>
       getTimeSeries({
         metric: 'voltage' as MetricType,
         granularity,
-        startDate,
+        startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
       }),
   });
 
   const { data: currentData, isLoading: currentLoading } = useQuery({
-    queryKey: ['timeSeries', 'current', granularity, startDate, endDate],
+    queryKey: ['timeSeries', 'current', granularity, timeSeriesStartDate, endDate],
     queryFn: () =>
       getTimeSeries({
         metric: 'current' as MetricType,
         granularity,
-        startDate,
+        startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
       }),
   });
 
   const { data: powerData, isLoading: powerLoading } = useQuery({
-    queryKey: ['timeSeries', 'power', granularity, startDate, endDate],
+    queryKey: ['timeSeries', 'power', granularity, timeSeriesStartDate, endDate],
     queryFn: () =>
       getTimeSeries({
         metric: 'power' as MetricType,
         granularity,
-        startDate,
+        startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
       }),
   });
 
   const { data: stepsData, isLoading: stepsLoading } = useQuery({
-    queryKey: ['timeSeries', 'steps', granularity, startDate, endDate],
+    queryKey: ['timeSeries', 'steps', granularity, timeSeriesStartDate, endDate],
     queryFn: () =>
       getTimeSeries({
         metric: 'steps' as MetricType,
         granularity,
-        startDate,
+        startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
       }),
@@ -160,19 +165,22 @@ export function HistoricalDataView({
     if (!energyData?.dataPoints.length) return [];
 
     // Use energy data as the base timeline since it's the primary metric
-    return energyData.dataPoints.map((point, index) => {
-      const timestamp = new Date(point.timestamp);
-      
-      return {
-        date: format(timestamp, 'MMM dd, yyyy'),
-        time: format(timestamp, 'HH:mm'),
-        energy: point.value,
-        voltage: voltageData?.dataPoints[index]?.value,
-        current: currentData?.dataPoints[index]?.value,
-        power: powerData?.dataPoints[index]?.value,
-        steps: stepsData?.dataPoints[index]?.value,
-      };
-    });
+    return energyData.dataPoints
+      .map((point, index) => {
+        const timestamp = new Date(point.timestamp);
+        
+        return {
+          rawTimestamp: timestamp.getTime(),
+          date: format(timestamp, 'MMM dd, yyyy'),
+          time: format(timestamp, 'HH:mm'),
+          energy: point.value,
+          voltage: voltageData?.dataPoints[index]?.value,
+          current: currentData?.dataPoints[index]?.value,
+          power: powerData?.dataPoints[index]?.value,
+          steps: stepsData?.dataPoints[index]?.value,
+        };
+      })
+      .sort((a, b) => a.rawTimestamp - b.rawTimestamp);
   }, [energyData, voltageData, currentData, powerData, stepsData]);
 
   // Export to CSV (Unavailable for public users)

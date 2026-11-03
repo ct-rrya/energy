@@ -43,30 +43,39 @@ import {
  * ```
  */
 export function EnergyPeriodChart({ 
-  className = ''
+  className = '',
+  defaultPeriodFilter = 'daily',
+  startDate,
+  endDate,
+  granularity: propGranularity,
 }: EnergyPeriodChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
   
-  // Use fixed 'daily' granularity - Analytics page controls the unified period
-  const periodFilter: PeriodFilter = 'daily';
+  // Use defaultPeriodFilter ('daily' by default) - Analytics page controls the unified period
+  const periodFilter: PeriodFilter = defaultPeriodFilter;
   
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
   // triggering automatic refetch of chart data for live updates
   useChartRealTimeUpdates();
   
-  // Fetch energy data based on current period filter
-  const { data: timeSeries, isLoading, error, refetch } = useEnergyByPeriod(periodFilter);
+  // Fetch energy data based on current period filter or unified page period
+  const { data: timeSeries, isLoading, error, refetch } = useEnergyByPeriod(
+    periodFilter,
+    startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
+  );
   
   // Transform API data to chart format
   const chartData = useMemo(() => transformToChartData(timeSeries), [timeSeries]);
   
-  // Determine if dataset is empty
+  // Determine if dataset is empty or sparse (< 2 points)
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
+  const isSparse = chartData.length > 0 && chartData.length < 2;
+  const chartHeight = isMobile ? 240 : 270;
 
-  // Determine granularity - fixed to 'day' for Analytics page
-  const granularity = 'day' as const;
+  // Determine granularity from prop or default to 'day'
+  const granularity = propGranularity ?? ('day' as const);
 
   // Color system based on theme following EcoStep Design System
   const colors = {
@@ -97,21 +106,22 @@ export function EnergyPeriodChart({
       isLoading={isLoading}
       error={error}
       isEmpty={isEmpty}
+      isSparse={isSparse}
       onRetry={refetch}
-      height={isMobile ? 250 : 350}
+      height={chartHeight}
       className={className}
     >
-      <ResponsiveContainer width="100%" height={isMobile ? 250 : 350} debounce={250}>
+      <ResponsiveContainer width="100%" height={chartHeight} debounce={32}>
         <BarChart 
           data={chartData}
           margin={{ 
-            top: 5, 
-            right: isMobile ? 8 : 20, 
-            left: isMobile ? -18 : 0, 
-            bottom: isMobile ? 15 : 5 
+            top: 8, 
+            right: isMobile ? 8 : 16, 
+            left: isMobile ? -12 : 0, 
+            bottom: isMobile ? 8 : 0 
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
@@ -131,6 +141,8 @@ export function EnergyPeriodChart({
             stroke={colors.textColor}
             tick={{ fontSize: isMobile ? 11 : 12 }}
             style={{ fontSize: isMobile ? '11px' : '12px' }}
+            tickCount={4}
+            domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toPrecision(3)) : 1)]}
           />
           <Tooltip 
             content={<CustomChartTooltip unit="mWh" />}
@@ -143,6 +155,7 @@ export function EnergyPeriodChart({
           <Bar
             dataKey="value"
             fill={colors.barColor}
+            maxBarSize={48}
             radius={[8, 8, 0, 0]}
           />
         </BarChart>

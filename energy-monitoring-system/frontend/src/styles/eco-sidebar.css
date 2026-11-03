@@ -725,6 +725,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scroll-behavior: smooth;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -737,6 +738,35 @@
   scrollbar-color: var(--line) transparent;
   container-type: inline-size;
   container-name: main;
+}
+
+/* Sticky Top & Bottom Progressive Edge Blur-Fade Masks inside Main Scroll Container */
+.es-main-edge-top,
+.es-main-edge-bottom {
+  position: sticky;
+  left: 0;
+  right: 0;
+  height: 24px;
+  flex-shrink: 0;
+  pointer-events: none;
+  z-index: 15;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.es-main-edge-top {
+  top: 0;
+  margin-bottom: -24px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.es-main-edge-bottom {
+  bottom: 0;
+  margin-top: -24px;
+  margin-top: auto;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .es-main::-webkit-scrollbar,

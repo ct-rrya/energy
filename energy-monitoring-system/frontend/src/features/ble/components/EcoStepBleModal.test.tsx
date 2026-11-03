@@ -6,6 +6,7 @@ import { EcoStepBleButton } from './EcoStepBleButton';
 
 // Mock EcoStepBleClient
 const mockConnect = vi.fn();
+const mockConnectSimulated = vi.fn();
 const mockDisconnect = vi.fn();
 const mockSendCredentials = vi.fn();
 let capturedCallback: any = null;
@@ -19,6 +20,7 @@ vi.mock('../EcoStepBleClient', () => {
       deviceName: 'EcoStep-Harvester',
     },
     EcoStepBleClient: class {
+      isSimulation = false;
       constructor(callback: any) {
         capturedCallback = callback;
       }
@@ -32,6 +34,7 @@ vi.mock('../EcoStepBleClient', () => {
         return false;
       }
       connect = mockConnect;
+      connectSimulated = mockConnectSimulated;
       disconnect = mockDisconnect;
       sendWiFiCredentials = mockSendCredentials;
     },
@@ -67,12 +70,13 @@ describe('EcoStep BLE Components', () => {
   });
 
   describe('EcoStepBleModal', () => {
-    it('renders modal in Step 1 with Pair button', () => {
+    it('renders modal in Step 1 with Pair button and Simulation button', () => {
       render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('EcoStep Wi-Fi Provisioning')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /pair with ecostep via bluetooth/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /try demo \/ simulation mode/i })).toBeInTheDocument();
     });
 
     it('invokes onClose when Close button is clicked', async () => {
@@ -95,6 +99,35 @@ describe('EcoStep BLE Components', () => {
       await user.click(pairBtn);
 
       expect(mockConnect).toHaveBeenCalled();
+    });
+
+    it('invokes connectSimulated when Simulation button is clicked', async () => {
+      const user = userEvent.setup();
+      mockConnectSimulated.mockResolvedValue(true);
+      render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+
+      const simBtn = screen.getByRole('button', { name: /try demo \/ simulation mode/i });
+      await user.click(simBtn);
+
+      expect(mockConnectSimulated).toHaveBeenCalled();
+    });
+
+    it('displays troubleshooting guide when Web Bluetooth API is globally disabled', async () => {
+      render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+
+      await waitFor(() => {
+        capturedCallback({
+          state: 'error',
+          message: 'Web Bluetooth API globally disabled.',
+          type: 'error',
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/How to Enable Web Bluetooth in/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /copy url/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /proceed in demo mode now/i })).toBeInTheDocument();
+      });
     });
 
     it('progresses to Step 2 when device connects and displays Wi-Fi form', async () => {
@@ -145,15 +178,12 @@ describe('EcoStep BLE Components', () => {
         });
       });
 
-
       await waitFor(() => {
         const statusBox = document.getElementById('ble-status-box');
         expect(statusBox).toBeInTheDocument();
         expect(statusBox).toHaveTextContent(/Successfully connected to Wi-Fi/i);
         expect(statusBox).toHaveTextContent('192.168.1.150');
       });
-
-
     });
   });
 });

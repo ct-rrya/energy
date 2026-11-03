@@ -163,4 +163,34 @@ describe('EcoStepBleClient', () => {
     expect(mockServer.disconnect).toHaveBeenCalled();
     expect(client.isConnected()).toBe(false);
   });
+
+  it('supports simulation mode connection and credential provisioning', async () => {
+    const client = new EcoStepBleClient(statusChangeCallback);
+    await client.connectSimulated();
+
+    expect(client.isConnected()).toBe(true);
+    expect(client.isSimulation).toBe(true);
+    expect(statusChangeCallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'connected',
+        type: 'success',
+      })
+    );
+
+    await client.sendWiFiCredentials('TestLab', '123456');
+
+    expect(statusChangeCallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'notification',
+        payload: expect.objectContaining({
+          status: 'CONNECTED',
+          ssid: 'TestLab',
+        }),
+      })
+    );
+
+    client.disconnect();
+    expect(client.isConnected()).toBe(false);
+    expect(client.isSimulation).toBe(false);
+  });
 });

@@ -189,10 +189,25 @@
   gap: clamp(8px, 1.2vh, 12px);
   overflow-y: auto;
   overflow-x: hidden;
+  scroll-behavior: smooth;
   padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.2s ease;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
 }
 
 .message-list:hover,

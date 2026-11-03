@@ -9,7 +9,11 @@ import {
   Eye, 
   EyeOff, 
   Radio, 
-  Zap 
+  Zap,
+  Copy,
+  Check,
+  ExternalLink,
+  HelpCircle
 } from 'lucide-react';
 
 import { EcoStepBleClient, BLE_CONFIG } from '../EcoStepBleClient';
@@ -31,6 +35,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   const [showPassword, setShowPassword] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isProvisioning, setIsProvisioning] = useState(false);
+  const [copiedFlag, setCopiedFlag] = useState(false);
   
   // Status state
   const [statusText, setStatusText] = useState<string>('');
@@ -100,6 +105,26 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   const isSupported = bleClientRef.current?.isSupported() ?? true;
   const isSecure = bleClientRef.current?.isSecureContext() ?? true;
 
+  // Browser check for Brave or Chromium flag URL
+  const isBrave = typeof window !== 'undefined' && Boolean((navigator as any)?.brave);
+  const flagUrl = isBrave 
+    ? 'brave://flags/#enable-web-bluetooth' 
+    : 'chrome://flags/#enable-web-bluetooth';
+
+  const isGloballyDisabled = statusText.toLowerCase().includes('globally disabled');
+
+  const handleCopyFlagUrl = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(flagUrl);
+        setCopiedFlag(true);
+        setTimeout(() => setCopiedFlag(false), 2000);
+      }
+    } catch {
+      // fallback
+    }
+  };
+
   // Reset or focus on open
   useEffect(() => {
     if (isOpen) {
@@ -143,8 +168,19 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     setStatusText('');
     try {
       await bleClientRef.current.connect();
-    } catch (err: any) {
-      // User cancelled device chooser or pairing failed
+    } catch {
+      setIsConnecting(false);
+    }
+  };
+
+  // Simulated connect for testing without BLE hardware or when flags are disabled
+  const handleSimulatedConnect = async () => {
+    if (!bleClientRef.current) return;
+    setIsConnecting(true);
+    setStatusText('');
+    try {
+      await bleClientRef.current.connectSimulated();
+    } catch {
       setIsConnecting(false);
     }
   };
@@ -162,7 +198,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     try {
       setIsProvisioning(true);
       await bleClientRef.current.sendWiFiCredentials(ssid, password);
-    } catch (err: any) {
+    } catch {
       setIsProvisioning(false);
     }
   };
@@ -183,9 +219,10 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     >
       <div 
         ref={modalRef}
-        className="relative w-full max-w-lg rounded-2xl border border-emerald-500/20 bg-[#0B132B]/95 p-6 text-white shadow-2xl backdrop-blur-md transition-all duration-300"
+        className="dark relative w-full max-w-lg rounded-2xl border border-emerald-500/20 bg-[#0B132B]/95 p-6 text-white shadow-2xl backdrop-blur-md transition-all duration-300"
         style={{
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(57, 255, 136, 0.1)',
+          colorScheme: 'dark',
         }}
       >
         {/* Header */}
@@ -195,7 +232,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               <Bluetooth className="h-6 w-6 animate-pulse" />
             </div>
             <div>
-              <h2 id="ble-modal-title" className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              <h2 id="ble-modal-title" className="text-lg font-bold tracking-tight text-white !text-white flex items-center gap-2" style={{ color: '#FFFFFF' }}>
                 EcoStep Wi-Fi Provisioning
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#39FF88] border border-emerald-500/30">
                   Web BLE
@@ -242,7 +279,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               }`}>
                 1
               </span>
-              <span className={`text-xs font-medium ${step === 1 ? 'text-white' : 'text-gray-400'}`}>
+              <span className={`text-xs font-semibold ${step === 1 ? 'text-white !text-white' : 'text-gray-400'}`} style={step === 1 ? { color: '#FFFFFF' } : undefined}>
                 Pair BLE Device
               </span>
             </div>
@@ -253,7 +290,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               }`}>
                 2
               </span>
-              <span className={`text-xs font-medium ${step === 2 ? 'text-white' : 'text-gray-400'}`}>
+              <span className={`text-xs font-semibold ${step === 2 ? 'text-white !text-white' : 'text-gray-400'}`} style={step === 2 ? { color: '#FFFFFF' } : undefined}>
                 Configure Wi-Fi
               </span>
             </div>
@@ -265,20 +302,23 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
                 <Radio className={`h-7 w-7 ${isConnecting ? 'animate-pulse text-[#39FF88]' : ''}`} />
               </div>
-              <h3 className="text-sm font-semibold text-white">
+              <h3 
+                className="text-base font-bold text-white !text-white tracking-wide"
+                style={{ color: '#FFFFFF' }}
+              >
                 Pair with {BLE_CONFIG.deviceName}
               </h3>
-              <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-gray-300 mt-1.5 max-w-sm mx-auto leading-relaxed">
                 Make sure your EcoStep Harvester ESP32 is powered on and within Bluetooth range of this computer or mobile device.
               </p>
 
-              <div className="mt-5">
+              <div className="mt-5 space-y-2.5">
                 <button
                   type="button"
                   id="ble-connect-btn"
                   onClick={handleConnect}
                   disabled={isConnecting || !isSupported}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
                 >
                   {isConnecting ? (
                     <>
@@ -291,6 +331,17 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                       Pair with EcoStep via Bluetooth
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  id="ble-simulated-connect-btn"
+                  onClick={handleSimulatedConnect}
+                  disabled={isConnecting}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 transition-all duration-200 cursor-pointer"
+                >
+                  <Zap className="h-3.5 w-3.5 text-[#39FF88]" />
+                  Blocked or No Hardware? Try Demo / Simulation Mode
                 </button>
               </div>
             </div>
@@ -306,7 +357,9 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#39FF88]"></span>
                   </span>
                   <div className="text-left">
-                    <p className="text-xs font-semibold text-[#39FF88]">Connected to {BLE_CONFIG.deviceName}</p>
+                    <p className="text-xs font-semibold text-[#39FF88]">
+                      Connected to {BLE_CONFIG.deviceName} {bleClientRef.current?.isSimulation ? '(Demo Mode)' : ''}
+                    </p>
                     <p className="text-[11px] text-gray-400">GATT Service Active & Subscribed</p>
                   </div>
                 </div>
@@ -316,7 +369,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     bleClientRef.current?.disconnect();
                     setStep(1);
                   }}
-                  className="text-xs text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+                  className="text-xs text-gray-400 hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
                 >
                   Disconnect
                 </button>
@@ -367,13 +420,13 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors cursor-pointer"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[11px] text-gray-400 mt-1">
                   Credentials are sent securely via local BLE direct to your ESP32.
                 </p>
               </div>
@@ -384,7 +437,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   type="submit"
                   id="ble-send-btn"
                   disabled={isProvisioning || !ssid.trim()}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-400 text-[#0B132B] shadow-lg shadow-emerald-500/20 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-400 text-[#0B132B] shadow-lg shadow-emerald-500/20 focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
                 >
                   {isProvisioning ? (
                     <>
@@ -432,6 +485,66 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     IP Address: {wifiStatus.ip}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Dedicated Web Bluetooth API Globally Disabled Troubleshooting Guide */}
+          {isGloballyDisabled && (
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-amber-300 text-sm">
+                    How to Enable Web Bluetooth in {isBrave ? 'Brave Browser' : 'Chromium'}
+                  </h4>
+                  <p className="mt-1 text-gray-300 leading-relaxed text-[11px]">
+                    {isBrave ? 'Brave' : 'Your browser'} disables the Web Bluetooth API by default for privacy. To allow direct ESP32 Wi-Fi pairing:
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-black/50 rounded-lg p-3 border border-white/10 space-y-2 text-[11px]">
+                <p className="text-gray-300 font-medium">1. Open a new tab and paste this URL into your address bar:</p>
+                <div className="flex items-center gap-2 bg-black/70 px-3 py-1.5 rounded-lg border border-white/10 font-mono text-emerald-300">
+                  <span className="flex-1 select-all truncate">{flagUrl}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyFlagUrl}
+                    className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-[#39FF88] font-medium transition-colors cursor-pointer"
+                  >
+                    {copiedFlag ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3" />
+                        Copy URL
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="text-gray-300 space-y-1 pt-1">
+                  <p>2. Locate <strong className="text-white">Web Bluetooth</strong> and change it from <span className="text-gray-400">Default/Disabled</span> to <strong className="text-emerald-400">Enabled</strong>.</p>
+                  <p>3. Click the blue <strong className="text-white">Relaunch</strong> button at the bottom of the browser.</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-white/5">
+                <span className="text-[11px] text-gray-400">
+                  Or use standard Google Chrome or Microsoft Edge.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSimulatedConnect}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-[#0B132B] transition-colors cursor-pointer"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  Proceed in Demo Mode Now
+                </button>
               </div>
             </div>
           )}
