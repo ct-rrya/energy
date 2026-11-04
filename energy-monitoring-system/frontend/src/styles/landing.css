@@ -4,23 +4,29 @@
  * (excluding the right-side scroll indicator dots).
  */
 
-html.landing-page-active {
+html.landing-page-active,
+html:has(.es-lp) {
   scroll-snap-type: none;
   scroll-behavior: smooth;
   background: #DCEBDF;
   height: auto !important;
+  min-height: 100% !important;
+  overflow-x: clip !important;
   overflow-y: auto !important;
-  overflow-x: hidden !important;
   scroll-padding-top: 0 !important;
 }
 
 html.landing-page-active[data-theme="dark"],
-html.landing-page-active.dark {
+html.landing-page-active.dark,
+html:has(.es-lp)[data-theme="dark"],
+html:has(.es-lp).dark {
   background: #07120C;
 }
 
 html.landing-page-active body,
-html.landing-page-active #root {
+html.landing-page-active #root,
+html:has(.es-lp) body,
+html:has(.es-lp) #root {
   height: auto !important;
   min-height: 100vh;
   min-height: 100dvh;

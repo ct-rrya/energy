@@ -40,11 +40,22 @@ export function LandingPage() {
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Enable landing page styling while mounted
+  // Enable landing page styling and ensure document scrolling is unlocked while mounted
   useEffect(() => {
-    document.documentElement.classList.add('landing-page-active');
+    const html = document.documentElement;
+    const body = document.body;
+    html.classList.add('landing-page-active');
+    html.style.overflowY = 'auto';
+    html.style.height = 'auto';
+    body.style.overflow = 'visible';
+    body.style.height = 'auto';
+
     return () => {
-      document.documentElement.classList.remove('landing-page-active');
+      html.classList.remove('landing-page-active');
+      html.style.overflowY = '';
+      html.style.height = '';
+      body.style.overflow = '';
+      body.style.height = '';
     };
   }, []);
 

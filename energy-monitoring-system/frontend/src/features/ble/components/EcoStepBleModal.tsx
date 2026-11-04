@@ -11,9 +11,7 @@ import {
   Radio, 
   Zap,
   Copy,
-  Check,
-  ExternalLink,
-  HelpCircle
+  Check
 } from 'lucide-react';
 
 import { EcoStepBleClient, BLE_CONFIG } from '../EcoStepBleClient';
