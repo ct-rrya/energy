@@ -15,14 +15,10 @@ import {
   Users, 
   ChevronUp, 
   ChevronLeft,
-  Gamepad2, 
-  GraduationCap,
-  Trophy,
   MessageSquare,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePlayer } from '@/contexts/PlayerContext';
 import { ROUTES } from '@/routes/routes.config';
 const ChatPanel = lazy(() => import('@/features/chat').then(m => ({ default: m.ChatPanel })));
 import '@/styles/eco-sidebar.css';
@@ -42,9 +38,6 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
-  // Gamification routes (guest/public only — hidden for admins)
-  { to: ROUTES.MISSIONS, label: 'Educational Missions', Icon: GraduationCap, publicOnly: true },
-  { to: ROUTES.LEADERBOARD, label: 'Leaderboard', Icon: Trophy, publicOnly: true },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
@@ -59,7 +52,6 @@ interface EcoSidebarProps {
 export function EcoSidebar({ children }: EcoSidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
-  const { player, openPlayerModal, logout: playerLogout } = usePlayer();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -420,14 +412,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   };
 
-  const userName = user?.name || (player ? player.username : 'Guest');
+  const userName = user?.name || 'Guest';
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
   const avatarInitial = isAuthenticated && (user?.name || user?.email)
     ? (user.name || user.email || 'A')[0].toUpperCase()
-    : player
-      ? (player.username || 'P')[0].toUpperCase()
-      : 'T';
+    : 'G';
 
   const handleOpenMobileEcoGuide = useCallback(() => {
     setMobileUserSheetOpen(false);
@@ -510,15 +500,13 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <div className="es-user-avatar av">
               {isAuthenticated && (user?.name || user?.email) ? (
                 <span>{(user.name || user.email || 'A')[0].toUpperCase()}</span>
-              ) : player ? (
-                <span>{(player.username || 'P')[0].toUpperCase()}</span>
               ) : (
-                <span>T</span>
+                <span>G</span>
               )}
             </div>
             <div className="es-user-info info">
               <div className="es-user-name">{userName}</div>
-              <div className="es-user-sub">{player ? 'Guest Player' : userRole}</div>
+              <div className="es-user-sub">{userRole}</div>
             </div>
             <ChevronUp 
               size={16} 
@@ -560,7 +548,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               </div>
               <div className="um-info es-popover-user-info">
                 <div className="um-name es-popover-name font-semibold text-sm">{userName}</div>
-                <div className="um-role es-popover-role text-xs text-[var(--mu)]">{player ? 'Guest Player' : userRole}</div>
+                <div className="um-role es-popover-role text-xs text-[var(--mu)]">{userRole}</div>
                 {user?.email && (
                   <div className="text-[11px] text-[var(--mu)] truncate">{user.email}</div>
                 )}
@@ -603,7 +591,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 </span>
               </button>
 
-              {/* Auth / Player Actions */}
+              {/* Auth Actions */}
               {isAnyAdmin ? (
                 <button
                   type="button"
@@ -618,47 +606,18 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                   <span>Sign Out</span>
                 </button>
               ) : (
-                <>
-                  {player ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="um-item es-popover-item it"
-                      onClick={async () => {
-                        closeMenu(false);
-                        await playerLogout();
-                      }}
-                    >
-                      <LogOut size={18} strokeWidth={1.8} />
-                      <span>Switch Player</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="um-item es-popover-item it text-[#087A3A] dark:text-[#19D46A]"
-                      onClick={() => {
-                        closeMenu(false);
-                        openPlayerModal();
-                      }}
-                    >
-                      <Gamepad2 size={18} strokeWidth={1.8} />
-                      <span>Play &amp; Learn</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="um-item es-popover-item it"
-                    onClick={() => {
-                      closeMenu(false);
-                      navigate(ROUTES.LOGIN);
-                    }}
-                  >
-                    <User size={18} strokeWidth={1.8} />
-                    <span>Admin Sign In</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="um-item es-popover-item it"
+                  onClick={() => {
+                    closeMenu(false);
+                    navigate(ROUTES.LOGIN);
+                  }}
+                >
+                  <User size={18} strokeWidth={1.8} />
+                  <span>Admin Sign In</span>
+                </button>
               )}
             </div>
           </div>,
@@ -678,19 +637,6 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           </a>
 
           <div className="es-mobile-topbar-actions">
-            {!isAnyAdmin && (
-              <button
-                type="button"
-                className="es-mobile-play-btn"
-                onClick={() => openPlayerModal()}
-                aria-label={player ? `Player profile: ${player.username}` : 'Play & Learn'}
-                title="Play & Learn"
-              >
-                <Gamepad2 size={18} strokeWidth={2} />
-                <span className="es-mobile-play-dot" aria-hidden="true" />
-              </button>
-            )}
-
             <button
               type="button"
               className={`es-mobile-avatar-btn ${mobileUserSheetOpen ? 'is-active' : ''}`}
@@ -709,7 +655,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       </main>
 
       {/* Mobile Fixed Bottom Tab Bar (<= 768px) */}
-      <nav className="es-mobile-tabbar" aria-label="Primary mobile navigation">
+      <nav className={`es-mobile-tabbar ${isAnyAdmin ? 'is-admin' : 'is-public'}`} aria-label="Primary mobile navigation">
         <NavLink
           to={ROUTES.DASHBOARD}
           className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
@@ -721,31 +667,31 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           <span className="es-mobile-tab-label">Central</span>
         </NavLink>
 
-        <NavLink
-          to={ROUTES.ANALYTICS}
-          className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-          aria-label={isAnyAdmin ? 'Analytics' : 'History'}
-        >
-          <span className="es-mobile-tab-pill">
-            <TrendingUp size={18} strokeWidth={2} />
-          </span>
-          <span className="es-mobile-tab-label">{isAnyAdmin ? 'Analytics' : 'History'}</span>
-        </NavLink>
-
-        <button
-          type="button"
-          className="es-mobile-tab es-mobile-tab-ecoguide"
-          onClick={handleOpenMobileEcoGuide}
-          aria-label="Open EcoGuide"
-        >
-          <span className="es-mobile-ecoguide-fab">
-            <MessageSquare size={22} strokeWidth={2} />
-          </span>
-          <span className="es-mobile-tab-label es-mobile-tab-label-ecoguide">EcoGuide</span>
-        </button>
-
         {isAnyAdmin ? (
           <>
+            <NavLink
+              to={ROUTES.ANALYTICS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Analytics"
+            >
+              <span className="es-mobile-tab-pill">
+                <TrendingUp size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Analytics</span>
+            </NavLink>
+
+            <button
+              type="button"
+              className="es-mobile-tab es-mobile-tab-ecoguide"
+              onClick={handleOpenMobileEcoGuide}
+              aria-label="Open EcoGuide"
+            >
+              <span className="es-mobile-ecoguide-fab">
+                <MessageSquare size={22} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label es-mobile-tab-label-ecoguide">EcoGuide</span>
+            </button>
+
             <NavLink
               to={ROUTES.ADMIN_DIAGNOSTICS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
@@ -770,26 +716,27 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           </>
         ) : (
           <>
-            <NavLink
-              to={ROUTES.MISSIONS}
-              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Learn"
+            <button
+              type="button"
+              className="es-mobile-tab es-mobile-tab-ecoguide"
+              onClick={handleOpenMobileEcoGuide}
+              aria-label="Open EcoGuide"
             >
-              <span className="es-mobile-tab-pill">
-                <GraduationCap size={18} strokeWidth={2} />
+              <span className="es-mobile-ecoguide-fab">
+                <MessageSquare size={22} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Learn</span>
-            </NavLink>
+              <span className="es-mobile-tab-label es-mobile-tab-label-ecoguide">EcoGuide</span>
+            </button>
 
             <NavLink
-              to={ROUTES.LEADERBOARD}
+              to={ROUTES.ANALYTICS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Ranks"
+              aria-label="History"
             >
               <span className="es-mobile-tab-pill">
-                <Trophy size={18} strokeWidth={2} />
+                <TrendingUp size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Ranks</span>
+              <span className="es-mobile-tab-label">History</span>
             </NavLink>
           </>
         )}
@@ -821,7 +768,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               </div>
               <div className="es-sheet-user-info">
                 <div className="es-sheet-user-name">{userName}</div>
-                <div className="es-sheet-user-role">{player ? 'Guest Player' : userRole}</div>
+                <div className="es-sheet-user-role">{userRole}</div>
               </div>
             </div>
 
@@ -869,31 +816,17 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                   <span>Sign Out</span>
                 </button>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    className="es-sheet-item"
-                    onClick={() => {
-                      setMobileUserSheetOpen(false);
-                      openPlayerModal();
-                    }}
-                  >
-                    <Gamepad2 size={20} strokeWidth={1.8} />
-                    <span>Play &amp; Learn</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="es-sheet-item"
-                    onClick={() => {
-                      setMobileUserSheetOpen(false);
-                      navigate(ROUTES.LOGIN);
-                    }}
-                  >
-                    <User size={20} strokeWidth={1.8} />
-                    <span>Admin Sign In</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className="es-sheet-item"
+                  onClick={() => {
+                    setMobileUserSheetOpen(false);
+                    navigate(ROUTES.LOGIN);
+                  }}
+                >
+                  <User size={20} strokeWidth={1.8} />
+                  <span>Admin Sign In</span>
+                </button>
               )}
             </div>
           </div>

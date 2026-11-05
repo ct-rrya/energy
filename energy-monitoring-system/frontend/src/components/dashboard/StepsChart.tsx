@@ -115,9 +115,7 @@ export const StepsChart = React.memo(function StepsChart({
       subtitle="Detected footsteps on the piezoelectric tile"
       tooltip={{
         title: "Steps Over Time",
-        description: "Counts the number of physical compressions detected on the floor tiles. Higher step counts correlate directly with higher total energy harvested.",
-        analogy: "Like a turnstile at a train station: counts every person passing through.",
-        technicalNote: "Processed through noise-filtering threshold logic on the ESP32."
+        description: "Counts physical footsteps over time. Directly reveals when the hallway turned into a bustling thoroughfare.",
       }}
       isLoading={isLoading}
       error={error}

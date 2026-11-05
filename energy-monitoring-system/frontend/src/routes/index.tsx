@@ -26,8 +26,6 @@ const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').th
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
-const MissionsPage = lazy(() => import('@/features/gamification/pages/MissionsPage').then(m => ({ default: m.MissionsPage })));
-const LeaderboardPage = lazy(() => import('@/features/gamification/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 
 /**
  * Loading fallback component for lazy-loaded routes
@@ -112,30 +110,6 @@ export const router = createBrowserRouter([
           <LazyRoute>
             <EnergyMonitoringPage />
           </LazyRoute>
-        ),
-      },
-
-      // Educational Missions & Gamification - Public/Guest only (redirects admins to Central)
-      {
-        path: ROUTES.MISSIONS,
-        element: (
-          <FlexibleRoute redirectIfAuth={true}>
-            <LazyRoute>
-              <MissionsPage />
-            </LazyRoute>
-          </FlexibleRoute>
-        ),
-      },
-
-      // Global Leaderboard - Public/Guest only (redirects admins to Central)
-      {
-        path: ROUTES.LEADERBOARD,
-        element: (
-          <FlexibleRoute redirectIfAuth={true}>
-            <LazyRoute>
-              <LeaderboardPage />
-            </LazyRoute>
-          </FlexibleRoute>
         ),
       },
 

@@ -26,7 +26,7 @@ interface UseChatReturn {
 const INITIAL_GREETING: ChatMessage = {
   id: 'greeting',
   role: 'bot',
-  text: "🌿 **Welcome to EcoGuide!** I'm your EcoStep Learning Assistant. Ask me about piezoelectric physics, electrical formulas, Academy missions, or today's energy generation.",
+  text: "🌿 **Welcome to EcoGuide!** I'm your EcoStep Learning Assistant. Ask me about piezoelectric physics, electrical formulas, sustainability concepts, or today's energy generation.",
   timestamp: new Date(),
 };
 

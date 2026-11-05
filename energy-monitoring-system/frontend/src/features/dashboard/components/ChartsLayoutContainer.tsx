@@ -115,7 +115,7 @@ export function ChartsLayoutContainer() {
         {/* Voltage Trend */}
         <ChartContainer
           title="Voltage Trend"
-          subtitle="Electrical potential over the last 24 hours"
+          subtitle="Electrical potential produced during compressions"
           isLoading={voltageLoading}
           error={voltageError}
           isEmpty={isVoltageEmpty}
@@ -177,7 +177,7 @@ export function ChartsLayoutContainer() {
         {/* Current Trend */}
         <ChartContainer
           title="Current Trend"
-          subtitle="Current flow over the last 24 hours"
+          subtitle="Electrical charge flow rate"
           isLoading={currentLoading}
           error={currentError}
           isEmpty={isCurrentEmpty}

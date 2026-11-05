@@ -17,6 +17,13 @@ import {
   BatteryCharging,
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
+import {
+  getStepsTooltip,
+  getPowerTooltip,
+  getEnergyTodayTooltip,
+  getVoltageTooltip,
+  getCurrentTooltip,
+} from '../utils/metricTooltips';
 import type { SensorReading, DashboardMetrics } from '../types/dashboard.types';
 
 interface MobileEnergyHarvestingDashboardProps {
@@ -357,9 +364,7 @@ export function MobileEnergyHarvestingDashboard({
                 </span>
                 <InfoTooltip
                   title="Power Output (mW)"
-                  description="Shows how quickly EcoStep is generating electrical power at this moment. Power may rise when someone steps on a tile and decrease when no steps are detected."
-                  analogy="Like a car's speedometer, it shows how fast—not the total amount."
-                  technicalNote="Measured in milliwatts (mW), where 1 mW = 0.001 W. Calculated using voltage and current: P = V × I."
+                  description={getPowerTooltip(displayReading?.power, isActive)}
                   size={14}
                 />
               </div>
@@ -433,9 +438,7 @@ export function MobileEnergyHarvestingDashboard({
             <div className="flex items-center gap-1.5">
               <InfoTooltip
                 title="Steps Today"
-                description="The number of footsteps recorded by EcoStep today."
-                analogy="Like counting how many times a button is pressed!"
-                technicalNote="Counts detected steps using the system's step-detection algorithm, which filters out baseline mechanical noise."
+                description={getStepsTooltip(stepCount)}
                 size={14}
               />
               <Footprints size={16} className="text-neutral-400 opacity-60" />
@@ -483,10 +486,8 @@ export function MobileEnergyHarvestingDashboard({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <InfoTooltip
-                      title="Energy Today (mWh)"
-                      description="The total electrical energy EcoStep has recorded today from detected footsteps."
-                      analogy="If power is how fast electricity is being generated, energy is the total amount generated over time."
-                      technicalNote="Calculated by accumulating power over time. Measured in milliwatt-hours (mWh)."
+                      title={isMilli ? "Energy Today (mWh)" : "Energy Today (Wh)"}
+                      description={getEnergyTodayTooltip(rawWh)}
                       size={14}
                     />
                     <BatteryCharging size={16} className="text-amber-500 opacity-70" />
@@ -531,9 +532,7 @@ export function MobileEnergyHarvestingDashboard({
             <div className="flex items-center gap-1.5">
               <InfoTooltip
                 title="Voltage (Volts)"
-                description="The electric potential difference generated across the piezoelectric discs when compressed by a footstep."
-                analogy="Think of voltage as the water pressure in a hose: higher pressure pushes the charge forward."
-                technicalNote="Measured across the tile conditioning circuit prior to regulator input."
+                description={getVoltageTooltip(displayReading?.voltage)}
                 size={14}
               />
               <Zap size={16} className="text-neutral-400 opacity-60" />
@@ -583,9 +582,7 @@ export function MobileEnergyHarvestingDashboard({
             <div className="flex items-center gap-1.5">
               <InfoTooltip
                 title="Current (Milliamps)"
-                description="The rate at which electrical charge flows through the circuit during tile discharge."
-                analogy="Like the volume of water flowing through the hose per second."
-                technicalNote="Equivalent current computed over a 1-second discharge interval: I = P / V."
+                description={getCurrentTooltip(displayReading?.current ? displayReading.current * 1000 : undefined)}
                 size={14}
               />
               <Activity size={16} className="text-neutral-400 opacity-60" />

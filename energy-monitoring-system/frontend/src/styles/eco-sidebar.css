@@ -879,47 +879,6 @@
     gap: 10px;
   }
 
-  .es-mobile-play-btn {
-    position: relative;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 4px 12px rgba(13, 27, 20, 0.08);
-    color: #087A3A;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.15s ease;
-  }
-
-  [data-theme="dark"] .es-mobile-play-btn,
-  .dark .es-mobile-play-btn {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: var(--line);
-    color: #19D46A;
-  }
-
-  .es-mobile-play-dot {
-    position: absolute;
-    top: 9px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #19D46A;
-    border: 1.5px solid #FFFFFF;
-  }
-
-  [data-theme="dark"] .es-mobile-play-dot,
-  .dark .es-mobile-play-dot {
-    border-color: #12241A;
-  }
-
   .es-mobile-avatar-btn {
     width: 44px;
     height: 44px;
@@ -945,7 +904,7 @@
     z-index: 9999;
   }
 
-  /* Fixed Bottom Floating Pill Tab Bar (12px from edges, 68px tall, 5 equal columns) */
+  /* Fixed Bottom Floating Pill Tab Bar */
   .es-mobile-tabbar {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -967,6 +926,14 @@
     will-change: transform;
     transform: translateZ(0);
     overflow: visible;
+  }
+
+  .es-mobile-tabbar.is-public {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .es-mobile-tabbar.is-admin {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   [data-theme="dark"] .es-mobile-tabbar,

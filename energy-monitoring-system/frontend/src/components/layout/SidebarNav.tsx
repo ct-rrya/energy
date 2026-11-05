@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   X,
-  GraduationCap,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +36,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', path: ROUTES.HOME, label: 'Home', icon: House },
   { id: 'dashboard', path: ROUTES.DASHBOARD, label: 'EcoStep Central', icon: Activity },
   { id: 'analytics', path: ROUTES.ANALYTICS, label: 'Historical Analytics', icon: TrendingUp },
-  { id: 'missions', path: ROUTES.MISSIONS, label: 'Educational Missions', icon: GraduationCap },
 ];
 
 // Geometry constants

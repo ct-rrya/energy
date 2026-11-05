@@ -172,8 +172,6 @@ export function ChartContainer({
               <InfoTooltip
                 title={tooltip.title}
                 description={tooltip.description}
-                analogy={tooltip.analogy}
-                technicalNote={tooltip.technicalNote}
                 size={16}
               />
             )}

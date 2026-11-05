@@ -157,9 +157,7 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
       subtitle={subtitle}
       tooltip={{
         title: "Cumulative Energy (mWh)",
-        description: "Shows the continuous accumulation of harvested energy over time. Unlike power (which fluctuates with every step), this line only goes upwards as footsteps add more electricity to the system.",
-        analogy: "Like a savings piggy bank: each footstep deposits a few milliwatt-hours into the total balance.",
-        technicalNote: "Calculated by running a running cumulative sum of daily energy yields."
+        description: "The steady climb of clean power. Unlike fluctuating live watts, this total only marches upward with every step.",
       }}
       isLoading={isLoading}
       error={error}

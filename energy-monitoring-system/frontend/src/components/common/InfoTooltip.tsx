@@ -42,8 +42,8 @@ let activeTooltipClose: (() => void) | null = null;
 export function InfoTooltip({
   title,
   description,
-  technicalNote,
-  analogy,
+  technicalNote: _technicalNote,
+  analogy: _analogy,
   size = 16,
   ariaLabel,
   className = '',
@@ -327,16 +327,6 @@ export function InfoTooltip({
           >
             <div className="tt-title">{title}</div>
             <p className="tt-desc">{description}</p>
-            {analogy && (
-              <p className="tt-ana">
-                <b>💡 Everyday Analogy:</b> {analogy}
-              </p>
-            )}
-            {technicalNote && (
-              <p className="tt-tech">
-                <b>Technical Context:</b> {technicalNote}
-              </p>
-            )}
             <div
               className={`tt-arrow ${coords.isBottom ? 'tt-arrow-top' : 'tt-arrow-bottom'}`}
               style={{ left: `${coords.arrowLeft}px` }}

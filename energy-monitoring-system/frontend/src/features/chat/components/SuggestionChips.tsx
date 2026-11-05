@@ -8,9 +8,9 @@
 import '../chat.css';
 
 const DEFAULT_CHIPS = [
-  'What mission should I complete next?',
   'How does piezoelectricity work?',
-  'How close am I to the next level?',
+  'How is harvested energy stored?',
+  'Tell me about the CTU EcoStep system',
   'What does power generation mean?',
   'Explain voltage vs current vs power',
   "What's today's energy status?",

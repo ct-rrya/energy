@@ -151,8 +151,6 @@ export const MetricCard = React.memo(function MetricCard({
           <InfoTooltip
             title={tooltip.title}
             description={tooltip.description}
-            analogy={tooltip.analogy}
-            technicalNote={tooltip.technicalNote}
             size={16}
             position={tooltip.position ?? 'bottom'}
             align={tooltip.align ?? 'right'}

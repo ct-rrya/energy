@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Activity, MessageSquare, Stethoscope, FileText, GraduationCap } from 'lucide-react';
+import { Home, Activity, MessageSquare, Stethoscope, FileText } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -38,7 +38,6 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
 
   const isCentral = location.pathname === ROUTES.DASHBOARD || location.pathname === '/';
   const isAnalytics = location.pathname.startsWith(ROUTES.ANALYTICS);
-  const isMissions = location.pathname.startsWith(ROUTES.MISSIONS) || location.pathname.startsWith(ROUTES.LEADERBOARD);
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
 
@@ -91,13 +90,6 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       icon: Activity,
       isActive: isAnalytics,
       onClick: () => navigate(ROUTES.ANALYTICS),
-    },
-    {
-      id: 'missions',
-      label: 'Missions',
-      icon: GraduationCap,
-      isActive: isMissions,
-      onClick: () => navigate(ROUTES.MISSIONS),
     },
     {
       id: 'ecochat',

@@ -92,15 +92,16 @@ describe('InfoTooltip Component', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
-  it('renders analogy and technical notes when provided', async () => {
+  it('renders concise observation and does not render obsolete analogy or technical sections', async () => {
     const user = userEvent.setup();
     render(<InfoTooltip {...defaultProps} />);
 
     const button = screen.getByRole('button', { name: /more info: energy today/i });
     await user.click(button);
 
-    expect(screen.getByText(/Like the total distance traveled in a car/i)).toBeInTheDocument();
-    expect(screen.getByText(/Energy = ∫ P\(t\) dt/i)).toBeInTheDocument();
+    expect(screen.getByText('Total clean energy generated and stored today from all footsteps.')).toBeInTheDocument();
+    expect(screen.queryByText(/Everyday Analogy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Technical Context/i)).not.toBeInTheDocument();
   });
 
   it('automatically flips downward and mounts via portal with z-index 60 when trigger is near the top of viewport', () => {

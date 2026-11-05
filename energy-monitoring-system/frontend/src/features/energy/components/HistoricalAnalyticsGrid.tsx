@@ -106,7 +106,7 @@ export function HistoricalAnalyticsGrid() {
       {/* Top Row: Voltage Trend (Top-Left) - Full Width Card */}
       <ChartContainer
         title="Voltage Trend"
-        subtitle="Electrical potential over the last 24 hours"
+        subtitle="Electrical potential produced during compressions"
         isLoading={voltageLoading}
         error={voltageError}
         isEmpty={isVoltageEmpty}
@@ -168,7 +168,7 @@ export function HistoricalAnalyticsGrid() {
       {/* Top Row: Current Trend (Top-Right) - Full Width Card */}
       <ChartContainer
         title="Current Trend"
-        subtitle="Current flow over the last 24 hours"
+        subtitle="Electrical charge flow rate"
         isLoading={currentLoading}
         error={currentError}
         isEmpty={isCurrentEmpty}

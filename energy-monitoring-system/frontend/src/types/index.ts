@@ -10,5 +10,3 @@ export * from './report.types';
 export * from './user.types';
 export * from './diagnostic.types';
 export * from './monitoring.types';
-export * from './player.types';
-export * from './gamification.types';

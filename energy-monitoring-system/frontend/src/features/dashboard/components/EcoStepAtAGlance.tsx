@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { getGlanceTooltip } from '../utils/metricTooltips';
 
 export interface EcoStepAtAGlanceProps {
   todaySteps?: number;
@@ -60,9 +61,7 @@ export function EcoStepAtAGlance({
 
         <InfoTooltip
           title="EcoStep Today"
-          description="EcoStep captures footsteps using piezoelectric floor tiles and converts physical movement into measurable clean electricity. The cards below show your 5 core electrical measurements."
-          analogy="Think of EcoStep like a solar panel, but powered by human steps instead of sunlight!"
-          technicalNote="Sensors measure live voltage and discharge current to calculate instantaneous power and total energy."
+          description={getGlanceTooltip(todaySteps, dailyEnergy)}
           size={16}
           position="bottom"
           align="right"

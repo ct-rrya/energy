@@ -104,9 +104,7 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
       subtitle="Instantaneous power output (mW) showing peaks of footstep activity"
       tooltip={{
         title: "Power Generation (mW)",
-        description: "Visualizes the speed of energy generation. Peaks represent periods of active walking across the tiles, while flat areas represent quiet times.",
-        analogy: "Like watching traffic surges on a highway: spikes represent busy rushes of footsteps.",
-        technicalNote: "Measured in milliwatts (mW). Calculated from voltage and equivalent load current."
+        description: "Visualizes live generation speed. High spikes map directly to energetic foot traffic rushing across the tiles.",
       }}
       isLoading={isLoading}
       error={error}

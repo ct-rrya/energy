@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { PlayerNavPill } from '@/features/gamification';
 import { ROUTES } from '@/routes/routes.config';
 
 interface MobileHeaderProps {
@@ -127,9 +126,6 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
 
       {/* Right: Quick Action & Expandable Menu Icon */}
       <div className="flex items-center gap-1.5 sm:gap-2 relative">
-        {/* Guest Gamification Player Pill */}
-        <PlayerNavPill />
-
         {/* Chat / EcoGuide Trigger Button */}
         <button
           type="button"

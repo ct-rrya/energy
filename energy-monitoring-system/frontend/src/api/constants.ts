@@ -54,22 +54,6 @@ export const REPORTS_ENDPOINTS = {
   DOWNLOAD: (id: string) => `/reports/${id}/download`,
 } as const;
 
-// Player & Gamification Endpoints
-export const PLAYER_ENDPOINTS = {
-  CREATE_GUEST: '/players/guest',
-  ME: '/players/me',
-  LOGOUT: '/players/logout',
-} as const;
-
-export const GAMIFICATION_ENDPOINTS = {
-  MISSIONS: '/missions',
-  MISSION_DETAILS: (id: string) => `/missions/${id}`,
-  SUBMIT_QUIZ: (id: string) => `/missions/${id}/submit`,
-  PROGRESS: '/gamification/progress',
-  BADGES: '/gamification/badges',
-  LEADERBOARD: '/leaderboard',
-} as const;
-
 // Query Keys for TanStack Query
 export const QUERY_KEYS = {
   HEALTH: ['health'],
@@ -84,9 +68,4 @@ export const QUERY_KEYS = {
   ANALYTICS_MONTHLY: ['analytics', 'monthly'],
   DASHBOARD_METRICS: ['dashboard', 'metrics'],
   REPORTS: ['reports'],
-  MISSIONS: ['missions'],
-  MISSION: (id: string) => ['mission', id],
-  GAMIFICATION_PROGRESS: ['gamification', 'progress'],
-  BADGES: ['gamification', 'badges'],
-  LEADERBOARD: (page?: number, limit?: number) => ['leaderboard', page ?? 1, limit ?? 20],
 } as const;

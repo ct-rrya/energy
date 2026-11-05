@@ -48,6 +48,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   startDate: propStartDate,
   endDate: propEndDate,
   granularity: propGranularity,
+  periodLabel: _periodLabel,
 }: VoltageCurrentChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -141,12 +142,10 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
       {/* Voltage Chart */}
       <ChartContainer
         title="Voltage Trend"
-        subtitle="Electrical potential (V) produced during compressions over the last 24 hours"
+        subtitle="Electrical potential (V) produced during compressions"
         tooltip={{
           title: "Voltage Trend (V)",
-          description: "Shows how much electrical push is created when students step on the tiles. Higher peaks indicate stronger footstep impacts on the piezoelectric discs.",
-          analogy: "Like recording water pressure spikes each time a pump is compressed.",
-          technicalNote: "Measured in Volts (V) across the bridge rectifier output."
+          description: "Tracks the electrical push created by footsteps over time. Taller crests reflect heavier, more deliberate strides.",
         }}
         isLoading={voltageLoading}
         error={voltageError}
@@ -247,12 +246,10 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
       {/* Current Chart */}
       <ChartContainer
         title="Current Trend"
-        subtitle={`Electrical charge flow rate (${currentUnit}) over the last 24 hours`}
+        subtitle={`Electrical charge flow rate (${currentUnit})`}
         tooltip={{
           title: `Current Trend (${currentUnit})`,
-          description: "Tracks the rate at which electrical charge moves through the circuit when tiles discharge into the storage capacitor.",
-          analogy: "Like water volume flowing through a pipe: current tells us how many electrons are moving.",
-          technicalNote: "Calculated based on equivalent 1-second pulse duration: I = P / V."
+          description: "Maps how swiftly harvested charge flows into storage capacitors across each hour.",
         }}
         isLoading={currentLoading}
         error={currentError}

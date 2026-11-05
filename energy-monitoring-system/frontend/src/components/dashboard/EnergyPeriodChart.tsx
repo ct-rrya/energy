@@ -99,9 +99,7 @@ export const EnergyPeriodChart = React.memo(function EnergyPeriodChart({
       subtitle="Total energy collected per hour or day (Wh)"
       tooltip={{
         title: "Energy by Period (Wh)",
-        description: "Groups the total energy collected into distinct time buckets (e.g. per hour or day). Each bar represents the total electrical work stored during that specific timeframe.",
-        analogy: "Like counting the total glasses of water filled each hour.",
-        technicalNote: "Calculated by integrating power readings over each interval."
+        description: "Tallies clean energy harvested hour-by-hour or day-by-day. Spot which class transition created the biggest harvest.",
       }}
       isLoading={isLoading}
       error={error}

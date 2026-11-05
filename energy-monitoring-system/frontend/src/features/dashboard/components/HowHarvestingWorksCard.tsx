@@ -101,10 +101,8 @@ export function HowHarvestingWorksCard() {
         <div className="how-harvesting-actions flex items-center gap-2 shrink-0">
           <span className="how-harvesting-tooltip">
             <InfoTooltip
-              title="Piezoelectric Harvesting Process"
-              description="Piezoelectricity comes from the Greek word 'piezein', meaning to push or squeeze. Certain solid materials accumulate electrical charge in response to applied mechanical stress."
-              analogy="Like pressing a click lighter: mechanical push generates an instant spark of electrical potential!"
-              technicalNote="EcoStep tiles use lead zirconate titanate (PZT) ceramic elements arranged in parallel arrays."
+              title="Piezoelectric Harvesting"
+              description="Step down, squeeze the crystals, harvest the charge. Mechanical force converted into electricity without burning a drop of fuel."
               size={16}
               align="right"
             />

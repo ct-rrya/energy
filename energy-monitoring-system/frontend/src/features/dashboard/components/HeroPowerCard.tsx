@@ -32,6 +32,7 @@ import { TrendIndicator } from './TrendIndicator';
 import { AIInsightSection } from './AIInsightSection';
 import { HeroCardSkeleton } from './HeroCardSkeleton';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { getPowerTooltip } from '../utils/metricTooltips';
 
 /**
  * Hero Power Card Props
@@ -89,8 +90,7 @@ export const HeroPowerCard = React.memo(
               <span>Power Output</span>
               <InfoTooltip
                 title="Power Output"
-                description="Instantaneous electrical power from the tiles, in milliwatts."
-                technicalNote="Measured real-time electrical output from piezoelectric transducers upon mechanical compression."
+                description={getPowerTooltip(powerValue, !hasNoActivityToday)}
                 ariaLabel="More info: Power Output"
               />
             </div>

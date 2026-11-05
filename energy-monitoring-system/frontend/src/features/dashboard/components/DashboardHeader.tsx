@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
-import { PlayerNavPill } from '@/features/gamification';
 
 /**
  * System Status Type
@@ -17,7 +16,7 @@ export interface DashboardHeaderProps {
   subtitle: string;
   systemStatus: SystemStatusType;
   alertsCount?: number;
-  isPublicUser: boolean;
+  isPublicUser?: boolean;
   onAlertsClick?: () => void;
   isWebSocketConnected?: boolean;
   greeting?: string;
@@ -30,7 +29,7 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   title,
   subtitle,
   systemStatus,
-  isPublicUser,
+  isPublicUser: _isPublicUser,
   isWebSocketConnected = true,
   greeting = 'Welcome to EcoStep',
 }: DashboardHeaderProps) {
@@ -89,9 +88,6 @@ export const DashboardHeader = React.memo(function DashboardHeader({
           status={systemStatus} 
           isWebSocketConnected={isWebSocketConnected}
         />
-
-        {/* Guest Gamification Player Entry / Profile Pill (Public/Guest only) */}
-        {isPublicUser && <PlayerNavPill />}
       </div>
     </header>
   );
@@ -111,8 +107,7 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
         dotColor: 'bg-[#EF4444]',
         statusClass: 'status-offline',
         title: 'System Status: Offline',
-        description: 'The real-time connection to the EcoStep IoT stream is currently disconnected. The system will automatically attempt to reconnect.',
-        technicalNote: 'WebSocket telemetry link is disconnected.',
+        description: 'The real-time connection to the EcoStep IoT stream is currently disconnected. The system will automatically attempt to reconnect. WebSocket telemetry link is disconnected.',
       };
     }
 
@@ -125,8 +120,7 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
           pulseColor: 'bg-[#3ED98A]',
           statusClass: 'status-online',
           title: 'System Status: Online',
-          description: 'All EcoStep hardware telemetry and database services are connected and operating normally. As students walk across the piezoelectric tiles, live readings stream in real time.',
-          technicalNote: 'WebSocket telemetry: Connected. Database: Healthy. (Zero footsteps is normal when the tile is at rest).',
+          description: 'All EcoStep hardware telemetry and database services are connected and operating normally. As students walk across the piezoelectric tiles, live readings stream in real time. (Zero footsteps is normal when the tile is at rest).',
         };
       case 'disconnected':
         return {
@@ -135,8 +129,7 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
           dotColor: 'bg-[#EF4444]',
           statusClass: 'status-offline',
           title: 'System Status: Disconnected',
-          description: 'The backend database or telemetry service is reporting a disconnection. Data updates may be paused until connectivity restores.',
-          technicalNote: 'Database service is disconnected or unreachable.',
+          description: 'The backend database or telemetry service is reporting a disconnection. Data updates may be paused until connectivity restores. Database service is disconnected or unreachable.',
         };
       case 'unknown':
       default:
@@ -147,7 +140,6 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
           statusClass: 'status-standby',
           title: 'System Status: Standby',
           description: 'EcoStep is in active standby and ready for footsteps. Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault.',
-          technicalNote: 'Telemetry receiver is listening. Sensor heartbeat pending next active compression.',
         };
     }
   };
@@ -174,7 +166,6 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
         <InfoTooltip
           title={config.title}
           description={config.description}
-          technicalNote={config.technicalNote}
           size={16}
           position="bottom"
           align="right"

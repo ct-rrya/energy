@@ -5,7 +5,7 @@ export const ROUTES = {
   // Public routes
   HOME: '/',
   LOGIN: '/admin/login', // Redirect old login references to admin login
-  
+
   // Admin routes
   ADMIN_LOGIN: '/admin/login',
   ADMIN_MANAGEMENT: '/admin-management',
@@ -14,8 +14,6 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   ENERGY: '/energy',
   ANALYTICS: '/analytics',
-  MISSIONS: '/missions',
-  LEADERBOARD: '/leaderboard',
 
   // Admin-only routes (auth required)
   SENSORS: '/sensors',

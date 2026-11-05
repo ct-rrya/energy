@@ -12,5 +12,3 @@ export * from './reports.service';
 export * from './user.service';
 export * from './diagnostics.service';
 export * from './energy.service';
-export * from './players.service';
-export * from './gamification.service';

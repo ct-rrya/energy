@@ -17,17 +17,6 @@ vi.mock('@/contexts/ThemeContext', () => ({
   }),
 }));
 
-// Mock PlayerContext
-vi.mock('@/contexts/PlayerContext', () => ({
-  usePlayer: () => ({
-    player: null,
-    sessionToken: null,
-    isLoading: false,
-    openPlayerModal: vi.fn(),
-    logout: vi.fn(),
-  }),
-}));
-
 // Mock System Health & Live Sensor Data
 vi.mock('@/features/dashboard/hooks/useSystemHealth', () => ({
   useSystemHealth: () => ({
