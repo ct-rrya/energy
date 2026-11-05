@@ -366,58 +366,49 @@ export function DiagnosticHistoryTable() {
           </div>
 
           {/* Mobile View for Daily Tasks */}
-          <div className="sm:hidden divide-y" style={{ borderColor: colors.border }}>
+          <div className="sm:hidden divide-y divide-slate-100 dark:divide-gray-800">
             {dailyTasks && dailyTasks.length > 0 ? (
               dailyTasks.map((t) => (
-                <div key={t.taskDate} className="p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                <div key={t.taskDate} className="py-4 px-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[17px] font-bold text-slate-900 dark:text-white tabular-nums tracking-tight">
                       {t.taskDate}
                     </span>
                     {getDailyStatusBadge(t.status)}
                   </div>
 
-                  <div className="text-xs">
-                    <span className="text-slate-500">Verified By: </span>
+                  <div className="text-[13px] text-slate-500 dark:text-gray-400 italic">
                     {t.performedByName ? (
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        {t.performedByName}{' '}
-                        <span className="text-[11px] text-slate-400">({t.performedBy})</span>
+                      <span>
+                        Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200 not-italic">{t.performedByName}</strong>
                       </span>
                     ) : t.performedBy ? (
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{t.performedBy}</span>
+                      <span>
+                        Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200 not-italic">{t.performedBy}</strong>
+                      </span>
                     ) : (
-                      <span className="text-slate-400 italic">Pending Physical Test</span>
+                      <span>Pending Physical Test</span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-gray-800/40 text-xs">
-                    <div>
-                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Measured</span>
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                        {t.actualEnergyMWh !== undefined ? `${t.actualEnergyMWh.toFixed(4)}` : '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Baseline</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
-                        {t.expectedEnergyMWh !== undefined ? `${t.expectedEnergyMWh.toFixed(4)}` : '0.0051'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] uppercase tracking-wider text-slate-500">Deviation</span>
-                      <span className="font-semibold tabular-nums">
-                        {t.deviationPercentage !== undefined ? (
-                          <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                            {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
-                          </span>
-                        ) : '—'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-4 text-[13px] text-slate-600 dark:text-gray-300 pt-0.5">
+                    <span>
+                      Measured{' '}
+                      <strong className="font-semibold text-slate-900 dark:text-white tabular-nums">
+                        {t.actualEnergyMWh !== undefined ? `${t.actualEnergyMWh.toFixed(5)}` : '—'}
+                      </strong>
+                    </span>
+                    <span>
+                      Baseline{' '}
+                      <strong className="font-bold text-slate-900 dark:text-white tabular-nums">
+                        {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
+                      </strong>{' '}
+                      mWh
+                    </span>
                   </div>
 
                   {(t.statusMessage || t.notes) && (
-                    <p className="text-xs text-slate-500 dark:text-gray-400 italic bg-white/50 dark:bg-gray-800/20 p-2 rounded border border-slate-100 dark:border-gray-800">
+                    <p className="text-xs text-slate-500 dark:text-gray-400 italic pt-1">
                       {t.statusMessage || t.notes}
                     </p>
                   )}

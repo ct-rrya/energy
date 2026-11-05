@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -77,12 +78,18 @@ export function Dialog({
     xl: 'max-w-4xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  const dialogElement = (
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      }}
+    >
       {/* Backdrop */}
       <div
-        className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+        className="fixed inset-0 -z-10"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -90,39 +97,41 @@ export function Dialog({
       {/* Dialog */}
       <div
         className={cn(
-          'relative z-50 w-full mx-4 rounded-lg',
+          'relative z-10 w-full rounded-2xl flex flex-col my-auto max-h-[calc(100dvh-32px)] sm:max-h-[85vh]',
           sizeClasses[size],
           className
         )}
         style={{
           backgroundColor: colors.cardBackground,
           boxShadow: theme === 'light' 
-            ? '0 10px 25px rgba(0, 0, 0, 0.15)' 
-            : '0 10px 25px rgba(0, 0, 0, 0.5)',
+            ? '0 20px 50px rgba(0, 0, 0, 0.2)' 
+            : '0 20px 50px rgba(0, 0, 0, 0.7)',
           border: theme === 'light'
-            ? '1px solid rgba(26, 49, 44, 0.08)'
-            : '1px solid rgba(137, 215, 183, 0.12)'
+            ? '1px solid rgba(26, 49, 44, 0.12)'
+            : '1px solid rgba(137, 215, 183, 0.16)'
         }}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={title ? 'dialog-title' : undefined}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {title && (
           <div 
-            className="flex items-center justify-between px-6 py-4"
+            className="flex items-center justify-between px-5 sm:px-6 py-4 flex-shrink-0"
             style={{ borderBottom: `1px solid ${colors.border}` }}
           >
             <h2
               id="dialog-title"
-              className="text-lg font-semibold"
-              style={{ color: colors.accent }}
+              className="text-base sm:text-lg font-bold"
+              style={{ color: colors.textPrimary }}
             >
               {title}
             </h2>
             <button
+              type="button"
               onClick={onClose}
-              className="rounded-lg p-1 transition-colors"
+              className="rounded-lg p-1.5 transition-colors cursor-pointer"
               style={{ color: colors.textMuted }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = colors.hoverBackground;
@@ -140,12 +149,18 @@ export function Dialog({
         )}
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+        <div className="px-5 sm:px-6 py-4 overflow-y-auto flex-1 min-h-0">
           {children}
         </div>
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(dialogElement, document.body);
+  }
+
+  return dialogElement;
 }
 
 /**

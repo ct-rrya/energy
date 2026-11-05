@@ -18,6 +18,7 @@ import {
   Gamepad2, 
   GraduationCap,
   Trophy,
+  MessageSquare,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +32,7 @@ interface NavItem {
   label: string;
   Icon: React.ElementType;
   end?: boolean;
+  publicOnly?: boolean;
   systemAdminOnly?: boolean;
   superAdminOnly?: boolean;
 }
@@ -40,8 +42,9 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
-  { to: ROUTES.MISSIONS, label: 'Educational Missions', Icon: GraduationCap },
-  { to: ROUTES.LEADERBOARD, label: 'Leaderboard', Icon: Trophy },
+  // Gamification routes (guest/public only — hidden for admins)
+  { to: ROUTES.MISSIONS, label: 'Educational Missions', Icon: GraduationCap, publicOnly: true },
+  { to: ROUTES.LEADERBOARD, label: 'Leaderboard', Icon: Trophy, publicOnly: true },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
@@ -89,6 +92,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   });
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileUserSheetOpen, setMobileUserSheetOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState<{ left: number; bottom: number }>({ left: 0, bottom: 0 });
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userTriggerRef = useRef<HTMLButtonElement>(null);
@@ -214,6 +218,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUserMenuOpen(false);
+    setMobileUserSheetOpen(false);
   }, [location.pathname]);
 
   // Outside click, window resize, scroll, and keyboard handlers for portal popover
@@ -390,6 +395,9 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   // Filter nav items based on role
   const navItems = useMemo(() => {
     return ALL_NAV_ITEMS.filter(item => {
+      if (item.publicOnly && isAnyAdmin) {
+        return false;
+      }
       if (!item.systemAdminOnly && !item.superAdminOnly) {
         return true;
       }
@@ -415,6 +423,16 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   const userName = user?.name || (player ? player.username : 'Guest');
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
+  const avatarInitial = isAuthenticated && (user?.name || user?.email)
+    ? (user.name || user.email || 'A')[0].toUpperCase()
+    : player
+      ? (player.username || 'P')[0].toUpperCase()
+      : 'T';
+
+  const handleOpenMobileEcoGuide = useCallback(() => {
+    setMobileUserSheetOpen(false);
+    window.dispatchEvent(new CustomEvent('ecostep:openchat'));
+  }, []);
 
   return (
     <div
@@ -651,9 +669,237 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       {/* Main Column */}
       <main ref={mainRef} className="es-main mn es-main-col main">
         <div className="es-main-edge-top" aria-hidden="true" />
+
+        {/* Mobile Top Bar (<= 768px) */}
+        <header className="es-mobile-topbar" aria-label="Mobile top bar">
+          <a href="/#home" className="es-mobile-brand" aria-label="EcoStep Home">
+            <span className="es-brand-mark-circle">E</span>
+            <span className="es-mobile-brand-text">EcoStep</span>
+          </a>
+
+          <div className="es-mobile-topbar-actions">
+            {!isAnyAdmin && (
+              <button
+                type="button"
+                className="es-mobile-play-btn"
+                onClick={() => openPlayerModal()}
+                aria-label={player ? `Player profile: ${player.username}` : 'Play & Learn'}
+                title="Play & Learn"
+              >
+                <Gamepad2 size={18} strokeWidth={2} />
+                <span className="es-mobile-play-dot" aria-hidden="true" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={`es-mobile-avatar-btn ${mobileUserSheetOpen ? 'is-active' : ''}`}
+              onClick={() => setMobileUserSheetOpen((prev) => !prev)}
+              aria-label="User account and settings"
+              aria-expanded={mobileUserSheetOpen}
+              aria-haspopup="dialog"
+            >
+              <span>{avatarInitial}</span>
+            </button>
+          </div>
+        </header>
+
         {children}
         <div className="es-main-edge-bottom" aria-hidden="true" />
       </main>
+
+      {/* Mobile Fixed Bottom Tab Bar (<= 768px) */}
+      <nav className="es-mobile-tabbar" aria-label="Primary mobile navigation">
+        <NavLink
+          to={ROUTES.DASHBOARD}
+          className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+          aria-label="Central"
+        >
+          <span className="es-mobile-tab-pill">
+            <Activity size={18} strokeWidth={2} />
+          </span>
+          <span className="es-mobile-tab-label">Central</span>
+        </NavLink>
+
+        <NavLink
+          to={ROUTES.ANALYTICS}
+          className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+          aria-label={isAnyAdmin ? 'Analytics' : 'History'}
+        >
+          <span className="es-mobile-tab-pill">
+            <TrendingUp size={18} strokeWidth={2} />
+          </span>
+          <span className="es-mobile-tab-label">{isAnyAdmin ? 'Analytics' : 'History'}</span>
+        </NavLink>
+
+        <button
+          type="button"
+          className="es-mobile-tab es-mobile-tab-ecoguide"
+          onClick={handleOpenMobileEcoGuide}
+          aria-label="Open EcoGuide"
+        >
+          <span className="es-mobile-ecoguide-fab">
+            <MessageSquare size={22} strokeWidth={2} />
+          </span>
+          <span className="es-mobile-tab-label es-mobile-tab-label-ecoguide">EcoGuide</span>
+        </button>
+
+        {isAnyAdmin ? (
+          <>
+            <NavLink
+              to={ROUTES.ADMIN_DIAGNOSTICS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Diagnostics"
+            >
+              <span className="es-mobile-tab-pill">
+                <Stethoscope size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Diagnostics</span>
+            </NavLink>
+
+            <NavLink
+              to={ROUTES.REPORTS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Reports"
+            >
+              <span className="es-mobile-tab-pill">
+                <FileText size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Reports</span>
+            </NavLink>
+          </>
+        ) : (
+          <>
+            <NavLink
+              to={ROUTES.MISSIONS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Learn"
+            >
+              <span className="es-mobile-tab-pill">
+                <GraduationCap size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Learn</span>
+            </NavLink>
+
+            <NavLink
+              to={ROUTES.LEADERBOARD}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Ranks"
+            >
+              <span className="es-mobile-tab-pill">
+                <Trophy size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Ranks</span>
+            </NavLink>
+          </>
+        )}
+      </nav>
+
+      {/* Mobile Guest / User Bottom Sheet (<= 768px) */}
+      {mobileUserSheetOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="es-mobile-sheet-backdrop"
+          onClick={() => setMobileUserSheetOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="es-mobile-user-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="User settings and account menu"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="es-sheet-handle" aria-hidden="true" />
+
+            <div className="es-sheet-user-head">
+              <div className="es-sheet-user-avatar">
+                {isAuthenticated && (user?.name || user?.email) ? (
+                  <span>{(user.name || user.email || 'A')[0].toUpperCase()}</span>
+                ) : (
+                  <User size={22} strokeWidth={2} />
+                )}
+              </div>
+              <div className="es-sheet-user-info">
+                <div className="es-sheet-user-name">{userName}</div>
+                <div className="es-sheet-user-role">{player ? 'Guest Player' : userRole}</div>
+              </div>
+            </div>
+
+            <div className="es-sheet-user-body">
+              {isAnyAdmin && (
+                <button
+                  type="button"
+                  className="es-sheet-item"
+                  onClick={() => {
+                    setMobileUserSheetOpen(false);
+                    navigate(ROUTES.SETTINGS);
+                  }}
+                >
+                  <Settings size={20} strokeWidth={1.8} />
+                  <span>Settings</span>
+                  {isSettingsActive && (
+                    <span className="es-sheet-badge">Active</span>
+                  )}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="es-sheet-item"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <Sun size={20} strokeWidth={1.8} /> : <Moon size={20} strokeWidth={1.8} />}
+                <span>Theme</span>
+                <span className="es-sheet-badge">
+                  {theme === 'dark' ? 'Dark' : 'Light'}
+                </span>
+              </button>
+
+              {isAnyAdmin ? (
+                <button
+                  type="button"
+                  className="es-sheet-item"
+                  onClick={() => {
+                    setMobileUserSheetOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut size={20} strokeWidth={1.8} />
+                  <span>Sign Out</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="es-sheet-item"
+                    onClick={() => {
+                      setMobileUserSheetOpen(false);
+                      openPlayerModal();
+                    }}
+                  >
+                    <Gamepad2 size={20} strokeWidth={1.8} />
+                    <span>Play &amp; Learn</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="es-sheet-item"
+                    onClick={() => {
+                      setMobileUserSheetOpen(false);
+                      navigate(ROUTES.LOGIN);
+                    }}
+                  >
+                    <User size={20} strokeWidth={1.8} />
+                    <span>Admin Sign In</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Right EcoGuide Panel */}
       <ChatPanel 

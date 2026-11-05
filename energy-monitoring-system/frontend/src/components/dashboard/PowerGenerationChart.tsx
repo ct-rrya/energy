@@ -47,7 +47,7 @@ export function PowerGenerationChart({
   granularity: propGranularity,
 }: PowerGenerationChartProps) {
   const { theme } = useTheme();
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   // Use defaultTimeFilter unless overridden by unified Analytics page period
   const timeFilter: TimeFilter = defaultTimeFilter;
@@ -143,9 +143,9 @@ export function PowerGenerationChart({
             />
             <Tooltip
               content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
-              position={{ y: 0 }}
+              position={isMobile ? undefined : { y: 0 }}
               wrapperStyle={{ zIndex: 1000 }}
-              allowEscapeViewBox={{ x: false, y: true }}
+              allowEscapeViewBox={{ x: false, y: !isMobile }}
               cursor={{ fill: 'rgba(19, 185, 92, 0.08)' }}
               isAnimationActive={false}
             />
@@ -184,9 +184,9 @@ export function PowerGenerationChart({
             />
             <Tooltip
               content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
-              position={{ y: 0 }}
+              position={isMobile ? undefined : { y: 0 }}
               wrapperStyle={{ zIndex: 1000 }}
-              allowEscapeViewBox={{ x: false, y: true }}
+              allowEscapeViewBox={{ x: false, y: !isMobile }}
               cursor={{ strokeDasharray: '3 3' }}
               isAnimationActive={false}
             />

@@ -204,11 +204,9 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="w-full p-1 sm:p-6 lg:p-8 pb-16 sm:pb-24">
-      <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
-        
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+    <div className="page">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
           <div>
             <h1 
               className="text-2xl sm:text-[32px] font-bold mb-1 sm:mb-2"
@@ -225,25 +223,23 @@ export function ReportsPage() {
           </div>
 
           {/* Primary Action */}
-          {!isPublicUser && (
-            <button
-              onClick={() => setIsGenerateDialogOpen(true)}
-              className="px-4 sm:px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors duration-200 whitespace-nowrap self-start sm:self-auto cursor-pointer"
-              style={{
-                backgroundColor: colors.accent,
-                color: 'white',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = colors.accent;
-              }}
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-              <span className="text-xs sm:text-sm font-semibold">Generate Report</span>
-            </button>
-          )}
+          <button
+            onClick={() => setIsGenerateDialogOpen(true)}
+            className="px-4 sm:px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors duration-200 whitespace-nowrap self-start sm:self-auto cursor-pointer"
+            style={{
+              backgroundColor: colors.accent,
+              color: 'white',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = colors.accent;
+            }}
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+            <span className="text-xs sm:text-sm font-semibold">Generate Report</span>
+          </button>
         </div>
 
         {/* Filters Section */}
@@ -389,25 +385,23 @@ export function ReportsPage() {
                 ? 'No reports match the current filter criteria. Try adjusting your filters or generate a new report.'
                 : 'Generate your first EcoStep report from monitoring, analytics, or diagnostic data.'}
             </p>
-            {!isPublicUser && (
-              <button
-                onClick={() => setIsGenerateDialogOpen(true)}
-                className="px-5 py-2.5 rounded-lg font-medium transition-colors duration-200 inline-flex items-center gap-2"
-                style={{
-                  backgroundColor: colors.accent,
-                  color: 'white',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.accent;
-                }}
-              >
-                <Plus className="w-5 h-5" strokeWidth={2} />
-                <span>Generate Report</span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsGenerateDialogOpen(true)}
+              className="px-5 py-2.5 rounded-lg font-medium transition-colors duration-200 inline-flex items-center gap-2"
+              style={{
+                backgroundColor: colors.accent,
+                color: 'white',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = colors.accent;
+              }}
+            >
+              <Plus className="w-5 h-5" strokeWidth={2} />
+              <span>Generate Report</span>
+            </button>
           </div>
         ) : (
           /* Reports Table/List */
@@ -721,7 +715,6 @@ export function ReportsPage() {
             )}
           </>
         )}
-      </div>
 
       {/* Generate Report Dialog */}
       <GenerateReportDialog

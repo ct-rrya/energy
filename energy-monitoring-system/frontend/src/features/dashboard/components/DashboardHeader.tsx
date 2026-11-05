@@ -30,6 +30,7 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   title,
   subtitle,
   systemStatus,
+  isPublicUser,
   isWebSocketConnected = true,
   greeting = 'Welcome to EcoStep',
 }: DashboardHeaderProps) {
@@ -89,8 +90,8 @@ export const DashboardHeader = React.memo(function DashboardHeader({
           isWebSocketConnected={isWebSocketConnected}
         />
 
-        {/* Guest Gamification Player Entry / Profile Pill */}
-        <PlayerNavPill />
+        {/* Guest Gamification Player Entry / Profile Pill (Public/Guest only) */}
+        {isPublicUser && <PlayerNavPill />}
       </div>
     </header>
   );

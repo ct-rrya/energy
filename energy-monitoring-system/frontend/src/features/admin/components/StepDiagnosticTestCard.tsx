@@ -240,7 +240,7 @@ export function StepDiagnosticTestCard() {
 
   return (
     <div 
-      className="rounded-2xl p-3.5 sm:p-8 border shadow-xs transition-all"
+      className="diag-outer-card rounded-2xl p-3.5 sm:p-8 border shadow-xs transition-all"
       style={{
         backgroundColor: colors.cardBackground,
         borderColor: colors.border,
@@ -250,7 +250,7 @@ export function StepDiagnosticTestCard() {
       {/* 1. DAILY DIAGNOSTIC TASK BANNER (SHARED MULTI-ADMIN) */}
       {/* ============================================================ */}
       <div 
-        className="mb-6 p-3.5 sm:p-5 rounded-2xl border transition-all"
+        className="diag-daily-banner mb-6 p-3.5 sm:p-5 rounded-2xl border transition-all"
         style={{
           backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
             ? (theme === 'light' ? '#F0FDF4' : 'rgba(6, 78, 59, 0.2)')
@@ -260,10 +260,10 @@ export function StepDiagnosticTestCard() {
             : colors.border,
         }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="diag-daily-layout flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="diag-daily-main flex items-center gap-3">
             <div 
-              className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
+              className="diag-daily-icon p-2.5 rounded-xl flex items-center justify-center shrink-0"
               style={{
                 backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
                   ? 'rgba(16, 185, 129, 0.15)'
@@ -272,17 +272,19 @@ export function StepDiagnosticTestCard() {
             >
               <Calendar className="h-5 w-5" style={{ color: colors.accent }} />
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+            <div className="diag-daily-text">
+              <div className="diag-daily-title-wrap flex items-center gap-2 flex-wrap">
+                <h3 className="diag-daily-title text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                   Today's Daily Diagnostic Task
                 </h3>
-                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-gray-800 text-slate-700 dark:text-slate-300 font-mono font-medium">
+                <span className="diag-daily-date text-xs px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-gray-800 text-slate-700 dark:text-slate-300 font-mono font-medium">
                   {todayTask?.taskDate || new Date().toISOString().split('T')[0]}
                 </span>
-                {getDailyStatusBadge(todayTask?.status)}
+                <span className="diag-daily-badge-wrap">
+                  {getDailyStatusBadge(todayTask?.status)}
+                </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+              <p className="diag-daily-desc text-xs text-slate-500 dark:text-gray-400 mt-1">
                 {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED ? (
                   <span>
                     Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200">{todayTask.performedByName || todayTask.performedBy}</strong> on{' '}
@@ -297,7 +299,7 @@ export function StepDiagnosticTestCard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="diag-daily-sync-wrap flex items-center gap-2 self-start sm:self-auto">
             <Button
               variant="ghost"
               size="sm"
@@ -306,7 +308,7 @@ export function StepDiagnosticTestCard() {
                 refetchBaseline();
               }}
               isLoading={isDailyTaskLoading || isBaselineLoading}
-              className="gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
+              className="diag-sync-btn gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Sync Status
@@ -339,35 +341,35 @@ export function StepDiagnosticTestCard() {
       {/* ============================================================ */}
       {/* 2. CARD HEADER: TILE STEP DIAGNOSTIC */}
       {/* ============================================================ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b" style={{ borderColor: colors.border }}>
-        <div className="flex items-center gap-3">
+      <div className="diag-step-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b" style={{ borderColor: colors.border }}>
+        <div className="diag-step-header-top flex items-center gap-3">
           <div 
-            className="p-3 rounded-xl flex items-center justify-center transition-colors" 
+            className="diag-step-icon p-3 rounded-xl flex items-center justify-center transition-colors shrink-0" 
             style={{ backgroundColor: colors.accentSubtle }}
           >
             <Footprints className="h-6 w-6" style={{ color: colors.accent }} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="diag-step-title-col">
+            <div className="diag-step-title-row flex items-center gap-2 flex-wrap">
               <h2 
-                className="text-xl sm:text-2xl font-bold tracking-tight"
+                className="diag-step-title text-xl sm:text-2xl font-bold tracking-tight"
                 style={{ color: colors.textPrimary }}
               >
                 Tile Step Diagnostic
               </h2>
-              <Badge variant="success" shape="pill" className="text-xs px-2.5 py-0.5">
+              <Badge variant="success" shape="pill" className="diag-single-mode-pill text-xs px-2.5 py-0.5">
                 Single Tile Mode
               </Badge>
             </div>
-            <p className="text-xs sm:text-sm mt-0.5" style={{ color: colors.textSecondary }}>
+            <p className="diag-step-sub text-xs sm:text-sm mt-0.5" style={{ color: colors.textSecondary }}>
               Automatic historical baseline comparison for on-demand footstep testing
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="diag-step-shield flex items-center gap-2">
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
             Baseline Recalibration Protected
           </span>
         </div>
@@ -376,13 +378,13 @@ export function StepDiagnosticTestCard() {
       {/* ============================================================ */}
       {/* 3. GRID: BASELINE METRICS & TEST EXECUTION */}
       {/* ============================================================ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+      <div className="diag-two-col-grid grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
         
         {/* Left Column: Automatic Baseline (5 cols) */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-5 sm:p-6 rounded-2xl border bg-slate-50/80 dark:bg-gray-900/50 border-slate-200/80 dark:border-white/10 shadow-2xs">
+        <div className="diag-baseline-card lg:col-span-5 flex flex-col justify-between p-5 sm:p-6 rounded-2xl border bg-slate-50/80 dark:bg-gray-900/50 border-slate-200/80 dark:border-white/10 shadow-2xs">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="diag-section-head flex items-center gap-2.5 mb-3">
+              <div className="diag-section-badge p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
               <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
@@ -390,18 +392,18 @@ export function StepDiagnosticTestCard() {
               </h3>
             </div>
             
-            <p className="text-xs mb-4 text-slate-500 dark:text-slate-400">
+            <p className="diag-section-sub text-xs mb-4 text-slate-500 dark:text-slate-400">
               Evaluated against last {daysAnalyzed} days ({totalSteps.toLocaleString()} footsteps recorded):
             </p>
 
             <div className="space-y-3">
               {/* Normal Step */}
-              <div className="p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
+              <div className="diag-inner-box p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
                 <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
                   Normal step output baseline
                 </p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">
+                  <span className="diag-baseline-val text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">
                     {normalStep.toFixed(5)}
                   </span>
                   <span className="text-xs font-medium text-slate-500 dark:text-gray-400">mWh per step</span>
@@ -409,8 +411,8 @@ export function StepDiagnosticTestCard() {
               </div>
 
               {/* Acceptable Range */}
-              <div className="p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
-                <div className="flex items-center justify-between">
+              <div className="diag-inner-box p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
+                <div className="flex items-center justify-between gap-2">
                   <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
                     Acceptable threshold (±{tolerance}%)
                   </p>
@@ -418,7 +420,7 @@ export function StepDiagnosticTestCard() {
                     Normal Zone
                   </span>
                 </div>
-                <div className="flex items-baseline gap-2 mt-1.5 tabular-nums text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
+                <div className="diag-range-val flex items-baseline gap-2 mt-1.5 tabular-nums text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
                   <span>{minAcceptable.toFixed(5)}</span>
                   <span className="text-slate-400 dark:text-gray-500 font-normal">→</span>
                   <span>{maxAcceptable.toFixed(5)}</span>
@@ -428,8 +430,8 @@ export function StepDiagnosticTestCard() {
             </div>
           </div>
 
-          <div className="mt-5 pt-3.5 border-t border-slate-200/80 dark:border-gray-800/80 text-[11px] text-slate-500 dark:text-gray-400 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
+          <div className="diag-baseline-foot mt-5 pt-3.5 border-t border-slate-200/80 dark:border-gray-800/80 text-[11px] text-slate-500 dark:text-gray-400 flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
@@ -438,9 +440,9 @@ export function StepDiagnosticTestCard() {
         </div>
 
         {/* Right Column: On-Demand Test Mode & Visual Result (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col">
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`p-1 rounded-md ${testState === 'LISTENING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+        <div className="diag-session-card lg:col-span-7 flex flex-col">
+          <div className="diag-section-head flex items-center gap-2.5 mb-3">
+            <div className={`diag-section-badge p-1 rounded-md ${testState === 'LISTENING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
               <Radio className={`h-3.5 w-3.5 ${testState === 'LISTENING' ? 'animate-pulse' : ''}`} />
             </div>
             <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
@@ -450,16 +452,16 @@ export function StepDiagnosticTestCard() {
 
           {/* STATE 1: IDLE */}
           {testState === 'IDLE' && (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 rounded-2xl border-2 border-dashed text-center bg-slate-50/60 dark:bg-gray-900/30 border-slate-200 dark:border-gray-800 transition-all">
-              <div className="p-4 rounded-2xl bg-emerald-100/70 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 ring-8 ring-emerald-50 dark:ring-emerald-950/20 mb-4 transition-transform hover:scale-105">
+            <div className="diag-idle-box flex-1 flex flex-col items-center justify-center p-8 sm:p-10 rounded-2xl border-2 border-dashed text-center bg-slate-50/60 dark:bg-gray-900/30 border-slate-200 dark:border-gray-800 transition-all">
+              <div className="diag-idle-icon p-4 rounded-2xl bg-emerald-100/70 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 ring-8 ring-emerald-50 dark:ring-emerald-950/20 mb-4 transition-transform hover:scale-105">
                 <Footprints className="h-8 w-8" />
               </div>
-              <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
+              <h4 className="diag-idle-title text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
                 {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
                   ? 'Daily Task Completed — Tile Verified'
                   : 'Ready to Perform Daily Step Verification'}
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mb-6 leading-relaxed">
+              <p className="diag-idle-desc text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mb-6 leading-relaxed">
                 {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
                   ? `Completed today by ${todayTask.performedByName || todayTask.performedBy}. You may initiate a re-verification test anytime.`
                   : 'Click Start Test Mode to acquire the testing lock, then step firmly on the physical piezoelectric tile.'}
@@ -469,7 +471,7 @@ export function StepDiagnosticTestCard() {
                 type="button"
                 onClick={handleStartTest}
                 disabled={isLockedByOtherAdmin || startSessionMutation.isPending}
-                className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 text-sm font-semibold rounded-xl shadow-xs hover:shadow transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="diag-start-btn inline-flex items-center justify-center gap-2.5 px-6 py-2.5 text-sm font-semibold rounded-xl shadow-xs hover:shadow transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {startSessionMutation.isPending ? (
                   <>

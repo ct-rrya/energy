@@ -455,6 +455,11 @@ html:has(.es-lp) #root {
   flex-direction: column;
 }
 
+.es-lp .es-pn-links {
+  display: flex;
+  flex-direction: column;
+}
+
 .es-lp .es-pn.open {
   display: flex;
 }
@@ -468,7 +473,8 @@ html:has(.es-lp) #root {
   font-size: 14.5px;
 }
 
-.es-lp .es-pn a:hover {
+.es-lp .es-pn a:hover,
+.es-lp .es-pn a.on {
   background: var(--soft);
 }
 
@@ -828,7 +834,7 @@ html:has(.es-lp) #root {
 }
 
 /* Responsive */
-@media (max-width: 1023px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   .es-lp .cards {
     grid-template-columns: 1fr 1fr;
   }
@@ -849,57 +855,504 @@ html:has(.es-lp) #root {
   }
 }
 
-@media (max-width: 767px), (max-height: 619px) {
+@media (min-width: 769px) and (max-height: 619px) {
   .es-lp section {
     height: auto;
     min-height: 100vh;
     min-height: 100dvh;
     justify-content: flex-start;
-    padding-inline: 20px;
   }
-  .es-lp .es-hero,
-  .es-lp .es-chat {
+}
+
+/* Mobile Layout (max-width: 768px — target 375px, tested 360px–430px) */
+@media (max-width: 768px) {
+  .es-lp {
+    --hdr: 64px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .es-lp main,
+  .es-lp section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Header: Hide center nav pill & desktop Admin button; show 38px logo, 40px theme toggle, 40px Menu button */
+  .es-lp .es-hd {
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 0;
+  }
+
+  .es-lp .es-nv,
+  .es-lp .es-hd .adm,
+  .es-lp .es-logo b {
+    display: none !important;
+  }
+
+  .es-lp .es-logo i,
+  .es-lp.sm .es-logo i {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+
+  .es-lp .es-rt {
+    gap: 8px;
+  }
+
+  .es-lp .es-ic {
+    width: 40px;
+    height: 40px;
+  }
+
+  .es-lp .es-mb {
+    display: inline-flex;
+    height: 40px;
+    padding: 0 16px;
+    font-size: 0.875rem;
+    gap: 7px;
+  }
+
+  /* Full-Screen Menu Overlay */
+  .es-lp .es-pn {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 19;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    padding: calc(var(--hdr) + 20px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 0;
+    border: 0;
+    background: var(--bg);
+    box-shadow: none;
+    justify-content: space-between;
+    overflow-y: auto;
+  }
+
+  .es-lp .es-pn-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .es-lp .es-pn .es-pn-links a {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-radius: 18px;
+    font-size: clamp(1.5rem, 6.8vw, 1.75rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--t);
+  }
+
+  .es-lp .es-pn .es-pn-links a.on {
+    background: rgba(25, 212, 106, 0.18);
+  }
+
+  .es-lp .es-pn .es-pn-adm {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    height: 50px;
+    padding: 0 24px;
+    border-radius: 99px;
+    background: var(--g);
+    color: #0D1B14;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    box-shadow: 0 10px 26px rgba(25, 212, 106, 0.32);
+  }
+
+  /* Section Spacing & Type Scale */
+  .es-lp section {
+    height: auto;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 44px 20px;
+    gap: 16px;
+    overflow: visible;
+  }
+
+  .es-lp section#home {
+    padding-top: calc(var(--hdr) + 18px + env(safe-area-inset-top, 0px));
+  }
+
+  .es-lp h1 {
+    font-size: clamp(2.25rem, 10.66vw, 2.5rem); /* 40px at 375px */
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+
+  .es-lp h2 {
+    font-size: clamp(1.75rem, 8vw, 1.875rem); /* 30px at 375px */
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+  }
+
+  .es-lp .lead {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.5;
+    max-width: 100%;
+  }
+
+  .es-lp .es-row {
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .es-lp .es-btn {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 clamp(14px, 4.2vw, 20px);
+    font-size: clamp(0.8125rem, 3.7vw, 0.9375rem); /* 13–15px */
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  /* 1. Hero Section */
+  .es-lp .es-hero {
     flex-direction: column;
     align-items: stretch;
+    gap: 22px;
   }
+
+  .es-lp .es-hero .l {
+    flex: none;
+    width: 100%;
+    gap: 14px;
+  }
+
+  .es-lp .tag {
+    padding: 7px 14px;
+    font-size: clamp(0.6875rem, 3.1vw, 0.75rem);
+    max-width: 100%;
+    line-height: 1.3;
+  }
+
   .es-lp .es-hero .r {
     flex: none;
     width: 100%;
+    max-width: 100%;
+    padding: 24px 18px;
+    border-radius: 28px;
+    gap: 16px;
   }
+
   .es-lp .step {
-    width: min(60vw, 240px);
+    width: 116px;
+    height: 116px;
+    border-radius: 26px;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.4),
+      0 8px 0 #0B8F45,
+      0 18px 32px rgba(25, 212, 106, 0.28);
   }
+
+  .es-lp .step:active,
+  .es-lp .step.pr {
+    transform: translateY(6px);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.4),
+      0 2px 0 #0B8F45,
+      0 8px 16px rgba(25, 212, 106, 0.2);
+  }
+
+  .es-lp .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+
+  .es-lp .stats div {
+    padding: 12px 10px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    min-width: 0;
+  }
+
+  .es-lp .stats b {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+  }
+
+  .es-lp .cap {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    max-width: 34ch;
+  }
+
+  /* 2. How It Works: 4 cards stacked vertically, 36px number circle + 18px title */
   .es-lp .cards {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 4px;
+    width: 100%;
   }
+
+  .es-lp .es-cd {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 3px;
+    align-items: start;
+    padding: 16px 18px;
+    border-radius: 22px;
+    min-width: 0;
+  }
+
+  .es-lp .es-cd .es-n {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+    margin-bottom: 0;
+  }
+
+  .es-lp .es-cd h3 {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.25;
+  }
+
+  .es-lp .es-cd p {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.45;
+  }
+
+  /* 3. Dashboard Preview: Compact dark panel, 2x2 metrics, 12 bars, 92px chart height */
+  .es-lp .dash {
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .es-lp .dash .lead {
+    max-width: 100%;
+  }
+
   .es-lp .lp {
-    width: 92vw;
+    container-type: normal;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 4px;
   }
-  .es-lp .es-nv,
-  .es-lp .adm {
+
+  .es-lp .base,
+  .es-lp .es-tb i {
     display: none;
   }
-  .es-lp .es-mb {
-    display: inline-flex;
+
+  .es-lp .scr {
+    background: #0A1020;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 16px;
+    font-size: 0.75rem;
+    box-shadow: 0 18px 40px rgba(10, 16, 32, 0.22);
   }
-  .es-lp.sm .es-logo b {
+
+  .es-lp .es-tb {
+    gap: 6px;
+    padding-bottom: 12px;
+    font-size: 0.6875rem;
+    min-width: 0;
+  }
+
+  .es-lp .es-tb b {
+    white-space: nowrap;
+  }
+
+  .es-lp .es-tb span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .es-lp .live {
+    padding: 3px 8px;
+    font-size: 0.5625rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .es-lp .kp {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .es-lp .kp div {
+    padding: 10px 12px;
+    border-radius: 12px;
+    min-width: 0;
+  }
+
+  .es-lp .kp small {
+    font-size: 0.6875rem;
+    margin-bottom: 2px;
+  }
+
+  .es-lp .kp b {
+    font-size: 1.125rem;
+  }
+
+  .es-lp .ch {
+    padding: 12px;
+    border-radius: 14px;
+    font-size: 0.6875rem;
+  }
+
+  .es-lp .bars {
+    height: 92px;
+    gap: 5px;
+    margin: 10px 0 6px 0;
+    padding: 0 2px;
+    border-left: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .es-lp .bars i {
+    border-radius: 3px 3px 0 0;
+  }
+
+  .es-lp .xl {
+    margin-left: 0;
+    gap: 0;
+    justify-content: space-between;
+    font-size: 0.5625rem;
+  }
+
+  .es-lp .xl span {
     display: none;
+    flex: none;
   }
-  .es-lp .es-hd {
-    padding-inline: 16px;
+
+  .es-lp .xl span:nth-child(1),
+  .es-lp .xl span:nth-child(4),
+  .es-lp .xl span:nth-child(7),
+  .es-lp .xl span:nth-child(10),
+  .es-lp .xl span:nth-child(12) {
+    display: inline-block;
   }
-  .es-lp .es-pn {
-    right: 16px;
+
+  .es-lp .ft {
+    margin-top: 8px;
+    font-size: 0.5625rem;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  .es-lp .msgs {
-    max-height: none;
-  }
-  .es-lp .abt {
+
+  .es-lp .dash > .es-row {
     justify-content: center;
+    margin-top: 6px;
   }
+
+  .es-lp .dash > .cap {
+    align-self: center;
+    text-align: center;
+    font-size: 0.6875rem;
+  }
+
+  /* 4. EcoChat: Bubbles max 88% width, 13px text, button below messages */
+  .es-lp .es-chat {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .es-lp .es-chat .l {
+    display: contents;
+  }
+
+  .es-lp .es-chat .l h2 {
+    order: 1;
+  }
+
+  .es-lp .es-chat .l .lead {
+    order: 2;
+  }
+
+  .es-lp .es-chat .msgs {
+    order: 3;
+    max-height: none;
+    gap: 10px;
+    margin: 2px 0;
+    width: 100%;
+  }
+
+  .es-lp .es-chat .l .es-btn {
+    order: 4;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .es-lp .bb {
+    max-width: 88%;
+    font-size: 0.8125rem; /* 13px */
+    line-height: 1.45;
+    padding: 14px 16px;
+    border-radius: 20px;
+  }
+
+  .es-lp .bb b {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+  }
+
+  .es-lp .bb.me {
+    padding: 10px 16px;
+    border-radius: 99px;
+  }
+
+  /* 5. Closing CTA (#about): Centered, h2 at 32px */
+  .es-lp .abt {
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding-top: 52px;
+    padding-bottom: 32px;
+  }
+
+  .es-lp .abt h2 {
+    font-size: clamp(1.875rem, 8.53vw, 2.125rem); /* 32px at 375px */
+    max-width: 14ch;
+  }
+
+  .es-lp .abt .lead {
+    max-width: 36ch;
+  }
+
+  .es-lp .abt .es-row {
+    justify-content: center;
+    margin-top: 4px;
+  }
+
   .es-lp .abt footer {
     position: static;
-    margin-top: 24px;
+    margin-top: 48px;
+    font-size: 0.6875rem;
   }
 }
 

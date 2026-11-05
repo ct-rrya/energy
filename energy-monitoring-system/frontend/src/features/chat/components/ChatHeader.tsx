@@ -5,7 +5,7 @@
  * and 32x32 circular icon buttons (.ib style).
  */
 
-import { X, RotateCcw, ChevronRight } from 'lucide-react';
+import { RotateCcw, ChevronRight, ChevronDown } from 'lucide-react';
 import '../chat.css';
 
 interface ChatHeaderProps {
@@ -59,7 +59,7 @@ export function ChatHeader({
           title={isMobile ? 'Close' : 'Collapse EcoGuide ( ] )'}
         >
           {isMobile ? (
-            <X size={16} strokeWidth={1.8} />
+            <ChevronDown size={18} strokeWidth={2} />
           ) : (
             <ChevronRight size={16} strokeWidth={1.8} />
           )}

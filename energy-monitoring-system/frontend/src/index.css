@@ -2777,34 +2777,521 @@ body::before {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+ * MOBILE ECOSTEP CENTRAL DASHBOARD RESPONSIVENESS (<= 768px)
+ * ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .sh, .es-shell-grid {
+  /* Hide scrollbars visually while keeping scrolling working */
+  html,
+  body,
+  .es-shell,
+  .es-main,
+  .mn,
+  .main,
+  .page,
+  .eco-page-container {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  .es-shell::-webkit-scrollbar,
+  .es-main::-webkit-scrollbar,
+  .mn::-webkit-scrollbar,
+  .main::-webkit-scrollbar,
+  .page::-webkit-scrollbar,
+  .eco-page-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .sh,
+  .es-shell,
+  .es-shell-grid {
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .mn,
+  .es-main-col,
+  .es-main,
+  .main {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Page padding is 16px, with ~108px bottom padding so the fixed tab bar never covers content */
+  .page,
+  .eco-page-container {
+    --page-pad-x: 16px !important;
+    --page-pad-y: 8px !important;
+    --page-gap: 16px !important;
+    padding: 8px 16px calc(108px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Header: Title "EcoStep Central" is 34px; date and Standby chips wrap under the subtitle */
+  .top {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .top .title,
+  .title {
+    width: 100% !important;
+    order: 0 !important;
+  }
+
+  .top .title .gr,
+  .gr {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+
+  .top .title h1,
+  .top h1 {
+    font-size: 34px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.025em !important;
+    line-height: 1.08 !important;
+    margin-top: 4px !important;
+  }
+
+  .top .title .sub,
+  .title .sub {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    margin-top: 6px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 100% !important;
+  }
+
+  .top .meta,
+  .meta {
+    order: 1 !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .top .meta .meta-time {
+    height: 36px;
+    padding: 0 13px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: var(--card-border);
+    box-shadow: 0 4px 12px rgba(13, 27, 20, 0.05);
+    color: var(--t) !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+  }
+
+  .top .date-text,
+  .top .date-sep,
+  .date-text,
+  .date-sep {
+    display: inline !important;
+  }
+
+  .status-pill {
+    height: 36px !important;
+    padding: 0 12px !important;
+    font-size: 12.5px !important;
+  }
+
+  .status-pill-info {
+    display: inline-flex !important;
+  }
+
+  /* Hide inline PlayerNavPill inside .top .meta on mobile because Play & Learn is in the mobile top bar */
+  .top .meta .user-chip {
+    display: none !important;
+  }
+
+  /* Cards stack in one column (radius 24-26px) */
+  .cd,
+  .eco-card {
+    border-radius: 25px !important;
+    padding: 18px 20px !important;
+  }
+
+  /* "Your EcoStep Today" card */
+  .ecostep-glance-head {
+    padding-bottom: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .ecostep-glance-badge {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+  }
+
+  .ecostep-glance-title {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  .ecostep-glance-sub {
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+    margin-top: 2px !important;
+  }
+
+  .ecostep-glance-body {
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Hero Power Output card: value is about 54px */
+  .metric-hero-power .n,
+  .n {
+    font-size: 54px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.03em !important;
+    line-height: 1 !important;
+    margin-top: 10px !important;
+  }
+
+  .metric-hero-power .n small,
+  .n small {
+    font-size: 20px !important;
+  }
+
+  /* Four metric cards (Steps, Energy, Voltage, Current) form a 2x2 grid */
+  .dashboard-secondary-metrics,
+  .g4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .g2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-secondary-metrics .st,
+  .dashboard-secondary-metrics .stat {
+    padding: 16px 16px !important;
+    border-radius: 24px !important;
+    min-height: 140px !important;
+  }
+
+  .dashboard-secondary-metrics .stat-head > :not(.stat-label-wrap) {
+    display: none !important;
+  }
+
+  .dashboard-secondary-metrics .st .v span,
+  .dashboard-secondary-metrics .stat .val span {
+    font-size: clamp(28px, 8.2vw, 34px) !important;
+  }
+
+  .dashboard-secondary-metrics .st .name,
+  .dashboard-secondary-metrics .stat .name {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: 13.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Chart card: full width with same card padding, sparse pill above plot, tooltip inside card */
+  .cd[data-testid="chart-container"] {
+    padding: 18px 18px !important;
+    border-radius: 25px !important;
+  }
+
+  .chart-container-header {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .chart-title-row {
+    justify-content: space-between !important;
+    width: 100%;
+  }
+
+  .chart-title-row h3 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+  }
+
+  .chart-subtitle {
+    min-height: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    margin-top: 4px;
+  }
+
+  .chart-plot-wrap {
+    height: auto !important;
     display: flex;
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
+    gap: 10px;
   }
-  .mn, .es-main-col {
-    padding: 20px 16px;
+
+  .chart-sparse-hint {
+    position: static !important;
+    align-self: flex-start;
+    border-radius: 999px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .chart-plot-inner {
+    height: 220px;
+    width: 100%;
+  }
+
+  /* "How EcoStep Harvesting Works": 1 column, circular step icons, Hide toggle kept */
+  .how-harvesting-header {
+    align-items: flex-start !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .how-harvesting-badge {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+  }
+
+  .how-harvesting-title {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  .how-harvesting-sub {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    margin-top: 4px !important;
+  }
+
+  .how-harvesting-tooltip {
+    display: none !important;
+  }
+
+  .how-harvesting-toggle-btn {
+    min-height: 36px !important;
+    padding: 6px 14px !important;
+    border-radius: 999px !important;
+    font-size: 12.5px !important;
+  }
+
+  .how-harvesting-body {
+    padding: 0 !important;
+  }
+
+  .harvesting-step-item {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .harvesting-step-icon {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+  }
+
+  .harvesting-step-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+
+  .harvesting-step-subtitle {
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+
+  .harvesting-step-desc {
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    margin-top: 4px !important;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+   * ADMIN DIAGNOSTICS & REPORTS MOBILE ADAPTATIONS (<= 768px)
+   * ══════════════════════════════════════════════════════════════════════ */
+  .diagnostics-page-title {
+    font-size: 28px !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.15 !important;
+  }
+
+  .diagnostics-page-subtitle {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    margin-top: 4px !important;
+  }
+
+  .diag-outer-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
-  .top h1 {
-    font-size: 32px;
-  }
-  .n {
-    font-size: 40px;
-  }
-  .g4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .g2 {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 520px) {
-  .g4 {
-    grid-template-columns: 1fr;
+  .diag-daily-banner {
+    border-radius: 26px !important;
+    padding: 20px !important;
+    background: var(--card-bg) !important;
+    border: var(--card-border) !important;
+    box-shadow: var(--card-shadow) !important;
+    margin-bottom: 0 !important;
+  }
+
+  .diag-daily-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .diag-daily-main {
+    align-items: flex-start !important;
+  }
+
+  .diag-daily-title {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+  }
+
+  .diag-daily-desc {
+    font-size: 13.5px !important;
+    line-height: 1.45 !important;
+  }
+
+  .diag-daily-sync-wrap {
+    width: 100% !important;
+  }
+
+  .diag-daily-sync-wrap button,
+  .diag-sync-btn {
+    width: 100% !important;
+    height: 44px !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--line) !important;
+    background: var(--soft) !important;
+    justify-content: center !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: var(--t) !important;
+  }
+
+  .diag-step-header {
+    border-radius: 26px !important;
+    padding: 20px !important;
+    background: var(--card-bg) !important;
+    border: var(--card-border) !important;
+    box-shadow: var(--card-shadow) !important;
+    margin-bottom: 0 !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .diag-step-title {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+  }
+
+  .diag-two-col-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding-top: 0 !important;
+  }
+
+  .diag-baseline-card,
+  .diag-session-card {
+    border-radius: 26px !important;
+    padding: 20px !important;
+    background: var(--card-bg) !important;
+    border: var(--card-border) !important;
+    box-shadow: var(--card-shadow) !important;
+  }
+
+  .diag-idle-box {
+    border-radius: 20px !important;
+    padding: 24px 16px !important;
+  }
+
+  .diag-start-btn {
+    width: 100% !important;
+    height: 48px !important;
+    border-radius: 999px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    background: linear-gradient(90deg, #13B95C, #19D46A) !important;
+    color: #0D1B14 !important;
+    box-shadow: 0 6px 18px rgba(19, 185, 92, 0.3) !important;
+  }
+
+  .diag-history-card {
+    border-radius: 26px !important;
+    background: var(--card-bg) !important;
+    border: var(--card-border) !important;
+    box-shadow: var(--card-shadow) !important;
+  }
+
+  .diag-history-header {
+    padding: 18px 16px 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .diag-history-title {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+  }
+
+  .diag-history-sub {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  .diag-history-tabs {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    padding: 4px !important;
+    border-radius: 999px !important;
+    background: var(--soft) !important;
+  }
+
+  .diag-history-tab {
+    height: 38px !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    justify-content: center !important;
   }
 }
 

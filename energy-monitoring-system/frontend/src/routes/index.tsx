@@ -115,23 +115,27 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // Educational Missions & Gamification - Public access
+      // Educational Missions & Gamification - Public/Guest only (redirects admins to Central)
       {
         path: ROUTES.MISSIONS,
         element: (
-          <LazyRoute>
-            <MissionsPage />
-          </LazyRoute>
+          <FlexibleRoute redirectIfAuth={true}>
+            <LazyRoute>
+              <MissionsPage />
+            </LazyRoute>
+          </FlexibleRoute>
         ),
       },
 
-      // Global Leaderboard - Public access
+      // Global Leaderboard - Public/Guest only (redirects admins to Central)
       {
         path: ROUTES.LEADERBOARD,
         element: (
-          <LazyRoute>
-            <LeaderboardPage />
-          </LazyRoute>
+          <FlexibleRoute redirectIfAuth={true}>
+            <LazyRoute>
+              <LeaderboardPage />
+            </LazyRoute>
+          </FlexibleRoute>
         ),
       },
 

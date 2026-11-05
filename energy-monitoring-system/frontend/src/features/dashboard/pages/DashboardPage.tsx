@@ -11,8 +11,6 @@ import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
 import { validateSensorData } from '../utils/validateSensorData';
 import { useEffect, useState } from 'react';
 import type { SensorReading } from '../types/dashboard.types';
-import { useDeviceLayout } from '@/hooks/useDeviceLayout';
-import { MobileEnergyHarvestingDashboard } from '../components/MobileEnergyHarvestingDashboard';
 import { EcoStepAtAGlance } from '../components/EcoStepAtAGlance';
 import { HowHarvestingWorksCard } from '../components/HowHarvestingWorksCard';
 import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChart';
@@ -50,7 +48,6 @@ import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChar
  */
 function DashboardPageContent() {
   const { isAuthenticated, user } = useAuth();
-  const { isMobile } = useDeviceLayout();
 
   // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
@@ -136,19 +133,6 @@ function DashboardPageContent() {
     return 'unknown';
   };
 
-  // Dedicated Mobile Layout matching design specification (< 768px)
-  if (isMobile) {
-    return (
-      <MobileEnergyHarvestingDashboard
-        displayReading={displayReading}
-        displayMetrics={displayMetrics}
-        systemStatus={getSystemStatus()}
-        isWebSocketConnected={isWebSocketConnected}
-        isPublicUser={isPublicUser}
-      />
-    );
-  }
-
   return (
     <div className="page">
       {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
@@ -192,13 +176,14 @@ function DashboardPageContent() {
 
           @container (max-width: 899px) {
             .dashboard-secondary-metrics {
-              grid-template-columns: repeat(2, 1fr);
+              grid-template-columns: repeat(2, minmax(0, 1fr));
             }
           }
 
-          @container (max-width: 479px) {
+          @media (max-width: 768px) {
             .dashboard-secondary-metrics {
-              grid-template-columns: 1fr;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 12px;
             }
           }
         `}</style>

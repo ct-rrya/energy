@@ -36,23 +36,23 @@ export function EcoStepAtAGlance({
   const energyInfo = formatEnergy(dailyEnergy);
 
   return (
-    <div className="cd w-full transition-all duration-200">
-      <div className="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-[var(--line)]">
-        <div className="flex items-center gap-2">
+    <div className="cd ecostep-glance-card w-full transition-all duration-200">
+      <div className="ecostep-glance-head flex items-center justify-between gap-3 mb-2 pb-2 border-b border-[var(--line)]">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            className="ecostep-glance-badge w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
             style={{
               backgroundColor: isDark ? 'rgba(62, 217, 138, 0.15)' : 'rgba(47, 191, 113, 0.12)',
-              color: isDark ? '#3ED98A' : '#2FBF71',
+              color: isDark ? '#3ED98A' : '#087A3A',
             }}
           >
             <Sparkles size={16} strokeWidth={2.2} />
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold tracking-tight text-[var(--t)]">
+          <div className="min-w-0">
+            <h3 className="ecostep-glance-title text-sm sm:text-base font-bold tracking-tight text-[var(--t)]">
               Your EcoStep Today
             </h3>
-            <p className="text-[11px] sm:text-xs text-[var(--mu)]">
+            <p className="ecostep-glance-sub text-[11px] sm:text-xs text-[var(--mu)]">
               A simple summary of today's recorded activity.
             </p>
           </div>
@@ -69,7 +69,7 @@ export function EcoStepAtAGlance({
         />
       </div>
 
-      <p className="text-xs sm:text-sm leading-relaxed text-[var(--t)]">
+      <p className="ecostep-glance-body text-xs sm:text-sm leading-relaxed text-[var(--t)]">
         {hasSteps ? (
           <>
             Today, EcoStep recorded{' '}

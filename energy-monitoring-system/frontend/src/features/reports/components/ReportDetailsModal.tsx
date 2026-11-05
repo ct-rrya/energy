@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { X, FileText, Calendar, User, Clock, Download, Eye } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/lib/theme';
@@ -30,14 +31,22 @@ export function ReportDetailsModal({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
-  return (
+  const modalElement = (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      }}
       onClick={onClose}
     >
       <div 
-        className="rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: colors.cardBackground }}
+        className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100dvh-32px)] sm:max-h-[88vh] overflow-y-auto my-auto border"
+        style={{ 
+          backgroundColor: colors.cardBackground,
+          borderColor: theme === 'light' ? 'rgba(26, 49, 44, 0.12)' : 'rgba(137, 215, 183, 0.16)'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -406,4 +415,10 @@ export function ReportDetailsModal({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalElement, document.body);
+  }
+
+  return modalElement;
 }

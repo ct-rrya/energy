@@ -75,46 +75,48 @@ export function HowHarvestingWorksCard() {
   ];
 
   return (
-    <div className="cd w-full transition-all duration-200">
+    <div className="cd how-harvesting-card w-full transition-all duration-200">
       {/* Header bar with toggle */}
-      <div className="flex items-center justify-between pb-3.5 mb-2 border-b border-[var(--line)]">
-        <div className="flex items-center gap-2.5">
+      <div className="how-harvesting-header flex items-center justify-between pb-3.5 mb-2 border-b border-[var(--line)]">
+        <div className="how-harvesting-title-group flex items-center gap-2.5 min-w-0">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            className="how-harvesting-badge w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
             style={{
               backgroundColor: isDark ? 'rgba(62, 217, 138, 0.15)' : 'rgba(47, 191, 113, 0.12)',
-              color: isDark ? '#3ED98A' : '#2FBF71',
+              color: isDark ? '#3ED98A' : '#087A3A',
             }}
           >
             <BookOpen size={16} strokeWidth={2.2} />
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold tracking-tight text-[var(--t)]">
+          <div className="min-w-0">
+            <h3 className="how-harvesting-title text-sm sm:text-base font-bold tracking-tight text-[var(--t)]">
               How EcoStep Harvesting Works
             </h3>
-            <p className="text-[11px] sm:text-xs text-[var(--mu)]">
+            <p className="how-harvesting-sub text-[11px] sm:text-xs text-[var(--mu)]">
               From a student's step on the tile to real-time watts on your screen
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <InfoTooltip
-            title="Piezoelectric Harvesting Process"
-            description="Piezoelectricity comes from the Greek word 'piezein', meaning to push or squeeze. Certain solid materials accumulate electrical charge in response to applied mechanical stress."
-            analogy="Like pressing a click lighter: mechanical push generates an instant spark of electrical potential!"
-            technicalNote="EcoStep tiles use lead zirconate titanate (PZT) ceramic elements arranged in parallel arrays."
-            size={16}
-            align="right"
-          />
+        <div className="how-harvesting-actions flex items-center gap-2 shrink-0">
+          <span className="how-harvesting-tooltip">
+            <InfoTooltip
+              title="Piezoelectric Harvesting Process"
+              description="Piezoelectricity comes from the Greek word 'piezein', meaning to push or squeeze. Certain solid materials accumulate electrical charge in response to applied mechanical stress."
+              analogy="Like pressing a click lighter: mechanical push generates an instant spark of electrical potential!"
+              technicalNote="EcoStep tiles use lead zirconate titanate (PZT) ceramic elements arranged in parallel arrays."
+              size={16}
+              align="right"
+            />
+          </span>
 
           <button
             type="button"
             onClick={toggleExpanded}
-            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+            className="how-harvesting-toggle-btn flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
             style={{
-              backgroundColor: isDark ? 'rgba(31, 41, 55, 0.6)' : '#F3F4F6',
-              color: isDark ? '#D1D5DB' : '#374151',
+              backgroundColor: isDark ? 'rgba(31, 41, 55, 0.6)' : '#EEF2EF',
+              color: isDark ? '#D1D5DB' : '#0D1B14',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -129,7 +131,7 @@ export function HowHarvestingWorksCard() {
 
       {/* 4-Step Process Content */}
       {isExpanded && (
-        <div className="px-3.5 pb-3.5 pt-0 sm:px-4 sm:pb-4">
+        <div className="how-harvesting-body px-3.5 pb-3.5 pt-0 sm:px-4 sm:pb-4">
           <style>{`
             .harvesting-steps-grid {
               display: grid;
@@ -146,6 +148,12 @@ export function HowHarvestingWorksCard() {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
               }
             }
+            @media (max-width: 768px) {
+              .harvesting-steps-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+              }
+            }
           `}</style>
           <div className="harvesting-steps-grid">
             {steps.map((step) => {
@@ -153,16 +161,16 @@ export function HowHarvestingWorksCard() {
               return (
                 <div
                   key={step.num}
-                  className="p-3 rounded-xl transition-colors flex flex-col justify-between min-w-0"
+                  className="harvesting-step-item p-3 rounded-xl transition-colors flex flex-col justify-between min-w-0"
                   style={{
-                    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.45)' : '#F9FAFB',
-                    border: isDark ? '1px solid rgba(55, 65, 81, 0.4)' : '1px solid #E5E7EB',
+                    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.45)' : 'rgba(245, 248, 245, 0.75)',
+                    border: isDark ? '1px solid rgba(55, 65, 81, 0.4)' : '1px solid rgba(13, 27, 20, 0.06)',
                   }}
                 >
                   <div className="min-w-0">
-                    <div className="flex items-start gap-2.5 mb-2 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 min-w-0">
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold mt-0.5"
+                        className="harvesting-step-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold"
                         style={{
                           backgroundColor: step.bgColor,
                           color: step.color,
@@ -172,7 +180,7 @@ export function HowHarvestingWorksCard() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div
-                          className="text-xs font-bold leading-tight"
+                          className="harvesting-step-title text-xs font-bold leading-tight"
                           style={{
                             color: 'var(--t)',
                             overflowWrap: 'anywhere',
@@ -182,18 +190,18 @@ export function HowHarvestingWorksCard() {
                           {step.title}
                         </div>
                         <div
-                          className="text-[10px] uppercase font-semibold text-gray-500 dark:text-gray-400 leading-tight mt-0.5"
+                          className="harvesting-step-subtitle text-[10px] uppercase font-semibold text-gray-500 dark:text-gray-400 leading-tight mt-0.5"
                           style={{
                             overflowWrap: 'anywhere',
                             wordBreak: 'normal',
-                            letterSpacing: '0.02em',
+                            letterSpacing: '0.04em',
                           }}
                         >
                           {step.subtitle}
                         </div>
                       </div>
                     </div>
-                    <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                    <p className="harvesting-step-desc text-xs leading-relaxed text-gray-600 dark:text-gray-300">
                       {step.desc}
                     </p>
                   </div>

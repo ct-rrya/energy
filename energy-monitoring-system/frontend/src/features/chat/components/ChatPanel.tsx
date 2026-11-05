@@ -22,7 +22,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }: ChatPanelProps) {
   const [isMobile, setIsMobile] = useState(() => {
-    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -49,7 +49,7 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
   // Track viewport changes
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
+      const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
     };
 
@@ -148,72 +148,82 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
     .join(' ');
 
   return (
-    <aside
-      ref={panelRef}
-      className={panelClasses}
-      role="complementary"
-      aria-label="Chat"
-      id="ecoguide-panel"
-    >
-      {/* Collapsed Slim Rail (56px) */}
-      <div 
-        className="docked-chat-rail" 
-        aria-hidden={!isCollapsed || isMobile}
-      >
-        <button
-          type="button"
-          className="ib es-toggle-btn"
-          onClick={handleToggle}
-          aria-expanded={false}
-          aria-controls="ecoguide-panel"
-          aria-label="Expand EcoGuide"
-          title="Expand EcoGuide ( ] )"
-        >
-          <ChevronLeft size={16} strokeWidth={2} />
-        </button>
-        <span
-          className="mt-6 text-[var(--acc)] opacity-70"
+    <>
+      {isMobile && isMobileOpen && (
+        <div
+          className="ecoguide-mobile-backdrop"
+          onClick={handleCloseMobile}
           aria-hidden="true"
-        >
-          <MessageSquare size={18} strokeWidth={2} />
-        </span>
-        <span className="docked-rail-label">EcoGuide</span>
-      </div>
-
-      {/* Expanded Chat Content (330px) */}
-      <div 
-        className="docked-chat-content" 
-        aria-hidden={isCollapsed && !isMobile}
+        />
+      )}
+      <aside
+        ref={panelRef}
+        className={panelClasses}
+        role="complementary"
+        aria-label="Chat"
+        id="ecoguide-panel"
       >
-        <ChatHeader
-          onClose={isMobile ? handleCloseMobile : handleToggle}
-          onCollapse={handleToggle}
-          onNewChat={clearChat}
-          isExpanded={!isCollapsed}
-          isMobile={isMobile}
-        />
+        {/* Collapsed Slim Rail (56px) */}
+        <div 
+          className="docked-chat-rail" 
+          aria-hidden={!isCollapsed || isMobile}
+        >
+          <button
+            type="button"
+            className="ib es-toggle-btn"
+            onClick={handleToggle}
+            aria-expanded={false}
+            aria-controls="ecoguide-panel"
+            aria-label="Expand EcoGuide"
+            title="Expand EcoGuide ( ] )"
+          >
+            <ChevronLeft size={16} strokeWidth={2} />
+          </button>
+          <span
+            className="mt-6 text-[var(--acc)] opacity-70"
+            aria-hidden="true"
+          >
+            <MessageSquare size={18} strokeWidth={2} />
+          </span>
+          <span className="docked-rail-label">EcoGuide</span>
+        </div>
 
-        <MessageList
-          messages={messages}
-          isLoading={isLoading}
-          onSuggestionClick={sendMessage}
-        />
+        {/* Expanded Chat Content (330px desktop / full-height bottom sheet mobile) */}
+        <div 
+          className="docked-chat-content" 
+          aria-hidden={isCollapsed && !isMobile}
+        >
+          {isMobile && <div className="ecoguide-sheet-handle" aria-hidden="true" />}
+          <ChatHeader
+            onClose={isMobile ? handleCloseMobile : handleToggle}
+            onCollapse={handleToggle}
+            onNewChat={clearChat}
+            isExpanded={!isCollapsed}
+            isMobile={isMobile}
+          />
 
-        {error && (
-          <div className="chat-error" role="alert">
-            <p>{error}</p>
-            <button
-              className="chat-error-retry"
-              onClick={retryLastMessage}
-              type="button"
-            >
-              Retry
-            </button>
-          </div>
-        )}
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            onSuggestionClick={sendMessage}
+          />
 
-        <ChatInput onSend={sendMessage} disabled={isLoading} />
-      </div>
-    </aside>
+          {error && (
+            <div className="chat-error" role="alert">
+              <p>{error}</p>
+              <button
+                className="chat-error-retry"
+                onClick={retryLastMessage}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          <ChatInput onSend={sendMessage} disabled={isLoading} />
+        </div>
+      </aside>
+    </>
   );
 }
