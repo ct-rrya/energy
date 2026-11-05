@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { getUserRole } from '@/lib/permissions';
 import { getThemeColors } from '@/lib/theme';
 import { 
   Plus, 
@@ -33,13 +31,8 @@ import { CustomDropdown } from '@/components/common';
  */
 export function ReportsPage() {
   const { theme } = useTheme();
-  const { isAuthenticated, user } = useAuth();
   const colors = getThemeColors(theme);
   
-  // Determine user role
-  const userRole = getUserRole(isAuthenticated, user);
-  const isPublicUser = userRole === 'public';
-
   // State
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<ReportType | 'all'>('all');
