@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
@@ -43,7 +43,7 @@ import {
  * <VoltageCurrentChart mode="dual-axis" /> // Single chart with two axes
  * ```
  */
-export function VoltageCurrentChart({
+export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   className = '',
   startDate: propStartDate,
   endDate: propEndDate,
@@ -193,6 +193,7 @@ export function VoltageCurrentChart({
                 name="Voltage"
                 maxBarSize={48}
                 radius={[8, 8, 0, 0]}
+                isAnimationActive={false}
               />
             </BarChart>
           ) : (
@@ -236,6 +237,7 @@ export function VoltageCurrentChart({
                 dot={false}
                 activeDot={{ r: 4 }}
                 name="Voltage"
+                isAnimationActive={false}
               />
             </LineChart>
           )}
@@ -300,6 +302,7 @@ export function VoltageCurrentChart({
                 name="Equiv. Current"
                 maxBarSize={48}
                 radius={[8, 8, 0, 0]}
+                isAnimationActive={false}
               />
             </BarChart>
           ) : (
@@ -346,6 +349,7 @@ export function VoltageCurrentChart({
                 dot={false}
                 activeDot={{ r: 4 }}
                 name="Equiv. Current"
+                isAnimationActive={false}
               />
             </LineChart>
           )}
@@ -353,4 +357,4 @@ export function VoltageCurrentChart({
       </ChartContainer>
     </div>
   );
-}
+});

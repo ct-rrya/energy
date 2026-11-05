@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -24,7 +24,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { ROUTES } from '@/routes/routes.config';
-import { ChatPanel } from '@/features/chat';
+const ChatPanel = lazy(() => import('@/features/chat').then(m => ({ default: m.ChatPanel })));
 import '@/styles/eco-sidebar.css';
 
 interface NavItem {
@@ -901,11 +901,13 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
         document.body
       )}
 
-      {/* Right EcoGuide Panel */}
-      <ChatPanel 
-        isCollapsed={rightCollapsed} 
-        onToggleCollapse={toggleRight} 
-      />
+      {/* Right EcoGuide Panel (Lazily Loaded to Defer Non-Critical Chat JS & Sanitizer) */}
+      <Suspense fallback={null}>
+        <ChatPanel 
+          isCollapsed={rightCollapsed} 
+          onToggleCollapse={toggleRight} 
+        />
+      </Suspense>
     </div>
   );
 }

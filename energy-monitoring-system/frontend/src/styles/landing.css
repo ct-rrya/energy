@@ -64,7 +64,7 @@ html:has(.es-lp) #root {
     --acc: #19D46A;
     --soft: rgba(255, 255, 255, .06);
     --nav: rgba(18, 36, 26, .85);
-    --bg: radial-gradient(circle at 92% 28%, rgba(25, 212, 106, .35), transparent 40%), radial-gradient(circle at 0 100%, rgba(25, 212, 106, .18), transparent 45%), linear-gradient(135deg, #07120C, #0F2218);
+    --bg: linear-gradient(180deg, #0D1612 0%, #07120C 100%);
     color-scheme: dark;
   }
 }
@@ -78,7 +78,7 @@ html:has(.es-lp) #root {
   --acc: #19D46A;
   --soft: rgba(255, 255, 255, .06);
   --nav: rgba(18, 36, 26, .85);
-  --bg: radial-gradient(circle at 92% 28%, rgba(25, 212, 106, .35), transparent 40%), radial-gradient(circle at 0 100%, rgba(25, 212, 106, .18), transparent 45%), linear-gradient(135deg, #07120C, #0F2218);
+  --bg: linear-gradient(180deg, #0D1612 0%, #07120C 100%);
   color-scheme: dark;
 }
 

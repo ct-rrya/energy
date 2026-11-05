@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
@@ -43,7 +43,7 @@ export interface StepsChartProps {
  * 
  * Note: Steps use sum aggregation, not average
  */
-export function StepsChart({
+export const StepsChart = React.memo(function StepsChart({
   className = '',
   startDate: propStartDate,
   endDate: propEndDate,
@@ -157,6 +157,7 @@ export function StepsChart({
               position={{ y: 0 }}
               wrapperStyle={{ zIndex: 1000 }}
               cursor={{ fill: 'rgba(47, 191, 113, 0.08)' }}
+              isAnimationActive={false}
             />
             <Bar
               dataKey="value"
@@ -164,6 +165,7 @@ export function StepsChart({
               name="Steps"
               maxBarSize={48}
               radius={[8, 8, 0, 0]}
+              isAnimationActive={false}
             />
           </BarChart>
         ) : (
@@ -196,6 +198,7 @@ export function StepsChart({
               content={<CustomChartTooltip unit="steps" />}
               position={{ y: 0 }}
               wrapperStyle={{ zIndex: 1000 }}
+              isAnimationActive={false}
             />
             <Line
               type="monotone"
@@ -205,10 +208,11 @@ export function StepsChart({
               name="Steps"
               dot={false}
               activeDot={{ r: 4 }}
+              isAnimationActive={false}
             />
           </LineChart>
         )}
       </ResponsiveContainer>
     </ChartContainer>
   );
-}
+});

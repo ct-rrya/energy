@@ -105,19 +105,17 @@
     --amb: #E8C45A;
     --bar: #19D46A;
 
-    --page-bg: radial-gradient(circle at 92% 28%, rgba(25,212,106,.35), transparent 40%),
-               radial-gradient(circle at 0 100%, rgba(25,212,106,.18), transparent 45%),
-               linear-gradient(135deg, #07120C, #0F2218);
-    --shell-overlay: rgba(255,255,255,.02);
+    --page-bg: linear-gradient(180deg, #0D1612 0%, #07120C 100%);
+    --shell-overlay: rgba(255,255,255,.01);
     --left-nav-bg: rgba(0,0,0,.25);
     --left-nav-border: 1px solid rgba(255,255,255,.08);
     --right-panel-bg: rgba(0,0,0,.22);
     --right-panel-border: 1px solid rgba(255,255,255,.08);
     --nav-link: #9FB5A8;
     --greeting: #9FB5A8;
-    --card-bg: rgba(255,255,255,.05);
-    --card-border: 1px solid rgba(255,255,255,.09);
-    --card-shadow: 8px 10px 24px rgba(0,0,0,.35), -4px -4px 12px rgba(255,255,255,.08);
+    --card-bg: rgba(255,255,255,.04);
+    --card-border: 1px solid rgba(255,255,255,.07);
+    --card-shadow: 0 4px 20px rgba(0,0,0,.35);
     --pill-bg: rgba(255,255,255,.09);
     --pill-t: #C9DDD0;
     --chat-bubble: rgba(255,255,255,.07);
@@ -164,19 +162,17 @@
     --limeT: #C6EE74;
     --amb: #E8C45A;
     --bar: #19D46A;
-    --page-bg: radial-gradient(circle at 92% 28%, rgba(25,212,106,.35), transparent 40%),
-               radial-gradient(circle at 0 100%, rgba(25,212,106,.18), transparent 45%),
-               linear-gradient(135deg, #07120C, #0F2218);
-    --shell-overlay: rgba(255,255,255,.02);
+    --page-bg: linear-gradient(180deg, #0D1612 0%, #07120C 100%);
+    --shell-overlay: rgba(255,255,255,.01);
     --left-nav-bg: rgba(0,0,0,.25);
     --left-nav-border: 1px solid rgba(255,255,255,.08);
     --right-panel-bg: rgba(0,0,0,.22);
     --right-panel-border: 1px solid rgba(255,255,255,.08);
     --nav-link: #9FB5A8;
     --greeting: #9FB5A8;
-    --card-bg: rgba(255,255,255,.05);
-    --card-border: 1px solid rgba(255,255,255,.09);
-    --card-shadow: 8px 10px 24px rgba(0,0,0,.35), -4px -4px 12px rgba(255,255,255,.08);
+    --card-bg: rgba(255,255,255,.04);
+    --card-border: 1px solid rgba(255,255,255,.07);
+    --card-shadow: 0 4px 20px rgba(0,0,0,.35);
     --pill-bg: rgba(255,255,255,.09);
     --pill-t: #C9DDD0;
     --chat-bubble: rgba(255,255,255,.07);
@@ -451,8 +447,17 @@ body::before {
 .nv a.on, .nv .nav-link.on, .nv a[aria-current="page"] {
   color: #0D1B14 !important;
   background: linear-gradient(90deg, #13B95C, #19D46A) !important;
-  box-shadow: 0 8px 16px rgba(19, 185, 92, 0.3) !important;
+  box-shadow: 0 8px 16px rgba(19, 185, 92, 0.22) !important;
   font-weight: 600;
+}
+
+.dark .nv a.on,
+[data-theme="dark"] .nv a.on,
+.dark .nv .nav-link.on,
+[data-theme="dark"] .nv .nav-link.on,
+.dark .nv a[aria-current="page"],
+[data-theme="dark"] .nv a[aria-current="page"] {
+  box-shadow: 0 4px 12px rgba(25, 212, 106, 0.08) !important;
 }
 
 /* Main Area */
@@ -782,27 +787,38 @@ body::before {
 /* Standby */
 .status-pill.status-standby {
   background: rgba(245, 166, 35, 0.12);
-  border: 1px solid rgba(245, 166, 35, 0.3);
+  border: 1px solid rgba(245, 166, 35, 0.2);
   color: #8A6A00;
 }
 
 .dark .status-pill.status-standby,
 [data-theme="dark"] .status-pill.status-standby {
+  border-color: rgba(245, 166, 35, 0.08);
   color: #E8C45A;
 }
 
 /* Online */
 .status-pill.status-online {
   background: var(--mint);
-  border: 1px solid rgba(25, 212, 106, 0.3);
+  border: 1px solid rgba(25, 212, 106, 0.2);
   color: var(--acc);
+}
+
+.dark .status-pill.status-online,
+[data-theme="dark"] .status-pill.status-online {
+  border-color: rgba(25, 212, 106, 0.08);
 }
 
 /* Offline */
 .status-pill.status-offline {
   background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   color: #EF4444;
+}
+
+.dark .status-pill.status-offline,
+[data-theme="dark"] .status-pill.status-offline {
+  border-color: rgba(239, 68, 68, 0.08);
 }
 
 .status-pill .status-pill-info {
@@ -1531,47 +1547,54 @@ body::before {
   width: fit-content;
 }
 
-/* Container responsive queries */
-@container (max-width: 899px) {
+/* Responsive queries for Mission Hub Header */
+@media (max-width: 899px) {
   .mh {
-    grid-template-columns: 1fr;
-    padding: 16px 18px;
+    grid-template-columns: 1fr !important;
+    padding: 16px 18px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .mh-level {
-    grid-row: 2;
+    grid-row: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .mh h1 {
-    white-space: normal;
-    font-size: clamp(20px, 5vw, 26px);
+    white-space: normal !important;
+    font-size: clamp(20px, 5vw, 26px) !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
   .mh p {
     -webkit-line-clamp: 3;
+    max-width: 100% !important;
   }
   .mh::after {
-    display: none;
+    display: none !important;
   }
 }
 
-@container (max-width: 519px) {
+@media (max-width: 519px) {
   .mh {
-    padding: 14px 14px;
-    gap: 14px;
+    padding: 14px 14px !important;
+    gap: 14px !important;
   }
   .lv-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
   }
   .lv-target {
-    text-align: left;
-    margin-left: 60px;
+    text-align: left !important;
+    margin-left: 0 !important;
   }
   .lv-chip {
-    width: 100%;
-    text-align: center;
+    width: 100% !important;
+    text-align: center !important;
   }
   .mh-top {
-    gap: 6px;
+    gap: 6px !important;
   }
 }
 
@@ -1580,8 +1603,8 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: nowrap;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .mc-footer .mc-meta {
@@ -3249,7 +3272,12 @@ body::before {
     font-weight: 700 !important;
     background: linear-gradient(90deg, #13B95C, #19D46A) !important;
     color: #0D1B14 !important;
-    box-shadow: 0 6px 18px rgba(19, 185, 92, 0.3) !important;
+    box-shadow: 0 6px 18px rgba(19, 185, 92, 0.22) !important;
+  }
+
+  .dark .diag-start-btn,
+  [data-theme="dark"] .diag-start-btn {
+    box-shadow: 0 4px 14px rgba(25, 212, 106, 0.08) !important;
   }
 
   .diag-history-card {

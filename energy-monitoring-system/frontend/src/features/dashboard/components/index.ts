@@ -87,7 +87,6 @@ export type { DataFetchErrorProps } from './DataFetchError';
 export { HeroEnergyCard } from './HeroEnergyCard';
 export { HeroPowerCard } from './HeroPowerCard';
 export { TrendIndicator } from './TrendIndicator';
-export { MiniTrendGraph } from './MiniTrendGraph';
 export { AIInsightSection } from './AIInsightSection';
 export { MetricsColumn } from './MetricsColumn';
 export { HeroCardSkeleton } from './HeroCardSkeleton';

@@ -26,7 +26,7 @@
  * ```
  */
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
@@ -67,7 +67,7 @@ import { subDays, startOfDay, endOfDay } from 'date-fns';
  * - Total cumulative value display in subtitle
  * - Responsive layout with glassmorphic card styling
  */
-export function CumulativeEnergyChart({
+export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
   className = '',
   daysToShow = 30,
   startDate: propStartDate,
@@ -206,6 +206,7 @@ export function CumulativeEnergyChart({
               fill={colors.line}
               maxBarSize={48}
               radius={[8, 8, 0, 0]}
+              isAnimationActive={false}
             />
           </BarChart>
         ) : (
@@ -267,10 +268,11 @@ export function CumulativeEnergyChart({
               fillOpacity={1}
               dot={false}
               activeDot={{ r: 4, stroke: colors.line, fill: '#FFFFFF' }}
+              isAnimationActive={false}
             />
           </AreaChart>
         )}
       </ResponsiveContainer>
     </ChartContainer>
   );
-}
+});

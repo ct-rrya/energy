@@ -48,10 +48,10 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {isCompleted ? (
               <span
-                className="pill inline-flex items-center gap-1"
+                className="pill inline-flex items-center gap-1 text-[11px]"
                 style={{
                   backgroundColor: 'var(--mint)',
                   color: '#087A3A',
@@ -62,10 +62,11 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
               </span>
             ) : (
               <span
-                className="pill inline-flex items-center gap-1"
+                className="pill inline-flex items-center gap-1 text-[11px]"
                 style={{
                   backgroundColor: 'var(--soft)',
-                  color: 'var(--mu)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
                 }}
               >
                 Available
@@ -73,7 +74,7 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
             )}
 
             <span
-              className="pill inline-flex items-center gap-1"
+              className="pill inline-flex items-center gap-1 text-[11px]"
               style={{
                 backgroundColor: 'rgba(25, 212, 106, 0.16)',
                 color: '#087A3A',
@@ -100,10 +101,10 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
           {mission.subtitle}
         </p>
         <p
-          className="mt-2.5 line-clamp-3"
+          className="mt-2.5 mb-4 line-clamp-3"
           style={{
             fontSize: '14px',
-            lineHeight: 1.75,
+            lineHeight: 1.6,
             color: 'var(--mu)',
           }}
         >
@@ -113,17 +114,17 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
 
       {/* Bottom meta & action button */}
       <div
-        className="mc-footer pt-4 mt-auto flex items-center justify-between gap-3"
+        className="mc-footer pt-3 mt-auto flex items-center justify-between gap-2.5 flex-wrap sm:flex-nowrap"
         style={{ borderTop: '1px solid var(--line)' }}
       >
         <div className="mc-meta flex items-center gap-2 text-xs whitespace-nowrap" style={{ color: 'var(--mu)' }}>
           <span className="inline-flex items-center gap-1 whitespace-nowrap">
-            <Clock className="w-4 h-4 flex-shrink-0" />
+            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{mission.estimatedMinutes} min</span>
           </span>
           <span style={{ opacity: 0.5 }}>·</span>
           <span className="inline-flex items-center gap-1 whitespace-nowrap">
-            <HelpCircle className="w-4 h-4 flex-shrink-0" />
+            <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{mission.questionCount || 5} Qs</span>
           </span>
         </div>
@@ -132,7 +133,7 @@ export function MissionCard({ mission, index, onSelect }: MissionCardProps) {
           type="button"
           className="mc-action-btn inline-flex items-center justify-center gap-1.5 transition-all flex-none whitespace-nowrap"
           style={{
-            height: '44px',
+            height: '42px',
             padding: '0 16px',
             borderRadius: '9999px',
             fontSize: '13px',

@@ -27,7 +27,7 @@ export function BadgeShowcase({ badges, className = '' }: BadgeShowcaseProps) {
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
         <div>
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Award className="w-4 h-4 text-[#2FBF71]" />

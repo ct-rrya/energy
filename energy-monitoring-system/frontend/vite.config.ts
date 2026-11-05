@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
@@ -56,6 +56,12 @@ export default defineConfig({
           if (id.includes('node_modules/date-fns') || 
               id.includes('node_modules/lodash-es')) {
             return 'utils';
+          }
+          
+          // Chat & Markdown utilities (loaded with EcoGuide)
+          if (id.includes('node_modules/marked') || 
+              id.includes('node_modules/dompurify')) {
+            return 'markdown-purify';
           }
           
           // Split node_modules vendor code into smaller chunks

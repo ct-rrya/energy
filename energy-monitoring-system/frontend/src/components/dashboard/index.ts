@@ -10,6 +10,7 @@
 
 export { ChartContainer } from './ChartContainer';
 export { ChartLoadingState } from './ChartLoadingState';
+export { ChartCardSkeleton } from './ChartCardSkeleton';
 export { ChartEmptyState } from './ChartEmptyState';
 export { ChartErrorState } from './ChartErrorState';
 export { CustomChartTooltip } from './CustomChartTooltip';

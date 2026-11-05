@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { usePowerGeneration } from '@/features/dashboard/hooks/usePowerGeneration';
@@ -39,7 +39,7 @@ import {
  * <PowerGenerationChart />
  * ```
  */
-export function PowerGenerationChart({
+export const PowerGenerationChart = React.memo(function PowerGenerationChart({
   className = '',
   defaultTimeFilter = '7days',
   startDate,
@@ -154,6 +154,7 @@ export function PowerGenerationChart({
               fill={colors.line}
               maxBarSize={48}
               radius={[8, 8, 0, 0]}
+              isAnimationActive={false}
             />
           </BarChart>
         ) : (
@@ -197,10 +198,11 @@ export function PowerGenerationChart({
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4 }}
+              isAnimationActive={false}
             />
           </LineChart>
         )}
       </ResponsiveContainer>
     </ChartContainer>
   );
-}
+});

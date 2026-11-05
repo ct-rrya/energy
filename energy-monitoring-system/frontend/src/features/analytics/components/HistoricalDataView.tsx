@@ -183,6 +183,28 @@ export function HistoricalDataView({
       .sort((a, b) => a.rawTimestamp - b.rawTimestamp);
   }, [energyData, voltageData, currentData, powerData, stepsData]);
 
+  // Format raw readings for display
+  const rawRecords = useMemo((): HistoricalDataRecord[] => {
+    if (!rawReadingsData?.data) return [];
+    return rawReadingsData.data.map((reading: EnergyReading) => {
+      const timestamp = new Date(reading.timestamp);
+      return {
+        date: format(timestamp, 'MMM dd, yyyy'),
+        time: format(timestamp, 'HH:mm:ss'),
+        energy: reading.energy,
+        voltage: reading.voltage,
+        current: reading.current,
+        power: reading.power,
+        steps: reading.stepCount,
+        id: reading.id,
+      };
+    });
+  }, [rawReadingsData]);
+
+  const displayRecords = useMemo(() => {
+    return viewMode === 'aggregated' ? historicalRecords : rawRecords;
+  }, [viewMode, historicalRecords, rawRecords]);
+
   // Export to CSV (Unavailable for public users)
   const handleExport = () => {
     if (isPublic || !historicalRecords.length) return;
@@ -254,22 +276,6 @@ export function HistoricalDataView({
     );
   }
 
-  // Format raw readings for display
-  const rawRecords = rawReadingsData?.data.map((reading: EnergyReading) => {
-    const timestamp = new Date(reading.timestamp);
-    return {
-      date: format(timestamp, 'MMM dd, yyyy'),
-      time: format(timestamp, 'HH:mm:ss'),
-      energy: reading.energy,
-      voltage: reading.voltage,
-      current: reading.current,
-      power: reading.power,
-      steps: reading.stepCount,
-      id: reading.id,
-    };
-  }) || [];
-
-  const displayRecords = viewMode === 'aggregated' ? historicalRecords : rawRecords;
   const totalRecords = viewMode === 'raw' && rawReadingsData ? rawReadingsData.total : historicalRecords.length;
   const totalPages = viewMode === 'raw' && rawReadingsData ? rawReadingsData.totalPages : 1;
 

@@ -1,18 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense, useTransition } from 'react';
 import { BarChart3, Table } from 'lucide-react';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
 import { HistoricalDataView } from '../components/HistoricalDataView';
-import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChart';
-import { EnergyPeriodChart } from '@/components/dashboard/EnergyPeriodChart';
-import { CumulativeEnergyChart } from '@/components/dashboard/CumulativeEnergyChart';
-import { StepsChart } from '@/components/dashboard/StepsChart';
-import { VoltageCurrentChart } from '@/components/dashboard/VoltageCurrentChart';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { useSystemHealth } from '@/features/dashboard/hooks/useSystemHealth';
 import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData';
+import { ChartCardSkeleton } from '@/components/dashboard/ChartCardSkeleton';
 import type { Granularity } from '../types';
+
+// Lazy-loaded chart components to avoid blocking initial paint and hydration
+const PowerGenerationChart = lazy(() => import('@/components/dashboard/PowerGenerationChart').then(m => ({ default: m.PowerGenerationChart })));
+const EnergyPeriodChart = lazy(() => import('@/components/dashboard/EnergyPeriodChart').then(m => ({ default: m.EnergyPeriodChart })));
+const CumulativeEnergyChart = lazy(() => import('@/components/dashboard/CumulativeEnergyChart').then(m => ({ default: m.CumulativeEnergyChart })));
+const StepsChart = lazy(() => import('@/components/dashboard/StepsChart').then(m => ({ default: m.StepsChart })));
+const VoltageCurrentChart = lazy(() => import('@/components/dashboard/VoltageCurrentChart').then(m => ({ default: m.VoltageCurrentChart })));
 
 /**
  * View Type
@@ -45,6 +48,19 @@ export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
+  const [, startTransition] = useTransition();
+
+  const handleViewChange = (view: ViewType) => {
+    startTransition(() => {
+      setActiveView(view);
+    });
+  };
+
+  const handlePeriodChange = (period: Period) => {
+    startTransition(() => {
+      setSelectedPeriod(period);
+    });
+  };
 
   // Determine user role
   const userRole = getUserRole(isAuthenticated, user);
@@ -180,7 +196,7 @@ export function AnalyticsPage() {
         <div className="sgc grid grid-cols-2 sm:inline-flex flex-shrink-0" role="tablist">
           <button
             type="button"
-            onClick={() => setActiveView('charts')}
+            onClick={() => handleViewChange('charts')}
             className={activeView === 'charts' ? 'on' : ''}
             aria-pressed={activeView === 'charts'}
             aria-label="Switch to chart view"
@@ -191,7 +207,7 @@ export function AnalyticsPage() {
 
           <button
             type="button"
-            onClick={() => setActiveView('historical')}
+            onClick={() => handleViewChange('historical')}
             className={activeView === 'historical' ? 'on' : ''}
             aria-pressed={activeView === 'historical'}
             aria-label="Switch to historical data view"
@@ -220,7 +236,7 @@ export function AnalyticsPage() {
               <button
                 key={option.value}
                 type="button"
-                onClick={() => setSelectedPeriod(option.value)}
+                onClick={() => handlePeriodChange(option.value)}
                 className={`shrink-0 whitespace-nowrap ${selectedPeriod === option.value ? 'on' : ''}`}
                 aria-pressed={selectedPeriod === option.value}
               >
@@ -238,51 +254,61 @@ export function AnalyticsPage() {
           {/* 1. Power Generation | Steps - Equal 2-Column Row */}
           <div className="analytics-charts-grid">
             <div className="min-w-0 h-full flex flex-col">
-              <PowerGenerationChart
-                defaultTimeFilter="7days"
-                startDate={chartDateRange.startDate}
-                endDate={chartDateRange.endDate}
-                granularity={chartGranularity}
-                periodLabel={periodLabel}
-              />
+              <Suspense fallback={<ChartCardSkeleton title="Power Generation" height={280} />}>
+                <PowerGenerationChart
+                  defaultTimeFilter="7days"
+                  startDate={chartDateRange.startDate}
+                  endDate={chartDateRange.endDate}
+                  granularity={chartGranularity}
+                  periodLabel={periodLabel}
+                />
+              </Suspense>
             </div>
             <div className="min-w-0 h-full flex flex-col">
-              <StepsChart
-                startDate={chartDateRange.startDate}
-                endDate={chartDateRange.endDate}
-                granularity={chartGranularity}
-                periodLabel={periodLabel}
-              />
+              <Suspense fallback={<ChartCardSkeleton title="Steps Count" height={280} />}>
+                <StepsChart
+                  startDate={chartDateRange.startDate}
+                  endDate={chartDateRange.endDate}
+                  granularity={chartGranularity}
+                  periodLabel={periodLabel}
+                />
+              </Suspense>
             </div>
           </div>
 
           {/* 2. Voltage Trend | Current Trend - Equal 2-Column Row */}
           <div className="w-full min-w-0">
-            <VoltageCurrentChart
-              startDate={chartDateRange.startDate}
-              endDate={chartDateRange.endDate}
-              granularity={selectedPeriod === 'today' || selectedPeriod === 'last7days' ? 'hour' : chartGranularity}
-              periodLabel={periodLabel}
-            />
+            <Suspense fallback={<ChartCardSkeleton title="Voltage & Current Trend" height={280} />}>
+              <VoltageCurrentChart
+                startDate={chartDateRange.startDate}
+                endDate={chartDateRange.endDate}
+                granularity={selectedPeriod === 'today' || selectedPeriod === 'last7days' ? 'hour' : chartGranularity}
+                periodLabel={periodLabel}
+              />
+            </Suspense>
           </div>
 
           {/* 3. Energy Generated by Period | Cumulative Energy Generated - Equal 2-Column Row */}
           <div className="analytics-charts-grid">
             <div className="min-w-0 h-full flex flex-col">
-              <EnergyPeriodChart
-                startDate={chartDateRange.startDate}
-                endDate={chartDateRange.endDate}
-                granularity={chartGranularity}
-                periodLabel={periodLabel}
-              />
+              <Suspense fallback={<ChartCardSkeleton title="Energy Generation by Period" height={280} />}>
+                <EnergyPeriodChart
+                  startDate={chartDateRange.startDate}
+                  endDate={chartDateRange.endDate}
+                  granularity={chartGranularity}
+                  periodLabel={periodLabel}
+                />
+              </Suspense>
             </div>
             <div className="min-w-0 h-full flex flex-col">
-              <CumulativeEnergyChart
-                startDate={chartDateRange.startDate}
-                endDate={chartDateRange.endDate}
-                granularity={chartGranularity}
-                periodLabel={periodLabel}
-              />
+              <Suspense fallback={<ChartCardSkeleton title="Cumulative Energy Generated" height={280} />}>
+                <CumulativeEnergyChart
+                  startDate={chartDateRange.startDate}
+                  endDate={chartDateRange.endDate}
+                  granularity={chartGranularity}
+                  periodLabel={periodLabel}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

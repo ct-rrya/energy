@@ -1,4 +1,5 @@
 
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
@@ -9,11 +10,14 @@ import { MetricCard } from '../components/MetricCard';
 import { HeroPowerCard } from '../components/HeroPowerCard';
 import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
 import { validateSensorData } from '../utils/validateSensorData';
-import { useEffect, useState } from 'react';
 import type { SensorReading } from '../types/dashboard.types';
 import { EcoStepAtAGlance } from '../components/EcoStepAtAGlance';
 import { HowHarvestingWorksCard } from '../components/HowHarvestingWorksCard';
-import { PowerGenerationChart } from '@/components/dashboard/PowerGenerationChart';
+import { ChartCardSkeleton } from '@/components/dashboard/ChartCardSkeleton';
+
+const PowerGenerationChart = lazy(() =>
+  import('@/components/dashboard/PowerGenerationChart').then(m => ({ default: m.PowerGenerationChart }))
+);
 
 /**
  * EcoStep Dashboard Page - Hero Power Dashboard
@@ -311,9 +315,17 @@ function DashboardPageContent() {
 
         </div>
 
-        {/* Real-Time Power Generation Waveform Chart (Recovered space) */}
+        {/* Real-Time Power Generation Waveform Chart (Lazily Loaded to Optimize LCP) */}
         <div className="w-full min-w-0">
-          <PowerGenerationChart />
+          <Suspense fallback={
+            <ChartCardSkeleton 
+              title="Power Generation Over Time" 
+              subtitle="Instantaneous power output (mW) showing peaks of footstep activity"
+              height={290}
+            />
+          }>
+            <PowerGenerationChart />
+          </Suspense>
         </div>
 
         {/* Educational Process: How EcoStep Footstep Harvesting Works */}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEnergyByPeriod, type PeriodFilter } from '@/features/dashboard/hooks/useEnergyByPeriod';
@@ -42,7 +42,7 @@ import {
  * <EnergyPeriodChart />
  * ```
  */
-export function EnergyPeriodChart({ 
+export const EnergyPeriodChart = React.memo(function EnergyPeriodChart({ 
   className = '',
   defaultPeriodFilter = 'daily',
   startDate,
@@ -157,9 +157,10 @@ export function EnergyPeriodChart({
             fill={colors.barColor}
             maxBarSize={48}
             radius={[8, 8, 0, 0]}
+            isAnimationActive={false}
           />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>
   );
-}
+});

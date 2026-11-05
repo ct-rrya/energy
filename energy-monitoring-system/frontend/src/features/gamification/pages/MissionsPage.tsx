@@ -366,39 +366,41 @@ export function MissionsPage() {
               </div>
 
               {/* Filter Tabs - Segmented control */}
-              <div className="sgc">
-                <button
-                  type="button"
-                  onClick={() => setFilter('all')}
-                  className={filter === 'all' ? 'on' : ''}
-                  aria-pressed={filter === 'all'}
-                >
-                  All ({totalMissionsCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilter('available')}
-                  className={filter === 'available' ? 'on' : ''}
-                  aria-pressed={filter === 'available'}
-                >
-                  Available ({availableCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilter('in_progress')}
-                  className={filter === 'in_progress' ? 'on' : ''}
-                  aria-pressed={filter === 'in_progress'}
-                >
-                  In Progress ({inProgressCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilter('completed')}
-                  className={filter === 'completed' ? 'on' : ''}
-                  aria-pressed={filter === 'completed'}
-                >
-                  Completed ({completedCount})
-                </button>
+              <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                <div className="sgc flex w-max">
+                  <button
+                    type="button"
+                    onClick={() => setFilter('all')}
+                    className={filter === 'all' ? 'on' : ''}
+                    aria-pressed={filter === 'all'}
+                  >
+                    All ({totalMissionsCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilter('available')}
+                    className={filter === 'available' ? 'on' : ''}
+                    aria-pressed={filter === 'available'}
+                  >
+                    Available ({availableCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilter('in_progress')}
+                    className={filter === 'in_progress' ? 'on' : ''}
+                    aria-pressed={filter === 'in_progress'}
+                  >
+                    In Progress ({inProgressCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilter('completed')}
+                    className={filter === 'completed' ? 'on' : ''}
+                    aria-pressed={filter === 'completed'}
+                  >
+                    Completed ({completedCount})
+                  </button>
+                </div>
               </div>
             </div>
 

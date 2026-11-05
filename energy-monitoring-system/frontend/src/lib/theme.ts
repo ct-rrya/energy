@@ -81,20 +81,20 @@ export function getThemeColors(theme: ThemeMode) {
   
   return {
     // Page & Layout
-    pageBackground: isLight ? '#F5F7FA' : '#0B132B',
+    pageBackground: isLight ? '#F5F7FA' : '#0D1612',
     sidebarBackground: '#0B132B', // Navy in BOTH modes per spec
     
     // Surface Hierarchy
-    cardBackground: isLight ? '#FFFFFF' : '#080E22',
-    cardHover: isLight ? ECOSTEP_COLORS.gray[50] : '#0D1528',
-    inputBackground: isLight ? '#FFFFFF' : '#080E22',
-    elevatedBackground: isLight ? '#FFFFFF' : '#0B132B',
-    surfaceMuted: isLight ? '#F8FFFE' : '#070D1E',
+    cardBackground: isLight ? '#FFFFFF' : '#12241A',
+    cardHover: isLight ? ECOSTEP_COLORS.gray[50] : '#162C20',
+    inputBackground: isLight ? '#FFFFFF' : '#0F1E16',
+    elevatedBackground: isLight ? '#FFFFFF' : '#12241A',
+    surfaceMuted: isLight ? '#F8FFFE' : '#0D1913',
     
-    // Borders
-    border: isLight ? 'rgba(11, 19, 43, 0.08)' : 'rgba(57, 255, 136, 0.12)',
-    borderSubtle: isLight ? 'rgba(11, 19, 43, 0.05)' : 'rgba(57, 255, 136, 0.08)',
-    borderStrong: isLight ? 'rgba(11, 19, 43, 0.15)' : 'rgba(57, 255, 136, 0.20)',
+    // Borders (toned down to subtle opacity in dark mode to remove green glare)
+    border: isLight ? 'rgba(11, 19, 43, 0.08)' : 'rgba(25, 212, 106, 0.08)',
+    borderSubtle: isLight ? 'rgba(11, 19, 43, 0.05)' : 'rgba(25, 212, 106, 0.05)',
+    borderStrong: isLight ? 'rgba(11, 19, 43, 0.15)' : 'rgba(25, 212, 106, 0.14)',
     
     // Typography
     textPrimary: isLight ? '#0B132B' : '#F5F7FA',
@@ -111,15 +111,15 @@ export function getThemeColors(theme: ThemeMode) {
     navIconInactive: '#9CA3AF',
     
     // Accent Colors
-    accent: isLight ? '#1FA35C' : '#39FF88', // Darkened in light, neon in dark
-    accentHover: isLight ? '#188A4D' : '#2FD670',
-    accentSubtle: isLight ? 'rgba(31, 163, 92, 0.10)' : 'rgba(57, 255, 136, 0.10)',
-    accentLight: isLight ? 'rgba(31, 163, 92, 0.05)' : 'rgba(57, 255, 136, 0.05)',
+    accent: isLight ? '#1FA35C' : '#19D46A',
+    accentHover: isLight ? '#188A4D' : '#16C763',
+    accentSubtle: isLight ? 'rgba(31, 163, 92, 0.10)' : 'rgba(25, 212, 106, 0.08)',
+    accentLight: isLight ? 'rgba(31, 163, 92, 0.05)' : 'rgba(25, 212, 106, 0.04)',
     
     // Interactive States
-    hoverBackground: isLight ? ECOSTEP_COLORS.gray[50] : 'rgba(57, 255, 136, 0.05)',
-    activeBackground: isLight ? '#39FF88' : '#39FF88', // Neon green in both modes
-    focusRing: isLight ? '#39FF88' : '#39FF88',
+    hoverBackground: isLight ? ECOSTEP_COLORS.gray[50] : 'rgba(25, 212, 106, 0.08)',
+    activeBackground: isLight ? '#19D46A' : '#19D46A',
+    focusRing: isLight ? '#19D46A' : '#19D46A',
     
     // Semantic
     success: ECOSTEP_COLORS.success,

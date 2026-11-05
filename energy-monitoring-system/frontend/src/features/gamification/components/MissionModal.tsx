@@ -144,11 +144,11 @@ export function MissionModal({
           boxShadow: '0 30px 80px rgba(0, 0, 0, 0.35)',
         }}
       >
-        {/* Header - padding 24px 28px 18px on var(--mint) */}
+        {/* Header - responsive padding on var(--mint) */}
         <div
           className="flex-shrink-0 z-10 flex items-center justify-between"
           style={{
-            padding: '24px 28px 18px',
+            padding: 'clamp(16px, 4vw, 24px) clamp(16px, 5vw, 28px) clamp(14px, 3vw, 18px)',
             backgroundColor: 'var(--mint)',
             borderBottom: '1px solid var(--line)',
           }}
@@ -214,11 +214,11 @@ export function MissionModal({
           </button>
         </div>
 
-        {/* Tab navigation bar - tabs padding 0 28px, tab padding 14px 12px, 13px/600, active underline inset 0 -2px 0 #19D46A */}
+        {/* Tab navigation bar */}
         <div
           className="tabs flex-shrink-0 z-10 flex items-center"
           style={{
-            padding: '0 28px',
+            padding: '0 clamp(12px, 4vw, 28px)',
             borderBottom: '1px solid var(--line)',
             backgroundColor: 'var(--panel)',
           }}
@@ -283,12 +283,12 @@ export function MissionModal({
           )}
         </div>
 
-        {/* Content body - padding 24px 28px, scrollable */}
+        {/* Content body - scrollable */}
         <div
           ref={scrollBodyRef}
           className="flex-1 min-h-0 overflow-y-auto space-y-4"
           style={{
-            padding: '24px 28px',
+            padding: 'clamp(16px, 4vw, 24px) clamp(14px, 4vw, 28px)',
           }}
         >
           {/* TAB 1: LESSON CONTENT */}
@@ -527,7 +527,7 @@ export function MissionModal({
         <div
           className="flex-shrink-0 z-10"
           style={{
-            padding: '16px 28px',
+            padding: '14px clamp(14px, 4vw, 28px)',
             borderTop: '1px solid var(--line)',
             backgroundColor: 'var(--panel)',
           }}
