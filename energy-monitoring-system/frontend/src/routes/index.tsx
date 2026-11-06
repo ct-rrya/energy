@@ -18,6 +18,7 @@ import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 // Lazy-loaded pages
 const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AnalyticsPage = lazy(() => import('@/features/analytics/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const MilestonesPage = lazy(() => import('@/features/milestones/pages/MilestonesPage').then(m => ({ default: m.MilestonesPage })));
 const EnergyMonitoringPage = lazy(() => import('@/features/energy/pages/EnergyMonitoringPage').then(m => ({ default: m.EnergyMonitoringPage })));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const SensorMonitoringPage = lazy(() => import('@/features/sensors/pages/SensorMonitoringPage').then(m => ({ default: m.SensorMonitoringPage })));
@@ -99,6 +100,16 @@ export const router = createBrowserRouter([
         element: (
           <LazyRoute>
             <AnalyticsPage />
+          </LazyRoute>
+        ),
+      },
+
+      // Milestones - Public access
+      {
+        path: ROUTES.MILESTONES,
+        element: (
+          <LazyRoute>
+            <MilestonesPage />
           </LazyRoute>
         ),
       },

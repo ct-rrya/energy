@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
-import { Server, Database, Activity, Clock, Calendar, RefreshCw, Bluetooth } from 'lucide-react';
+import { Server, Database, Activity, Clock, Calendar, RefreshCw, Bluetooth, Award } from 'lucide-react';
 import { COLORS, SPACING, TYPOGRAPHY, getTextColor } from '@/styles/design-tokens';
 import { EcoStepBleButton } from '@/features/ble';
+import { useMilestones } from '@/features/milestones';
+import { formatWhFromMWh, parsePositiveDecimal } from '@/features/milestones/utils/milestone.utils';
 
 
 interface SystemPreferences {
@@ -48,6 +50,63 @@ export function SettingsPage() {
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
   const [iotDataStatus, setIotDataStatus] = useState<string>('checking');
+
+  // EcoStep Milestones targets state
+  const { milestones, updateTargets: saveMilestoneTargets } = useMilestones();
+  const [milestoneInputs, setMilestoneInputs] = useState({
+    target1WeekMWh: '0.025',
+    target1MonthMWh: '0.1',
+    target3MonthsMWh: '0.3',
+    target6MonthsMWh: '0.6',
+    target1YearMWh: '1.2',
+  });
+  const [isSavingMilestones, setIsSavingMilestones] = useState(false);
+
+  useEffect(() => {
+    if (milestones.length > 0) {
+      const getVal = (key: string, defMWh: number) => {
+        const item = milestones.find((m) => m.periodKey === key);
+        return item?.targetMWh ?? (item?.targetWh ? item.targetWh * 1000 : defMWh);
+      };
+      setMilestoneInputs({
+        target1WeekMWh: String(getVal('1_week', 0.025)),
+        target1MonthMWh: String(getVal('1_month', 0.1)),
+        target3MonthsMWh: String(getVal('3_months', 0.3)),
+        target6MonthsMWh: String(getVal('6_months', 0.6)),
+        target1YearMWh: String(getVal('1_year', 1.2)),
+      });
+    }
+  }, [milestones]);
+
+  const handleSaveMilestones = async () => {
+    const t1W = parsePositiveDecimal(milestoneInputs.target1WeekMWh);
+    const t1M = parsePositiveDecimal(milestoneInputs.target1MonthMWh);
+    const t3M = parsePositiveDecimal(milestoneInputs.target3MonthsMWh);
+    const t6M = parsePositiveDecimal(milestoneInputs.target6MonthsMWh);
+    const t1Y = parsePositiveDecimal(milestoneInputs.target1YearMWh);
+
+    if (t1W === null || t1M === null || t3M === null || t6M === null || t1Y === null) {
+      showToast('Please enter valid positive targets up to 6 decimal places (min 0.000001 mWh)', 'error');
+      return;
+    }
+
+    setIsSavingMilestones(true);
+    try {
+      await saveMilestoneTargets({
+        target1WeekMWh: t1W,
+        target1MonthMWh: t1M,
+        target3MonthsMWh: t3M,
+        target6MonthsMWh: t6M,
+        target1YearMWh: t1Y,
+      });
+      showToast('EcoStep milestone energy targets updated successfully', 'success');
+    } catch (error) {
+      console.error('Failed to save milestone targets:', error);
+      showToast('Failed to save milestone targets', 'error');
+    } finally {
+      setIsSavingMilestones(false);
+    }
+  };
 
   // Refined colors using design tokens
   const colors = {
@@ -365,6 +424,202 @@ export function SettingsPage() {
                 variant="primary"
               >
                 {isSaving ? 'Saving...' : 'Save Preferences'}
+              </Button>
+            </div>
+          </div>
+        </EcoCard>
+
+        {/* EcoStep Milestones Energy Targets */}
+        <EcoCard className="mt-6">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h2 
+                className="text-base font-semibold flex items-center gap-2" 
+                style={{ 
+                  color: colors.textPrimary,
+                  fontSize: TYPOGRAPHY.cardTitle.size,
+                  fontWeight: TYPOGRAPHY.cardTitle.weight,
+                }}
+              >
+                <Award className="w-4 h-4 text-emerald-400" />
+                EcoStep Milestone Energy Targets
+              </h2>
+              <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                Configure accumulated energy goals (in milliwatt-hours, mWh) for the public roadmap across five periods. Supports decimals up to 6 places.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setMilestoneInputs({
+                    target1WeekMWh: '0.025',
+                    target1MonthMWh: '0.1',
+                    target3MonthsMWh: '0.3',
+                    target6MonthsMWh: '0.6',
+                    target1YearMWh: '1.2',
+                  })
+                }
+                className="text-xs px-2.5 py-1.5 rounded-lg border text-emerald-300 hover:text-white transition-colors font-medium"
+                style={{ borderColor: 'rgba(25, 212, 106, 0.4)', backgroundColor: 'rgba(25, 212, 106, 0.1)' }}
+              >
+                Pilot / Micro Harvest (Default)
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setMilestoneInputs({
+                    target1WeekMWh: '0.1',
+                    target1MonthMWh: '0.5',
+                    target3MonthsMWh: '1.5',
+                    target6MonthsMWh: '3.0',
+                    target1YearMWh: '6.0',
+                  })
+                }
+                className="text-xs px-2.5 py-1.5 rounded-lg border text-gray-300 hover:text-white transition-colors"
+                style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}
+              >
+                Active Walkway
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setMilestoneInputs({
+                    target1WeekMWh: '0.5',
+                    target1MonthMWh: '2.0',
+                    target3MonthsMWh: '6.0',
+                    target6MonthsMWh: '12.0',
+                    target1YearMWh: '24.0',
+                  })
+                }
+                className="text-xs px-2.5 py-1.5 rounded-lg border text-gray-300 hover:text-white transition-colors"
+                style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}
+              >
+                Corridor Array
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* 1 Week */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Week Target</p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>7 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1WeekMWh) || 0)} Wh)</p>
+              </div>
+              <div className="flex items-center gap-2 sm:w-44">
+                <input
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  placeholder="e.g. 0.09"
+                  value={milestoneInputs.target1WeekMWh}
+                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1WeekMWh: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
+                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
+                />
+                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              </div>
+            </div>
+
+            {/* 1 Month */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Month Target</p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>30 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1MonthMWh) || 0)} Wh)</p>
+              </div>
+              <div className="flex items-center gap-2 sm:w-44">
+                <input
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  placeholder="e.g. 0.5"
+                  value={milestoneInputs.target1MonthMWh}
+                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1MonthMWh: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
+                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
+                />
+                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              </div>
+            </div>
+
+            {/* 3 Months */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>3 Months Target</p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>90 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target3MonthsMWh) || 0)} Wh)</p>
+              </div>
+              <div className="flex items-center gap-2 sm:w-44">
+                <input
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  placeholder="e.g. 1.25"
+                  value={milestoneInputs.target3MonthsMWh}
+                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target3MonthsMWh: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
+                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
+                />
+                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              </div>
+            </div>
+
+            {/* 6 Months */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>6 Months Target</p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>180 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target6MonthsMWh) || 0)} Wh)</p>
+              </div>
+              <div className="flex items-center gap-2 sm:w-44">
+                <input
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  placeholder="e.g. 5.0"
+                  value={milestoneInputs.target6MonthsMWh}
+                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target6MonthsMWh: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
+                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
+                />
+                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              </div>
+            </div>
+
+            {/* 1 Year */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Year Target</p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>365 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1YearMWh) || 0)} Wh)</p>
+              </div>
+              <div className="flex items-center gap-2 sm:w-44">
+                <input
+                  type="number"
+                  step="any"
+                  min="0.000001"
+                  required
+                  placeholder="e.g. 15.0"
+                  value={milestoneInputs.target1YearMWh}
+                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1YearMWh: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
+                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
+                />
+                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
+              <Button
+                onClick={handleSaveMilestones}
+                disabled={isSavingMilestones}
+                className="w-full sm:w-auto"
+                variant="primary"
+              >
+                {isSavingMilestones ? 'Saving...' : 'Save Milestone Targets'}
               </Button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   ChevronUp, 
   ChevronLeft,
   MessageSquare,
+  Award,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +39,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
   { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
+  { to: ROUTES.MILESTONES, label: 'Energy Milestones', Icon: Award },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
@@ -680,6 +682,17 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               <span className="es-mobile-tab-label">Analytics</span>
             </NavLink>
 
+            <NavLink
+              to={ROUTES.MILESTONES}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Milestones"
+            >
+              <span className="es-mobile-tab-pill">
+                <Award size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Milestones</span>
+            </NavLink>
+
             <button
               type="button"
               className="es-mobile-tab es-mobile-tab-ecoguide"
@@ -716,6 +729,17 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           </>
         ) : (
           <>
+            <NavLink
+              to={ROUTES.ANALYTICS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Analytics"
+            >
+              <span className="es-mobile-tab-pill">
+                <TrendingUp size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Analytics</span>
+            </NavLink>
+
             <button
               type="button"
               className="es-mobile-tab es-mobile-tab-ecoguide"
@@ -729,14 +753,25 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             </button>
 
             <NavLink
-              to={ROUTES.ANALYTICS}
+              to={ROUTES.MILESTONES}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="History"
+              aria-label="Milestones"
             >
               <span className="es-mobile-tab-pill">
-                <TrendingUp size={18} strokeWidth={2} />
+                <Award size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">History</span>
+              <span className="es-mobile-tab-label">Milestones</span>
+            </NavLink>
+
+            <NavLink
+              to={ROUTES.HOME}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Home"
+            >
+              <span className="es-mobile-tab-pill">
+                <House size={18} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Home</span>
             </NavLink>
           </>
         )}
@@ -773,6 +808,70 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             </div>
 
             <div className="es-sheet-user-body">
+              {/* Direct Navigation Links for Mobile */}
+              <NavLink
+                to={ROUTES.DASHBOARD}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <Activity size={20} strokeWidth={1.8} />
+                <span>EcoStep Central</span>
+              </NavLink>
+
+              <NavLink
+                to={ROUTES.MILESTONES}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <Award size={20} strokeWidth={1.8} />
+                <span>Energy Milestones</span>
+              </NavLink>
+
+              <NavLink
+                to={ROUTES.ANALYTICS}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <TrendingUp size={20} strokeWidth={1.8} />
+                <span>Historical Analytics</span>
+              </NavLink>
+
+              {isAnyAdmin && (
+                <>
+                  <NavLink
+                    to={ROUTES.ADMIN_DIAGNOSTICS}
+                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setMobileUserSheetOpen(false)}
+                  >
+                    <Stethoscope size={20} strokeWidth={1.8} />
+                    <span>Tile Performance Diagnostics</span>
+                  </NavLink>
+
+                  <NavLink
+                    to={ROUTES.REPORTS}
+                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setMobileUserSheetOpen(false)}
+                  >
+                    <FileText size={20} strokeWidth={1.8} />
+                    <span>Reports</span>
+                  </NavLink>
+                </>
+              )}
+
+              {isSuperAdmin && (
+                <NavLink
+                  to={ROUTES.ADMIN_MANAGEMENT}
+                  className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                  onClick={() => setMobileUserSheetOpen(false)}
+                >
+                  <Users size={20} strokeWidth={1.8} />
+                  <span>Admin Management</span>
+                </NavLink>
+              )}
+
+              <div className="my-1 border-t border-[var(--line)] opacity-60" />
+
+              {/* Settings Navigation (Admin only) */}
               {isAnyAdmin && (
                 <button
                   type="button"

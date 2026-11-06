@@ -48,6 +48,7 @@ export const StepsChart = React.memo(function StepsChart({
   startDate: propStartDate,
   endDate: propEndDate,
   granularity: propGranularity,
+  periodLabel,
 }: StepsChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -109,10 +110,14 @@ export const StepsChart = React.memo(function StepsChart({
     bottom: isMobile ? 8 : 0,
   };
 
+  const subtitle = periodLabel
+    ? `Detected footsteps on the piezoelectric tile (${periodLabel})`
+    : 'Detected footsteps on the piezoelectric tile';
+
   return (
     <ChartContainer
       title="Steps Over Time"
-      subtitle="Detected footsteps on the piezoelectric tile"
+      subtitle={subtitle}
       tooltip={{
         title: "Steps Over Time",
         description: "Counts physical footsteps over time. Directly reveals when the hallway turned into a bustling thoroughfare.",

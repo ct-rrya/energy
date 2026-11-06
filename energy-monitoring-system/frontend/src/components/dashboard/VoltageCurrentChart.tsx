@@ -48,7 +48,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   startDate: propStartDate,
   endDate: propEndDate,
   granularity: propGranularity,
-  periodLabel: _periodLabel,
+  periodLabel,
 }: VoltageCurrentChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -137,12 +137,20 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
     bottom: isMobile ? 8 : 0,
   };
 
+  const voltageSubtitle = periodLabel
+    ? `Electrical potential (V) produced during compressions (${periodLabel})`
+    : 'Electrical potential (V) produced during compressions';
+
+  const currentSubtitle = periodLabel
+    ? `Electrical charge flow rate (${currentUnit}) (${periodLabel})`
+    : `Electrical charge flow rate (${currentUnit})`;
+
   return (
     <div className={`analytics-charts-grid ${className}`}>
       {/* Voltage Chart */}
       <ChartContainer
         title="Voltage Trend"
-        subtitle="Electrical potential (V) produced during compressions"
+        subtitle={voltageSubtitle}
         tooltip={{
           title: "Voltage Trend (V)",
           description: "Tracks the electrical push created by footsteps over time. Taller crests reflect heavier, more deliberate strides.",
@@ -246,7 +254,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
       {/* Current Chart */}
       <ChartContainer
         title="Current Trend"
-        subtitle={`Electrical charge flow rate (${currentUnit})`}
+        subtitle={currentSubtitle}
         tooltip={{
           title: `Current Trend (${currentUnit})`,
           description: "Maps how swiftly harvested charge flows into storage capacitors across each hour.",

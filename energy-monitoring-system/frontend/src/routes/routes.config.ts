@@ -14,6 +14,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   ENERGY: '/energy',
   ANALYTICS: '/analytics',
+  MILESTONES: '/milestones',
 
   // Admin-only routes (auth required)
   SENSORS: '/sensors',

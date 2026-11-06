@@ -28,6 +28,7 @@ export interface FeaturePermissions {
   canConfigureAlerts: boolean;
   canExportReports: boolean;
   canModifySettings: boolean;
+  canConfigureMilestones: boolean;
 }
 
 /**
@@ -81,6 +82,7 @@ export function getPermissions(role: UserRole): FeaturePermissions {
         canConfigureAlerts: true,
         canExportReports: true,
         canModifySettings: true,
+        canConfigureMilestones: true,
       };
 
     case 'public':
@@ -99,6 +101,7 @@ export function getPermissions(role: UserRole): FeaturePermissions {
         canConfigureAlerts: false,
         canExportReports: false,
         canModifySettings: false,
+        canConfigureMilestones: false,
       };
 
     default:

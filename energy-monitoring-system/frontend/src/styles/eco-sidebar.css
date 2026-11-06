@@ -929,11 +929,44 @@
   }
 
   .es-mobile-tabbar.is-public {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .es-mobile-tabbar.is-admin {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    padding: 0 4px;
+  }
+
+  .es-mobile-tabbar.is-admin .es-mobile-tab {
+    min-width: 0;
+  }
+
+  .es-mobile-tabbar.is-admin .es-mobile-tab-pill {
+    width: 40px;
+    height: 28px;
+  }
+
+  .es-mobile-tabbar.is-admin .es-mobile-tab-label {
+    font-size: 9.5px;
+    letter-spacing: -0.01em;
+  }
+
+  @media (max-width: 375px) {
+    .es-mobile-tabbar.is-admin .es-mobile-tab-pill {
+      width: 36px;
+      height: 26px;
+    }
+    .es-mobile-tabbar.is-admin .es-mobile-tab-label {
+      font-size: 8.5px;
+      letter-spacing: -0.02em;
+    }
+    .es-mobile-tabbar.is-admin .es-mobile-ecoguide-fab {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      min-height: 48px;
+      margin-top: -24px;
+    }
   }
 
   [data-theme="dark"] .es-mobile-tabbar,

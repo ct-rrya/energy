@@ -36,6 +36,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
 import { PlayersModule } from './players/players.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { MilestonesModule } from './milestones/milestones.module';
 
 /**
  * Root Application Module
@@ -139,6 +140,7 @@ import { GamificationModule } from './gamification/gamification.module';
     GamificationModule, // Gamification Phase 3: Missions, Quizzes, XP & Badges
 
     PublicModule, // Public telemetry API
+    MilestonesModule, // EcoStep Milestones: 1W, 1M, 3M, 6M, 1Y kinetic energy goals
 
     // System Diagnostics Module
     DiagnosticsModule, // Admin-only diagnostic testing

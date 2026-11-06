@@ -45,6 +45,7 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
   startDate,
   endDate,
   granularity: propGranularity,
+  periodLabel,
 }: PowerGenerationChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -98,10 +99,14 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
     bottom: isMobile ? 8 : 0,
   };
 
+  const subtitle = periodLabel
+    ? `Instantaneous power output (mW) showing peaks of footstep activity (${periodLabel})`
+    : 'Instantaneous power output (mW) showing peaks of footstep activity';
+
   return (
     <ChartContainer
       title="Power Generation Over Time"
-      subtitle="Instantaneous power output (mW) showing peaks of footstep activity"
+      subtitle={subtitle}
       tooltip={{
         title: "Power Generation (mW)",
         description: "Visualizes live generation speed. High spikes map directly to energetic foot traffic rushing across the tiles.",
