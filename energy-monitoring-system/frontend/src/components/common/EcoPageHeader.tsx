@@ -39,9 +39,19 @@ export function EcoPageHeader({
     <div className="eco-page-header">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <h1 className="eco-page-title">{title}</h1>
+          <h1 
+            className="eco-page-title text-[28px] sm:text-[32px] font-[700] tracking-tight leading-tight text-[var(--t)]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {title}
+          </h1>
           {subtitle && (
-            <p className="eco-page-subtitle">{subtitle}</p>
+            <p 
+              className="eco-page-subtitle text-[13px] text-[var(--mu)] mt-1 font-normal leading-relaxed"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {subtitle}
+            </p>
           )}
         </div>
 

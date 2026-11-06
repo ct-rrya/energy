@@ -94,8 +94,23 @@ describe('MilestonesController (RBAC & Permissions)', () => {
       };
 
       const result = await controller.updateTargets(dto, req);
-      expect(service.updateTargets).toHaveBeenCalledWith(dto, 'admin-123');
+      expect(service.updateTargets).toHaveBeenCalledWith(dto, 'admin-123', 'admin');
       expect(result).toBeDefined();
+    });
+
+    it('returns configuration policy with overdue status', async () => {
+      (service as any).getConfigurationPolicy = jest.fn().mockResolvedValue({
+        yearMonth: '2026-11',
+        status: 'OVERDUE',
+        isConfigured: false,
+        isLocked: false,
+        hasOverdue: true,
+        overdueMonths: ['2026-11'],
+      });
+
+      const policy = await controller.getConfigurationPolicy('2026-11', { user: { role: 'admin' } });
+      expect(policy.status).toBe('OVERDUE');
+      expect((service as any).getConfigurationPolicy).toHaveBeenCalledWith('2026-11', 'admin');
     });
   });
 });

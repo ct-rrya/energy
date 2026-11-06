@@ -14,11 +14,33 @@ export interface WeeklyTargetsConfig {
   week6MWh?: number;
 }
 
+export type MonthConfigurationStatus = 'CONFIGURED' | 'OVERDUE' | 'PENDING';
+
+export interface MilestoneCorrectionLog {
+  correctedBy: string;
+  correctedAt: string;
+  previousTargets: {
+    monthlyTargetMWh: number;
+    weeklyTargetsMWh: WeeklyTargetsConfig;
+  };
+  newTargets: {
+    monthlyTargetMWh: number;
+    weeklyTargetsMWh: WeeklyTargetsConfig;
+  };
+  reason?: string;
+}
+
 export interface MonthTargetConfig {
   monthlyTargetMWh: number;
   weeklyTargetsMWh: WeeklyTargetsConfig;
+  status?: MonthConfigurationStatus;
+  isLocked?: boolean;
+  configuredBy?: string;
+  configuredAt?: string;
+  deadlineDate?: string;
   updatedBy?: string;
   updatedAt?: string;
+  correctionLogs?: MilestoneCorrectionLog[];
 }
 
 /**

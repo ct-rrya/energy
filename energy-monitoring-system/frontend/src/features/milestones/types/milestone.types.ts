@@ -20,6 +20,39 @@ export interface WeeklyTargetsMWh {
   week6MWh?: number;
 }
 
+export type MonthConfigurationStatus = 'CONFIGURED' | 'OVERDUE' | 'PENDING';
+
+export interface MilestoneCorrectionLog {
+  correctedBy: string;
+  correctedAt: string;
+  previousTargets: {
+    monthlyTargetMWh: number;
+    weeklyTargetsMWh: WeeklyTargetsMWh;
+  };
+  newTargets: {
+    monthlyTargetMWh: number;
+    weeklyTargetsMWh: WeeklyTargetsMWh;
+  };
+  reason?: string;
+}
+
+export interface MonthlyConfigurationPolicy {
+  yearMonth: string;
+  status: MonthConfigurationStatus;
+  isConfigured: boolean;
+  isLocked: boolean;
+  deadlineDate: string; // ISO string in UTC
+  deadlineLabel: string; // e.g. "Nov 2, 2026, 11:59 PM (Asia/Manila)"
+  configuredBy?: string;
+  configuredAt?: string;
+  canEdit: boolean;
+  requiresSuperAdmin: boolean;
+  overdueMonths: string[];
+  hasOverdue: boolean;
+  correctionCount: number;
+  correctionLogs?: MilestoneCorrectionLog[];
+}
+
 /**
  * Month-specific targets configuration
  */
@@ -27,8 +60,14 @@ export interface MonthTargetConfig {
   month: string; // YYYY-MM
   monthlyTargetMWh: number;
   weeklyTargetsMWh: WeeklyTargetsMWh;
+  status?: MonthConfigurationStatus;
+  isLocked?: boolean;
+  configuredBy?: string;
+  configuredAt?: string;
+  deadlineDate?: string;
   updatedBy?: string;
   updatedAt?: string;
+  correctionLogs?: MilestoneCorrectionLog[];
 }
 
 /**
@@ -132,6 +171,10 @@ export interface MilestonesResponse {
   allTimeEnergyWh: number;
   allTimeSteps: number;
   lastUpdated: string;
+  configurationPolicy?: MonthlyConfigurationPolicy;
+  isConfigured?: boolean;
+  overdueMonths?: string[];
+  hasOverdue?: boolean;
 }
 
 /**
@@ -142,6 +185,7 @@ export interface UpdateMonthTargetsPayload {
   monthlyTargetMWh?: number;
   weeklyTargetMWh?: number;
   weeklyTargetsMWh?: WeeklyTargetsMWh;
+  reason?: string;
   target1WeekMWh?: number;
   target1MonthMWh?: number;
   target3MonthsMWh?: number;

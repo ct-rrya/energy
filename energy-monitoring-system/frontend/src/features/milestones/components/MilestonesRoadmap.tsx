@@ -382,9 +382,18 @@ export function MilestonesRoadmap({
                 return (
                   <g
                     key={milestone.id}
-                    onClick={() => setSelectedItemId(milestone.id)}
-                    style={{ cursor: 'pointer', outline: 'none' }}
-                    className="outline-none focus:outline-none focus-visible:outline-none focus:ring-0 select-none"
+                    onClick={(e) => {
+                      (e.currentTarget as SVGGElement)?.blur();
+                      setSelectedItemId(milestone.id);
+                    }}
+                    onPointerDown={(e) => e.preventDefault()}
+                    onMouseDown={(e) => e.preventDefault()}
+                    style={{
+                      cursor: 'pointer',
+                      outline: 'none',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                    className="outline-none focus:outline-none focus-visible:outline-none focus:ring-0 select-none ring-0 border-0"
                     role="button"
                     aria-label={`Select ${milestone.label}`}
                     tabIndex={0}

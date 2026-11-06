@@ -250,6 +250,29 @@
     border: 2px solid #19D46A !important;
     box-shadow: 0 0 0 4px rgba(25, 212, 106, 0.18) !important;
   }
+
+  /* SVG Interactive Elements Outline Suppression */
+  svg,
+  svg *,
+  svg g,
+  svg [role="button"],
+  svg [tabindex] {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  svg:focus,
+  svg:focus-visible,
+  svg *:focus,
+  svg *:focus-visible,
+  svg g:focus,
+  svg g:focus-visible,
+  svg [role="button"]:focus,
+  svg [role="button"]:focus-visible,
+  svg [tabindex]:focus,
+  svg [tabindex]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -618,6 +641,11 @@ body::before {
   max-width: 100%;
 }
 
+.top .meta-col,
+.meta-col {
+  flex: 0 0 auto;
+}
+
 .top .meta,
 .meta {
   flex: 0 0 auto;
@@ -634,6 +662,12 @@ body::before {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 12px !important;
+  }
+  .top .meta-col,
+  .meta-col {
+    order: -1 !important;
+    width: 100%;
+    align-items: flex-end !important;
   }
   .top .meta,
   .meta {

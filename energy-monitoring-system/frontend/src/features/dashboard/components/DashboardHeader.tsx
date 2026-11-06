@@ -20,6 +20,7 @@ export interface DashboardHeaderProps {
   onAlertsClick?: () => void;
   isWebSocketConnected?: boolean;
   greeting?: string;
+  action?: React.ReactNode;
 }
 
 /**
@@ -32,6 +33,7 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   isPublicUser: _isPublicUser,
   isWebSocketConnected = true,
   greeting = 'Welcome to EcoStep',
+  action,
 }: DashboardHeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -73,21 +75,29 @@ export const DashboardHeader = React.memo(function DashboardHeader({
         </p>
       </div>
 
-      {/* Date/Time, Status Pill, and User Chip Section */}
-      <div className="meta flex items-center">
-        {/* Date & Time Display */}
-        <span className="meta-time text-[13px] text-[var(--mu)] font-normal tabular-nums flex items-center whitespace-nowrap">
-          <Calendar className="h-3.5 w-3.5 opacity-70 shrink-0 mr-1.5 date-icon" strokeWidth={2} />
-          <span className="date-text">{formattedDate}</span>
-          <span className="date-sep mx-1.5 opacity-40">·</span>
-          <span className="time-text">{formattedTime}</span>
-        </span>
+      {/* Date/Time, Status Pill, Action, and User Chip Section */}
+      <div className="meta-col flex flex-col items-start sm:items-end gap-2 shrink-0">
+        <div className="meta flex items-center gap-2.5">
+          {/* Date & Time Display */}
+          <span className="meta-time text-[13px] text-[var(--mu)] font-normal tabular-nums flex items-center whitespace-nowrap">
+            <Calendar className="h-3.5 w-3.5 opacity-70 shrink-0 mr-1.5 date-icon" strokeWidth={2} />
+            <span className="date-text">{formattedDate}</span>
+            <span className="date-sep mx-1.5 opacity-40">·</span>
+            <span className="time-text">{formattedTime}</span>
+          </span>
 
-        {/* Subtle Live System Status Pill */}
-        <SystemStatusInfo
-          status={systemStatus} 
-          isWebSocketConnected={isWebSocketConnected}
-        />
+          {/* Subtle Live System Status Pill */}
+          <SystemStatusInfo
+            status={systemStatus} 
+            isWebSocketConnected={isWebSocketConnected}
+          />
+        </div>
+
+        {action && (
+          <div className="header-action shrink-0 self-start sm:self-end">
+            {action}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -40,6 +40,8 @@ export function useMilestones(monthProp?: string) {
   const currentMonthKey = data?.currentMonth;
   const effectiveMonth = activeMonth || data?.yearMonth || currentMonthKey;
 
+  const policy = data?.configurationPolicy;
+
   return {
     yearMonth: data?.yearMonth || effectiveMonth,
     monthLabel: data?.monthLabel || (effectiveMonth ? formatMonthLabel(effectiveMonth) : 'Current Month'),
@@ -54,6 +56,13 @@ export function useMilestones(monthProp?: string) {
     allTimeEnergyWh: data?.allTimeEnergyWh ?? 0,
     allTimeSteps: data?.allTimeSteps ?? 0,
     lastUpdated: data?.lastUpdated,
+    configurationPolicy: policy,
+    isConfigured: data?.isConfigured ?? policy?.isConfigured ?? false,
+    isLocked: policy?.isLocked ?? false,
+    status: policy?.status,
+    deadlineLabel: policy?.deadlineLabel,
+    overdueMonths: data?.overdueMonths ?? policy?.overdueMonths ?? [],
+    hasOverdue: data?.hasOverdue ?? policy?.hasOverdue ?? false,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

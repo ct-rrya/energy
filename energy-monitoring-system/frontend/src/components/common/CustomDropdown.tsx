@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
-import { getThemeColors } from '@/lib/theme';
 
 export interface DropdownOption {
   value: string;
@@ -14,6 +12,7 @@ interface CustomDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  buttonClassName?: string;
 }
 
 /**
@@ -27,14 +26,12 @@ export function CustomDropdown({
   onChange,
   placeholder = 'Select...',
   className = '',
+  buttonClassName = '',
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  
-  const { theme } = useTheme();
-  const colors = getThemeColors(theme);
 
   // Get selected option label
   const selectedOption = options.find((opt) => opt.value === value);
@@ -153,17 +150,19 @@ export function CustomDropdown({
       <button
         type="button"
         onClick={toggleDropdown}
-        className="eco-input py-1.5 px-3 text-sm flex items-center justify-between gap-2 w-full min-w-[140px]"
-        style={{ color: colors.textPrimary }}
+        className={
+          buttonClassName ||
+          "min-h-[44px] h-[44px] px-3.5 sm:px-4 text-[13px] sm:text-[14px] font-[500] flex items-center justify-between gap-2 w-full min-w-0 rounded-full border border-[var(--line)] bg-[var(--soft)] hover:bg-[var(--panel)] transition-colors cursor-pointer text-[var(--t)] select-none"
+        }
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown
-          className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${
+          className={`h-3.5 w-3.5 transition-transform duration-200 flex-shrink-0 text-[var(--mu)] ${
             isOpen ? 'rotate-180' : ''
           }`}
-          style={{ color: colors.textMuted }}
           strokeWidth={2}
         />
       </button>
@@ -173,12 +172,7 @@ export function CustomDropdown({
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute z-[200] mt-1 w-full min-w-[140px] max-h-[240px] overflow-y-auto rounded-lg py-1"
-          style={{
-            backgroundColor: colors.cardBackground,
-            border: `1px solid ${colors.border}`,
-            boxShadow: colors.shadowLg
-          }}
+          className="absolute z-[200] mt-1 min-w-full w-max max-w-[240px] max-h-[240px] overflow-y-auto rounded-xl py-1 bg-[var(--panel)] border border-[var(--line)] shadow-lg backdrop-blur-md"
           tabIndex={-1}
         >
           {options.map((option, index) => {
@@ -192,17 +186,19 @@ export function CustomDropdown({
                 aria-selected={isSelected}
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setFocusedIndex(index)}
-                className="px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2 transition-colors duration-150"
-                style={{
-                  backgroundColor: isFocused ? colors.hoverBackground : 'transparent',
-                  color: isSelected || isFocused ? colors.accent : colors.textPrimary
-                }}
+                className={`px-3 py-2 text-xs sm:text-sm cursor-pointer flex items-center justify-between gap-2 transition-colors ${
+                  isSelected 
+                    ? 'bg-[var(--mint)] text-[var(--acc)] font-semibold' 
+                    : isFocused
+                    ? 'bg-[var(--soft)] text-[var(--t)]'
+                    : 'text-[var(--t)] hover:bg-[var(--soft)]'
+                }`}
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 <span className="truncate">{option.label}</span>
                 {isSelected && (
                   <Check
-                    className="h-4 w-4 flex-shrink-0"
-                    style={{ color: colors.accent }}
+                    className="h-4 w-4 flex-shrink-0 text-[var(--acc)]"
                     strokeWidth={2}
                   />
                 )}

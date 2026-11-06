@@ -1,59 +1,100 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Download, 
   FileText, 
-  CalendarCheck, 
-  ListFilter,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Clock
+  CalendarCheck
 } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
-import { useTheme } from '@/contexts/ThemeContext';
-import { getThemeColors } from '@/lib/theme';
 import { useDiagnosticHistory, useDailyTaskHistory } from '../hooks/useDiagnostics';
 import { DiagnosticResultStatus, DailyDiagnosticTaskStatus } from '@/types/diagnostic.types';
-import type { DiagnosticTest } from '@/types/diagnostic.types';
+import type { DiagnosticTest, DailyDiagnosticTask } from '@/types/diagnostic.types';
+
+interface GroupedDailyTask {
+  isGrouped: boolean;
+  dateLabel: string;
+  count?: number;
+  status: DailyDiagnosticTaskStatus;
+  task?: DailyDiagnosticTask;
+}
 
 /**
  * Diagnostic History Table Component
  * 
- * Displays paginated history of diagnostic tests with color-coded results.
- * Includes row click for detailed view and CSV export functionality.
+ * Clean, uncluttered layout matching the reference spec:
+ * - Header with section title and segmented pill tab switcher
+ * - Modern grid with clean dividers, status pills, and monospaced readings
+ * - Intelligent collapse of consecutive overdue days into single summaries
+ * - Preserves full test inspectability via dialog modal and CSV export
  */
 export function DiagnosticHistoryTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTest, setSelectedTest] = useState<DiagnosticTest | null>(null);
   const [activeTab, setActiveTab] = useState<'daily' | 'all'>('daily');
+  const [showAllDaily, setShowAllDaily] = useState(false);
   const limit = 20;
 
   const { data, isLoading, error, refetch } = useDiagnosticHistory(currentPage, limit);
-  const { data: dailyTasks, isLoading: isDailyLoading } = useDailyTaskHistory(30);
-  const { theme } = useTheme();
-  const colors = getThemeColors(theme);
+  const { data: dailyTasks, isLoading: isDailyLoading } = useDailyTaskHistory(60);
 
-  const getResultBadgeVariant = (result: string) => {
-    switch (result) {
-      case DiagnosticResultStatus.WITHIN_RANGE:
-        return 'success';
-      case DiagnosticResultStatus.ABOVE_EXPECTED:
-        return 'warning';
-      case DiagnosticResultStatus.BELOW_EXPECTED:
-        return 'danger';
-      default:
-        return 'default';
+  // Group consecutive overdue tasks for clean presentation
+  const groupedTasks: GroupedDailyTask[] = useMemo(() => {
+    if (!dailyTasks || dailyTasks.length === 0) return [];
+
+    const result: GroupedDailyTask[] = [];
+    let i = 0;
+
+    while (i < dailyTasks.length) {
+      const task = dailyTasks[i];
+      const isOverdueEmpty = 
+        task.status === DailyDiagnosticTaskStatus.OVERDUE && 
+        (task.actualEnergyMWh === undefined || task.actualEnergyMWh === null);
+
+      if (isOverdueEmpty && !showAllDaily) {
+        // Look ahead for consecutive overdue empty days
+        let j = i + 1;
+        while (
+          j < dailyTasks.length && 
+          dailyTasks[j].status === DailyDiagnosticTaskStatus.OVERDUE &&
+          (dailyTasks[j].actualEnergyMWh === undefined || dailyTasks[j].actualEnergyMWh === null)
+        ) {
+          j++;
+        }
+
+        const count = j - i;
+        if (count >= 3) {
+          const startShort = dailyTasks[j - 1].taskDate.slice(5);
+          const endShort = task.taskDate.slice(5);
+          result.push({
+            isGrouped: true,
+            dateLabel: `${startShort} → ${endShort}`,
+            count,
+            status: DailyDiagnosticTaskStatus.OVERDUE,
+            task,
+          });
+          i = j;
+          continue;
+        }
+      }
+
+      // Single standard row
+      result.push({
+        isGrouped: false,
+        dateLabel: task.taskDate.slice(5),
+        status: task.status,
+        task,
+      });
+      i++;
     }
-  };
+
+    return result;
+  }, [dailyTasks, showAllDaily]);
 
   const handleExportCSV = () => {
     if (!data?.tests || data.tests.length === 0) return;
 
-    // CSV Headers
     const headers = [
       'Date',
       'Performed By',
@@ -65,19 +106,17 @@ export function DiagnosticHistoryTable() {
       'Notes',
     ];
 
-    // CSV Rows
     const rows = data.tests.map((test) => [
       new Date(test.testDate).toLocaleString(),
       test.performedBy,
-      test.expectedEnergy.toFixed(3),
-      test.actualEnergy.toFixed(3),
-      test.difference.toFixed(4),
+      test.expectedEnergy.toFixed(5),
+      test.actualEnergy.toFixed(5),
+      test.difference.toFixed(5),
       test.performancePercentage.toFixed(2),
       test.result,
       test.notes || '',
     ]);
 
-    // Create CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map((row) =>
@@ -85,7 +124,6 @@ export function DiagnosticHistoryTable() {
       ),
     ].join('\n');
 
-    // Download CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -97,807 +135,383 @@ export function DiagnosticHistoryTable() {
 
   if (isLoading || isDailyLoading) {
     return (
-      <div 
-        className="rounded-lg p-6"
-        style={{
-          backgroundColor: colors.cardBackground,
-          border: `1px solid ${colors.border}`,
-          boxShadow: colors.shadow
-        }}
-      >
+      <section className="cd !p-6 sm:!p-8 rounded-[24px]">
         <div className="animate-pulse space-y-4">
-          <div 
-            className="h-4 rounded w-1/4"
-            style={{ backgroundColor: colors.hoverBackground }}
-          ></div>
-          <div 
-            className="h-10 rounded"
-            style={{ backgroundColor: colors.hoverBackground }}
-          ></div>
-          <div 
-            className="h-10 rounded"
-            style={{ backgroundColor: colors.hoverBackground }}
-          ></div>
+          <div className="h-6 rounded w-1/4 bg-[var(--soft)]" />
+          <div className="h-12 rounded bg-[var(--soft)]" />
+          <div className="h-12 rounded bg-[var(--soft)]" />
+          <div className="h-12 rounded bg-[var(--soft)]" />
         </div>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div 
-        className="rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border"
-        style={{
-          backgroundColor: theme === 'light' ? '#FEF2F2' : 'rgba(127, 29, 29, 0.2)',
-          borderColor: theme === 'light' ? '#FCA5A5' : '#991B1B',
-          boxShadow: colors.shadow
-        }}
-      >
+      <section className="cd !p-6 sm:!p-8 rounded-[24px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-rose-500/30 bg-rose-500/10">
         <div>
-          <h4 className="text-sm font-semibold" style={{ color: theme === 'light' ? '#991B1B' : '#FCA5A5' }}>
+          <h4 className="text-sm font-semibold text-rose-600 dark:text-rose-400">
             Diagnostic History Unavailable
           </h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Unable to fetch previous diagnostic records. Please ensure the backend is connected and you are logged in.
+          <p className="text-xs text-[var(--mu)] mt-1">
+            Unable to fetch previous diagnostic records. Please ensure the backend is connected.
           </p>
         </div>
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => refetch()}
-          className="text-xs border"
-          style={{ borderColor: theme === 'light' ? '#FCA5A5' : '#991B1B' }}
+          className="text-xs border border-rose-500/30 text-rose-600 dark:text-rose-400"
         >
           Retry Sync
         </Button>
-      </div>
+      </section>
     );
   }
 
-  const getDailyStatusBadge = (status: DailyDiagnosticTaskStatus) => {
-    switch (status) {
-      case DailyDiagnosticTaskStatus.COMPLETED:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-            Completed
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.IN_PROGRESS:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-            In Progress
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.NEEDS_ATTENTION:
-      case DailyDiagnosticTaskStatus.FAILED:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-            <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
-            Needs Attention
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.OVERDUE:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-700">
-            <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
-            Overdue
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.PENDING:
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-            <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-            Pending
-          </span>
-        );
-    }
-  };
-
   return (
-    <div 
-      className="rounded-2xl overflow-hidden border shadow-xs transition-all"
-      style={{
-        backgroundColor: colors.cardBackground,
-        borderColor: colors.border,
-      }}
+    <section 
+      className="cd !p-5 sm:!p-6 rounded-[22px] flex flex-col gap-4"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* Header with View Tabs */}
-      <div 
-        className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
-        style={{ borderColor: colors.border }}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div>
-            <h3 
-              className="text-lg font-bold tracking-tight"
-              style={{ color: colors.textPrimary }}
-            >
-              Diagnostic Logs & Verification History
-            </h3>
-            <p 
-              className="text-xs text-slate-500 dark:text-gray-400 mt-0.5"
-            >
-              Multi-admin performance records and daily physical step test tasks
-            </p>
-          </div>
+      {/* ─────────────────────────────────────────────────────────────
+          HEADER ROW: Title + Segmented Pill Tab Switcher + CSV Action
+          ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="m-0 text-[18px] sm:text-[20px] font-[600] text-[var(--t)]">
+          History
+        </h2>
 
-          {/* View Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          {/* Segmented Pill Tabs matching Mockup */}
+          <div className="flex gap-1 bg-[var(--soft)] dark:bg-[#0a120e] rounded-full p-1 border border-[var(--line)] dark:border-[#1d3326]">
             <button
               type="button"
               onClick={() => setActiveTab('daily')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-[32px] sm:min-h-[34px] px-3.5 border-0 rounded-full text-[12px] sm:text-[13px] font-[600] transition-all cursor-pointer select-none ${
                 activeTab === 'daily'
-                  ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-[#39FF88] shadow-xs'
-                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[var(--mint)] dark:bg-[#1d3a29] text-[var(--acc)] dark:text-[#4ade80] shadow-xs'
+                  : 'bg-transparent text-[var(--mu)] hover:text-[var(--t)]'
               }`}
             >
-              <CalendarCheck className="h-3.5 w-3.5" />
-              <span>Daily Tasks</span>
-              {dailyTasks && dailyTasks.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold">
-                  {dailyTasks.length}
-                </span>
-              )}
+              Daily tasks · {dailyTasks?.length ?? 0}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-[32px] sm:min-h-[34px] px-3.5 border-0 rounded-full text-[12px] sm:text-[13px] font-[500] transition-all cursor-pointer select-none ${
                 activeTab === 'all'
-                  ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-[#39FF88] shadow-xs'
-                  : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[var(--mint)] dark:bg-[#1d3a29] text-[var(--acc)] dark:text-[#4ade80] shadow-xs font-[600]'
+                  : 'bg-transparent text-[var(--mu)] hover:text-[var(--t)]'
               }`}
             >
-              <ListFilter className="h-3.5 w-3.5" />
-              <span>All Test Runs</span>
-              {data?.pagination?.total !== undefined && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 font-bold">
-                  {data.pagination.total}
-                </span>
-              )}
+              All runs · {data?.pagination?.total ?? 0}
             </button>
           </div>
-        </div>
 
-        {activeTab === 'all' && data?.tests && data.tests.length > 0 && (
-          <Button
-            onClick={handleExportCSV}
-            variant="ghost"
-            size="sm"
-            className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer self-start sm:self-auto"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export CSV
-          </Button>
-        )}
+          {/* CSV Export for All Runs */}
+          {activeTab === 'all' && data?.tests && data.tests.length > 0 && (
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="min-h-[32px] sm:min-h-[34px] px-3 inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[12px] font-[500] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--panel)] transition-all cursor-pointer select-none"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* TAB 1: DAILY DIAGNOSTIC TASKS VIEW */}
-      {/* ============================================================ */}
-      {/* ============================================================ */}
-      {/* TAB 1: DAILY DIAGNOSTIC TASKS VIEW */}
-      {/* ============================================================ */}
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 1: DAILY DIAGNOSTIC TASKS VIEW (SPEC GRID)
+          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'daily' && (
-        <>
-          {/* Desktop Table View */}
-          <div className="hidden sm:block w-full overflow-x-auto">
-            <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '950px' }}>
-              <thead style={{ backgroundColor: colors.hoverBackground }}>
-                <tr className="border-b" style={{ borderColor: colors.border }}>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '150px' }}>
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '220px' }}>
-                    Verified By
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                    Measured (mWh)
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '130px' }}>
-                    Baseline (mWh)
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400" style={{ width: '110px' }}>
-                    Deviation
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                    Verdict / Notes
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: colors.border }}>
-                {dailyTasks && dailyTasks.length > 0 ? (
-                  dailyTasks.map((t) => (
-                    <tr key={t.taskDate} className="hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                      <td className="px-4 py-3 text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
-                        {t.taskDate}
-                      </td>
-                      <td className="px-4 py-3">
-                        {getDailyStatusBadge(t.status)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
-                        {t.performedByName ? (
-                          <span>
-                            <strong className="font-semibold text-slate-800 dark:text-slate-200">{t.performedByName}</strong>
-                            <span className="block text-[10px] text-slate-400 truncate">{t.performedBy}</span>
-                          </span>
-                        ) : t.performedBy ? (
-                          t.performedBy
-                        ) : (
-                          <span className="text-slate-400 italic">Pending Physical Test</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                        {t.actualEnergyMWh !== undefined ? t.actualEnergyMWh.toFixed(5) : '—'}
-                      </td>
-                      <td className="px-3 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-gray-300">
-                        {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
-                      </td>
-                      <td className="px-3 py-3 text-right text-xs tabular-nums font-semibold">
-                        {t.deviationPercentage !== undefined ? (
-                          <span className={t.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                            {t.deviationPercentage >= 0 ? '+' : ''}{t.deviationPercentage.toFixed(1)}%
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-gray-300 truncate">
-                        {t.statusMessage || t.notes || (t.status === DailyDiagnosticTaskStatus.PENDING ? 'Awaiting test' : '—')}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-500">
-                      <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
-                      <span>No daily diagnostic tasks recorded yet. Today's task will automatically initialize.</span>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            {/* Table Column Headers */}
+            <div className="grid grid-cols-[110px_170px_minmax(0,1fr)_100px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
+              <span>Date</span>
+              <span>Status</span>
+              <span>Verified by</span>
+              <span className="text-right">Measured</span>
+              <span className="text-right">Deviation</span>
+            </div>
 
-          {/* Mobile View for Daily Tasks */}
-          <div className="sm:hidden divide-y divide-slate-100 dark:divide-gray-800">
-            {dailyTasks && dailyTasks.length > 0 ? (
-              dailyTasks.map((t) => (
-                <div key={t.taskDate} className="py-4 px-3 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[17px] font-bold text-slate-900 dark:text-white tabular-nums tracking-tight">
-                      {t.taskDate}
-                    </span>
-                    {getDailyStatusBadge(t.status)}
-                  </div>
+            {/* Table Rows */}
+            {groupedTasks.length > 0 ? (
+              groupedTasks.map((item, idx) => {
+                const { task } = item;
 
-                  <div className="text-[13px] text-slate-500 dark:text-gray-400 italic">
-                    {t.performedByName ? (
-                      <span>
-                        Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200 not-italic">{t.performedByName}</strong>
+                // Grouped consecutive overdue days row
+                if (item.isGrouped) {
+                  return (
+                    <div
+                      key={`grouped-${idx}`}
+                      className="grid grid-cols-[110px_170px_minmax(0,1fr)] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326]"
+                    >
+                      <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--mu)] tabular-nums">
+                        {item.dateLabel}
                       </span>
-                    ) : t.performedBy ? (
                       <span>
-                        Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200 not-italic">{t.performedBy}</strong>
+                        <span className="inline-block text-[11px] sm:text-[12px] font-[600] text-rose-500 dark:text-[#f87171] bg-rose-500/15 dark:bg-[#2c1213] border border-rose-500/30 dark:border-[#6b1f22] rounded-full px-2.5 py-0.5 whitespace-nowrap">
+                          {item.count} overdue
+                        </span>
                       </span>
-                    ) : (
-                      <span>Pending Physical Test</span>
-                    )}
-                  </div>
+                      <span className="text-[13px] sm:text-[14px] text-[var(--mu)]">
+                        No test recorded on these days
+                      </span>
+                    </div>
+                  );
+                }
 
-                  <div className="flex items-center gap-4 text-[13px] text-slate-600 dark:text-gray-300 pt-0.5">
-                    <span>
-                      Measured{' '}
-                      <strong className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                        {t.actualEnergyMWh !== undefined ? `${t.actualEnergyMWh.toFixed(5)}` : '—'}
-                      </strong>
+                if (!task) return null;
+
+                const isTaskCompleted = task.status === DailyDiagnosticTaskStatus.COMPLETED;
+                const isTaskPending = task.status === DailyDiagnosticTaskStatus.PENDING;
+                const isTaskNeedsAttention = 
+                  task.status === DailyDiagnosticTaskStatus.NEEDS_ATTENTION || 
+                  task.status === DailyDiagnosticTaskStatus.FAILED;
+                const isTaskOverdue = task.status === DailyDiagnosticTaskStatus.OVERDUE;
+
+                return (
+                  <div
+                    key={task.taskDate}
+                    className="grid grid-cols-[110px_170px_minmax(0,1fr)_100px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors"
+                  >
+                    {/* Date */}
+                    <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--t)] tabular-nums">
+                      {item.dateLabel}
                     </span>
+
+                    {/* Status Badge */}
                     <span>
-                      Baseline{' '}
-                      <strong className="font-bold text-slate-900 dark:text-white tabular-nums">
-                        {t.expectedEnergyMWh !== undefined ? t.expectedEnergyMWh.toFixed(5) : '0.00510'}
-                      </strong>{' '}
-                      mWh
+                      {isTaskCompleted ? (
+                        <span className="inline-block text-[11px] sm:text-[12px] font-[600] text-emerald-600 dark:text-[#4ade80] bg-emerald-500/15 dark:bg-[#0f2a1a] border border-emerald-500/30 dark:border-[#1d4a2e] rounded-full px-2.5 py-0.5 whitespace-nowrap">
+                          Completed
+                        </span>
+                      ) : isTaskNeedsAttention ? (
+                        <span className="inline-block text-[11px] sm:text-[12px] font-[600] text-amber-600 dark:text-[#fb923c] bg-amber-500/15 dark:bg-[#2b1a0b] border border-amber-500/30 dark:border-[#6b3a12] rounded-full px-2.5 py-0.5 whitespace-nowrap">
+                          Needs attention
+                        </span>
+                      ) : isTaskOverdue ? (
+                        <span className="inline-block text-[11px] sm:text-[12px] font-[600] text-rose-500 dark:text-[#f87171] bg-rose-500/15 dark:bg-[#2c1213] border border-rose-500/30 dark:border-[#6b1f22] rounded-full px-2.5 py-0.5 whitespace-nowrap">
+                          Overdue
+                        </span>
+                      ) : (
+                        <span className="inline-block text-[11px] sm:text-[12px] font-[600] text-amber-600 dark:text-[#fbbf24] bg-amber-500/15 dark:bg-[#2a2108] border border-amber-500/30 dark:border-[#5a4710] rounded-full px-2.5 py-0.5 whitespace-nowrap">
+                          Pending
+                        </span>
+                      )}
+                    </span>
+
+                    {/* Verified By */}
+                    <div className="flex flex-col min-w-0 pr-2">
+                      {isTaskPending && !task.performedByName && !task.performedBy ? (
+                        <span className="text-[13px] sm:text-[14px] italic text-[var(--mu)]">
+                          Awaiting physical test
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-[13px] sm:text-[14px] font-[500] text-[var(--t)] truncate">
+                            {task.performedByName || task.performedBy || 'System'}
+                          </span>
+                          {task.performedBy && (
+                            <span className="text-[11px] sm:text-[12px] text-[var(--mu)] truncate">
+                              {task.performedBy}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Measured (mWh) */}
+                    <span className="text-right font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] tabular-nums text-[var(--t)]">
+                      {task.actualEnergyMWh !== undefined && task.actualEnergyMWh !== null
+                        ? task.actualEnergyMWh.toFixed(5)
+                        : <span className="text-[var(--mu)]">—</span>}
+                    </span>
+
+                    {/* Deviation (%) */}
+                    <span className="text-right font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] tabular-nums">
+                      {task.deviationPercentage !== undefined && task.deviationPercentage !== null ? (
+                        <span className={task.deviationPercentage >= 0 ? 'text-amber-500 dark:text-[#fbbf24]' : 'text-emerald-500 dark:text-[#4ade80]'}>
+                          {task.deviationPercentage >= 0 ? '+' : ''}{task.deviationPercentage.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-[var(--mu)]">—</span>
+                      )}
                     </span>
                   </div>
-
-                  {(t.statusMessage || t.notes) && (
-                    <p className="text-xs text-slate-500 dark:text-gray-400 italic pt-1">
-                      {t.statusMessage || t.notes}
-                    </p>
-                  )}
-                </div>
-              ))
+                );
+              })
             ) : (
-              <div className="p-8 text-center text-xs text-slate-500">
-                <CalendarCheck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+              <div className="py-12 text-center text-xs text-[var(--mu)]">
+                <CalendarCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <span>No daily diagnostic tasks recorded yet.</span>
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
 
-      {/* ============================================================ */}
-      {/* TAB 2: ALL STEP TEST LOGS VIEW */}
-      {/* ============================================================ */}
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 2: ALL TEST RUNS VIEW
+          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'all' && (
-        <div className="w-full overflow-x-auto">
-          {(!data?.tests || data.tests.length === 0) ? (
-            <div className="p-12 text-center">
-              <FileText className="h-10 w-10 mx-auto mb-3 text-slate-400" />
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
-                No individual step tests recorded yet
-              </h4>
-              <p className="text-xs text-slate-500">
-                Perform your first footstep verification test above to see individual test runs here.
-              </p>
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            {/* Table Column Headers */}
+            <div className="grid grid-cols-[130px_160px_minmax(0,1fr)_100px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
+              <span>Timestamp</span>
+              <span>Result</span>
+              <span>Performed by</span>
+              <span className="text-right">Measured</span>
+              <span className="text-right">Deviation</span>
             </div>
-          ) : (
-            <>
-              {/* Table - Desktop */}
-              <div className="hidden sm:block min-w-full">
-              <table className="w-full" style={{ tableLayout: 'fixed', minWidth: '900px' }}>
-                <thead style={{ backgroundColor: colors.hoverBackground }}>
-                  <tr>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '180px'
-                  }}
-                >
-                  Date
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '200px'
-                  }}
-                >
-                  Performed By
-                </th>
-                <th 
-                  className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '110px'
-                  }}
-                >
-                  Expected (Wh)
-                </th>
-                <th 
-                  className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '110px'
-                  }}
-                >
-                  Actual (Wh)
-                </th>
-                <th 
-                  className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '120px'
-                  }}
-                >
-                  Difference (Wh)
-                </th>
-                <th 
-                  className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '110px'
-                  }}
-                >
-                  Performance (%)
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ 
-                    color: colors.textSecondary,
-                    width: '170px'
-                  }}
-                >
-                  Result
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.tests.map((test, index) => (
-                <tr
-                  key={test.id}
-                  onClick={() => setSelectedTest(test)}
-                  className="cursor-pointer transition-colors"
-                  style={{
-                    borderTop: index > 0 ? `1px solid ${colors.border}` : 'none'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = colors.hoverBackground;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <td 
-                    className="px-4 py-4 text-sm"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {new Date(test.testDate).toLocaleString()}
-                  </td>
-                  <td 
-                    className="px-4 py-4 text-sm overflow-hidden text-ellipsis"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {test.performedBy}
-                  </td>
-                  <td 
-                    className="px-3 py-4 text-sm text-right font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.expectedEnergy.toFixed(3)}
-                  </td>
-                  <td 
-                    className="px-3 py-4 text-sm text-right font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.actualEnergy.toFixed(3)}
-                  </td>
-                  <td 
-                    className="px-3 py-4 text-sm text-right font-medium"
-                    style={{ 
-                      color: test.difference >= 0 ? colors.accent : colors.error
-                    }}
-                  >
-                    {test.difference >= 0 ? '+' : ''}{test.difference.toFixed(4)}
-                  </td>
-                  <td 
-                    className="px-3 py-4 text-sm text-right font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.performancePercentage.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-4">
-                    <Badge variant={getResultBadgeVariant(test.result)}>
-                      {test.result}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Table - Mobile */}
-        <div 
-          className="sm:hidden"
-          style={{ borderTop: `1px solid ${colors.border}` }}
-        >
-          {data.tests.map((test, index) => (
-            <div
-              key={test.id}
-              onClick={() => setSelectedTest(test)}
-              className="p-4 cursor-pointer transition-colors"
-              style={{
-                borderTop: index > 0 ? `1px solid ${colors.border}` : 'none'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = colors.hoverBackground;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p 
-                  className="text-sm font-medium"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {new Date(test.testDate).toLocaleDateString()}
-                </p>
-                <Badge variant={getResultBadgeVariant(test.result)}>
-                  {test.result}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span style={{ color: colors.textSecondary }}>Expected: </span>
-                  <span 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.expectedEnergy.toFixed(3)} Wh
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: colors.textSecondary }}>Actual: </span>
-                  <span 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.actualEnergy.toFixed(3)} Wh
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: colors.textSecondary }}>Difference: </span>
-                  <span 
-                    className="font-medium"
-                    style={{ 
-                      color: test.difference >= 0 ? colors.accent : colors.error
-                    }}
-                  >
-                    {test.difference >= 0 ? '+' : ''}{test.difference.toFixed(4)} Wh
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: colors.textSecondary }}>Performance: </span>
-                  <span 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {test.performancePercentage.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-            </>
-        )}
-      </div>
-      )}
+            {data?.tests && data.tests.length > 0 ? (
+              data.tests.map((test) => {
+                const isWithin = test.result === DiagnosticResultStatus.WITHIN_RANGE;
+                const dateStr = new Date(test.testDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
+                const timeStr = new Date(test.testDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-      {/* Pagination (only for all step test logs) */}
-      {activeTab === 'all' && data?.pagination && data.pagination.totalPages > 1 && (
-        <div 
-          className="px-6 py-4 flex items-center justify-between"
-          style={{ borderTop: `1px solid ${colors.border}` }}
-        >
-          <p 
-            className="text-sm"
-            style={{ color: colors.textSecondary }}
-          >
-            Page {data.pagination.page} of {data.pagination.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              variant="ghost"
-              size="sm"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => setCurrentPage((p) => Math.min(data.pagination.totalPages, p + 1))}
-              disabled={currentPage === data.pagination.totalPages}
-              variant="ghost"
-              size="sm"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+                return (
+                  <div
+                    key={test.id}
+                    onClick={() => setSelectedTest(test)}
+                    className="grid grid-cols-[130px_160px_minmax(0,1fr)_100px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors cursor-pointer"
+                  >
+                    <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--t)] tabular-nums">
+                      {dateStr} {timeStr}
+                    </span>
+
+                    <span>
+                      <span className={`inline-block text-[11px] sm:text-[12px] font-[600] rounded-full px-2.5 py-0.5 whitespace-nowrap border ${
+                        isWithin 
+                          ? 'text-emerald-600 dark:text-[#4ade80] bg-emerald-500/15 dark:bg-[#0f2a1a] border-emerald-500/30 dark:border-[#1d4a2e]' 
+                          : 'text-amber-600 dark:text-[#fbbf24] bg-amber-500/15 dark:bg-[#2a2108] border-amber-500/30 dark:border-[#5a4710]'
+                      }`}>
+                        {test.result}
+                      </span>
+                    </span>
+
+                    <span className="text-[13px] sm:text-[14px] font-[500] text-[var(--t)] truncate">
+                      {test.performedBy}
+                    </span>
+
+                    <span className="text-right font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] tabular-nums text-[var(--t)]">
+                      {test.actualEnergy.toFixed(5)}
+                    </span>
+
+                    <span className="text-right font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] tabular-nums">
+                      <span className={test.difference >= 0 ? 'text-amber-500 dark:text-[#fbbf24]' : 'text-emerald-500 dark:text-[#4ade80]'}>
+                        {test.difference >= 0 ? '+' : ''}{((test.difference / (test.expectedEnergy || 1)) * 100).toFixed(1)}%
+                      </span>
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center text-xs text-[var(--mu)]">
+                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <span>No individual test runs recorded yet.</span>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* ─────────────────────────────────────────────────────────────
+          FOOTER ACTIONS: Show All Tasks Toggle / Pagination
+          ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        {activeTab === 'daily' && dailyTasks && dailyTasks.length > 5 && (
+          <button
+            type="button"
+            onClick={() => setShowAllDaily(!showAllDaily)}
+            className="self-start min-h-[38px] px-4 border-[1.5px] border-[var(--line)] dark:border-[#264232] rounded-full bg-transparent text-[var(--acc)] dark:text-[#4ade80] text-[13px] font-[500] hover:bg-[var(--soft)] transition-all cursor-pointer select-none"
+          >
+            {showAllDaily ? 'Collapse overdue groups' : `Show all ${dailyTasks.length} tasks`}
+          </button>
+        )}
+
+        {activeTab === 'all' && data?.pagination && data.pagination.totalPages > 1 && (
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-xs text-[var(--mu)] tabular-nums">
+              Page {data.pagination.page} of {data.pagination.totalPages}
+            </span>
+            <div className="flex gap-1.5">
+              <Button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setCurrentPage((p) => Math.min(data.pagination.totalPages, p + 1))}
+                disabled={currentPage === data.pagination.totalPages}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TEST DETAIL DIALOG MODAL (PRESERVED)
+          ───────────────────────────────────────────────────────────── */}
       {selectedTest && (
         <Dialog
           open={!!selectedTest}
           onClose={() => setSelectedTest(null)}
-          title="Diagnostic Test Details"
+          title="Diagnostic Test Record"
           size="md"
         >
-          <div className="space-y-6">
-            {/* Test Info */}
+          <div className="space-y-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Test Date
-                </p>
-                <p 
-                  className="text-sm"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {new Date(selectedTest.testDate).toLocaleString()}
-                </p>
+                <p className="text-xs font-medium text-[var(--mu)] mb-0.5">Test Timestamp</p>
+                <p className="text-sm font-medium text-[var(--t)]">{new Date(selectedTest.testDate).toLocaleString()}</p>
               </div>
               <div>
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Performed By
-                </p>
-                <p 
-                  className="text-sm"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {selectedTest.performedBy}
-                </p>
+                <p className="text-xs font-medium text-[var(--mu)] mb-0.5">Verified By</p>
+                <p className="text-sm font-medium text-[var(--t)]">{selectedTest.performedBy}</p>
               </div>
             </div>
 
-            {/* Result Badge */}
-            <div 
-              className="flex items-center justify-center p-4 rounded-lg"
-              style={{ backgroundColor: colors.hoverBackground }}
-            >
-              <Badge variant={getResultBadgeVariant(selectedTest.result)} className="text-base px-4 py-1">
-                {selectedTest.result}
-              </Badge>
-            </div>
-
-            {/* Metrics */}
-            <div className="grid grid-cols-2 gap-4">
-              <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.hoverBackground }}
-              >
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Expected Energy
-                </p>
-                <p 
-                  className="text-lg font-bold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {selectedTest.expectedEnergy.toFixed(3)} Wh
-                </p>
+            <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-[var(--soft)] border border-[var(--line)]">
+              <div>
+                <span className="text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">Actual</span>
+                <p className="text-base font-medium tabular-nums font-['DM_Sans',sans-serif] text-[var(--t)] mt-0.5">{selectedTest.actualEnergy.toFixed(5)} <span className="text-xs font-normal">mWh</span></p>
               </div>
-              <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.hoverBackground }}
-              >
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Actual Energy
-                </p>
-                <p 
-                  className="text-lg font-bold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {selectedTest.actualEnergy.toFixed(3)} Wh
-                </p>
+              <div>
+                <span className="text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">Expected</span>
+                <p className="text-base font-medium tabular-nums font-['DM_Sans',sans-serif] text-[var(--t)] mt-0.5">{selectedTest.expectedEnergy.toFixed(5)} <span className="text-xs font-normal">mWh</span></p>
               </div>
-              <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.hoverBackground }}
-              >
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Difference
-                </p>
-                <p 
-                  className="text-lg font-bold"
-                  style={{ 
-                    color: selectedTest.difference >= 0 ? colors.accent : colors.error
-                  }}
-                >
-                  {selectedTest.difference >= 0 ? '+' : ''}{selectedTest.difference.toFixed(4)} Wh
-                </p>
-              </div>
-              <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.hoverBackground }}
-              >
-                <p 
-                  className="text-xs font-medium mb-1"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Performance
-                </p>
-                <p 
-                  className="text-lg font-bold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {selectedTest.performancePercentage.toFixed(2)}%
-                </p>
+              <div>
+                <span className="text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">Deviation</span>
+                <p className="text-base font-medium tabular-nums font-['DM_Sans',sans-serif] text-amber-500 mt-0.5">{selectedTest.performancePercentage.toFixed(2)}%</p>
               </div>
             </div>
 
-            {/* Reference Configuration */}
-            <div 
-              className="p-4 rounded-lg"
-              style={{ backgroundColor: colors.hoverBackground }}
-            >
-              <p 
-                className="text-xs font-medium mb-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Reference Configuration Used
-              </p>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {selectedTest.referenceConfig.appliedWeightKg} kg
-                  </p>
-                  <p 
-                    className="text-xs"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Applied Weight
-                  </p>
-                </div>
-                <div>
-                  <p 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {selectedTest.referenceConfig.expectedEnergyWh} Wh
-                  </p>
-                  <p 
-                    className="text-xs"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Expected Energy
-                  </p>
-                </div>
-                <div>
-                  <p 
-                    className="font-medium"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    ±{selectedTest.referenceConfig.tolerancePercent}%
-                  </p>
-                  <p 
-                    className="text-xs"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Tolerance
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
             {selectedTest.notes && (
-              <div 
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: colors.hoverBackground }}
-              >
-                <p 
-                  className="text-xs font-medium mb-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Notes
-                </p>
-                <p 
-                  className="text-sm"
-                  style={{ color: colors.textPrimary }}
-                >
-                  {selectedTest.notes}
-                </p>
+              <div>
+                <p className="text-xs font-medium text-[var(--mu)] mb-1">Notes</p>
+                <p className="text-xs text-[var(--t)] p-3 rounded-lg bg-[var(--soft)] border border-[var(--line)]">{selectedTest.notes}</p>
               </div>
             )}
-
-            {/* Close Button */}
-            <Button onClick={() => setSelectedTest(null)} variant="primary" fullWidth>
-              Close
-            </Button>
           </div>
         </Dialog>
       )}
-    </div>
+    </section>
   );
 }

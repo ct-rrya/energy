@@ -1,28 +1,23 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity } from 'lucide-react';
 import { useSocket } from '@/contexts/SocketContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { DiagnosticHistoryTable } from '../components/DiagnosticHistoryTable';
 import { StepDiagnosticTestCard } from '../components/StepDiagnosticTestCard';
-import { getThemeColors, TYPOGRAPHY } from '@/lib/theme';
+import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 
 /**
  * Diagnostics Page Component
  * 
- * Main page for system diagnostics functionality.
- * Features:
- * - Automatic 30-day historical baseline calculation
- * - On-demand single-step footstep test mode (live hardware capture or quick simulation)
- * - Visual distribution scale with deviation analysis
- * - Historical verification log
- * - Real-time WebSocket updates
+ * Main page for piezoelectric tile diagnostics and health verification.
+ * Clean, modern layout matching the design reference:
+ * - Header with Tile health category, real-time date/time, and online status
+ * - Today's on-demand physical step verification & baseline distribution scale
+ * - Diagnostic verification history with grouped overdue logs and CSV export
+ * - Bottom explanation of 30-day statistical baseline protection
  */
 export function DiagnosticsPage() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
-  const { theme } = useTheme();
-  const colors = getThemeColors(theme);
 
   // Listen for WebSocket events
   useEffect(() => {
@@ -30,14 +25,12 @@ export function DiagnosticsPage() {
 
     // Handle reference config / baseline updates
     const handleConfigUpdate = () => {
-      console.log('🔧 Diagnostic baseline updated via WebSocket');
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'baseline'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'referenceConfig'] });
     };
 
     // Handle diagnostic test completion
     const handleTestCompleted = () => {
-      console.log('✅ Diagnostic step test completed via WebSocket');
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'history'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'baseline'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
@@ -45,13 +38,11 @@ export function DiagnosticsPage() {
 
     // Handle daily task updates (status changes, lock acquisition/release)
     const handleDailyTaskUpdated = () => {
-      console.log('📅 Daily diagnostic task updated via WebSocket');
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
     // Handle daily reminder received
-    const handleDailyReminder = (payload: any) => {
-      console.log('🔔 Daily diagnostic reminder received via WebSocket', payload);
+    const handleDailyReminder = () => {
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
@@ -75,79 +66,27 @@ export function DiagnosticsPage() {
   }, [socket, isConnected, queryClient]);
 
   return (
-    <div className="page">
-      {/* Page Header */}
-      <div className="diagnostics-page-header mb-2 sm:mb-4">
-        <div className="diagnostics-title-row flex items-center gap-3 mb-2 sm:mb-3">
-          <div 
-            className="diagnostics-header-icon p-2.5 sm:p-3 rounded-xl shrink-0" 
-            style={{ backgroundColor: colors.accentSubtle }}
-          >
-            <Activity 
-              className="h-5 w-5 sm:h-6 sm:w-6" 
-              style={{ color: colors.accent }} 
-            />
-          </div>
-          <div>
-            <h1 
-              className="diagnostics-page-title text-xl sm:text-3xl font-bold"
-              style={{ 
-                color: colors.textPrimary,
-                fontWeight: TYPOGRAPHY.fontWeight.bold
-              }}
-            >
-              Tile Performance Diagnostics
-            </h1>
-          </div>
-        </div>
-        <p 
-          className="diagnostics-page-subtitle text-xs sm:text-base max-w-3xl leading-relaxed"
-          style={{ 
-            color: colors.textSecondary,
-          }}
-        >
-          On-demand health verification for your piezoelectric footstep tile. Automatically evaluates harvested energy per step against your 30-day historical baseline to detect hardware degradation, loose wiring, or tile fatigue.
-        </p>
-      </div>
+    <div className="page" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Page Header matching mockup */}
+      <DashboardHeader
+        greeting="Tile health"
+        title="Tile Performance Diagnostics"
+        subtitle="Health check for your piezoelectric footstep tile"
+        systemStatus={isConnected ? 'connected' : 'disconnected'}
+        isWebSocketConnected={isConnected}
+      />
 
-      {/* Content Stack */}
-      <div className="diagnostics-content-stack space-y-6 lg:space-y-8">
-        {/* Step Diagnostic Test Card (Automatic Baseline + On-Demand Single-Step Verification) */}
-        <div>
-          <StepDiagnosticTestCard />
-        </div>
+      {/* Main Content Stack: Today Card + History Card + Bottom Note */}
+      <div className="flex flex-col gap-6">
+        {/* Section 1: Today's Daily Verification & Baseline Card */}
+        <StepDiagnosticTestCard />
 
-        {/* Diagnostic History Section - Full width */}
-        <div>
-          <DiagnosticHistoryTable />
-        </div>
-      </div>
+        {/* Section 2: History & Verification Logs Card */}
+        <DiagnosticHistoryTable />
 
-      {/* Info Banner */}
-      <div 
-        className="mt-4 sm:mt-6 p-5 sm:p-6 rounded-2xl border transition-all" 
-        style={{
-          backgroundColor: colors.accentSubtle,
-          borderColor: colors.accent + '30'
-        }}
-      >
-        <h4 
-          className="text-sm font-bold mb-2 flex items-center gap-2"
-          style={{ 
-            color: colors.accent,
-          }}
-        >
-          <span>⚡</span>
-          <span>About Tile System Diagnostics</span>
-        </h4>
-        <p 
-          className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300"
-        >
-          System diagnostics provide <strong className="font-semibold text-slate-800 dark:text-slate-100">on-demand, single-tile performance verification</strong>. 
-          By continuously analyzing real-world footsteps over the last 30 days, the system establishes a statistical baseline 
-          (normal average: <strong className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums">0.00510 mWh/step</strong>, acceptable window: <strong className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums">0.00346 – 0.00674 mWh</strong>).
-          When you initiate a test and step on the tile, the system captures the instantaneous telemetry reading, checks for deviation, 
-          and confirms whether the tile's piezoelectric discs and energy harvesting circuits are operating within healthy parameters.
+        {/* Section 3: Clean Footnote */}
+        <p className="m-0 px-2 text-[14px] leading-[1.6] text-[var(--mu)] max-w-[740px]">
+          Each test compares one step’s output with your 30-day baseline to catch hardware degradation, loose wiring or tile fatigue. There is one shared task per day, and any authorized administrator can run it.
         </p>
       </div>
     </div>

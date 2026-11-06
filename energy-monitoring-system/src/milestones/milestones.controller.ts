@@ -56,6 +56,24 @@ export class MilestonesController {
   }
 
   /**
+   * Get configuration policy and overdue status
+   */
+  @Get('configuration-policy')
+  @ApiOperation({
+    summary: 'Get monthly milestone configuration policy & overdue status',
+    description: 'Returns deadline dates in Asia/Manila, lock status, and any overdue months requiring target configuration.',
+  })
+  @ApiQuery({ name: 'month', required: false, description: 'Calendar month in YYYY-MM format', example: '2026-11' })
+  @ApiResponse({ status: 200, description: 'Configuration policy and overdue status' })
+  async getConfigurationPolicy(
+    @Query('month') month?: string,
+    @Req() req?: any,
+  ) {
+    const userRole = req?.user?.role;
+    return this.milestonesService.getConfigurationPolicy(month, userRole);
+  }
+
+  /**
    * Update milestone targets (Admin only)
    */
   @Put('targets')
@@ -73,7 +91,8 @@ export class MilestonesController {
     @Req() req: any,
   ) {
     const userId = req.user?.sub || req.user?.id || req.user?.email || 'admin';
-    return this.milestonesService.updateTargets(dto, userId);
+    const userRole = req.user?.role;
+    return this.milestonesService.updateTargets(dto, userId, userRole);
   }
 }
 

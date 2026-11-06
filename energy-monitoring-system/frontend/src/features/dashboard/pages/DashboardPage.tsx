@@ -1,10 +1,13 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, Settings2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
+import { useMilestones } from '@/features/milestones/hooks/useMilestones';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { MetricCard } from '../components/MetricCard';
 import { HeroPowerCard } from '../components/HeroPowerCard';
@@ -56,6 +59,10 @@ function DashboardPageContent() {
   // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
+
+  // Milestones goal policy for admin overdue tracking
+  const milestoneData = useMilestones();
+  const { hasOverdue, overdueMonths } = milestoneData;
 
   // Fetch dashboard data with error and loading states (Requirements 16.1-16.3, 17.1-17.5)
   const {
@@ -147,6 +154,32 @@ function DashboardPageContent() {
           isPublicUser={isPublicUser}
           isWebSocketConnected={isWebSocketConnected}
         />
+
+      {/* Admin-only persistent reminder banner when monthly milestone targets are overdue */}
+      {!isPublicUser && hasOverdue && overdueMonths.length > 0 && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-700 dark:text-red-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200 -mt-2 mb-2">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-red-500/20 text-red-600 dark:text-red-400 shrink-0 mt-0.5">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm tracking-tight">
+                Monthly Milestone Targets Overdue ({overdueMonths.join(', ')})
+              </div>
+              <p className="text-xs text-red-600/90 dark:text-red-300/90 mt-0.5 leading-relaxed">
+                EcoStep administrators must configure monthly and weekly energy milestone targets by the 2nd day of each month (Asia/Manila). Milestone evaluations remain on hold until targets are set.
+              </p>
+            </div>
+          </div>
+          <Link
+            to={`/milestones?month=${overdueMonths[0]}`}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-sm shrink-0 flex items-center gap-1.5 transition-colors self-start sm:self-auto"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            Configure Targets
+          </Link>
+        </div>
+      )}
 
         {/* Main Metrics Grid - Container Query Driven */}
         <style>{`

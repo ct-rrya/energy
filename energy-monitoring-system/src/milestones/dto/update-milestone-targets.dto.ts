@@ -138,6 +138,15 @@ export class UpdateMilestoneTargetsDto {
   @Type(() => WeeklyTargetsDto)
   weeklyTargetsMWh?: WeeklyTargetsDto;
 
+  @ApiProperty({
+    description: 'Audit justification reason for Super Administrator corrections on locked months',
+    example: 'Hardware sensor recalibration and updated campus foot-traffic schedule',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
   // Legacy fields preserved for backwards compatibility
   @ApiProperty({
     description: 'Energy target for 1 Week in milliwatt-hours (mWh)',

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -14,6 +14,8 @@ import {
   MilestoneTarget,
   MilestoneTargetDocument,
   MonthTargetConfig,
+  MonthConfigurationStatus,
+  MilestoneCorrectionLog,
 } from './schemas/milestone-target.schema';
 import {
   EnergyReading,
@@ -82,6 +84,23 @@ export interface MilestoneProgressItem {
   aiComment: string;
 }
 
+export interface MonthlyConfigurationPolicy {
+  yearMonth: string;
+  status: MonthConfigurationStatus;
+  isConfigured: boolean;
+  isLocked: boolean;
+  deadlineDate: string; // ISO string in UTC
+  deadlineLabel: string; // e.g. "Nov 2, 2026, 11:59 PM (Asia/Manila)"
+  configuredBy?: string;
+  configuredAt?: string;
+  canEdit: boolean;
+  requiresSuperAdmin: boolean;
+  overdueMonths: string[];
+  hasOverdue: boolean;
+  correctionCount: number;
+  correctionLogs?: MilestoneCorrectionLog[];
+}
+
 export interface MonthlyMilestonesResponse {
   yearMonth: string; // e.g. "2026-11"
   monthLabel: string; // e.g. "November 2026"
@@ -94,6 +113,10 @@ export interface MonthlyMilestonesResponse {
   allTimeEnergyWh: number;
   allTimeSteps: number;
   lastUpdated: string;
+  configurationPolicy?: MonthlyConfigurationPolicy;
+  isConfigured?: boolean;
+  overdueMonths?: string[];
+  hasOverdue?: boolean;
 }
 
 // Precision rounding helper to preserve up to 6 decimal places without IEEE 754 float drift
@@ -247,6 +270,98 @@ export class MilestonesService {
   }
 
   /**
+   * Calculate deadline for configuring monthly targets in Asia/Manila (UTC+8).
+   * Deadline is Day 2 of the month at 23:59:59.999 Asia/Manila.
+   */
+  getManilaMonthDeadline(yearMonth: string): { deadlineUtc: Date; deadlineLabel: string } {
+    const [yStr, mStr] = yearMonth.split('-');
+    const year = parseInt(yStr, 10);
+    const month = parseInt(mStr, 10);
+    // 2nd day of each month at 23:59:59.999 Asia/Manila (UTC+8) -> 15:59:59.999 UTC
+    const deadlineUtc = new Date(Date.UTC(year, month - 1, 2, 15, 59, 59, 999));
+    const deadlineZoned = toZonedTime(deadlineUtc, TIMEZONE_MANILA);
+    const deadlineLabel = `${format(deadlineZoned, 'MMMM d, yyyy, h:mm a')} (Asia/Manila)`;
+    return { deadlineUtc, deadlineLabel };
+  }
+
+  /**
+   * Returns a list of past and current months (from Oct 2026 to current Manila month)
+   * that have passed their configuration deadline without targets being submitted.
+   */
+  async getOverdueMonths(targetsDoc?: MilestoneTargetDocument): Promise<string[]> {
+    const doc = targetsDoc || (await this.getTargets());
+    const manila = this.getManilaNow();
+    const nowUtc = manila.date;
+    const overdue: string[] = [];
+
+    let curY = 2026;
+    let curM = 10;
+    while (curY < manila.year || (curY === manila.year && curM <= manila.month)) {
+      const ym = `${curY}-${String(curM).padStart(2, '0')}`;
+      const isConfigured = Boolean(doc.monthlyConfigurations?.[ym]);
+      if (!isConfigured) {
+        const { deadlineUtc } = this.getManilaMonthDeadline(ym);
+        if (nowUtc > deadlineUtc) {
+          overdue.push(ym);
+        }
+      }
+      curM++;
+      if (curM > 12) {
+        curM = 1;
+        curY++;
+      }
+    }
+    return overdue;
+  }
+
+  /**
+   * Returns the configuration policy, deadline, locking status, and overdue months.
+   */
+  async getConfigurationPolicy(yearMonth?: string, userRole?: string): Promise<MonthlyConfigurationPolicy> {
+    const targets = await this.getTargets();
+    const manila = this.getManilaNow();
+    const nowUtc = manila.date;
+    const targetMonth = yearMonth && /^\d{4}-\d{2}$/.test(yearMonth)
+      ? yearMonth
+      : `${manila.year}-${String(manila.month).padStart(2, '0')}`;
+
+    const { deadlineUtc, deadlineLabel } = this.getManilaMonthDeadline(targetMonth);
+    const existingConfig = targets.monthlyConfigurations?.[targetMonth];
+    const isConfigured = Boolean(existingConfig);
+    const isLocked = Boolean(existingConfig?.isLocked ?? isConfigured);
+
+    let status: MonthConfigurationStatus = 'PENDING';
+    if (isConfigured) {
+      status = 'CONFIGURED';
+    } else if (nowUtc > deadlineUtc) {
+      status = 'OVERDUE';
+    } else {
+      status = 'PENDING';
+    }
+
+    const overdueMonths = await this.getOverdueMonths(targets);
+    const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'super_admin';
+    const canEdit = !isLocked || isSuperAdmin;
+
+    return {
+      yearMonth: targetMonth,
+      status,
+      isConfigured,
+      isLocked,
+      deadlineDate: deadlineUtc.toISOString(),
+      deadlineLabel,
+      configuredBy: existingConfig?.configuredBy || existingConfig?.updatedBy,
+      configuredAt: existingConfig?.configuredAt || existingConfig?.updatedAt,
+      canEdit,
+      requiresSuperAdmin: isLocked,
+      overdueMonths,
+      hasOverdue: overdueMonths.length > 0,
+      correctionCount: existingConfig?.correctionLogs?.length || 0,
+      correctionLogs: existingConfig?.correctionLogs || [],
+    };
+  }
+
+  /**
    * Get targets for a specific month (falls back to defaults if not customized)
    */
   async getTargetsForMonth(yearMonth?: string): Promise<{
@@ -260,25 +375,46 @@ export class MilestonesService {
       week5MWh?: number;
       week6MWh?: number;
     };
+    isConfigured: boolean;
+    status: MonthConfigurationStatus;
+    isLocked: boolean;
+    deadlineDate: string;
+    deadlineLabel: string;
+    configuredBy?: string;
+    configuredAt?: string;
+    correctionLogs?: MilestoneCorrectionLog[];
   }> {
     const manila = this.getManilaNow();
+    const nowUtc = manila.date;
     const effectiveMonth = yearMonth && /^\d{4}-\d{2}$/.test(yearMonth)
       ? yearMonth
       : `${manila.year}-${String(manila.month).padStart(2, '0')}`;
 
+    const { deadlineUtc, deadlineLabel } = this.getManilaMonthDeadline(effectiveMonth);
     const targets = await this.getTargets();
     const stored = targets.monthlyConfigurations?.[effectiveMonth];
+
     if (stored) {
       return {
         yearMonth: effectiveMonth,
         monthlyTargetMWh: stored.monthlyTargetMWh,
         weeklyTargetsMWh: { ...stored.weeklyTargetsMWh },
+        isConfigured: true,
+        status: stored.status || 'CONFIGURED',
+        isLocked: stored.isLocked ?? true,
+        deadlineDate: stored.deadlineDate || deadlineUtc.toISOString(),
+        deadlineLabel,
+        configuredBy: stored.configuredBy || stored.updatedBy,
+        configuredAt: stored.configuredAt || stored.updatedAt,
+        correctionLogs: stored.correctionLogs || [],
       };
     }
 
     // Default configuration based on piezoelectric prototype telemetry (Pilot preset default)
     const baseMonth = targets.target1MonthMWh || 0.1;
     const baseWeek = targets.target1WeekMWh || 0.025;
+    const status: MonthConfigurationStatus = nowUtc > deadlineUtc ? 'OVERDUE' : 'PENDING';
+
     return {
       yearMonth: effectiveMonth,
       monthlyTargetMWh: baseMonth,
@@ -290,22 +426,45 @@ export class MilestonesService {
         week5MWh: baseWeek,
         week6MWh: baseWeek,
       },
+      isConfigured: false,
+      status,
+      isLocked: false,
+      deadlineDate: deadlineUtc.toISOString(),
+      deadlineLabel,
+      correctionLogs: [],
     };
   }
 
   /**
-   * Update milestone targets for a calendar month
+   * Update milestone targets for a calendar month.
+   * Enforces the Monthly Goal Configuration Policy:
+   * - One normal configuration submission per month by administrators, which locks targets.
+   * - Once locked, ordinary modifications are prevented.
+   * - Authorized Super Administrators can make exceptional corrections with audit logging.
    */
   async updateTargets(
     dto: UpdateMilestoneTargetsDto,
     userId?: string,
+    userRole?: string,
   ): Promise<MilestoneTargetDocument> {
     const existing = await this.getTargets();
     const manila = this.getManilaNow();
     const targetMonth = dto.month || `${manila.year}-${String(manila.month).padStart(2, '0')}`;
+    const { deadlineUtc } = this.getManilaMonthDeadline(targetMonth);
 
     if (!existing.monthlyConfigurations) {
       existing.monthlyConfigurations = {};
+    }
+
+    const existingConfig = existing.monthlyConfigurations[targetMonth];
+    const isAlreadyLocked = Boolean(existingConfig && (existingConfig.isLocked || existingConfig.status === 'CONFIGURED'));
+    const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'super_admin';
+
+    // Enforcement: If already locked, only Super Administrator can perform exceptional correction
+    if (isAlreadyLocked && !isSuperAdmin) {
+      throw new ForbiddenException(
+        `Milestone targets for ${targetMonth} are locked against ordinary modifications. Exceptional corrections require Super Administrator authorization.`
+      );
     }
 
     const currentMonthConfig = await this.getTargetsForMonth(targetMonth);
@@ -351,12 +510,51 @@ export class MilestonesService {
       existing.target1MonthMWh = round6(dto.target1MonthMWh);
     }
 
-    existing.monthlyConfigurations[targetMonth] = {
-      monthlyTargetMWh: updatedMonthMWh,
-      weeklyTargetsMWh: weeklyConfig,
-      updatedBy: userId || 'admin',
-      updatedAt: new Date().toISOString(),
-    };
+    const nowIso = new Date().toISOString();
+
+    if (isAlreadyLocked && isSuperAdmin) {
+      // Exceptional Super Administrator correction: audit logging
+      const correctionLogEntry: MilestoneCorrectionLog = {
+        correctedBy: userId || 'super_admin',
+        correctedAt: nowIso,
+        previousTargets: {
+          monthlyTargetMWh: existingConfig.monthlyTargetMWh,
+          weeklyTargetsMWh: { ...existingConfig.weeklyTargetsMWh },
+        },
+        newTargets: {
+          monthlyTargetMWh: updatedMonthMWh,
+          weeklyTargetsMWh: weeklyConfig,
+        },
+        reason: dto.reason || 'Super Administrator exceptional target adjustment',
+      };
+
+      existingConfig.monthlyTargetMWh = updatedMonthMWh;
+      existingConfig.weeklyTargetsMWh = weeklyConfig;
+      existingConfig.updatedBy = userId || 'super_admin';
+      existingConfig.updatedAt = nowIso;
+      existingConfig.isLocked = true;
+      existingConfig.status = 'CONFIGURED';
+      existingConfig.correctionLogs = [...(existingConfig.correctionLogs || []), correctionLogEntry];
+
+      this.logger.warn(
+        `[AUDIT] Milestone targets exceptionally corrected for ${targetMonth} by Super Admin ${userId}. Reason: ${correctionLogEntry.reason}`
+      );
+    } else {
+      // First normal configuration submission for this month (locks targets)
+      existing.monthlyConfigurations[targetMonth] = {
+        monthlyTargetMWh: updatedMonthMWh,
+        weeklyTargetsMWh: weeklyConfig,
+        status: 'CONFIGURED',
+        isLocked: true,
+        configuredBy: userId || 'admin',
+        configuredAt: nowIso,
+        deadlineDate: deadlineUtc.toISOString(),
+        updatedBy: userId || 'admin',
+        updatedAt: nowIso,
+        correctionLogs: [],
+      };
+      this.logger.log(`Milestone targets configured and locked for ${targetMonth} by ${userId || 'admin'}`);
+    }
 
     if (typeof existing.markModified === 'function') {
       existing.markModified('monthlyConfigurations');
@@ -364,7 +562,6 @@ export class MilestonesService {
     if (userId) existing.updatedBy = userId;
 
     await existing.save();
-    this.logger.log(`Milestone targets updated for ${targetMonth} by ${userId || 'admin'}`);
     return existing;
   }
 
@@ -841,8 +1038,9 @@ export class MilestonesService {
    * Calendar-based Monthly and Weekly Milestones System
    * - Tracking begins October 1, 2026
    * - Non-overlapping calendar blocks evaluated in Asia/Manila (UTC+8)
+   * - Adheres to Monthly Goal Configuration Policy: unconfigured months never fabricate achievements
    */
-  async getMonthlyMilestones(requestedMonth?: string): Promise<MonthlyMilestonesResponse> {
+  async getMonthlyMilestones(requestedMonth?: string, userRole?: string): Promise<MonthlyMilestonesResponse> {
     const manila = this.getManilaNow();
     const currentMonthStr = `${manila.year}-${String(manila.month).padStart(2, '0')}`;
     const targetMonth = requestedMonth && /^\d{4}-\d{2}$/.test(requestedMonth)
@@ -856,6 +1054,8 @@ export class MilestonesService {
     const month = parseInt(monthStr, 10);
     const totalDays = this.getDaysInMonth(year, month);
     const targetsConfig = await this.getTargetsForMonth(effectiveMonth);
+    const configurationPolicy = await this.getConfigurationPolicy(effectiveMonth, userRole);
+    const isConfigured = configurationPolicy.isConfigured;
     const nowUtc = manila.date;
 
     // 1. Generate Sunday–Saturday calendar week blocks using date-fns in Asia/Manila (UTC+8)
@@ -874,12 +1074,19 @@ export class MilestonesService {
     // 2. Calculate Monthly Milestone (full calendar month)
     const { energyMWh: monthEnergyMWh, steps: monthSteps } = await this.getAccumulatedEnergyForPeriod(monthStartUtc, monthEndUtc);
     const monthTargetMWh = targetsConfig.monthlyTargetMWh;
-    const monthAchieved = monthTargetMWh > 0 ? monthEnergyMWh >= monthTargetMWh : false;
+    // Policy: Unconfigured targets must NEVER silently fabricate milestone achievements
+    const monthAchieved = isConfigured && monthTargetMWh > 0 ? monthEnergyMWh >= monthTargetMWh : false;
     const monthRawPct = monthTargetMWh > 0 ? (monthEnergyMWh / monthTargetMWh) * 100 : 0;
     const monthProgress = this.calculateProgressPercentage(monthRawPct, monthAchieved);
 
     const monthState: MilestoneLifecycleState =
       nowUtc > monthEndUtc ? 'COMPLETED' : nowUtc < monthStartUtc ? 'UPCOMING' : 'CURRENT';
+
+    const monthComment = !isConfigured
+      ? configurationPolicy.status === 'OVERDUE'
+        ? `Goal targets for ${monthLabel} are overdue (deadline was ${configurationPolicy.deadlineLabel}). EcoStep will evaluate milestone achievements once targets are configured.`
+        : `Target configuration is pending for ${monthLabel} (due ${configurationPolicy.deadlineLabel}). Telemetry is actively recording.`
+      : this.safeGenerateAIComment(monthLabel, monthRawPct, monthAchieved, monthEnergyMWh, monthSteps, undefined, monthState);
 
     const monthlyMilestone: MilestoneProgressItem = {
       id: 'monthly',
@@ -898,7 +1105,7 @@ export class MilestonesService {
       isAchieved: monthAchieved,
       stepCount: monthSteps,
       realWorldEquivalents: this.computeRealWorldEquivalents(monthEnergyMWh),
-      aiComment: this.safeGenerateAIComment(monthLabel, monthRawPct, monthAchieved, monthEnergyMWh, monthSteps, undefined, monthState),
+      aiComment: monthComment,
     };
 
     // 3. Pre-fetch weekly telemetry concurrently using Sunday–Saturday calendar rows
@@ -906,7 +1113,8 @@ export class MilestonesService {
       weekBlocks.map(async (block) => {
         const telemetry = await this.getAccumulatedEnergyForPeriod(block.startDate, block.endDate);
         const targetMWh = (targetsConfig.weeklyTargetsMWh as any)[`week${block.weekNumber}MWh`] ?? targetsConfig.weeklyTargetsMWh.week1MWh;
-        const isAchieved = targetMWh > 0 ? telemetry.energyMWh >= targetMWh : false;
+        // Policy: Unconfigured targets must NEVER silently fabricate achievements
+        const isAchieved = isConfigured && targetMWh > 0 ? telemetry.energyMWh >= targetMWh : false;
         const rawPct = targetMWh > 0 ? (telemetry.energyMWh / targetMWh) * 100 : 0;
         const progressPercentage = this.calculateProgressPercentage(rawPct, isAchieved);
         const state: MilestoneLifecycleState =
@@ -988,6 +1196,12 @@ export class MilestonesService {
         item.state,
       );
 
+      const weekComment = !isConfigured
+        ? configurationPolicy.status === 'OVERDUE'
+          ? `${label} milestone evaluation is on hold pending overdue monthly target configuration.`
+          : `${label} target configuration is pending. Footsteps and energy are actively logging.`
+        : aiComment;
+
       const progressItem: MilestoneProgressItem = {
         id: `week_${item.block.weekNumber}`,
         periodKey: `${effectiveMonth}_w${item.block.weekNumber}`,
@@ -1008,7 +1222,7 @@ export class MilestonesService {
         stepCount: item.telemetry.steps,
         realWorldEquivalents: this.computeRealWorldEquivalents(item.telemetry.energyMWh),
         comparison,
-        aiComment,
+        aiComment: weekComment,
       };
       return progressItem;
     });
@@ -1034,6 +1248,10 @@ export class MilestonesService {
       allTimeEnergyWh: round6(allTimeEnergyMWh / 1000),
       allTimeSteps,
       lastUpdated: nowUtc.toISOString(),
+      configurationPolicy,
+      isConfigured,
+      overdueMonths: configurationPolicy.overdueMonths,
+      hasOverdue: configurationPolicy.hasOverdue,
     };
   }
 

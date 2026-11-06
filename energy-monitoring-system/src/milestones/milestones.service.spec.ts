@@ -213,6 +213,14 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
     });
 
     it('displays 100% or greater when achieved without arbitrary 999% capping', async () => {
+      // Configure month so milestone achievements can be evaluated
+      mockTargetDoc.monthlyConfigurations['2026-11'] = {
+        monthlyTargetMWh: 0.1,
+        weeklyTargetsMWh: { week1MWh: 0.025 },
+        isLocked: true,
+        status: 'CONFIGURED',
+      };
+
       // Target is 0.025 mWh. Current is 0.3 mWh (1200% progress)
       mockEnergyReadingModel.aggregate.mockResolvedValue([
         {
@@ -230,6 +238,14 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
     });
 
     it('isolates AI commentary errors so milestone data delivery is not interrupted', async () => {
+      // Configure month so commentary pipeline runs
+      mockTargetDoc.monthlyConfigurations['2026-11'] = {
+        monthlyTargetMWh: 0.1,
+        weeklyTargetsMWh: { week1MWh: 0.025 },
+        isLocked: true,
+        status: 'CONFIGURED',
+      };
+
       mockEnergyReadingModel.aggregate.mockResolvedValue([
         {
           _id: null,
@@ -523,6 +539,123 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
       expect(novConfig.weeklyTargetsMWh.week3MWh).toBe(4000);
       expect(novConfig.weeklyTargetsMWh.week4MWh).toBe(4000);
       expect(novConfig.weeklyTargetsMWh.week5MWh).toBe(4000);
+    });
+  });
+
+  describe('Monthly Goal Configuration Policy', () => {
+    it('calculates deadline for the 2nd day of each month in Asia/Manila (UTC+8)', () => {
+      const { deadlineUtc, deadlineLabel } = service.getManilaMonthDeadline('2026-11');
+      // Nov 2, 2026, 23:59:59.999 Asia/Manila is Nov 2, 2026, 15:59:59.999 UTC
+      expect(deadlineUtc.toISOString()).toBe('2026-11-02T15:59:59.999Z');
+      expect(deadlineLabel).toContain('November 2, 2026');
+      expect(deadlineLabel).toContain('Asia/Manila');
+    });
+
+    it('identifies unconfigured months past deadline as OVERDUE and reports in policy', async () => {
+      mockTargetDoc.monthlyConfigurations = {};
+
+      const policy = await service.getConfigurationPolicy('2026-11');
+      expect(policy.isConfigured).toBe(false);
+      expect(policy.status).toBe('OVERDUE');
+      expect(policy.hasOverdue).toBe(true);
+      expect(policy.overdueMonths).toContain('2026-11');
+    });
+
+    it('does not fabricate milestone achievements when month is unconfigured', async () => {
+      // Unconfigured month with abundant energy that would otherwise exceed target
+      mockTargetDoc.monthlyConfigurations = {};
+      mockEnergyReadingModel.aggregate.mockResolvedValue([
+        {
+          _id: null,
+          totalEnergyMWh: 50.0,
+          totalSteps: 2000,
+        },
+      ]);
+
+      const progress = await service.getMonthlyMilestones('2026-11');
+      expect(progress.isConfigured).toBe(false);
+      expect(progress.monthlyMilestone.isAchieved).toBe(false);
+      expect(progress.weeklyMilestones[0].isAchieved).toBe(false);
+      expect(progress.configurationPolicy.status).toBe('OVERDUE');
+      expect(progress.monthlyMilestone.aiComment).toContain('overdue');
+    });
+
+    it('locks targets upon first normal configuration submission', async () => {
+      mockTargetDoc.monthlyConfigurations = {};
+
+      const updated = await service.updateTargets(
+        {
+          month: '2026-11',
+          monthlyTargetMWh: 0.1,
+          weeklyTargetMWh: 0.025,
+        },
+        'system-admin-1',
+        'SYSTEM_ADMIN',
+      );
+
+      const config = updated.monthlyConfigurations['2026-11'];
+      expect(config.isLocked).toBe(true);
+      expect(config.status).toBe('CONFIGURED');
+      expect(config.configuredBy).toBe('system-admin-1');
+      expect(config.configuredAt).toBeDefined();
+    });
+
+    it('forbids ordinary administrators from modifying locked targets', async () => {
+      mockTargetDoc.monthlyConfigurations = {
+        '2026-11': {
+          monthlyTargetMWh: 0.1,
+          weeklyTargetsMWh: { week1MWh: 0.025 },
+          isLocked: true,
+          status: 'CONFIGURED',
+        },
+      };
+
+      await expect(
+        service.updateTargets(
+          {
+            month: '2026-11',
+            monthlyTargetMWh: 0.2,
+          },
+          'admin-user',
+          'admin',
+        ),
+      ).rejects.toThrow('locked against ordinary modifications');
+    });
+
+    it('allows Super Administrators to make exceptional corrections with audit logging', async () => {
+      mockTargetDoc.monthlyConfigurations = {
+        '2026-11': {
+          monthlyTargetMWh: 0.1,
+          weeklyTargetsMWh: { week1MWh: 0.025 },
+          isLocked: true,
+          status: 'CONFIGURED',
+          configuredBy: 'initial-admin',
+          correctionLogs: [],
+        },
+      };
+
+      const updated = await service.updateTargets(
+        {
+          month: '2026-11',
+          monthlyTargetMWh: 0.25,
+          weeklyTargetMWh: 0.05,
+          reason: 'Foot-traffic rerouted due to central hall maintenance',
+        },
+        'super-admin-user',
+        'SUPER_ADMIN',
+      );
+
+      const config = updated.monthlyConfigurations['2026-11'];
+      expect(config.monthlyTargetMWh).toBe(0.25);
+      expect(config.weeklyTargetsMWh.week1MWh).toBe(0.05);
+      expect(config.isLocked).toBe(true);
+      expect(config.correctionLogs).toHaveLength(1);
+      expect(config.correctionLogs[0].correctedBy).toBe('super-admin-user');
+      expect(config.correctionLogs[0].previousTargets.monthlyTargetMWh).toBe(0.1);
+      expect(config.correctionLogs[0].newTargets.monthlyTargetMWh).toBe(0.25);
+      expect(config.correctionLogs[0].reason).toBe(
+        'Foot-traffic rerouted due to central hall maintenance',
+      );
     });
   });
 });

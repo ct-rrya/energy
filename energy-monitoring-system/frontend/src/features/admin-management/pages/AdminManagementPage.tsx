@@ -147,22 +147,22 @@ export default function AdminManagementPage() {
   const getRoleBadge = (role: string) => {
     if (role === 'SUPER_ADMIN') {
       return (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-[700] ${
           theme === 'dark' 
             ? 'bg-purple-900/30 text-purple-300' 
             : 'bg-purple-100 text-purple-800'
-        }`}>
+        }`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <ShieldCheck className="w-3 h-3" />
           SUPER ADMIN
         </span>
       );
     }
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-[700] ${
         theme === 'dark' 
           ? 'bg-blue-900/30 text-blue-300' 
           : 'bg-blue-100 text-blue-800'
-      }`}>
+      }`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <Shield className="w-3 h-3" />
         SYSTEM ADMIN
       </span>
@@ -172,22 +172,22 @@ export default function AdminManagementPage() {
   const getStatusBadge = (isActive: boolean) => {
     if (isActive) {
       return (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-[700] ${
           theme === 'dark' 
             ? 'bg-green-900/30 text-green-300' 
             : 'bg-green-100 text-green-800'
-        }`}>
+        }`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <CheckCircle className="w-3 h-3" />
           Active
         </span>
       );
     }
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-[700] ${
         theme === 'dark' 
           ? 'bg-red-900/30 text-red-300' 
           : 'bg-red-100 text-red-800'
-      }`}>
+      }`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <XCircle className="w-3 h-3" />
         Inactive
       </span>
@@ -201,13 +201,13 @@ export default function AdminManagementPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className={`text-3xl font-bold flex items-center gap-3 ${
+              <h1 className={`text-[28px] sm:text-[32px] font-[700] tracking-tight leading-tight flex items-center gap-3 ${
                 theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-              }`}>
+              }`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 <Users className={`w-8 h-8 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
                 Administrator Management
               </h1>
-              <p className={theme === 'dark' ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>
+              <p className={`text-[13px] mt-1 leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Manage System Administrator accounts and access codes
               </p>
             </div>
@@ -223,51 +223,51 @@ export default function AdminManagementPage() {
           {/* Statistics */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`rounded-lg p-4 shadow ${
+              <div className={`rounded-xl p-5 shadow-sm ${
                 theme === 'dark' 
                   ? 'bg-[#1A1D2E] border border-gray-800' 
                   : 'bg-white border border-gray-200'
               }`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="text-[11px] font-[600] uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       Total Administrators
                     </p>
-                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                    <p className={`text-[34px] font-[500] tracking-[-0.02em] tabular-nums leading-none ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       {stats.total}
                     </p>
                   </div>
                   <Users className={`w-10 h-10 opacity-20 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
                 </div>
               </div>
-              <div className={`rounded-lg p-4 shadow ${
+              <div className={`rounded-xl p-5 shadow-sm ${
                 theme === 'dark' 
                   ? 'bg-[#1A1D2E] border border-gray-800' 
                   : 'bg-white border border-gray-200'
               }`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="text-[11px] font-[600] uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       Super Admins
                     </p>
-                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-purple-300' : 'text-purple-900'}`}>
+                    <p className={`text-[34px] font-[500] tracking-[-0.02em] tabular-nums leading-none ${theme === 'dark' ? 'text-purple-300' : 'text-purple-900'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       {stats.SUPER_ADMIN}
                     </p>
                   </div>
                   <ShieldCheck className={`w-10 h-10 opacity-20 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-500'}`} />
                 </div>
               </div>
-              <div className={`rounded-lg p-4 shadow ${
+              <div className={`rounded-xl p-5 shadow-sm ${
                 theme === 'dark' 
                   ? 'bg-[#1A1D2E] border border-gray-800' 
                   : 'bg-white border border-gray-200'
               }`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className="text-[11px] font-[600] uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       System Admins
                     </p>
-                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-blue-300' : 'text-blue-900'}`}>
+                    <p className={`text-[34px] font-[500] tracking-[-0.02em] tabular-nums leading-none ${theme === 'dark' ? 'text-blue-300' : 'text-blue-900'}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       {stats.SYSTEM_ADMIN}
                     </p>
                   </div>

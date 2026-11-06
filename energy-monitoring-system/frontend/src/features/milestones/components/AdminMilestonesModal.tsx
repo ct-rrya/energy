@@ -1,8 +1,9 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings2, X, Check, Save, AlertCircle, Calendar, Zap, Footprints } from 'lucide-react';
+import { Settings2, X, Check, Save, AlertCircle, Calendar, Zap, Footprints, Lock, ShieldAlert } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import type { UpdateMonthTargetsPayload, WeeklyTargetsMWh } from '../types/milestone.types';
+import { useAuth } from '@/contexts/AuthContext';
+import type { UpdateMonthTargetsPayload, WeeklyTargetsMWh, MonthlyConfigurationPolicy } from '../types/milestone.types';
 import { formatWhFromMWh, parsePositiveDecimal, formatMonthLabel } from '../utils/milestone.utils';
 
 interface AdminMilestonesModalProps {
@@ -13,6 +14,7 @@ interface AdminMilestonesModalProps {
   currentMonthTargetMWh?: number;
   currentWeeklyTargetMWh?: number;
   currentWeeklyTargetsMWh?: WeeklyTargetsMWh;
+  configurationPolicy?: MonthlyConfigurationPolicy;
   onSave: (payload: UpdateMonthTargetsPayload) => Promise<any>;
 }
 
@@ -24,10 +26,13 @@ export function AdminMilestonesModal({
   currentMonthTargetMWh = 0.1,
   currentWeeklyTargetMWh,
   currentWeeklyTargetsMWh,
+  configurationPolicy,
   onSave,
 }: AdminMilestonesModalProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const initialWeekly =
     currentWeeklyTargetMWh ??
@@ -37,10 +42,18 @@ export function AdminMilestonesModal({
   const [selectedMonth, setSelectedMonth] = useState(activeMonth);
   const [monthlyTarget, setMonthlyTarget] = useState(String(currentMonthTargetMWh ?? 0.1));
   const [weeklyTarget, setWeeklyTarget] = useState(String(initialWeekly));
+  const [correctionReason, setCorrectionReason] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState(false);
+
+  // Month-locking evaluation
+  const isMonthSelectedActive = selectedMonth === activeMonth;
+  const isLocked = Boolean(isMonthSelectedActive && configurationPolicy?.isLocked);
+  const isOverdue = Boolean(isMonthSelectedActive && configurationPolicy?.status === 'OVERDUE');
+  const isPending = Boolean(isMonthSelectedActive && configurationPolicy?.status === 'PENDING');
+  const isReadOnly = isLocked && !isSuperAdmin;
 
   // Lock body scrolling when modal is open
   useEffect(() => {
@@ -104,6 +117,7 @@ export function AdminMilestonesModal({
   ];
 
   const handleApplyPreset = (p: typeof presets[0]) => {
+    if (isReadOnly) return;
     setMonthlyTarget(String(p.monthly));
     setWeeklyTarget(String(p.weekly));
     setErrorMessage(null);
@@ -112,6 +126,15 @@ export function AdminMilestonesModal({
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (isReadOnly) return;
+
+    if (isLocked && isSuperAdmin && !correctionReason.trim()) {
+      setErrorMessage(
+        'Super Administrator corrections on locked months require an audit justification reason.'
+      );
+      return;
+    }
 
     const mTarget = parsePositiveDecimal(monthlyTarget);
     const wTarget = parsePositiveDecimal(weeklyTarget);
@@ -129,6 +152,7 @@ export function AdminMilestonesModal({
         month: selectedMonth,
         monthlyTargetMWh: mTarget,
         weeklyTargetMWh: wTarget,
+        ...(isLocked && isSuperAdmin ? { reason: correctionReason.trim() } : {}),
       });
 
       setSuccessMessage(true);
@@ -187,6 +211,61 @@ export function AdminMilestonesModal({
 
         {/* Content Form */}
         <form onSubmit={handleSave} className="overflow-y-auto pr-1 py-4 space-y-5">
+          {/* Policy Status Banner */}
+          {isLocked && !isSuperAdmin && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5">
+              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <div className="font-bold">Targets Locked for {formatMonthLabel(selectedMonth)}</div>
+                <div className="text-[11px] opacity-90 mt-0.5">
+                  Target configuration was submitted by {configurationPolicy?.configuredBy || 'an administrator'}{' '}
+                  {configurationPolicy?.configuredAt ? `on ${new Date(configurationPolicy.configuredAt).toLocaleDateString()}` : ''}.
+                  Under the Monthly Goal Configuration Policy, ordinary modifications are locked.
+                </div>
+                <div className="text-[11px] font-semibold mt-1 text-amber-800 dark:text-amber-200">
+                  Only authorized Super Administrators can perform exceptional corrections.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isLocked && isSuperAdmin && (
+            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-xs flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-purple-600 dark:text-purple-400" />
+              <div>
+                <div className="font-bold">Super Administrator Exceptional Correction</div>
+                <div className="text-[11px] opacity-90 mt-0.5">
+                  Targets for {formatMonthLabel(selectedMonth)} are locked. As an authorized Super Administrator, you may perform an exceptional correction. All changes and your reason will be appended to the audit log.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isLocked && isOverdue && (
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+              <div>
+                <div className="font-bold">Configuration Overdue</div>
+                <div className="text-[11px] opacity-90 mt-0.5">
+                  The configuration deadline for {formatMonthLabel(selectedMonth)} was{' '}
+                  {configurationPolicy?.deadlineLabel || 'the 2nd day of the month (Asia/Manila)'}.
+                  Submitting targets now will lock the goals for this month and resolve the overdue status.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isLocked && isPending && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+              <Calendar className="w-4 h-4 shrink-0 text-[var(--acc)]" />
+              <div className="text-[11px]">
+                <span className="font-semibold">Goal Policy:</span> Deadline is{' '}
+                {configurationPolicy?.deadlineLabel || 'the 2nd day of the month, 11:59 PM (Asia/Manila)'}.
+                Once submitted, targets lock against ordinary modifications.
+              </div>
+            </div>
+          )}
+
           {/* Month Selection */}
           <div className="p-3.5 rounded-xl bg-[var(--soft)] border border-[var(--line)] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -228,8 +307,11 @@ export function AdminMilestonesModal({
                   <button
                     type="button"
                     key={p.name}
+                    disabled={isReadOnly}
                     onClick={() => handleApplyPreset(p)}
                     className={`px-3 py-2.5 rounded-xl text-xs text-left transition-all flex flex-col justify-between border ${
+                      isReadOnly ? 'opacity-60 cursor-not-allowed' : ''
+                    } ${
                       isSelected
                         ? 'bg-[var(--mint)] text-[var(--acc)] border-[var(--acc)] shadow-sm font-semibold'
                         : 'bg-[var(--soft)] hover:bg-[var(--mint)]/50 border-[var(--line)] text-[var(--t)]'
@@ -280,9 +362,10 @@ export function AdminMilestonesModal({
                 step="any"
                 min="0.000001"
                 required
+                disabled={isReadOnly}
                 value={monthlyTarget}
                 onChange={(e) => setMonthlyTarget(e.target.value)}
-                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-[var(--acc)] rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm"
+                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-[var(--acc)] rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                 placeholder="0.1"
               />
@@ -315,9 +398,10 @@ export function AdminMilestonesModal({
                 step="any"
                 min="0.000001"
                 required
+                disabled={isReadOnly}
                 value={weeklyTarget}
                 onChange={(e) => setWeeklyTarget(e.target.value)}
-                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-cyan-500 rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm"
+                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-cyan-500 rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                 placeholder="0.025"
               />
@@ -329,6 +413,27 @@ export function AdminMilestonesModal({
               Shared target automatically applied to each calendar week in {formatMonthLabel(selectedMonth)}.
             </span>
           </div>
+
+          {/* 3. Super Admin Correction Reason (if locked & Super Admin) */}
+          {isLocked && isSuperAdmin && (
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+              <label className="text-xs font-bold text-[var(--t)] uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                Audit Justification Reason <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+                placeholder="e.g. Piezoelectric sensor recalibration, campus walkway schedule changes"
+                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-purple-500 rounded-xl px-4 py-2 text-[var(--t)] text-xs placeholder-[var(--mu)] focus:outline-none shadow-sm"
+              />
+              <span className="text-[11px] text-[var(--mu)] mt-1.5 block">
+                This explanation will be permanently recorded in the audit log alongside your administrator ID and timestamp.
+              </span>
+            </div>
+          )}
 
           {/* Alerts */}
           {errorMessage && (
@@ -353,25 +458,45 @@ export function AdminMilestonesModal({
               disabled={isSaving}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] border border-[var(--line)] transition-colors"
             >
-              Cancel
+              {isReadOnly ? 'Close' : 'Cancel'}
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 rounded-xl text-xs font-bold text-white dark:text-black bg-[var(--acc)] hover:bg-[var(--brand-mid)] shadow-md flex items-center gap-2 transition-all disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save {formatMonthLabel(selectedMonth)} Targets
-                </>
-              )}
-            </button>
+            {isReadOnly ? (
+              <button
+                type="button"
+                disabled
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--mu)] bg-[var(--soft)] border border-[var(--line)] flex items-center gap-2 cursor-not-allowed opacity-80"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+                Locked (Super Admin Only)
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSaving}
+                className={`px-5 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 transition-all disabled:opacity-50 ${
+                  isLocked && isSuperAdmin
+                    ? 'text-white bg-purple-600 hover:bg-purple-700'
+                    : 'text-white dark:text-black bg-[var(--acc)] hover:bg-[var(--brand-mid)]'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : isLocked && isSuperAdmin ? (
+                  <>
+                    <ShieldAlert className="w-4 h-4" />
+                    Apply Audited Correction
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save & Lock {formatMonthLabel(selectedMonth)} Targets
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </form>
       </div>

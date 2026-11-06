@@ -1,27 +1,14 @@
 import { useState, useEffect } from 'react';
 import { 
   Play, 
-  RotateCcw, 
   CheckCircle2, 
   AlertTriangle, 
-  Footprints, 
-  Radio, 
-  TrendingDown, 
-  TrendingUp, 
-  Sparkles,
-  Zap,
-  Calendar,
-  Lock,
-  Clock,
-  ShieldCheck,
-  AlertCircle
+  Clock, 
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getThemeColors } from '@/lib/theme';
 import { 
   useDiagnosticBaseline, 
   useTodayDailyTask,
@@ -40,22 +27,17 @@ type TestModeState = 'IDLE' | 'LISTENING' | 'RESULT';
 /**
  * Step Diagnostic Test Card
  * 
- * Provides:
- * 1. Automated Daily System Diagnostic task workflow for multiple admins
- * 2. Active session locking to prevent simultaneous diagnostic sessions
- * 3. On-demand single-step physical test mode with ESP32 telemetry capture
- * 4. Evaluation against established reference baseline and acceptable thresholds
- * 5. High-fidelity visual comparison range bar and real-time multi-admin sync
+ * Clean, modern layout matching the EcoStep design spec:
+ * - Left: Interactive daily verification flow (Idle -> Testing with manual fallback -> Result)
+ * - Right: Baseline normal output & horizontal distribution scale
  */
 export function StepDiagnosticTestCard() {
-  const { theme } = useTheme();
-  const colors = getThemeColors(theme);
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
 
   // Queries & Mutations
-  const { data: baseline, isLoading: isBaselineLoading, refetch: refetchBaseline } = useDiagnosticBaseline();
-  const { data: todayTask, isLoading: isDailyTaskLoading, refetch: refetchDailyTask } = useTodayDailyTask();
+  const { data: baseline } = useDiagnosticBaseline();
+  const { data: todayTask } = useTodayDailyTask();
   const startSessionMutation = useStartDailySession();
   const cancelSessionMutation = useCancelDailySession();
   const completeDailyMutation = useCompleteDailyTask();
@@ -67,10 +49,10 @@ export function StepDiagnosticTestCard() {
 
   // Baseline metrics
   const daysAnalyzed = baseline?.daysAnalyzed ?? 30;
-  const totalSteps = baseline?.totalSteps ?? 1547;
-  const normalStep = baseline?.normalStepMWh ?? 0.00510;
-  const minAcceptable = baseline?.minAcceptableMWh ?? 0.00346;
-  const maxAcceptable = baseline?.maxAcceptableMWh ?? 0.00674;
+  const totalSteps = baseline?.totalSteps ?? 169;
+  const normalStep = baseline?.normalStepMWh ?? 0.00051;
+  const minAcceptable = baseline?.minAcceptableMWh ?? 0.00034;
+  const maxAcceptable = baseline?.maxAcceptableMWh ?? 0.00068;
   const tolerance = baseline?.tolerancePercent ?? 34;
 
   // Session & Lock Status
@@ -173,12 +155,6 @@ export function StepDiagnosticTestCard() {
     return Math.max(8, Math.min(92, pct));
   };
 
-  const getMeanPosition = () => {
-    const spanMin = minAcceptable * 0.7;
-    const spanMax = maxAcceptable * 1.3;
-    return ((normalStep - spanMin) / (spanMax - spanMin)) * 100;
-  };
-
   const getMinPosition = () => {
     const spanMin = minAcceptable * 0.7;
     const spanMax = maxAcceptable * 1.3;
@@ -195,521 +171,285 @@ export function StepDiagnosticTestCard() {
     ? testResult.result === DiagnosticResultStatus.WITHIN_RANGE
     : todayTask?.result === DiagnosticResultStatus.WITHIN_RANGE;
 
-  // Status Badge Configuration
-  const getDailyStatusBadge = (status?: DailyDiagnosticTaskStatus) => {
-    switch (status) {
-      case DailyDiagnosticTaskStatus.COMPLETED:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            Completed
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.IN_PROGRESS:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-            In Progress
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.NEEDS_ATTENTION:
-      case DailyDiagnosticTaskStatus.FAILED:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-            <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            Needs Attention
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.OVERDUE:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300 border border-red-300 dark:border-red-700">
-            <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-            Overdue
-          </span>
-        );
-      case DailyDiagnosticTaskStatus.PENDING:
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-            Pending Today's Verification
-          </span>
-        );
-    }
-  };
+  const isCompleted = todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED;
+  const isNeedsAttention = todayTask?.status === DailyDiagnosticTaskStatus.NEEDS_ATTENTION || todayTask?.status === DailyDiagnosticTaskStatus.FAILED;
+  const isOverdue = todayTask?.status === DailyDiagnosticTaskStatus.OVERDUE;
+  const taskDate = todayTask?.taskDate || new Date().toISOString().split('T')[0];
 
   return (
-    <div 
-      className="diag-outer-card rounded-2xl p-3.5 sm:p-8 border shadow-xs transition-all"
-      style={{
-        backgroundColor: colors.cardBackground,
-        borderColor: colors.border,
-      }}
+    <section 
+      className="cd !p-5 sm:!p-6 rounded-[22px] flex flex-wrap gap-6 lg:gap-10 items-center justify-between"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* ============================================================ */}
-      {/* 1. DAILY DIAGNOSTIC TASK BANNER (SHARED MULTI-ADMIN) */}
-      {/* ============================================================ */}
-      <div 
-        className="diag-daily-banner mb-6 p-3.5 sm:p-5 rounded-2xl border transition-all"
-        style={{
-          backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
-            ? (theme === 'light' ? '#F0FDF4' : 'rgba(6, 78, 59, 0.2)')
-            : (theme === 'light' ? '#F8FAFC' : 'rgba(15, 23, 42, 0.4)'),
-          borderColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
-            ? (theme === 'light' ? '#BBF7D0' : 'rgba(5, 150, 105, 0.4)')
-            : colors.border,
-        }}
-      >
-        <div className="diag-daily-layout flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="diag-daily-main flex items-center gap-3">
-            <div 
-              className="diag-daily-icon p-2.5 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                backgroundColor: todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
-                  ? 'rgba(16, 185, 129, 0.15)'
-                  : colors.accentSubtle,
-              }}
-            >
-              <Calendar className="h-5 w-5" style={{ color: colors.accent }} />
-            </div>
-            <div className="diag-daily-text">
-              <div className="diag-daily-title-wrap flex items-center gap-2 flex-wrap">
-                <h3 className="diag-daily-title text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                  Today's Daily Diagnostic Task
-                </h3>
-                <span className="diag-daily-date text-xs px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-gray-800 text-slate-700 dark:text-slate-300 font-mono font-medium">
-                  {todayTask?.taskDate || new Date().toISOString().split('T')[0]}
-                </span>
-                <span className="diag-daily-badge-wrap">
-                  {getDailyStatusBadge(todayTask?.status)}
-                </span>
-              </div>
-              <p className="diag-daily-desc text-xs text-slate-500 dark:text-gray-400 mt-1">
-                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED ? (
-                  <span>
-                    Verified by <strong className="font-semibold text-slate-800 dark:text-slate-200">{todayTask.performedByName || todayTask.performedBy}</strong> on{' '}
-                    {todayTask.completedAt ? new Date(todayTask.completedAt).toLocaleTimeString() : 'today'} (Single shared daily task for all administrators).
-                  </span>
-                ) : (
-                  <span>
-                    One shared task per day. Any authorized administrator may initiate and complete today's verification test on the tile.
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="diag-daily-sync-wrap flex items-center gap-2 self-start sm:self-auto">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                refetchDailyTask();
-                refetchBaseline();
-              }}
-              isLoading={isDailyTaskLoading || isBaselineLoading}
-              className="diag-sync-btn gap-1.5 text-xs text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white cursor-pointer"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Sync Status
-            </Button>
-          </div>
-        </div>
-
-        {/* Lock Warning Banner if Another Admin is Currently Testing */}
-        {isLockedByOtherAdmin && activeSession && (
-          <div className="mt-4 p-3.5 rounded-xl border flex items-start gap-3 bg-amber-50/90 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-200">
-            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-xs leading-relaxed">
-              <span className="font-bold">Diagnostic Session in Progress:</span>{' '}
-              Administrator <strong className="font-semibold">{activeSession.adminName}</strong> ({activeSession.adminEmail}) is currently conducting the physical step test.
-              Simultaneous testing is prevented to ensure telemetry integrity. Session lock will release once they finish or upon timeout at{' '}
-              <span className="font-mono">{new Date(activeSession.expiresAt).toLocaleTimeString()}</span>.
-            </div>
-          </div>
-        )}
-
-        {/* Lock Error Message */}
-        {lockError && (
-          <div className="mt-4 p-3 rounded-xl border flex items-center gap-2.5 bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 text-xs font-medium">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{lockError}</span>
-          </div>
-        )}
-      </div>
-
-      {/* ============================================================ */}
-      {/* 2. CARD HEADER: TILE STEP DIAGNOSTIC */}
-      {/* ============================================================ */}
-      <div className="diag-step-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b" style={{ borderColor: colors.border }}>
-        <div className="diag-step-header-top flex items-center gap-3">
-          <div 
-            className="diag-step-icon p-3 rounded-xl flex items-center justify-center transition-colors shrink-0" 
-            style={{ backgroundColor: colors.accentSubtle }}
-          >
-            <Footprints className="h-6 w-6" style={{ color: colors.accent }} />
-          </div>
-          <div className="diag-step-title-col">
-            <div className="diag-step-title-row flex items-center gap-2 flex-wrap">
-              <h2 
-                className="diag-step-title text-xl sm:text-2xl font-bold tracking-tight"
-                style={{ color: colors.textPrimary }}
-              >
-                Tile Step Diagnostic
-              </h2>
-              <Badge variant="success" shape="pill" className="diag-single-mode-pill text-xs px-2.5 py-0.5">
-                Single Tile Mode
-              </Badge>
-            </div>
-            <p className="diag-step-sub text-xs sm:text-sm mt-0.5" style={{ color: colors.textSecondary }}>
-              Automatic historical baseline comparison for on-demand footstep testing
-            </p>
-          </div>
-        </div>
-
-        <div className="diag-step-shield flex items-center gap-2">
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-            Baseline Recalibration Protected
-          </span>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* 3. GRID: BASELINE METRICS & TEST EXECUTION */}
-      {/* ============================================================ */}
-      <div className="diag-two-col-grid grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+      {/* ─────────────────────────────────────────────────────────────
+          LEFT COLUMN: Interactive Test Mode Flow
+          ───────────────────────────────────────────────────────────── */}
+      <div className="flex-1 basis-[280px] min-w-0 flex flex-col gap-3.5 items-start">
         
-        {/* Left Column: Automatic Baseline (5 cols) */}
-        <div className="diag-baseline-card lg:col-span-5 flex flex-col justify-between p-5 sm:p-6 rounded-2xl border bg-slate-50/80 dark:bg-gray-900/50 border-slate-200/80 dark:border-white/10 shadow-2xs">
-          <div>
-            <div className="diag-section-head flex items-center gap-2.5 mb-3">
-              <div className="diag-section-badge p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Sparkles className="h-3.5 w-3.5" />
-              </div>
-              <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
-                1. Established Reference Baseline
-              </h3>
-            </div>
-            
-            <p className="diag-section-sub text-xs mb-4 text-slate-500 dark:text-slate-400">
-              Evaluated against last {daysAnalyzed} days ({totalSteps.toLocaleString()} footsteps recorded):
+        {/* STATE 1: IDLE */}
+        {testState === 'IDLE' && (
+          <>
+            {/* Status Pill Badge */}
+            {isCompleted ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-[600] text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-3 py-0.5 whitespace-nowrap">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                Completed · {taskDate}
+              </span>
+            ) : isNeedsAttention ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-[600] text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 rounded-full px-3 py-0.5 whitespace-nowrap">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Needs attention · {taskDate}
+              </span>
+            ) : isOverdue ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-[600] text-rose-600 dark:text-rose-400 bg-rose-500/15 border border-rose-500/30 rounded-full px-3 py-0.5 whitespace-nowrap">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                Overdue · {taskDate}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-[600] text-amber-600 dark:text-[#fbbf24] bg-amber-500/15 dark:bg-[#2a2108] border border-amber-500/30 dark:border-[#5a4710] rounded-full px-3 py-0.5 whitespace-nowrap">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                Pending · {taskDate}
+              </span>
+            )}
+
+            {/* Title & Description */}
+            <h2 className="m-0 text-[20px] sm:text-[22px] font-[600] tracking-[-0.01em] leading-[1.2] text-[var(--t)]">
+              {isCompleted ? 'Daily task completed' : 'Daily step verification'}
+            </h2>
+            <p className="m-0 text-[13px] sm:text-[14px] leading-[1.5] text-[var(--mu)]">
+              {isCompleted
+                ? `Verified by ${todayTask?.performedByName || todayTask?.performedBy || 'admin'}. You may re-verify the tile anytime.`
+                : 'Start test mode, then step firmly on the tile.'}
             </p>
 
-            <div className="space-y-3">
-              {/* Normal Step */}
-              <div className="diag-inner-box p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
-                <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                  Normal step output baseline
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="diag-baseline-val text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">
-                    {normalStep.toFixed(5)}
-                  </span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-gray-400">mWh per step</span>
-                </div>
-              </div>
-
-              {/* Acceptable Range */}
-              <div className="diag-inner-box p-4 rounded-xl border bg-white dark:bg-gray-800/90 border-slate-200/90 dark:border-gray-700/60 shadow-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                    Acceptable threshold (±{tolerance}%)
-                  </p>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60">
-                    Normal Zone
-                  </span>
-                </div>
-                <div className="diag-range-val flex items-baseline gap-2 mt-1.5 tabular-nums text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
-                  <span>{minAcceptable.toFixed(5)}</span>
-                  <span className="text-slate-400 dark:text-gray-500 font-normal">→</span>
-                  <span>{maxAcceptable.toFixed(5)}</span>
-                  <span className="text-xs font-normal text-slate-500 dark:text-gray-400">mWh</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="diag-baseline-foot mt-5 pt-3.5 border-t border-slate-200/80 dark:border-gray-800/80 text-[11px] text-slate-500 dark:text-gray-400 flex items-center gap-2">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>Reference baseline is protected against auto-recalibration</span>
-          </div>
-        </div>
-
-        {/* Right Column: On-Demand Test Mode & Visual Result (7 cols) */}
-        <div className="diag-session-card lg:col-span-7 flex flex-col">
-          <div className="diag-section-head flex items-center gap-2.5 mb-3">
-            <div className={`diag-section-badge p-1 rounded-md ${testState === 'LISTENING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
-              <Radio className={`h-3.5 w-3.5 ${testState === 'LISTENING' ? 'animate-pulse' : ''}`} />
-            </div>
-            <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
-              2. Physical Step Test Session
-            </h3>
-          </div>
-
-          {/* STATE 1: IDLE */}
-          {testState === 'IDLE' && (
-            <div className="diag-idle-box flex-1 flex flex-col items-center justify-center p-8 sm:p-10 rounded-2xl border-2 border-dashed text-center bg-slate-50/60 dark:bg-gray-900/30 border-slate-200 dark:border-gray-800 transition-all">
-              <div className="diag-idle-icon p-4 rounded-2xl bg-emerald-100/70 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 ring-8 ring-emerald-50 dark:ring-emerald-950/20 mb-4 transition-transform hover:scale-105">
-                <Footprints className="h-8 w-8" />
-              </div>
-              <h4 className="diag-idle-title text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
-                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
-                  ? 'Daily Task Completed — Tile Verified'
-                  : 'Ready to Perform Daily Step Verification'}
-              </h4>
-              <p className="diag-idle-desc text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mb-6 leading-relaxed">
-                {todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED
-                  ? `Completed today by ${todayTask.performedByName || todayTask.performedBy}. You may initiate a re-verification test anytime.`
-                  : 'Click Start Test Mode to acquire the testing lock, then step firmly on the physical piezoelectric tile.'}
+            {/* Error Message if Lock Collision */}
+            {lockError && (
+              <p className="m-0 text-[12px] text-rose-600 dark:text-rose-400 font-medium">
+                {lockError}
               </p>
-              
+            )}
+
+            {/* Primary Action Button */}
+            <button
+              type="button"
+              onClick={handleStartTest}
+              disabled={isLockedByOtherAdmin || startSessionMutation.isPending}
+              className="min-h-[42px] sm:min-h-[44px] px-5 sm:px-6 inline-flex items-center gap-2 border-0 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[14px] sm:text-[15px] font-[600] hover:bg-[var(--bar)] transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed select-none"
+            >
+              {startSessionMutation.isPending ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                  <span>Acquiring Lock...</span>
+                </>
+              ) : isLockedByOtherAdmin ? (
+                <span>Locked ({activeSession?.adminName})</span>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <span>{isCompleted ? 'Perform re-verification' : 'Start test mode'}</span>
+                </>
+              )}
+            </button>
+          </>
+        )}
+
+        {/* STATE 2: LISTENING / TESTING */}
+        {testState === 'LISTENING' && (
+          <>
+            {/* Status Pill Badge with Live Pulse */}
+            <span className="inline-flex items-center gap-2 text-[11px] sm:text-[12px] font-[600] text-emerald-600 dark:text-[#4ade80] bg-emerald-500/15 dark:bg-[#0f2a1a] border border-emerald-500/30 dark:border-[#1d4a2e] rounded-full px-3 py-0.5 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-[#22c55e] animate-ping shrink-0" />
+              Locked for {user?.name || user?.email || 'Administrator'}
+            </span>
+
+            {/* Title & Description */}
+            <h2 className="m-0 text-[20px] sm:text-[22px] font-[600] tracking-[-0.01em] leading-[1.2] text-[var(--t)]">
+              Step on the tile
+            </h2>
+            <p className="m-0 text-[13px] sm:text-[14px] leading-[1.5] text-[var(--mu)]">
+              Step firmly. Waiting for the tile reading…
+            </p>
+
+            {/* Sleek Manual Fallback Entry */}
+            <div className="w-full box-border flex flex-col gap-2 bg-[var(--soft)] dark:bg-[#0a120e] border border-[var(--line)] dark:border-[#1d3326] rounded-xl p-3.5">
+              <label htmlFor="manual-reading" className="text-[12px] sm:text-[13px] font-[500] text-[var(--mu)]">
+                Or enter the reading manually
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <div className="flex-1 min-w-[140px] flex items-center gap-2 bg-[var(--panel)] dark:bg-[#101c15] border border-[var(--line)] dark:border-[#264232] rounded-full px-3.5 min-h-[40px]">
+                  <input
+                    id="manual-reading"
+                    value={manualInput}
+                    onChange={(e) => setManualInput(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="0.00418"
+                    className="flex-1 min-w-0 border-0 outline-none bg-transparent text-[var(--t)] dark:text-[#e8f3ec] font-['DM_Sans',sans-serif] text-[14px] sm:text-[15px] font-[500] tabular-nums"
+                  />
+                  <span className="text-[12px] text-[var(--mu)]">mWh</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleExecuteTest(parseFloat(manualInput) || 0.00418, 'Admin Step Verification')}
+                  disabled={completeDailyMutation.isPending}
+                  className="min-h-[40px] px-5 border-0 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[13px] sm:text-[14px] font-[600] hover:bg-[var(--bar)] transition-all cursor-pointer disabled:opacity-50 select-none"
+                >
+                  {completeDailyMutation.isPending ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            </div>
+
+            {/* Cancel & Release Lock Link */}
+            <button
+              type="button"
+              onClick={handleCancelTest}
+              disabled={cancelSessionMutation.isPending}
+              className="min-h-[36px] px-1 bg-transparent border-0 text-[var(--mu)] text-[13px] font-[500] underline underline-offset-4 hover:text-[var(--t)] cursor-pointer select-none"
+            >
+              Cancel and release lock
+            </button>
+          </>
+        )}
+
+        {/* STATE 3: RESULT */}
+        {testState === 'RESULT' && testResult && (
+          <>
+            {/* Status Pill Badge */}
+            <span className={`inline-flex items-center gap-1.5 text-[11px] sm:text-[12px] font-[600] rounded-full px-3 py-0.5 whitespace-nowrap border ${
+              isWithinRange
+                ? 'text-emerald-600 dark:text-[#4ade80] bg-emerald-500/15 dark:bg-[#0f2a1a] border-emerald-500/30 dark:border-[#1d4a2e]'
+                : 'text-amber-600 dark:text-[#fbbf24] bg-amber-500/15 dark:bg-[#2a2108] border-amber-500/30 dark:border-[#5a4710]'
+            }`}>
+              {isWithinRange ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+              {isWithinRange ? 'Within normal range' : 'Deviation detected'}
+            </span>
+
+            {/* Title */}
+            <h2 className="m-0 text-[20px] sm:text-[22px] font-[600] tracking-[-0.01em] leading-[1.2] text-[var(--t)]">
+              Verification completed
+            </h2>
+
+            {/* Measured Comparison Row */}
+            <div className="flex items-center gap-5 flex-wrap py-0.5">
+              <div>
+                <span className="block text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">
+                  Measured
+                </span>
+                <span className="text-[20px] sm:text-[22px] font-[500] tracking-[-0.02em] tabular-nums font-['DM_Sans',sans-serif] text-[var(--t)]">
+                  {testResult.actualEnergyMWh.toFixed(5)} <span className="text-xs font-normal text-[var(--mu)]">mWh</span>
+                </span>
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">
+                  Expected
+                </span>
+                <span className="text-[20px] sm:text-[22px] font-[500] tracking-[-0.02em] tabular-nums font-['DM_Sans',sans-serif] text-[var(--t)]">
+                  {testResult.expectedEnergyMWh.toFixed(5)} <span className="text-xs font-normal text-[var(--mu)]">mWh</span>
+                </span>
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-[600] uppercase tracking-[0.08em] text-[var(--mu)]">
+                  Deviation
+                </span>
+                <span className={`text-[20px] sm:text-[22px] font-[500] tracking-[-0.02em] tabular-nums font-['DM_Sans',sans-serif] ${
+                  isWithinRange ? 'text-emerald-600 dark:text-[#4ade80]' : 'text-amber-600 dark:text-[#fbbf24]'
+                }`}>
+                  {testResult.deviationPercentage >= 0 ? '+' : ''}{testResult.deviationPercentage.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+
+            {/* Completion Actions */}
+            <div className="flex items-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="min-h-[40px] px-5 border-0 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[14px] font-[600] hover:bg-[var(--bar)] transition-all cursor-pointer shadow-sm select-none"
+              >
+                Done
+              </button>
               <button
                 type="button"
                 onClick={handleStartTest}
-                disabled={isLockedByOtherAdmin || startSessionMutation.isPending}
-                className="diag-start-btn inline-flex items-center justify-center gap-2.5 px-6 py-2.5 text-sm font-semibold rounded-xl shadow-xs hover:shadow transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="min-h-[40px] px-4 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] text-[13px] font-[500] hover:bg-[var(--panel)] transition-all cursor-pointer inline-flex items-center gap-1.5 select-none"
               >
-                {startSessionMutation.isPending ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                    <span>Acquiring Lock...</span>
-                  </>
-                ) : isLockedByOtherAdmin ? (
-                  <>
-                    <Lock className="h-4 w-4 shrink-0" />
-                    <span>Session Locked ({activeSession?.adminName})</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 fill-current shrink-0" />
-                    <span>{todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED ? 'Perform Re-Verification Test' : 'Start Test Mode'}</span>
-                  </>
-                )}
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Test again</span>
               </button>
             </div>
-          )}
+          </>
+        )}
 
-          {/* STATE 2: LISTENING */}
-          {testState === 'LISTENING' && (
-            <div className="flex-1 flex flex-col justify-between p-6 sm:p-8 rounded-2xl border bg-emerald-50/70 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-500/30 shadow-xs">
-              <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-500/30 font-semibold text-xs mb-3">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  Session Locked for {user?.name || user?.email}
-                </div>
-                
-                <h4 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                  Ready — Step on the tile
-                </h4>
-                
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-                  Step firmly on the physical piezoelectric tile. Waiting for live ESP32 telemetry event...
-                </p>
-              </div>
-
-              {/* Quick Trigger / Manual Step Entry */}
-              <div className="mt-6 p-4 rounded-xl bg-white dark:bg-gray-900/90 border border-emerald-200 dark:border-emerald-500/30 shadow-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    ESP32 Telemetry Trigger / Manual Entry
-                  </span>
-                  <span className="text-[10px] text-slate-400 dark:text-gray-400 tabular-nums">Normal: 0.00510 mWh</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      step="0.00001"
-                      value={manualInput}
-                      onChange={(e) => setManualInput(e.target.value)}
-                      placeholder="0.00418"
-                      className="w-full text-sm tabular-nums px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <span className="absolute right-3 top-2.5 text-xs text-slate-400 pointer-events-none">mWh</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleExecuteTest(parseFloat(manualInput) || 0.00418, 'Admin Step Verification')}
-                    disabled={completeDailyMutation.isPending}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
-                  >
-                    {completeDailyMutation.isPending ? 'Verifying...' : 'Submit Step'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-center">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleCancelTest} 
-                  disabled={cancelSessionMutation.isPending}
-                  className="text-xs text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white cursor-pointer"
-                >
-                  Cancel Session & Release Lock
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STATE 3: VISUAL RESULT */}
-          {testState === 'RESULT' && testResult && (
-            <div 
-              className="flex-1 flex flex-col justify-between p-6 sm:p-7 rounded-2xl border shadow-xs transition-all bg-white dark:bg-gray-900/60"
-              style={{
-                borderColor: isWithinRange ? '#10B981' : '#EF4444',
-              }}
-            >
-              <div>
-                {/* Result Status Header */}
-                <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2.5">
-                    {isWithinRange ? (
-                      <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                    ) : (
-                      <AlertTriangle className="h-6 w-6 text-amber-500" />
-                    )}
-                    <div>
-                      <span className={`text-base font-bold tracking-tight ${isWithinRange ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                        {testResult.result === DiagnosticResultStatus.WITHIN_RANGE 
-                          ? '✅ WITHIN NORMAL RANGE' 
-                          : testResult.result.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-xs tabular-nums text-slate-400 dark:text-gray-400 block">
-                      {new Date(testResult.testDate).toLocaleTimeString()}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Daily Task Updated
-                    </span>
-                  </div>
-                </div>
-
-                {/* Numeric Comparison Card */}
-                <div className="grid grid-cols-3 gap-3 mb-6 p-4 rounded-xl bg-slate-50/90 dark:bg-gray-800/80 border border-slate-200/80 dark:border-white/10 shadow-xs">
-                  <div>
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Your Step</p>
-                    <p className="text-lg sm:text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
-                      {testResult.actualEnergyMWh.toFixed(5)} <span className="text-xs font-normal text-slate-400">mWh</span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Expected</p>
-                    <p className="text-lg sm:text-xl font-bold tabular-nums text-slate-900 dark:text-gray-100 mt-0.5">
-                      {testResult.expectedEnergyMWh.toFixed(5)} <span className="text-xs font-normal text-slate-400">mWh</span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Deviation</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {testResult.deviationPercentage >= 0 ? (
-                        <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 text-amber-500" />
-                      )}
-                      <p className={`text-lg sm:text-xl font-bold tabular-nums ${testResult.deviationPercentage >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {testResult.deviationPercentage >= 0 ? '+' : ''}{testResult.deviationPercentage.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Visual Result ASCII / Range Bar */}
-                <div className="mb-6 px-2">
-                  <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-gray-400 mb-2">
-                    <span>Performance Distribution Scale</span>
-                    <span className="tabular-nums">Acceptable range ±{tolerance}%</span>
-                  </div>
-
-                  {/* Horizontal Track Container */}
-                  <div className="relative h-10 w-full flex items-center">
-                    {/* Base Background Track */}
-                    <div className="absolute w-full h-3 rounded-full bg-slate-200 dark:bg-gray-700/80"></div>
-
-                    {/* Acceptable Zone Highlight */}
-                    <div 
-                      className="absolute h-3 bg-emerald-500/25 dark:bg-emerald-500/20 rounded-full border border-emerald-500/40"
-                      style={{
-                        left: `${getMinPosition()}%`,
-                        width: `${getMaxPosition() - getMinPosition()}%`,
-                      }}
-                    ></div>
-
-                    {/* Center Mean Marker */}
-                    <div 
-                      className="absolute top-1 bottom-1 w-0.5 bg-slate-400 dark:bg-gray-400"
-                      style={{ left: `${getMeanPosition()}%` }}
-                    ></div>
-
-                    {/* Your Step Marker */}
-                    <div 
-                      className="absolute -top-3.5 transform -translate-x-1/2 flex flex-col items-center z-10 transition-all duration-500"
-                      style={{ left: `${getMarkerPosition()}%` }}
-                    >
-                      <span className="text-xl filter drop-shadow">👟</span>
-                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 shadow-md"></div>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap mt-0.5">
-                        (you)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Ticks and Labels below Track */}
-                  <div className="relative w-full h-8 mt-1 text-[11px] tabular-nums text-slate-600 dark:text-gray-300">
-                    <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMinPosition()}%` }}>
-                      <span className="block font-semibold">{minAcceptable.toFixed(5)}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-gray-400">(min)</span>
-                    </div>
-
-                    <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMeanPosition()}%` }}>
-                      <span className="block font-semibold">{normalStep.toFixed(5)}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-gray-400">(mean)</span>
-                    </div>
-
-                    <div className="absolute transform -translate-x-1/2 text-center" style={{ left: `${getMaxPosition()}%` }}>
-                      <span className="block font-semibold">{maxAcceptable.toFixed(5)}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-gray-400">(max)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Verdict Footer Box */}
-                <div className={`p-3.5 rounded-xl border text-center font-semibold text-sm ${isWithinRange ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-500/40 dark:text-emerald-300' : 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/40 dark:border-amber-500/40 dark:text-amber-300'}`}>
-                  {testResult.statusMessage}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-6 mt-2 border-t border-slate-100 dark:border-gray-800">
-                <button
-                  type="button"
-                  onClick={handleStartTest} 
-                  className="inline-flex items-center justify-center gap-2 flex-1 font-semibold text-sm py-2.5 px-5 rounded-xl shadow-xs transition-all bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#39FF88] dark:text-[#0B132B] dark:hover:bg-[#2EE577] cursor-pointer"
-                >
-                  <Play className="h-4 w-4 fill-current shrink-0" />
-                  <span>Test Again</span>
-                </button>
-                <Button variant="ghost" onClick={handleReset} className="text-xs text-slate-600 dark:text-gray-300 cursor-pointer">
-                  Done
-                </Button>
-              </div>
-            </div>
-          )}
-
-        </div>
       </div>
-    </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          RIGHT COLUMN: Normal Output & Horizontal Distribution Scale
+          ───────────────────────────────────────────────────────────── */}
+      <div className="flex-1 basis-[320px] min-w-0 flex flex-col gap-4">
+        
+        {/* Normal Output Header */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
+            Normal output
+          </span>
+          <div className="flex items-baseline flex-wrap gap-x-2 gap-y-0.5">
+            <span className="text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] leading-none tabular-nums text-[var(--t)] font-['DM_Sans',sans-serif]">
+              {normalStep.toFixed(5)}
+            </span>
+            <span className="text-[13px] sm:text-[14px] text-[var(--mu)] font-normal">
+              mWh per step
+            </span>
+          </div>
+        </div>
+
+        {/* Distribution Scale Bar */}
+        <div className="flex flex-col gap-2 px-2 pb-6">
+          <div className="relative h-[12px] rounded-full bg-[var(--soft)] dark:bg-[#1a2b21] border border-[var(--line)]">
+            {/* Acceptable Zone highlight */}
+            <div
+              className="absolute top-0 bottom-0 rounded-full bg-emerald-500/30 dark:bg-[#166534]"
+              style={{
+                left: `${Math.max(0, getMinPosition())}%`,
+                width: `${Math.min(100 - getMinPosition(), getMaxPosition() - getMinPosition())}%`,
+              }}
+            />
+
+            {/* Center Mean / Current Test Marker */}
+            <div
+              className="absolute top-[-4px] w-1 h-[20px] -ml-[2px] rounded-sm bg-emerald-500 dark:bg-[#22c55e] shadow-xs"
+              style={{ left: `${Math.max(4, Math.min(96, testState === 'RESULT' ? getMarkerPosition() : 50))}%` }}
+            />
+
+            {/* Min threshold tick label */}
+            <span
+              className="absolute top-5 -translate-x-1/2 font-['DM_Sans',sans-serif] text-[11px] font-[500] tabular-nums text-[var(--mu)] select-none"
+              style={{ left: `${Math.max(6, getMinPosition())}%` }}
+            >
+              {minAcceptable.toFixed(5)}
+            </span>
+
+            {/* Max threshold tick label */}
+            <span
+              className="absolute top-5 -translate-x-1/2 font-['DM_Sans',sans-serif] text-[11px] font-[500] tabular-nums text-[var(--mu)] select-none"
+              style={{ left: `${Math.min(94, getMaxPosition())}%` }}
+            >
+              {maxAcceptable.toFixed(5)}
+            </span>
+          </div>
+        </div>
+
+        {/* Normal Zone Pill & Baseline Protection Footnote */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-[12px] sm:text-[13px] text-[var(--mu)]">
+          <span className="text-[10px] sm:text-[11px] font-[600] px-2.5 py-0.5 rounded-full text-emerald-600 dark:text-[#4ade80] bg-emerald-500/15 dark:bg-[#0f2a1a] border border-emerald-500/30 dark:border-[#1d4a2e] whitespace-nowrap shrink-0">
+            Normal zone ±{tolerance}%
+          </span>
+          <span>
+            {totalSteps.toLocaleString()} footsteps over {daysAnalyzed} days · baseline locked
+          </span>
+        </div>
+
+      </div>
+    </section>
   );
 }
