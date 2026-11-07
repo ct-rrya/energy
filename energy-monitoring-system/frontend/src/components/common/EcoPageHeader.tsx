@@ -40,15 +40,15 @@ export function EcoPageHeader({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h1 
-            className="eco-page-title text-[28px] sm:text-[32px] font-[700] tracking-tight leading-tight text-[var(--t)]"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
+            className="eco-page-title text-[32px] sm:text-[44px] font-[500] tracking-[-0.02em] leading-tight text-[var(--t)]"
+            style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
           >
             {title}
           </h1>
           {subtitle && (
             <p 
-              className="eco-page-subtitle text-[13px] text-[var(--mu)] mt-1 font-normal leading-relaxed"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
+              className="eco-page-subtitle text-[14px] sm:text-[15px] text-[var(--mu)] mt-1.5 font-normal leading-relaxed"
+              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
             >
               {subtitle}
             </p>

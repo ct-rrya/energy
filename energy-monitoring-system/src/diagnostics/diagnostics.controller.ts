@@ -4,9 +4,11 @@ import {
   Post,
   Body,
   Query,
+  Req,
   UseGuards,
   Logger,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -20,6 +22,9 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DiagnosticsService } from './diagnostics.service';
 import { DashboardGateway } from '../dashboard/dashboard.gateway';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_MODULES, AUDIT_ACTIONS } from '../audit/schemas/audit-log.schema';
+import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 import {
   CreateReferenceConfigDto,
   ReferenceConfigResponseDto,
@@ -81,6 +86,7 @@ export class DiagnosticsController {
   constructor(
     private readonly diagnosticsService: DiagnosticsService,
     private readonly dashboardGateway: DashboardGateway,
+    private readonly auditService: AuditService,
   ) {}
 
   /**
@@ -93,6 +99,7 @@ export class DiagnosticsController {
    *
    * @param dto - Reference configuration data
    * @param user - Current authenticated admin user
+   * @param req - Express Request
    * @returns The created/updated reference configuration
    *
    * Requirements: 6.1, 29.2
@@ -128,35 +135,72 @@ export class DiagnosticsController {
   async createOrUpdateReference(
     @Body() dto: CreateReferenceConfigDto,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
   ): Promise<ReferenceConfigResponseDto> {
     this.logger.log(
       `Admin ${user.email} creating/updating reference configuration`,
     );
 
-    const config = await this.diagnosticsService.createOrUpdateReferenceConfig(
-      dto,
-      user.email,
-    );
+    try {
+      const config = await this.diagnosticsService.createOrUpdateReferenceConfig(
+        dto,
+        user.email,
+      );
 
-    // Broadcast WebSocket event to admin clients only
-    this.dashboardGateway.emitToAdmins('diagnostic:config-updated', {
-      appliedWeightKg: config.appliedWeightKg,
-      expectedEnergyWh: config.expectedEnergyWh,
-      tolerancePercent: config.tolerancePercent,
-      createdBy: config.createdBy,
-      updatedAt: config.updatedAt,
-    });
+      // Broadcast WebSocket event to admin clients only
+      this.dashboardGateway.emitToAdmins('diagnostic:config-updated', {
+        appliedWeightKg: config.appliedWeightKg,
+        expectedEnergyWh: config.expectedEnergyWh,
+        tolerancePercent: config.tolerancePercent,
+        createdBy: config.createdBy,
+        updatedAt: config.updatedAt,
+      });
 
-    this.logger.log('Reference configuration saved and broadcasted to admins');
+      this.logger.log('Reference configuration saved and broadcasted to admins');
 
-    return {
-      appliedWeightKg: config.appliedWeightKg,
-      expectedEnergyWh: config.expectedEnergyWh,
-      tolerancePercent: config.tolerancePercent,
-      createdBy: config.createdBy,
-      createdAt: config.createdAt,
-      updatedAt: config.updatedAt,
-    };
+      await this.auditService.logSuccess({
+        administratorId: user._id.toString(),
+        administratorName: user.name,
+        administratorRole: user.role,
+        module: AUDIT_MODULES.DIAGNOSTICS,
+        action: AUDIT_ACTIONS.UPDATE_REFERENCE_CONFIG,
+        target: 'Reference Configuration',
+        targetType: 'DiagnosticConfig',
+        ipAddress: extractSafeIp(req),
+        userAgent: req.headers['user-agent'] as string,
+        details: {
+          appliedWeightKg: config.appliedWeightKg,
+          expectedEnergyWh: config.expectedEnergyWh,
+          tolerancePercent: config.tolerancePercent,
+        },
+      });
+
+      return {
+        appliedWeightKg: config.appliedWeightKg,
+        expectedEnergyWh: config.expectedEnergyWh,
+        tolerancePercent: config.tolerancePercent,
+        createdBy: config.createdBy,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
+      };
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.DIAGNOSTICS,
+          action: AUDIT_ACTIONS.UPDATE_REFERENCE_CONFIG,
+          target: 'Reference Configuration',
+          targetType: 'DiagnosticConfig',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { dto },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -259,48 +303,89 @@ export class DiagnosticsController {
   async recordTest(
     @Body() dto: RecordDiagnosticTestDto,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
   ): Promise<DiagnosticTestResponseDto> {
     this.logger.log(
       `Admin ${user.email} recording diagnostic test: ${dto.actualEnergy} Wh`,
     );
 
-    const test = await this.diagnosticsService.recordDiagnosticTest(
-      dto,
-      user.email,
-    );
+    try {
+      const test = await this.diagnosticsService.recordDiagnosticTest(
+        dto,
+        user.email,
+      );
 
-    // Convert to plain object to access _id
-    const testDoc = test as any;
+      // Convert to plain object to access _id
+      const testDoc = test as any;
 
-    // Broadcast WebSocket event to admin clients only
-    this.dashboardGateway.emitToAdmins('diagnostic:test-completed', {
-      id: testDoc._id?.toString(),
-      testDate: test.testDate,
-      performedBy: test.performedBy,
-      actualEnergy: test.actualEnergy,
-      expectedEnergy: test.expectedEnergy,
-      difference: test.difference,
-      performancePercentage: test.performancePercentage,
-      result: test.result,
-      notes: test.notes,
-    });
+      // Broadcast WebSocket event to admin clients only
+      this.dashboardGateway.emitToAdmins('diagnostic:test-completed', {
+        id: testDoc._id?.toString(),
+        testDate: test.testDate,
+        performedBy: test.performedBy,
+        actualEnergy: test.actualEnergy,
+        expectedEnergy: test.expectedEnergy,
+        difference: test.difference,
+        performancePercentage: test.performancePercentage,
+        result: test.result,
+        notes: test.notes,
+      });
 
-    this.logger.log(
-      `Diagnostic test recorded and broadcasted to admins: Result=${test.result}, Performance=${test.performancePercentage}%`,
-    );
+      this.logger.log(
+        `Diagnostic test recorded and broadcasted to admins: Result=${test.result}, Performance=${test.performancePercentage}%`,
+      );
 
-    return {
-      id: testDoc._id?.toString(),
-      testDate: test.testDate,
-      performedBy: test.performedBy,
-      actualEnergy: test.actualEnergy,
-      expectedEnergy: test.expectedEnergy,
-      difference: test.difference,
-      performancePercentage: test.performancePercentage,
-      result: test.result,
-      referenceConfig: test.referenceConfig,
-      notes: test.notes,
-    };
+      await this.auditService.logSuccess({
+        administratorId: user._id.toString(),
+        administratorName: user.name,
+        administratorRole: user.role,
+        module: AUDIT_MODULES.DIAGNOSTICS,
+        action: AUDIT_ACTIONS.RUN_DIAGNOSTIC_TEST,
+        target: 'Diagnostic Test Run',
+        targetType: 'DiagnosticTest',
+        ipAddress: extractSafeIp(req),
+        userAgent: req.headers['user-agent'] as string,
+        details: {
+          testId: testDoc._id?.toString(),
+          actualEnergy: test.actualEnergy,
+          expectedEnergy: test.expectedEnergy,
+          difference: test.difference,
+          performancePercentage: test.performancePercentage,
+          result: test.result,
+          notes: test.notes,
+        },
+      });
+
+      return {
+        id: testDoc._id?.toString(),
+        testDate: test.testDate,
+        performedBy: test.performedBy,
+        actualEnergy: test.actualEnergy,
+        expectedEnergy: test.expectedEnergy,
+        difference: test.difference,
+        performancePercentage: test.performancePercentage,
+        result: test.result,
+        referenceConfig: test.referenceConfig,
+        notes: test.notes,
+      };
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.DIAGNOSTICS,
+          action: AUDIT_ACTIONS.RUN_DIAGNOSTIC_TEST,
+          target: 'Diagnostic Test Run',
+          targetType: 'DiagnosticTest',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { dto },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -418,21 +503,62 @@ export class DiagnosticsController {
   async recordStepTest(
     @Body() dto: RecordStepTestDto,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
   ): Promise<StepTestResponseDto> {
     this.logger.log(
       `Admin ${user.email} recording on-demand step test: ${dto.actualStepEnergyMWh} mWh`,
     );
 
-    const result = await this.diagnosticsService.recordStepTest(
-      dto,
-      user.email,
-    );
+    try {
+      const result = await this.diagnosticsService.recordStepTest(
+        dto,
+        user.email,
+      );
 
-    // Broadcast WebSocket events to admin clients
-    this.dashboardGateway.emitToAdmins('diagnostic:test-completed', result);
-    this.dashboardGateway.emitToAdmins('diagnostic:step-tested', result);
+      // Broadcast WebSocket events to admin clients
+      this.dashboardGateway.emitToAdmins('diagnostic:test-completed', result);
+      this.dashboardGateway.emitToAdmins('diagnostic:step-tested', result);
 
-    return result;
+      const isPassed = !result.deviationPercentage || Math.abs(result.deviationPercentage) <= 15;
+      await this.auditService.logAudit(req, {
+        category: 'Diagnostics',
+        event: 'Ran daily tile diagnostics',
+        result: isPassed ? 'SUCCESS' : 'FAILED',
+        details: {
+          tilesChecked: 1,
+          flaggedTiles: isPassed ? 0 : 1,
+          result: isPassed ? 'PASSED' : 'FLAGGED',
+          actualEnergyMWh: result.actualEnergyMWh,
+          expectedEnergyMWh: result.expectedEnergyMWh,
+          performancePercentage: result.performancePercentage,
+          deviationPercentage: result.deviationPercentage,
+        },
+        admin: {
+          id: user._id.toString(),
+          name: user.name,
+          role: user.role,
+        },
+      });
+
+      return result;
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.DIAGNOSTICS,
+          action: AUDIT_ACTIONS.RUN_DIAGNOSTIC_TEST,
+          target: 'Step Diagnostic Test',
+          targetType: 'DiagnosticTest',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { dto },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   // ============================================================
@@ -525,15 +651,58 @@ export class DiagnosticsController {
   async completeDailyTask(
     @Body() dto: CompleteDailyDiagnosticDto,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
   ) {
     this.logger.log(
       `Admin ${user.email} completing daily diagnostic: ${dto.actualStepEnergyMWh} mWh`,
     );
 
-    return this.diagnosticsService.completeDailyDiagnostic(dto, {
-      email: user.email,
-      name: user.name,
-    });
+    try {
+      const result = await this.diagnosticsService.completeDailyDiagnostic(dto, {
+        email: user.email,
+        name: user.name,
+      });
+
+      const status = (result as any)?.status || 'NORMAL';
+      const isAnomalous = status === 'anomalous';
+      await this.auditService.logAudit(req, {
+        category: 'Diagnostics',
+        event: 'Ran daily tile diagnostics',
+        result: isAnomalous ? 'FAILED' : 'SUCCESS',
+        details: {
+          tilesChecked: 1,
+          flaggedTiles: isAnomalous ? 1 : 0,
+          result: isAnomalous ? 'ANOMALOUS' : 'NORMAL',
+          actualStepEnergyMWh: dto.actualStepEnergyMWh,
+          baselineMeanMWh: (result as any)?.baselineMeanMWh,
+          performancePercentage: (result as any)?.performancePercentage,
+        },
+        admin: {
+          id: user._id.toString(),
+          name: user.name,
+          role: user.role,
+        },
+      });
+
+      return result;
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.DIAGNOSTICS,
+          action: AUDIT_ACTIONS.COMPLETE_DAILY_DIAGNOSTIC,
+          target: 'Daily Diagnostic Task',
+          targetType: 'DailyDiagnostic',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { dto },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**

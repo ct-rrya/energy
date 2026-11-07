@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/contexts/SocketContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { DiagnosticHistoryTable } from '../components/DiagnosticHistoryTable';
 import { StepDiagnosticTestCard } from '../components/StepDiagnosticTestCard';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
@@ -65,6 +66,8 @@ export function DiagnosticsPage() {
     };
   }, [socket, isConnected, queryClient]);
 
+  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+
   return (
     <div className="page" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Page Header matching mockup */}
@@ -72,8 +75,8 @@ export function DiagnosticsPage() {
         greeting="Tile health"
         title="Tile Performance Diagnostics"
         subtitle="Health check for your piezoelectric footstep tile"
-        systemStatus={isConnected ? 'connected' : 'disconnected'}
-        isWebSocketConnected={isConnected}
+        systemStatus={hardwareConnectionStatus}
+        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Main Content Stack: Today Card + History Card + Bottom Note */}

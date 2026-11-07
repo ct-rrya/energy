@@ -29,6 +29,13 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function normalizeUser(u: User): User {
+  if (u.role === 'SUPER_ADMIN') {
+    return { ...u, name: 'Ecostep Super' };
+  }
+  return u;
+}
+
 /**
  * Auth Provider Component
  * Manages authentication state and provides auth methods
@@ -61,7 +68,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Verify token by fetching user profile
           try {
             const response = await authService.getProfile();
-            setUser(response.data);
+            const normalized = normalizeUser(response.data);
+            setUser(normalized);
             setToken(storedToken);
           } catch (error) {
             // Token invalid, clear auth
@@ -111,16 +119,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const response = await authService.loginWithAccessCode(credentials);
         const { token: newToken, user: newUser } = response.data;
 
+        const normalized = normalizeUser(newUser);
+
         // Store in localStorage
         localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
-        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(newUser));
+        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(normalized));
 
         // Update state
         setToken(newToken);
-        setUser(newUser);
+        setUser(normalized);
         
         // Return user for immediate use
-        return newUser;
+        return normalized;
       } catch (error) {
         console.error('Access code login error:', error);
         // Re-throw error for component to handle

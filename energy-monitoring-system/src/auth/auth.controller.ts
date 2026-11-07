@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,6 +10,8 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto, AuthResponseDto, AccessCodeLoginDto } from './dto';
 import { AuditService } from '../audit/audit.service';
+import { extractSafeIp } from '../audit/utils/audit-ip.utils';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 /**
  * Authentication Controller
@@ -155,69 +157,49 @@ export class AuthController {
       },
     },
   })
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Req() req: any): Promise<AuthResponseDto> {
+    try {
+      const response = await this.authService.login(loginDto);
+
+      // Audit successful login
+      await this.auditService.logAudit(req, {
+        category: 'Authentication',
+        event: 'Log In',
+        result: 'SUCCESS',
+        details: { method: 'password', email: loginDto.email },
+        admin: {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        },
+      });
+
+      return response;
+    } catch (error: any) {
+      // Audit failed login attempt
+      await this.auditService.logAudit(req, {
+        category: 'Authentication',
+        event: 'Log In',
+        result: 'FAILED',
+        failureReason: error?.message || 'Invalid email or password',
+        details: { method: 'password', email: loginDto.email },
+        admin: {
+          id: '000000000000000000000000',
+          name: loginDto.email || 'Unknown',
+          role: 'ADMIN',
+        },
+      });
+
+      throw error;
+    }
   }
 
   /**
    * Administrator Access Code Login
-   *
-   * Authenticates administrator with access code and returns JWT token.
-   * Used for shared-workstation authentication.
-   *
-   * @param accessCodeLoginDto - Access code credentials
-   * @returns JWT token and administrator information
-   * @throws UnauthorizedException if access code is invalid
-   *
-   * Process:
-   * 1. Validate request body (automatic via AccessCodeLoginDto)
-   * 2. Verify access code (AuthService)
-   * 3. Generate JWT token with session ID (AuthService)
-   * 4. Update last login and activity timestamps
-   * 5. Log authentication attempt (AuditService)
-   * 6. Return token + user data
-   *
-   * Security:
-   * - Access code is 12-character alphanumeric (case-sensitive)
-   * - Access code is never logged or returned
-   * - Generic error message (doesn't reveal which admin account)
-   * - Account status checked (inactive accounts rejected)
-   * - JWT token includes session ID for tracking
-   * - All login attempts are audited
-   *
-   * Example Request:
-   * POST /api/auth/admin/access-code
-   * {
-   *   "accessCode": "ABC123DEF456"
-   * }
-   *
-   * Example Success Response (200):
-   * {
-   *   "success": true,
-   *   "message": "Access code verified",
-   *   "data": {
-   *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-   *     "user": {
-   *       "id": "64f9a1b2c3d4e5f6g7h8i9j0",
-   *       "email": "admin@example.com",
-   *       "name": "John Doe",
-   *       "role": "SYSTEM_ADMIN",
-   *       "isActive": true
-   *     }
-   *   }
-   * }
-   *
-   * Example Error Response (401):
-   * {
-   *   "success": false,
-   *   "statusCode": 401,
-   *   "message": "Invalid access code",
-   *   "timestamp": "2026-10-01T10:30:00.000Z"
-   * }
    */
   @Post('admin/access-code')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ auth: { limit: 5, ttl: 900000 } }) // 5 attempts per 15 minutes (stricter for access codes)
+  @Throttle({ auth: { limit: 5, ttl: 900000 } })
   @ApiOperation({
     summary: 'Administrator access code login',
     description:
@@ -226,32 +208,14 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description:
-      'Access code verified - returns JWT token and administrator information',
+    description: 'Access code verified - returns JWT token and administrator information',
     type: AuthResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Validation error - invalid access code format',
-    schema: {
-      example: {
-        success: false,
-        statusCode: 400,
-        message: 'Validation failed',
-        errors: ['Access code must be exactly 12 characters'],
-        timestamp: '2026-10-01T10:30:00.000Z',
-      },
-    },
   })
   @ApiUnauthorizedResponse({
     description: 'Invalid access code or inactive account',
-    schema: {
-      example: {
-        success: false,
-        statusCode: 401,
-        message: 'Invalid access code',
-        timestamp: '2026-10-01T10:30:00.000Z',
-      },
-    },
   })
   async loginWithAccessCode(
     @Body() accessCodeLoginDto: AccessCodeLoginDto,
@@ -264,32 +228,79 @@ export class AuthController {
       );
 
       // Log successful authentication
-      await this.auditService.logSuccess({
-        administratorId: response.data.user.id,
-        administratorName: response.data.user.name,
-        administratorRole: response.data.user.role as any,
-        action: 'LOGIN',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        sessionId: response.data.user.id + '_' + Date.now(), // Session ID from JWT
+      await this.auditService.logAudit(req, {
+        category: 'Authentication',
+        event: 'Log In',
+        result: 'SUCCESS',
+        details: { method: 'access_code' },
+        admin: {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        },
       });
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
       // Log failed authentication attempt
-      // Note: We don't know which admin attempted, so log as system event
-      await this.auditService.log({
-        administratorId: '000000000000000000000000', // System/unknown
-        administratorName: 'Unknown',
-        administratorRole: 'SYSTEM_ADMIN',
-        action: 'LOGIN',
-        result: 'failure',
-        failureReason: 'Invalid access code',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
+      await this.auditService.logAudit(req, {
+        category: 'Authentication',
+        event: 'Log In',
+        result: 'FAILED',
+        failureReason: error?.message || 'Invalid access code',
+        details: { method: 'access_code' },
+        admin: {
+          id: '000000000000000000000000',
+          name: 'Unknown',
+          role: 'ADMIN',
+        },
       });
 
       throw error;
     }
+  }
+
+  /**
+   * Administrator Logout
+   * Records logout event server-side before session is cleared
+   */
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Administrator logout' })
+  async logout(@Req() req: any) {
+    await this.auditService.logAudit(req, {
+      category: 'Authentication',
+      event: 'Log Out',
+      result: 'SUCCESS',
+      details: { reason: 'user_initiated' },
+    });
+
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
+  }
+
+  /**
+   * Session Timeout
+   * Records session expiration / idle timeout server-side
+   */
+  @Post('session-timeout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Administrator session timeout / expiration' })
+  async sessionTimeout(@Req() req: any) {
+    await this.auditService.logAudit(req, {
+      category: 'Authentication',
+      event: 'Session Timeout',
+      result: 'SUCCESS',
+      details: { reason: 'idle_timeout' },
+    });
+
+    return {
+      success: true,
+      message: 'Session expiration recorded',
+    };
   }
 }

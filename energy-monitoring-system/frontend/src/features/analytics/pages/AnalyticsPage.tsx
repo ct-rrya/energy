@@ -2,11 +2,10 @@ import { useState, useMemo, lazy, Suspense, useTransition } from 'react';
 import { BarChart3, Table } from 'lucide-react';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { getUserRole } from '@/lib/permissions';
 import { HistoricalDataView } from '../components/HistoricalDataView';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
-import { useSystemHealth } from '@/features/dashboard/hooks/useSystemHealth';
-import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData';
 import { ChartCardSkeleton } from '@/components/dashboard/ChartCardSkeleton';
 import type { Granularity } from '../types';
 
@@ -169,25 +168,18 @@ export function AnalyticsPage() {
     return PERIOD_OPTIONS.find((opt) => opt.value === selectedPeriod)?.label ?? 'All Time';
   }, [selectedPeriod]);
 
-  const { data: systemStatusData } = useSystemHealth();
-  const { isConnected: isWebSocketConnected } = useLiveSensorData();
-
-  const systemStatus = (() => {
-    if (systemStatusData?.database === 'connected') return 'connected' as const;
-    if (systemStatusData?.database === 'disconnected') return 'disconnected' as const;
-    return 'unknown' as const;
-  })();
+  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
 
   return (
     <div className="page">
-      {/* Page Header */}
+      {/* Page Header with standardized hardware status */}
       <DashboardHeader
         greeting="System Insights"
         title="Analytics"
         subtitle="Energy trends and historical data."
-        systemStatus={systemStatus}
+        systemStatus={hardwareConnectionStatus}
         isPublicUser={isPublicUser}
-        isWebSocketConnected={isWebSocketConnected}
+        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* View Toggle and Period Filter */}
@@ -320,6 +312,7 @@ export function AnalyticsPage() {
             endDate={dateRange.endDate}
             granularity={granularity}
             isPublicUser={isPublicUser}
+            onResetToAllTime={() => handlePeriodChange('all')}
           />
         </div>
       )}

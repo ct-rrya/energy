@@ -6,12 +6,14 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -24,7 +26,6 @@ import {
   ApiUnauthorizedResponse,
   ApiForbiddenResponse,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
 import { ReportsService } from './reports.service';
 import {
   GenerateReportDto,
@@ -35,6 +36,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ReportType, ReportFormat } from './schemas/report.schema';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_MODULES, AUDIT_ACTIONS } from '../audit/schemas/audit-log.schema';
+import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 
 /**
  * Reports Controller
@@ -64,7 +68,10 @@ import type { UserDocument } from '../users/schemas/user.schema';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ReportsController {
-  constructor(private readonly reportsService: ReportsService) {}
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Generate Report
@@ -137,20 +144,66 @@ export class ReportsController {
   async generate(
     @Body() generateReportDto: GenerateReportDto,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
   ) {
-    const report = await this.reportsService.generate(
-      generateReportDto,
-      user._id.toString(),
-    );
+    try {
+      const report = await this.reportsService.generate(
+        generateReportDto,
+        user._id.toString(),
+      );
 
-    return {
-      success: true,
-      message: 'Report generated successfully',
-      data: {
-        ...report.toJSON(),
-        fileUrl: `/api/reports/${report._id.toString()}/download`,
-      },
-    };
+      const formatLower = (generateReportDto.format || '').toLowerCase();
+      let eventName = 'Generated PDF report';
+      if (formatLower === 'csv') {
+        eventName = 'Exported CSV';
+      } else if (formatLower === 'word' || formatLower === 'docx' || formatLower === 'doc') {
+        eventName = 'Generated Word report';
+      } else if (formatLower === 'excel' || formatLower === 'xlsx') {
+        eventName = 'Exported CSV';
+      }
+
+      await this.auditService.logAudit(req, {
+        category: 'Reports',
+        event: eventName,
+        result: 'SUCCESS',
+        details: {
+          reportName: report.fileName || generateReportDto.type,
+          format: generateReportDto.format,
+          dateRange: `${generateReportDto.startDate} to ${generateReportDto.endDate}`,
+        },
+        admin: {
+          id: user._id.toString(),
+          name: user.name,
+          role: user.role,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Report generated successfully',
+        data: {
+          ...report.toJSON(),
+          fileUrl: `/api/reports/${report._id.toString()}/download`,
+        },
+      };
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.REPORTS,
+          action: AUDIT_ACTIONS.GENERATE_REPORT,
+          target: generateReportDto.type,
+          targetType: 'Report',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { dto: generateReportDto },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -390,26 +443,72 @@ export class ReportsController {
   async download(
     @Param('id') id: string,
     @CurrentUser() user: UserDocument,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const { stream, report } = await this.reportsService.download(
-      id,
-      user._id.toString(),
-    );
+    try {
+      const { stream, report } = await this.reportsService.download(
+        id,
+        user._id.toString(),
+      );
 
-    // Set response headers
-    const contentType =
-      report.format === 'pdf'
-        ? 'application/pdf'
-        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      // Set response headers
+      const contentType =
+        report.format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-    res.set({
-      'Content-Type': contentType,
-      'Content-Disposition': `attachment; filename="${report.fileName}"`,
-      'Content-Length': report.fileSize,
-    });
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${report.fileName}"`,
+        'Content-Length': report.fileSize,
+      });
 
-    return new StreamableFile(stream);
+      const dlFormatLower = (report.format || '').toLowerCase();
+      let dlEventName = 'Generated PDF report';
+      if (dlFormatLower === 'csv') {
+        dlEventName = 'Exported CSV';
+      } else if (dlFormatLower === 'word' || dlFormatLower === 'docx' || dlFormatLower === 'doc') {
+        dlEventName = 'Generated Word report';
+      } else if (dlFormatLower === 'excel' || dlFormatLower === 'xlsx') {
+        dlEventName = 'Exported CSV';
+      }
+
+      await this.auditService.logAudit(req, {
+        category: 'Reports',
+        event: dlEventName,
+        result: 'SUCCESS',
+        details: {
+          reportName: report.fileName,
+          format: report.format,
+          dateRange: `${(report as any)?.parameters?.startDate || ''} to ${(report as any)?.parameters?.endDate || ''}`.trim(),
+        },
+        admin: {
+          id: user._id.toString(),
+          name: user.name,
+          role: user.role,
+        },
+      });
+
+      return new StreamableFile(stream);
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.REPORTS,
+          action: AUDIT_ACTIONS.EXPORT_REPORT,
+          target: id,
+          targetType: 'Report',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { reportId: id },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -462,17 +561,56 @@ export class ReportsController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - JWT token required',
   })
-  async delete(@Param('id') id: string, @CurrentUser() user: UserDocument) {
-    const report = await this.reportsService.delete(id, user._id.toString());
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: UserDocument,
+    @Req() req: Request,
+  ) {
+    try {
+      const report = await this.reportsService.delete(id, user._id.toString());
 
-    return {
-      success: true,
-      message: 'Report deleted successfully',
-      data: {
-        id: report._id.toString(),
-        fileName: report.fileName,
-      },
-    };
+      await this.auditService.logSuccess({
+        administratorId: user._id.toString(),
+        administratorName: user.name,
+        administratorRole: user.role,
+        module: AUDIT_MODULES.REPORTS,
+        action: AUDIT_ACTIONS.DELETE_REPORT,
+        target: report.fileName,
+        targetType: 'Report',
+        ipAddress: extractSafeIp(req),
+        userAgent: req.headers['user-agent'] as string,
+        details: {
+          reportId: id,
+          fileName: report.fileName,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Report deleted successfully',
+        data: {
+          id: report._id.toString(),
+          fileName: report.fileName,
+        },
+      };
+    } catch (error) {
+      await this.auditService.logFailure(
+        {
+          administratorId: user._id.toString(),
+          administratorName: user.name,
+          administratorRole: user.role,
+          module: AUDIT_MODULES.REPORTS,
+          action: AUDIT_ACTIONS.DELETE_REPORT,
+          target: id,
+          targetType: 'Report',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: { reportId: id },
+        },
+        error,
+      );
+      throw error;
+    }
   }
 
   /**

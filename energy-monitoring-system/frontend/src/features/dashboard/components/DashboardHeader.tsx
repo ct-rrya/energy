@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 
 /**
  * System Status Type
- * Represents the connection status of the system
+ * Represents the connection status of the hardware / system
  */
-export type SystemStatusType = 'connected' | 'disconnected' | 'unknown';
+export type SystemStatusType = 'connected' | 'disconnected' | 'waiting' | 'unknown';
 
 /**
  * Dashboard Header Props
@@ -14,7 +15,7 @@ export type SystemStatusType = 'connected' | 'disconnected' | 'unknown';
 export interface DashboardHeaderProps {
   title: string;
   subtitle: string;
-  systemStatus: SystemStatusType;
+  systemStatus?: SystemStatusType;
   alertsCount?: number;
   isPublicUser?: boolean;
   onAlertsClick?: () => void;
@@ -31,10 +32,11 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   subtitle,
   systemStatus,
   isPublicUser: _isPublicUser,
-  isWebSocketConnected = true,
+  isWebSocketConnected,
   greeting = 'Welcome to EcoStep',
   action,
 }: DashboardHeaderProps) {
+  const hardwareStatus = useHardwareStatus();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -56,9 +58,19 @@ export const DashboardHeader = React.memo(function DashboardHeader({
     hour12: true,
   });
 
+  // Determine effective status: explicit prop takes precedence, otherwise use unified hardware status
+  const effectiveStatus: SystemStatusType = systemStatus !== undefined 
+    ? systemStatus 
+    : (hardwareStatus.status as SystemStatusType);
+
+  // Determine effective web socket connectivity
+  const effectiveWebSocketConnected: boolean = isWebSocketConnected !== undefined
+    ? isWebSocketConnected
+    : (effectiveStatus !== 'disconnected');
+
   return (
     <header 
-      className="top flex flex-col sm:flex-row mb-5"
+      className="top flex flex-col sm:flex-row gap-4 justify-between mb-5"
     >
       {/* Title and Subtitle Section */}
       <div className="title flex flex-col min-w-0">
@@ -88,8 +100,8 @@ export const DashboardHeader = React.memo(function DashboardHeader({
 
           {/* Subtle Live System Status Pill */}
           <SystemStatusInfo
-            status={systemStatus} 
-            isWebSocketConnected={isWebSocketConnected}
+            status={effectiveStatus} 
+            isWebSocketConnected={effectiveWebSocketConnected}
           />
         </div>
 
@@ -110,46 +122,41 @@ interface SystemStatusInfoProps {
 
 function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProps) {
   const getStatusConfig = () => {
-    if (!isWebSocketConnected) {
+    // 1. Disconnected / Connection Lost:
+    // Either isWebSocketConnected is explicitly false, or status is 'disconnected'
+    if (!isWebSocketConnected || status === 'disconnected') {
       return {
-        label: 'Offline',
+        label: 'Connection Lost',
         statusKey: 'disconnected',
         dotColor: 'bg-[#EF4444]',
-        statusClass: 'status-offline',
-        title: 'System Status: Offline',
-        description: 'The real-time connection to the EcoStep IoT stream is currently disconnected. The system will automatically attempt to reconnect. WebSocket telemetry link is disconnected.',
+        statusClass: 'status-disconnected status-offline',
+        title: 'Hardware Status: Connection Lost',
+        description: 'Hardware was previously connected, but the active connection was lost.',
       };
     }
 
     switch (status) {
       case 'connected':
         return {
-          label: 'Online',
+          label: 'Connected',
           statusKey: 'connected',
           dotColor: 'bg-[#3ED98A]',
           pulseColor: 'bg-[#3ED98A]',
-          statusClass: 'status-online',
-          title: 'System Status: Online',
-          description: 'All EcoStep hardware telemetry and database services are connected and operating normally. As students walk across the piezoelectric tiles, live readings stream in real time. (Zero footsteps is normal when the tile is at rest).',
+          statusClass: 'status-connected status-online',
+          title: 'Hardware Status: Connected',
+          description: "The hardware has successfully established a connection with the backend or the system's designated communication channel.",
         };
-      case 'disconnected':
-        return {
-          label: 'Offline',
-          statusKey: 'disconnected',
-          dotColor: 'bg-[#EF4444]',
-          statusClass: 'status-offline',
-          title: 'System Status: Disconnected',
-          description: 'The backend database or telemetry service is reporting a disconnection. Data updates may be paused until connectivity restores. Database service is disconnected or unreachable.',
-        };
+
+      case 'waiting':
       case 'unknown':
       default:
         return {
-          label: 'Standby',
-          statusKey: 'unknown',
-          dotColor: 'bg-[#F59E0B] bg-[#F5A623]',
-          statusClass: 'status-standby',
-          title: 'System Status: Standby',
-          description: 'EcoStep is in active standby and ready for footsteps. Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault.',
+          label: 'Waiting for hardware connection',
+          statusKey: 'waiting',
+          dotColor: 'bg-[#F59E0B]',
+          statusClass: 'status-waiting status-standby',
+          title: 'Hardware Status: Waiting',
+          description: 'No hardware is currently connected. The system has not established an active connection with the hardware.',
         };
     }
   };
@@ -168,7 +175,7 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
           className={`relative inline-flex rounded-full h-2 w-2 ${config.dotColor}`}
           role="status"
           aria-label={`System status: ${config.statusKey}`}
-          style={config.statusKey === 'unknown' ? { backgroundColor: '#F5A623' } : undefined}
+          style={config.statusKey === 'waiting' || config.statusKey === 'unknown' ? { backgroundColor: '#F5A623' } : undefined}
         />
       </span>
       <span>{config.label}</span>

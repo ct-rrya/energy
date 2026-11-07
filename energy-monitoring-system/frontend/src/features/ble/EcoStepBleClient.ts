@@ -268,7 +268,7 @@ export class EcoStepBleClient {
           ssid: trimmedSsid,
           ip: '192.168.1.188',
         },
-        message: `✓ Successfully connected to Wi-Fi! Assigned IP: 192.168.1.188`,
+        message: `Successfully connected to Wi-Fi! Assigned IP: 192.168.1.188`,
         type: 'success',
       });
 

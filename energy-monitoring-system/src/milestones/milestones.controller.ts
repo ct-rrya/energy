@@ -15,6 +15,8 @@ import { UpdateMilestoneTargetsDto } from './dto/update-milestone-targets.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AuditService } from '../audit/audit.service';
+import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 
 /**
  * MilestonesController
@@ -25,7 +27,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @ApiTags('Milestones')
 @Controller('milestones')
 export class MilestonesController {
-  constructor(private readonly milestonesService: MilestonesService) {}
+  constructor(
+    private readonly milestonesService: MilestonesService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Get public milestone progress for a calendar month and its weekly blocks
@@ -90,9 +95,53 @@ export class MilestonesController {
     @Body() dto: UpdateMilestoneTargetsDto,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.id || req.user?.email || 'admin';
-    const userRole = req.user?.role;
-    return this.milestonesService.updateTargets(dto, userId, userRole);
+    const userId = req.user?.sub || req.user?.id || req.user?.userId || req.user?._id || 'admin';
+    const userRole = req.user?.role || 'SYSTEM_ADMIN';
+    const userName = req.user?.name || 'Administrator';
+    const clientIp = extractSafeIp(req);
+
+    try {
+      let oldValue = 'None';
+      try {
+        const prev = await this.milestonesService.getTargetsForMonth(dto.month);
+        if (prev?.monthlyTargetMWh !== undefined && prev?.monthlyTargetMWh !== null) {
+          oldValue = `${prev.monthlyTargetMWh} mWh`;
+        }
+      } catch {
+        // Ignore if previous target could not be loaded
+      }
+
+      const result = await this.milestonesService.updateTargets(dto, String(userId), userRole);
+      const newValue = `${dto.monthlyTargetMWh} mWh`;
+
+      await this.auditService.logAudit(req, {
+        category: 'Milestones',
+        event: 'Set milestone goal',
+        result: 'SUCCESS',
+        details: {
+          month: dto.month,
+          oldValue,
+          newValue,
+          weeklyTargets: dto.weeklyTargetsMWh,
+          reason: dto.reason,
+        },
+      });
+
+      return result;
+    } catch (error: any) {
+      await this.auditService.logAudit(req, {
+        category: 'Milestones',
+        event: 'Set milestone goal',
+        result: 'FAILED',
+        failureReason: error?.message || 'Failed to update milestone targets',
+        details: {
+          month: dto.month,
+          targetMWh: dto.monthlyTargetMWh,
+        },
+      });
+
+      throw error;
+    }
   }
 }
 

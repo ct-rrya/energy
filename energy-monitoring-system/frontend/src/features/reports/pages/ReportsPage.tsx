@@ -16,6 +16,7 @@ import { useReports, useReportActions } from '../hooks';
 import { ReportType, ReportFormat, type GenerateReportDto, type Report } from '@/types/report.types';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { CustomDropdown } from '@/components/common';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 
 /**
@@ -201,6 +202,8 @@ export function ReportsPage() {
 
   const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (formatFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0);
 
+  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+
   return (
     <div className="page">
       {/* Dashboard Header matching EcoStep Central exactly */}
@@ -208,8 +211,8 @@ export function ReportsPage() {
         greeting="Documentation & Records"
         title="Reports"
         subtitle="Generate, view, and export reports from EcoStep monitoring, analytics, and diagnostic data"
-        systemStatus="connected"
-        isWebSocketConnected={true}
+        systemStatus={hardwareConnectionStatus}
+        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Reports Section with Integrated Compact Filter Toolbar */}

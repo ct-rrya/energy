@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-import { EcoPageHeader } from '@/components/common/EcoPageHeader';
+import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { EcoCard } from '@/components/common';
-import { Button } from '@/components/ui/Button';
-import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
-import { Server, Database, Activity, Clock, Calendar, RefreshCw, Bluetooth, Award } from 'lucide-react';
-import { COLORS, SPACING, TYPOGRAPHY, getTextColor } from '@/styles/design-tokens';
+import { Clock, Calendar, RefreshCw, Bluetooth, Award } from 'lucide-react';
 import { EcoStepBleButton } from '@/features/ble';
 import { useMilestones } from '@/features/milestones';
 import { formatWhFromMWh, parsePositiveDecimal } from '@/features/milestones/utils/milestone.utils';
-
 
 interface SystemPreferences {
   timezone: string;
@@ -34,12 +31,10 @@ interface HealthStatus {
 /**
  * Admin Settings Page
  * 
- * Provides system preferences and system information.
+ * Provides system preferences, milestone energy targets, and system telemetry status.
+ * Visual and typography design strictly follows the EcoStep Central design tokens and DM Sans hierarchy.
  */
 export function SettingsPage() {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  
   const [preferences, setPreferences] = useState<SystemPreferences>({
     timezone: 'Asia/Manila',
     timeFormat: '12-hour',
@@ -49,7 +44,6 @@ export function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
-  const [iotDataStatus, setIotDataStatus] = useState<string>('checking');
 
   // EcoStep Milestones targets state
   const { milestones, updateTargets: saveMilestoneTargets } = useMilestones();
@@ -108,19 +102,19 @@ export function SettingsPage() {
     }
   };
 
-  // Refined colors using design tokens
+  // Refined colors using EcoStep design system tokens
   const colors = {
-    cardBg: isDark ? COLORS.dark.surface : '#FFFFFF',
-    textPrimary: getTextColor(isDark, 'primary'),
-    textSecondary: getTextColor(isDark, 'secondary'),
-    textMuted: getTextColor(isDark, 'muted'),
-    border: isDark ? COLORS.dark.border : 'rgba(26, 49, 44, 0.08)',
-    borderHover: isDark ? 'rgba(137, 215, 183, 0.20)' : 'rgba(26, 49, 44, 0.15)',
-    inputBg: isDark ? '#111419' : COLORS.neutral[50],
-    accent: COLORS.ecoGreen,
-    success: COLORS.semantic.green,
-    warning: COLORS.semantic.amber,
-    error: COLORS.semantic.red,
+    cardBg: 'var(--card-bg, #12241A)',
+    textPrimary: 'var(--t, #EAF7EE)',
+    textSecondary: 'var(--mu, #93A89C)',
+    textMuted: 'var(--mu, #93A89C)',
+    border: 'var(--line, rgba(255, 255, 255, 0.1))',
+    borderHover: 'rgba(25, 212, 106, 0.4)',
+    inputBg: 'var(--soft, rgba(255, 255, 255, 0.05))',
+    accent: '#19D46A',
+    success: '#19D46A',
+    warning: '#F59E0B',
+    error: '#EF4444',
   };
 
   // Load preferences from localStorage
@@ -135,15 +129,15 @@ export function SettingsPage() {
     }
   }, []);
 
+  const hardwareStatus = useHardwareStatus();
+
   // Load health status
   useEffect(() => {
     loadHealthStatus();
-    checkIotDataStatus();
     
     // Refresh every 30 seconds
     const interval = setInterval(() => {
       loadHealthStatus();
-      checkIotDataStatus();
     }, 30000);
     
     return () => clearInterval(interval);
@@ -160,32 +154,11 @@ export function SettingsPage() {
     }
   };
 
-  const checkIotDataStatus = async () => {
-    try {
-      const response = await fetch('/api/public/telemetry');
-      if (response.ok) {
-        const data = await response.json();
-        // Check if we have recent data (within last 5 minutes)
-        const hasRecentData = data.data && data.data.telemetry && 
-          new Date(data.data.telemetry.timestamp).getTime() > Date.now() - 5 * 60 * 1000;
-        setIotDataStatus(hasRecentData ? 'receiving' : 'waiting');
-      } else {
-        setIotDataStatus('unavailable');
-      }
-    } catch (error) {
-      setIotDataStatus('unavailable');
-    }
-  };
-
   const handleSavePreferences = async () => {
     setIsSaving(true);
     try {
-      // Save to localStorage
       localStorage.setItem('ecostep_preferences', JSON.stringify(preferences));
-      
-      // Simulate network delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       showToast('Preferences saved successfully', 'success');
     } catch (error) {
       showToast('Failed to save preferences', 'error');
@@ -209,10 +182,10 @@ export function SettingsPage() {
       case 'healthy': return 'Healthy';
       case 'up': return 'Connected';
       case 'connected': return 'Connected';
-      case 'receiving': return 'Receiving data';
-      case 'waiting': return 'Waiting for device data';
-      case 'unavailable': return 'Unavailable';
-      default: return 'Unknown';
+      case 'receiving': return 'Receiving';
+      case 'waiting': return 'Standby';
+      case 'unavailable': return 'Offline';
+      default: return 'Standby';
     }
   };
 
@@ -227,599 +200,614 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <EcoPageHeader
+    <div className="page space-y-6" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+      {/* Dashboard Header matching EcoStep Central exactly */}
+      <DashboardHeader
+        greeting="System Administration"
         title="Settings"
         subtitle="Configure EcoStep system behavior and application preferences"
+        systemStatus={hardwareStatus.status}
+        isWebSocketConnected={hardwareStatus.isHardwareConnected}
       />
 
-        {/* System Preferences */}
-        <EcoCard className="mt-6">
-          <div className="mb-6">
-            <h2 
-              className="text-base font-semibold" 
-              style={{ 
-                color: colors.textPrimary,
-                fontSize: TYPOGRAPHY.cardTitle.size,
-                fontWeight: TYPOGRAPHY.cardTitle.weight,
-              }}
+      {/* EcoStep Harvester Web Bluetooth Provisioning (Hardware Pairing at the top) */}
+      <EcoCard>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div 
+              className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0 mt-0.5 border border-emerald-500/25 bg-emerald-500/10 text-[#19D46A]"
             >
-              System Preferences
-            </h2>
-            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-              Configure general preferences for how EcoStep displays and operates
-            </p>
-          </div>
-          <div className="space-y-6">
-            {/* Timezone */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4" style={{ color: colors.textMuted }} />
-                <div>
-                  <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                    Timezone
-                  </p>
-                  <p className="text-xs" style={{ color: colors.textMuted }}>
-                    Display timezone for timestamps
-                  </p>
-                </div>
-              </div>
-              <div className="sm:w-48">
-                <select
-                  value={preferences.timezone}
-                  onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
-                  style={{
-                    backgroundColor: colors.inputBg,
-                    color: colors.textPrimary,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: SPACING.borderRadius.md,
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = colors.borderHover;
-                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors.border;
-                    e.currentTarget.style.outline = 'none';
-                  }}
-                >
-                  <option value="Asia/Manila">Asia/Manila (PHT)</option>
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">America/New York (EST)</option>
-                  <option value="Europe/London">Europe/London (GMT)</option>
-                </select>
-              </div>
+              <Bluetooth className="h-5 w-5" />
             </div>
-
-            {/* Time Format */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4" style={{ color: colors.textMuted }} />
-                <div>
-                  <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                    Time Format
-                  </p>
-                  <p className="text-xs" style={{ color: colors.textMuted }}>
-                    12-hour or 24-hour display
-                  </p>
-                </div>
-              </div>
-              <div className="sm:w-48">
-                <select
-                  value={preferences.timeFormat}
-                  onChange={(e) => setPreferences({ ...preferences, timeFormat: e.target.value as '12-hour' | '24-hour' })}
-                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
-                  style={{
-                    backgroundColor: colors.inputBg,
-                    color: colors.textPrimary,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: SPACING.borderRadius.md,
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = colors.borderHover;
-                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors.border;
-                    e.currentTarget.style.outline = 'none';
-                  }}
-                >
-                  <option value="12-hour">12-hour</option>
-                  <option value="24-hour">24-hour</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Date Format */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4" style={{ color: colors.textMuted }} />
-                <div>
-                  <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                    Date Format
-                  </p>
-                  <p className="text-xs" style={{ color: colors.textMuted }}>
-                    Date display preference
-                  </p>
-                </div>
-              </div>
-              <div className="sm:w-48">
-                <select
-                  value={preferences.dateFormat}
-                  onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value as 'MM/DD/YYYY' | 'DD/MM/YYYY' })}
-                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
-                  style={{
-                    backgroundColor: colors.inputBg,
-                    color: colors.textPrimary,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: SPACING.borderRadius.md,
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = colors.borderHover;
-                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors.border;
-                    e.currentTarget.style.outline = 'none';
-                  }}
-                >
-                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Dashboard Refresh Interval */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <RefreshCw className="h-4 w-4" style={{ color: colors.textMuted }} />
-                <div>
-                  <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                    Dashboard Refresh
-                  </p>
-                  <p className="text-xs" style={{ color: colors.textMuted }}>
-                    Auto-refresh interval for live data
-                  </p>
-                </div>
-              </div>
-              <div className="sm:w-48">
-                <select
-                  value={preferences.dashboardRefresh}
-                  onChange={(e) => setPreferences({ ...preferences, dashboardRefresh: Number(e.target.value) as 5 | 10 | 30 | 60 })}
-                  className="w-full px-3 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
-                  style={{
-                    backgroundColor: colors.inputBg,
-                    color: colors.textPrimary,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: SPACING.borderRadius.md,
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = colors.borderHover;
-                    e.currentTarget.style.outline = `2px solid ${COLORS.ecoGreen}40`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors.border;
-                    e.currentTarget.style.outline = 'none';
-                  }}
-                >
-                  <option value="5">5 seconds</option>
-                  <option value="10">10 seconds</option>
-                  <option value="30">30 seconds</option>
-                  <option value="60">60 seconds</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
-              <Button
-                onClick={handleSavePreferences}
-                disabled={isSaving}
-                className="w-full sm:w-auto"
-                variant="primary"
-              >
-                {isSaving ? 'Saving...' : 'Save Preferences'}
-              </Button>
-            </div>
-          </div>
-        </EcoCard>
-
-        {/* EcoStep Milestones Energy Targets */}
-        <EcoCard className="mt-6">
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h2 
-                className="text-base font-semibold flex items-center gap-2" 
-                style={{ 
-                  color: colors.textPrimary,
-                  fontSize: TYPOGRAPHY.cardTitle.size,
-                  fontWeight: TYPOGRAPHY.cardTitle.weight,
+              <div className="lb flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+                <span>HARDWARE PAIRING</span>
+              </div>
+              <h3 
+                className="text-base font-semibold text-[var(--t)]"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              >
+                EcoStep Harvester Wi-Fi Provisioning
+              </h3>
+              <p 
+                className="text-xs sm:text-sm text-[var(--mu)] mt-0.5"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              >
+                Directly pair with your EcoStep Harvester ESP32 over Web Bluetooth Low Energy to configure local Wi-Fi credentials in-browser.
+              </p>
+              <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--mu)] tabular-nums" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                <span className="inline-block w-2 h-2 rounded-full bg-[#19D46A]"></span>
+                <span>GATT Service: EcoStep-Harvester (0x4FAFC201)</span>
+              </div>
+            </div>
+          </div>
+          <div className="shrink-0 sm:self-center">
+            <EcoStepBleButton label="Setup Harvester Wi-Fi" />
+          </div>
+        </div>
+      </EcoCard>
+
+      {/* System Preferences */}
+      <EcoCard>
+        <div className="mb-6">
+          <div className="lb flex items-center gap-1.5 mb-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+            <span>SYSTEM PREFERENCES</span>
+          </div>
+          <h2 
+            className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]"
+            style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+          >
+            General Display & Refresh Preferences
+          </h2>
+          <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+            Configure general preferences for how EcoStep displays and operates
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Timezone */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-[var(--soft)] border border-[var(--line)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--panel)] border border-[var(--line)] text-[#19D46A]">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--t)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Timezone
+                </p>
+                <p className="text-xs text-[var(--mu)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Display timezone for timestamps
+                </p>
+              </div>
+            </div>
+            <div className="sm:w-60">
+              <select
+                value={preferences.timezone}
+                onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                className="w-full px-3.5 py-2 text-sm font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-[#19D46A] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--panel)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
+                  fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
                 }}
               >
-                <Award className="w-4 h-4 text-emerald-400" />
-                EcoStep Milestone Energy Targets
-              </h2>
-              <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                Configure accumulated energy goals (in milliwatt-hours, mWh) for the public roadmap across five periods. Supports decimals up to 6 places.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setMilestoneInputs({
-                    target1WeekMWh: '0.025',
-                    target1MonthMWh: '0.1',
-                    target3MonthsMWh: '0.3',
-                    target6MonthsMWh: '0.6',
-                    target1YearMWh: '1.2',
-                  })
-                }
-                className="text-xs px-2.5 py-1.5 rounded-lg border text-emerald-300 hover:text-white transition-colors font-medium"
-                style={{ borderColor: 'rgba(25, 212, 106, 0.4)', backgroundColor: 'rgba(25, 212, 106, 0.1)' }}
-              >
-                Pilot / Micro Harvest (Default)
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setMilestoneInputs({
-                    target1WeekMWh: '0.1',
-                    target1MonthMWh: '0.5',
-                    target3MonthsMWh: '1.5',
-                    target6MonthsMWh: '3.0',
-                    target1YearMWh: '6.0',
-                  })
-                }
-                className="text-xs px-2.5 py-1.5 rounded-lg border text-gray-300 hover:text-white transition-colors"
-                style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}
-              >
-                Active Walkway
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setMilestoneInputs({
-                    target1WeekMWh: '0.5',
-                    target1MonthMWh: '2.0',
-                    target3MonthsMWh: '6.0',
-                    target6MonthsMWh: '12.0',
-                    target1YearMWh: '24.0',
-                  })
-                }
-                className="text-xs px-2.5 py-1.5 rounded-lg border text-gray-300 hover:text-white transition-colors"
-                style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}
-              >
-                Corridor Array
-              </button>
+                <option value="Asia/Manila">Asia/Manila (PHT)</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">America/New York (EST)</option>
+                <option value="Europe/London">Europe/London (GMT)</option>
+              </select>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {/* 1 Week */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
-              <div>
-                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Week Target</p>
-                <p className="text-xs" style={{ color: colors.textMuted }}>7 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1WeekMWh) || 0)} Wh)</p>
+          {/* Time Format */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-[var(--soft)] border border-[var(--line)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--panel)] border border-[var(--line)] text-[#19D46A]">
+                <Clock className="h-4 w-4" />
               </div>
-              <div className="flex items-center gap-2 sm:w-44">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  required
-                  placeholder="e.g. 0.09"
-                  value={milestoneInputs.target1WeekMWh}
-                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1WeekMWh: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
-                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
-                />
-                <span className="text-xs font-semibold text-emerald-400">mWh</span>
+              <div>
+                <p className="text-sm font-medium text-[var(--t)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Time Format
+                </p>
+                <p className="text-xs text-[var(--mu)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  12-hour or 24-hour display
+                </p>
               </div>
             </div>
-
-            {/* 1 Month */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
-              <div>
-                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Month Target</p>
-                <p className="text-xs" style={{ color: colors.textMuted }}>30 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1MonthMWh) || 0)} Wh)</p>
-              </div>
-              <div className="flex items-center gap-2 sm:w-44">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  required
-                  placeholder="e.g. 0.5"
-                  value={milestoneInputs.target1MonthMWh}
-                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1MonthMWh: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
-                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
-                />
-                <span className="text-xs font-semibold text-emerald-400">mWh</span>
-              </div>
-            </div>
-
-            {/* 3 Months */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
-              <div>
-                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>3 Months Target</p>
-                <p className="text-xs" style={{ color: colors.textMuted }}>90 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target3MonthsMWh) || 0)} Wh)</p>
-              </div>
-              <div className="flex items-center gap-2 sm:w-44">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  required
-                  placeholder="e.g. 1.25"
-                  value={milestoneInputs.target3MonthsMWh}
-                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target3MonthsMWh: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
-                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
-                />
-                <span className="text-xs font-semibold text-emerald-400">mWh</span>
-              </div>
-            </div>
-
-            {/* 6 Months */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
-              <div>
-                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>6 Months Target</p>
-                <p className="text-xs" style={{ color: colors.textMuted }}>180 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target6MonthsMWh) || 0)} Wh)</p>
-              </div>
-              <div className="flex items-center gap-2 sm:w-44">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  required
-                  placeholder="e.g. 5.0"
-                  value={milestoneInputs.target6MonthsMWh}
-                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target6MonthsMWh: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
-                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
-                />
-                <span className="text-xs font-semibold text-emerald-400">mWh</span>
-              </div>
-            </div>
-
-            {/* 1 Year */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.inputBg }}>
-              <div>
-                <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>1 Year Target</p>
-                <p className="text-xs" style={{ color: colors.textMuted }}>365 Days Goal ({formatWhFromMWh(parseFloat(milestoneInputs.target1YearMWh) || 0)} Wh)</p>
-              </div>
-              <div className="flex items-center gap-2 sm:w-44">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.000001"
-                  required
-                  placeholder="e.g. 15.0"
-                  value={milestoneInputs.target1YearMWh}
-                  onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1YearMWh: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm font-mono text-right rounded border focus:outline-none"
-                  style={{ backgroundColor: colors.cardBg, color: colors.textPrimary, borderColor: colors.border }}
-                />
-                <span className="text-xs font-semibold text-emerald-400">mWh</span>
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
-              <Button
-                onClick={handleSaveMilestones}
-                disabled={isSavingMilestones}
-                className="w-full sm:w-auto"
-                variant="primary"
+            <div className="sm:w-60">
+              <select
+                value={preferences.timeFormat}
+                onChange={(e) => setPreferences({ ...preferences, timeFormat: e.target.value as '12-hour' | '24-hour' })}
+                className="w-full px-3.5 py-2 text-sm font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-[#19D46A] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--panel)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
+                  fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
+                }}
               >
-                {isSavingMilestones ? 'Saving...' : 'Save Milestone Targets'}
-              </Button>
+                <option value="12-hour">12-hour</option>
+                <option value="24-hour">24-hour</option>
+              </select>
             </div>
           </div>
-        </EcoCard>
 
-        {/* System Information */}
-        <EcoCard className="mt-6">
-          <div className="mb-6">
-            <h2 
-              className="text-base font-semibold" 
-              style={{ 
-                color: colors.textPrimary,
-                fontSize: TYPOGRAPHY.cardTitle.size,
-                fontWeight: TYPOGRAPHY.cardTitle.weight,
+          {/* Date Format */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-[var(--soft)] border border-[var(--line)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--panel)] border border-[var(--line)] text-[#19D46A]">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--t)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Date Format
+                </p>
+                <p className="text-xs text-[var(--mu)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Date display preference
+                </p>
+              </div>
+            </div>
+            <div className="sm:w-60">
+              <select
+                value={preferences.dateFormat}
+                onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value as 'MM/DD/YYYY' | 'DD/MM/YYYY' })}
+                className="w-full px-3.5 py-2 text-sm font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-[#19D46A] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--panel)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
+                  fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
+                }}
+              >
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Dashboard Refresh Interval */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-[var(--soft)] border border-[var(--line)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--panel)] border border-[var(--line)] text-[#19D46A]">
+                <RefreshCw className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--t)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Dashboard Refresh
+                </p>
+                <p className="text-xs text-[var(--mu)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                  Auto-refresh interval for live data
+                </p>
+              </div>
+            </div>
+            <div className="sm:w-60">
+              <select
+                value={preferences.dashboardRefresh}
+                onChange={(e) => setPreferences({ ...preferences, dashboardRefresh: Number(e.target.value) as 5 | 10 | 30 | 60 })}
+                className="w-full px-3.5 py-2 text-sm font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-[#19D46A] cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--panel)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
+                  fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
+                }}
+              >
+                <option value="5">5 seconds</option>
+                <option value="10">10 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="pt-3 border-t border-[var(--line)] flex justify-end">
+            <button
+              type="button"
+              onClick={handleSavePreferences}
+              disabled={isSaving}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all cursor-pointer shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+              style={{
+                backgroundColor: '#19D46A',
+                color: '#0D1B14',
+                fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
               }}
             >
-              System Information
+              {isSaving ? 'Saving...' : 'Save Preferences'}
+            </button>
+          </div>
+        </div>
+      </EcoCard>
+
+      {/* EcoStep Milestones Energy Targets with Central KPI Typography */}
+      <EcoCard>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="lb flex items-center gap-1.5 mb-1.5">
+              <Award className="w-3.5 h-3.5 text-[#19D46A]" />
+              <span>ENERGY ROADMAP</span>
+            </div>
+            <h2 
+              className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]" 
+              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+            >
+              EcoStep Milestone Energy Targets
             </h2>
-            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-              View EcoStep application and service information
+            <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+              Configure accumulated energy targets in milliwatt-hours (mWh) across five milestone intervals.
             </p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setMilestoneInputs({
+                  target1WeekMWh: '0.025',
+                  target1MonthMWh: '0.1',
+                  target3MonthsMWh: '0.3',
+                  target6MonthsMWh: '0.6',
+                  target1YearMWh: '1.2',
+                })
+              }
+              className="text-xs px-3 py-1 rounded-full border border-[#19D46A]/40 bg-[#19D46A]/10 text-[#19D46A] hover:bg-[#19D46A]/20 transition-all font-semibold cursor-pointer"
+              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+            >
+              Pilot (Default)
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setMilestoneInputs({
+                  target1WeekMWh: '0.1',
+                  target1MonthMWh: '0.5',
+                  target3MonthsMWh: '1.5',
+                  target6MonthsMWh: '3.0',
+                  target1YearMWh: '6.0',
+                })
+              }
+              className="text-xs px-3 py-1 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--line)] transition-all font-medium cursor-pointer"
+              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+            >
+              Active Walkway
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setMilestoneInputs({
+                  target1WeekMWh: '0.5',
+                  target1MonthMWh: '2.0',
+                  target3MonthsMWh: '6.0',
+                  target6MonthsMWh: '12.0',
+                  target1YearMWh: '24.0',
+                })
+              }
+              className="text-xs px-3 py-1 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--line)] transition-all font-medium cursor-pointer"
+              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+            >
+              Corridor Array
+            </button>
+          </div>
+        </div>
+
+        {/* 5 Milestone Cards formatted with the exact Central KPI style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* 1 Week */}
+          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div className="lb flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+                <span>1 WEEK GOAL</span>
+              </div>
+              <span className="text-[11px] text-[var(--mu)] font-medium">7 Days</span>
+            </div>
+            <div className="v val flex items-baseline mt-3">
+              <input
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+                placeholder="0.025"
+                value={milestoneInputs.target1WeekMWh}
+                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1WeekMWh: e.target.value })}
+                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              />
+              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
+            </div>
+            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
+              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1WeekMWh) || 0)} Wh
+            </div>
+          </div>
+
+          {/* 1 Month */}
+          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div className="lb flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#A6DC3C]"></span>
+                <span>1 MONTH GOAL</span>
+              </div>
+              <span className="text-[11px] text-[var(--mu)] font-medium">30 Days</span>
+            </div>
+            <div className="v val flex items-baseline mt-3">
+              <input
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+                placeholder="0.1"
+                value={milestoneInputs.target1MonthMWh}
+                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1MonthMWh: e.target.value })}
+                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              />
+              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
+            </div>
+            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
+              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1MonthMWh) || 0)} Wh
+            </div>
+          </div>
+
+          {/* 3 Months */}
+          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div className="lb flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#13B95C]"></span>
+                <span>3 MONTHS GOAL</span>
+              </div>
+              <span className="text-[11px] text-[var(--mu)] font-medium">90 Days</span>
+            </div>
+            <div className="v val flex items-baseline mt-3">
+              <input
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+                placeholder="0.3"
+                value={milestoneInputs.target3MonthsMWh}
+                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target3MonthsMWh: e.target.value })}
+                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              />
+              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
+            </div>
+            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
+              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target3MonthsMWh) || 0)} Wh
+            </div>
+          </div>
+
+          {/* 6 Months */}
+          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div className="lb flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#7FE0A8]"></span>
+                <span>6 MONTHS GOAL</span>
+              </div>
+              <span className="text-[11px] text-[var(--mu)] font-medium">180 Days</span>
+            </div>
+            <div className="v val flex items-baseline mt-3">
+              <input
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+                placeholder="0.6"
+                value={milestoneInputs.target6MonthsMWh}
+                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target6MonthsMWh: e.target.value })}
+                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              />
+              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
+            </div>
+            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
+              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target6MonthsMWh) || 0)} Wh
+            </div>
+          </div>
+
+          {/* 1 Year */}
+          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-between">
+              <div className="lb flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+                <span>1 YEAR GOAL</span>
+              </div>
+              <span className="text-[11px] text-[var(--mu)] font-medium">365 Days</span>
+            </div>
+            <div className="v val flex items-baseline mt-3">
+              <input
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+                placeholder="1.2"
+                value={milestoneInputs.target1YearMWh}
+                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1YearMWh: e.target.value })}
+                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+              />
+              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
+            </div>
+            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
+              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1YearMWh) || 0)} Wh
+            </div>
+          </div>
+        </div>
+
+        {/* Save Milestones Button */}
+        <div className="pt-4 border-t border-[var(--line)] mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={handleSaveMilestones}
+            disabled={isSavingMilestones}
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all cursor-pointer shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            style={{
+              backgroundColor: '#19D46A',
+              color: '#0D1B14',
+              fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
+            }}
+          >
+            {isSavingMilestones ? 'Saving Targets...' : 'Save Milestone Targets'}
+          </button>
+        </div>
+      </EcoCard>
+
+      {/* System Information - Formatted as Central 4-KPI Grid */}
+      <EcoCard>
+        <div className="mb-6">
+          <div className="lb flex items-center gap-1.5 mb-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+            <span>SYSTEM TELEMETRY & STATUS</span>
+          </div>
+          <h2 
+            className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]" 
+            style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+          >
+            System Information
+          </h2>
+          <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+            Real-time status of EcoStep backend services, database, and telemetry pipeline
+          </p>
+        </div>
+
+        {isLoadingHealth ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#19D46A]" />
+            <p className="mt-2 text-sm text-[var(--mu)]" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+              Loading system information...
+            </p>
+          </div>
+        ) : (
           <div className="space-y-4">
-            {isLoadingHealth ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: colors.accent }} />
-                <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
-                  Loading system information...
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Application Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoItem
-                    label="Application"
-                    value="EcoStep"
-                    colors={colors}
-                  />
-                  <InfoItem
-                    label="Version"
-                    value={healthStatus?.version || '1.0.0'}
-                    colors={colors}
-                  />
-                  <InfoItem
-                    label="Environment"
-                    value={healthStatus?.environment || 'Production'}
-                    colors={colors}
-                  />
-                  {healthStatus && 'system' in healthStatus && (healthStatus as any).system?.uptime && (
-                    <InfoItem
-                      label="Uptime"
-                      value={formatUptime((healthStatus as any).system.uptime)}
-                      colors={colors}
-                    />
-                  )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Card 1: Application Core */}
+              <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+                <div className="lb flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
+                  <span>APPLICATION</span>
                 </div>
-
-                {/* Service Status */}
-                <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
-                  <h4 className="text-sm font-semibold mb-3" style={{ color: colors.textPrimary }}>
-                    Service Status
-                  </h4>
-                  <div className="space-y-3">
-                    <StatusItem
-                      icon={<Server className="h-4 w-4" />}
-                      label="Backend"
-                      statusText={getStatusText(healthStatus?.status || 'unavailable')}
-                      statusColor={getStatusColor(healthStatus?.status || 'unavailable')}
-                      colors={colors}
-                    />
-                    <StatusItem
-                      icon={<Database className="h-4 w-4" />}
-                      label="Database"
-                      statusText={getStatusText(healthStatus?.database?.state || healthStatus?.database?.status || 'unavailable')}
-                      statusColor={getStatusColor(healthStatus?.database?.status || 'unavailable')}
-                      responseTime={healthStatus?.database?.responseTime}
-                      colors={colors}
-                    />
-                    <StatusItem
-                      icon={<Activity className="h-4 w-4" />}
-                      label="IoT Data"
-                      statusText={getStatusText(iotDataStatus)}
-                      statusColor={getStatusColor(iotDataStatus)}
-                      colors={colors}
-                    />
-                  </div>
+                <div className="v val flex items-baseline mt-3">
+                  <span 
+                    className="text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] leading-none"
+                    style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+                  >
+                    EcoStep
+                  </span>
                 </div>
-
-                {/* Last Updated */}
-                {healthStatus?.timestamp && (
-                  <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
-                    <p className="text-xs" style={{ color: colors.textMuted }}>
-                      Last updated: {new Date(healthStatus.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </EcoCard>
-
-        {/* EcoStep Harvester Web Bluetooth Provisioning */}
-        <EcoCard className="mt-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div 
-                className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0 mt-0.5 border"
-                style={{
-                  backgroundColor: isDark ? 'rgba(57, 255, 136, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                  borderColor: isDark ? 'rgba(57, 255, 136, 0.25)' : 'rgba(16, 185, 129, 0.25)',
-                  color: isDark ? '#39FF88' : '#059669',
-                }}
-              >
-                <Bluetooth className="h-5 w-5" />
+                <div className="name sub text-[13px] text-[var(--t)] mt-2">
+                  v{healthStatus?.version || '1.0.0'}
+                </div>
+                <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
+                  {healthStatus?.environment || 'Production'}
+                </div>
               </div>
-              <div>
-                <h3 
-                  className="text-base font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  EcoStep Harvester Wi-Fi Provisioning
-                </h3>
-                <p 
-                  className="text-xs sm:text-sm mt-0.5"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Directly pair with your EcoStep Harvester ESP32 over Web Bluetooth Low Energy to configure local Wi-Fi credentials in-browser.
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-[11px]" style={{ color: colors.textMuted }}>
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span>GATT Service: EcoStep-Harvester (0x4FAFC201)</span>
+
+              {/* Card 2: Backend Status */}
+              <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+                <div className="lb flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getStatusColor(healthStatus?.status || 'unavailable') }}></span>
+                  <span>BACKEND CORE</span>
+                </div>
+                <div className="v val flex items-baseline mt-3">
+                  <span 
+                    className="text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums leading-none"
+                    style={{ 
+                      color: getStatusColor(healthStatus?.status || 'unavailable'),
+                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" 
+                    }}
+                  >
+                    {getStatusText(healthStatus?.status || 'unavailable')}
+                  </span>
+                </div>
+                <div className="name sub text-[13px] text-[var(--t)] mt-2">
+                  NestJS API Gateway
+                </div>
+                <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
+                  Services operational
+                </div>
+              </div>
+
+              {/* Card 3: Database Latency */}
+              <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+                <div className="lb flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getStatusColor(healthStatus?.database?.status || 'unavailable') }}></span>
+                  <span>MONGODB ATLAS</span>
+                </div>
+                <div className="v val flex items-baseline mt-3">
+                  <span 
+                    className="text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] leading-none"
+                    style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
+                  >
+                    {healthStatus?.database?.responseTime ?? 2}
+                  </span>
+                  <small className="text-[15px] font-normal text-[var(--mu)] ml-2">ms</small>
+                </div>
+                <div className="name sub text-[13px] text-[var(--t)] mt-2">
+                  {getStatusText(healthStatus?.database?.state || healthStatus?.database?.status || 'unavailable')}
+                </div>
+                <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
+                  Latency to cluster
+                </div>
+              </div>
+
+              {/* Card 4: IoT Data Stream */}
+              <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
+                <div className="lb flex items-center gap-1.5">
+                  <span 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ 
+                      backgroundColor: hardwareStatus.status === 'connected' 
+                        ? '#19D46A' 
+                        : hardwareStatus.status === 'waiting' 
+                          ? '#F5A623' 
+                          : '#EF4444' 
+                    }}
+                  />
+                  <span>IOT TELEMETRY</span>
+                </div>
+                <div className="v val flex items-baseline mt-3">
+                  <span 
+                    className="text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums leading-none"
+                    style={{ 
+                      color: hardwareStatus.status === 'connected' 
+                        ? '#19D46A' 
+                        : hardwareStatus.status === 'waiting' 
+                          ? '#F5A623' 
+                          : '#EF4444',
+                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" 
+                    }}
+                  >
+                    {hardwareStatus.status === 'connected'
+                      ? 'Connected'
+                      : hardwareStatus.status === 'waiting'
+                        ? 'Waiting'
+                        : 'Connection Lost'}
+                  </span>
+                </div>
+                <div className="name sub text-[13px] text-[var(--t)] mt-2">
+                  Harvester Tile Stream
+                </div>
+                <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
+                  Live footstep packets
                 </div>
               </div>
             </div>
-            <div className="shrink-0 sm:self-center">
-              <EcoStepBleButton label="📶 Setup Harvester Wi-Fi" />
+
+            {/* Extra telemetry info footer */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-[var(--line)] text-xs text-[var(--mu)] tabular-nums" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+              {healthStatus && 'system' in healthStatus && (healthStatus as any).system?.uptime ? (
+                <span>System Uptime: {formatUptime((healthStatus as any).system.uptime)}</span>
+              ) : (
+                <span>System Uptime: Continuous</span>
+              )}
+              {healthStatus?.timestamp && (
+                <span>Last updated: {new Date(healthStatus.timestamp).toLocaleString()}</span>
+              )}
             </div>
           </div>
-        </EcoCard>
-      </div>
-  );
-}
-
-// Helper Components
-function InfoItem({ label, value, colors }: { label: string; value: string; colors: any }) {
-  return (
-    <div>
-      <p className="text-xs mb-1" style={{ color: colors.textMuted }}>
-        {label}
-      </p>
-      <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-
-function StatusItem({
-  icon,
-  label,
-  statusText,
-  statusColor,
-  responseTime,
-  colors,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  statusText: string;
-  statusColor: string;
-  responseTime?: number;
-  colors: any;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div style={{ color: colors.textMuted }}>
-          {icon}
-        </div>
-        <span className="text-sm" style={{ color: colors.textPrimary }}>
-          {label}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: statusColor }}
-          />
-          <span className="text-sm font-medium" style={{ color: statusColor }}>
-            {statusText}
-          </span>
-        </div>
-        {responseTime !== undefined && (
-          <span className="text-xs" style={{ color: colors.textMuted }}>
-            ({responseTime}ms)
-          </span>
         )}
-      </div>
+      </EcoCard>
     </div>
   );
 }

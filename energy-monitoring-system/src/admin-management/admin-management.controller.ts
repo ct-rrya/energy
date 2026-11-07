@@ -10,6 +10,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { AdminManagementService } from './admin-management.service';
 import { AuditService } from '../audit/audit.service';
@@ -115,7 +116,7 @@ export class AdminManagementController {
           return {
             id: admin._id.toString(),
             email: admin.email,
-            name: admin.name,
+            name: admin.role === 'SUPER_ADMIN' ? 'Ecostep Super' : admin.name,
             role: admin.role,
             isActive: admin.isActive,
             lastLoginAt: admin.lastLoginAt ? admin.lastLoginAt.toISOString() : null,
@@ -209,6 +210,11 @@ export class AdminManagementController {
     @Body() createAdminDto: CreateAdminDto,
     @Req() req: any,
   ) {
+    if (createAdminDto.role === 'SUPER_ADMIN') {
+      throw new BadRequestException(
+        'A Super Admin cannot create another Super Admin account. Only System Admins can be added.',
+      );
+    }
     try {
       const { admin, emailSent } = await this.adminManagementService.createAdmin(createAdminDto);
 
@@ -511,9 +517,18 @@ export class AdminManagementController {
   @HttpCode(HttpStatus.OK)
   async deleteAdministrator(@Param('id') id: string, @Req() req: any) {
     try {
+      const currentUserId = req.user?._id?.toString() || req.user?.id?.toString() || req.user?.sub?.toString();
+      if (currentUserId && currentUserId === id) {
+        throw new BadRequestException('You cannot delete your own administrator account.');
+      }
+
       // Get admin details before deletion for audit log
       const admin =
         await this.adminManagementService.getAdministratorById(id);
+
+      if (currentUserId && admin._id.toString() === currentUserId) {
+        throw new BadRequestException('You cannot delete your own administrator account.');
+      }
 
       // Delete administrator
       await this.adminManagementService.deleteAdministrator(id);

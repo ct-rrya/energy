@@ -75,7 +75,7 @@ const TILES: TileConfig[] = CELLS.map(([r, c], i) => {
  * Mobile-first (375x812 reference frame) splash screen:
  * - 10 floor tiles forming capital "E", tile (2,1) energizes yellow with expanding shockwave rings
  * - Outward ripple of white flash across tiles
- * - "EcoStep" wordmark fade-up in Poppins
+ * - "EcoStep" wordmark fade-up in DM Sans
  * - Adaptive light/dark gradients and ink colors
  * - Pure CSS timeline with cubic-bezier(0.22, 1, 0.36, 1) and animation-delays
  * - Respects prefers-reduced-motion
@@ -276,7 +276,7 @@ export function SplashScreen({
           position: 'relative',
           transform: scale < 1 ? `scale(${scale})` : undefined,
           transformOrigin: 'center center',
-          fontFamily: "'Poppins', 'DM Sans', system-ui, sans-serif",
+          fontFamily: "'DM Sans', system-ui, sans-serif",
           ['--out' as any]: 'cubic-bezier(0.22, 1, 0.36, 1)',
         }}
       >
@@ -435,7 +435,7 @@ export function SplashScreen({
           </g>
         </svg>
 
-        {/* Wordmark: Eco in Poppins 700, Step in Poppins 500, ~30px */}
+        {/* Wordmark: Eco in DM Sans 700, Step in DM Sans 500, ~30px */}
         <div
           className="ecostep-anim"
           style={{
@@ -446,16 +446,18 @@ export function SplashScreen({
             textAlign: 'center',
             fontSize: 30,
             lineHeight: 1.1,
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.02em',
+            fontFamily: "'DM Sans', sans-serif",
             color: isDark ? '#eaf7ee' : '#0e1f15',
             opacity: 0,
             animation: 'ecostep-fadeup 0.9s var(--out) 2.5s forwards',
           }}
         >
-          <span style={{ fontWeight: 700 }}>Eco</span>
+          <span style={{ fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>Eco</span>
           <span
             style={{
               fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
               color: isDark ? '#22e06a' : '#12a24f',
             }}
           >

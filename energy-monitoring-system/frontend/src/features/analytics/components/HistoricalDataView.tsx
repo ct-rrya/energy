@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Download, Table as TableIcon, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Download, Table as TableIcon, BarChart3, ChevronLeft, ChevronRight, Footprints } from 'lucide-react';
 import { EcoCard, EcoEmptyState } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { getTimeSeries } from '@/api/services/analytics.service';
 import { energyService, type EnergyReading } from '@/api/services/energy.service';
+import { hasMeaningfulActivity } from '@/components/dashboard/chartUtils';
 import type { MetricType, Granularity } from '@/features/analytics/types';
 import { format } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -43,6 +44,8 @@ interface HistoricalDataViewProps {
   granularity: Granularity;
   /** Whether the current user is a public user (read-only) */
   isPublicUser?: boolean;
+  /** Callback to reset period to All Time */
+  onResetToAllTime?: () => void;
 }
 
 /**
@@ -59,6 +62,7 @@ export function HistoricalDataView({
   endDate,
   granularity,
   isPublicUser: propIsPublicUser,
+  onResetToAllTime: _onResetToAllTime,
 }: HistoricalDataViewProps) {
   // Theme for styling
   const { theme } = useTheme();
@@ -71,15 +75,17 @@ export function HistoricalDataView({
   // State for view mode and pagination
   const [viewMode, setViewMode] = useState<ViewMode>('aggregated');
   const [currentPage, setCurrentPage] = useState(1);
+  const [includeInactive, setIncludeInactive] = useState<boolean>(false);
   const recordsPerPage = 50;
 
   // Fetch raw readings with pagination (only when in raw mode)
-  const { data: rawReadingsData, isLoading: rawReadingsLoading, error: rawReadingsError } = useQuery({
-    queryKey: ['rawReadings', startDate, endDate, currentPage, recordsPerPage],
+  // When includeInactive is false (default), backend filters out completely inactive records
+  const { data: rawReadingsData, isLoading: rawReadingsLoading } = useQuery({
+    queryKey: ['rawReadings', startDate, endDate, currentPage, recordsPerPage, includeInactive],
     queryFn: async () => {
-      console.log('[HistoricalDataView] Fetching raw readings:', { startDate, endDate, currentPage, recordsPerPage });
+      console.log('[HistoricalDataView] Fetching raw readings:', { startDate, endDate, currentPage, recordsPerPage, includeInactive });
       try {
-        const result = await energyService.getRawReadings(startDate, endDate, currentPage, recordsPerPage);
+        const result = await energyService.getRawReadings(startDate, endDate, currentPage, recordsPerPage, includeInactive);
         console.log('[HistoricalDataView] Raw readings result:', result);
         return result;
       } catch (error) {
@@ -201,26 +207,39 @@ export function HistoricalDataView({
     });
   }, [rawReadingsData]);
 
+  // Filter records to hide completely zero-valued records by default
+  // Preserves records containing at least one nonzero measurement (meaningful activity)
+  // When includeInactive is true (e.g. for troubleshooting), all records are shown
+  const filteredHistoricalRecords = useMemo(() => {
+    if (includeInactive) return historicalRecords;
+    return historicalRecords.filter(hasMeaningfulActivity);
+  }, [historicalRecords, includeInactive]);
+
+  const filteredRawRecords = useMemo(() => {
+    if (includeInactive) return rawRecords;
+    return rawRecords.filter(hasMeaningfulActivity);
+  }, [rawRecords, includeInactive]);
+
   const displayRecords = useMemo(() => {
-    return viewMode === 'aggregated' ? historicalRecords : rawRecords;
-  }, [viewMode, historicalRecords, rawRecords]);
+    return viewMode === 'aggregated' ? filteredHistoricalRecords : filteredRawRecords;
+  }, [viewMode, filteredHistoricalRecords, filteredRawRecords]);
 
   // Export to CSV (Unavailable for public users)
   const handleExport = () => {
-    if (isPublic || !historicalRecords.length) return;
+    if (isPublic || !displayRecords.length) return;
 
     const headers = ['Date', 'Time', 'Energy (mWh)', 'Voltage (V)', 'Equiv. Current (mA)', 'Power (mW)', 'Steps'];
     const csvContent = [
       headers.join(','),
-      ...historicalRecords.map(record =>
+      ...displayRecords.map(record =>
         [
           record.date,
           record.time,
-          record.energy?.toFixed(2) || '',
-          record.voltage?.toFixed(1) || '',
-          record.current !== undefined ? (record.current * 1000).toFixed(1) : '',
-          record.power !== undefined ? (record.power * 1000).toFixed(3) : '',
-          record.steps?.toFixed(0) || '',
+          record.energy !== undefined && record.energy !== null ? record.energy.toFixed(2) : '',
+          record.voltage !== undefined && record.voltage !== null ? record.voltage.toFixed(1) : '',
+          record.current !== undefined && record.current !== null ? (record.current * 1000).toFixed(1) : '',
+          record.power !== undefined && record.power !== null ? (record.power * 1000).toFixed(3) : '',
+          record.steps !== undefined && record.steps !== null ? record.steps.toFixed(0) : '',
         ].join(',')
       ),
     ].join('\n');
@@ -250,46 +269,15 @@ export function HistoricalDataView({
     );
   }
 
-  // Empty state for aggregated view
-  if (!isLoading && viewMode === 'aggregated' && !historicalRecords.length) {
-    return (
-      <EcoCard>
-        <EcoEmptyState
-          icon={Calendar}
-          title="No historical data available"
-          description="Historical monitoring records will appear here once EcoStep begins receiving telemetry."
-        />
-      </EcoCard>
-    );
-  }
-
-  // Empty state for raw view
-  if (!isLoading && viewMode === 'raw' && !rawReadingsLoading && (!rawReadingsData || rawReadingsData.data.length === 0)) {
-    return (
-      <EcoCard>
-        <EcoEmptyState
-          icon={Calendar}
-          title="No raw data available"
-          description={rawReadingsError ? `Error: ${rawReadingsError.message}` : "Raw sensor readings will appear here once EcoStep begins receiving telemetry."}
-        />
-      </EcoCard>
-    );
-  }
-
-  const totalRecords = viewMode === 'raw' && rawReadingsData ? rawReadingsData.total : historicalRecords.length;
+  const totalRecords = viewMode === 'raw' && rawReadingsData ? rawReadingsData.total : displayRecords.length;
   const totalPages = viewMode === 'raw' && rawReadingsData ? rawReadingsData.totalPages : 1;
 
   return (
-    <EcoCard
-      style={{
-        backgroundColor: theme === 'dark' ? '#080E22' : '#FFFFFF',
-        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
-      }}
-    >
+    <EcoCard>
       <div
         className="eco-card-header pb-4 mb-4 border-b"
         style={{
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+          borderColor: 'var(--line)',
         }}
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -306,48 +294,60 @@ export function HistoricalDataView({
             <div>
               <h3
                 className="text-lg font-bold"
-                style={{ color: theme === 'dark' ? '#FFFFFF' : '#0B132B' }}
+                style={{ color: 'var(--t)' }}
               >
                 Historical Records
               </h3>
               <p
                 className="text-sm mt-0.5"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                style={{ color: 'var(--mu)' }}
               >
                 {totalRecords} {viewMode === 'raw' ? 'raw readings' : 'data points'}
+                {!includeInactive && ' • Active only'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-            {/* View Mode Toggle - EcoStep Design System */}
-            <div 
-              className="flex items-center gap-1 rounded-xl p-1 w-full sm:w-auto"
-              style={{
-                backgroundColor: theme === 'dark' ? '#111B30' : '#F3F4F6',
-                border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'}`,
+            {/* Zero-Activity Filter Toggle (Admin troubleshooting access) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIncludeInactive((prev) => !prev);
+                setCurrentPage(1);
               }}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border"
+              style={{
+                backgroundColor: includeInactive
+                  ? (theme === 'dark' ? 'rgba(234, 179, 8, 0.15)' : '#FEF9C3')
+                  : 'transparent',
+                borderColor: includeInactive
+                  ? (theme === 'dark' ? '#EAB308' : '#CA8A04')
+                  : 'var(--line)',
+                color: includeInactive
+                  ? (theme === 'dark' ? '#FACC15' : '#854D0E')
+                  : 'var(--mu)',
+              }}
+              title={includeInactive ? 'Showing all records including inactive zeros' : 'Hiding completely zero-valued records'}
+              aria-pressed={includeInactive}
             >
+              <span>{includeInactive ? 'All Records (Inc. 0s)' : 'Active Records Only'}</span>
+            </button>
+
+            {/* View Mode Toggle - EcoStep Design System Segmented Control */}
+            <div className="sgc sgc-sm grid grid-cols-2 sm:inline-flex flex-shrink-0" role="tablist">
               <button
                 type="button"
                 onClick={() => {
                   setViewMode('aggregated');
                   setCurrentPage(1);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
-                style={{
-                  backgroundColor: viewMode === 'aggregated'
-                    ? (theme === 'dark' ? '#1E2B24' : '#E8F8EF')
-                    : 'transparent',
-                  color: viewMode === 'aggregated'
-                    ? (theme === 'dark' ? '#3DDC97' : '#428475')
-                    : (theme === 'dark' ? '#9CA3AF' : '#6B7280'),
-                  boxShadow: viewMode === 'aggregated' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
-                }}
+                className={`flex items-center justify-center gap-1.5 ${viewMode === 'aggregated' ? 'on' : ''}`}
                 aria-pressed={viewMode === 'aggregated'}
+                aria-label="Switch to aggregated view"
               >
-                <BarChart3 className="h-4 w-4" strokeWidth={2} />
-                Aggregated
+                <BarChart3 className="inline-block h-3.5 w-3.5" strokeWidth={2} />
+                <span>Aggregated</span>
               </button>
               <button
                 type="button"
@@ -355,20 +355,12 @@ export function HistoricalDataView({
                   setViewMode('raw');
                   setCurrentPage(1);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
-                style={{
-                  backgroundColor: viewMode === 'raw'
-                    ? (theme === 'dark' ? '#1E2B24' : '#E8F8EF')
-                    : 'transparent',
-                  color: viewMode === 'raw'
-                    ? (theme === 'dark' ? '#3DDC97' : '#428475')
-                    : (theme === 'dark' ? '#9CA3AF' : '#6B7280'),
-                  boxShadow: viewMode === 'raw' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
-                }}
+                className={`flex items-center justify-center gap-1.5 ${viewMode === 'raw' ? 'on' : ''}`}
                 aria-pressed={viewMode === 'raw'}
+                aria-label="Switch to raw data view"
               >
-                <TableIcon className="h-4 w-4" strokeWidth={2} />
-                Raw Data
+                <TableIcon className="inline-block h-3.5 w-3.5" strokeWidth={2} />
+                <span>Raw Data</span>
               </button>
             </div>
 
@@ -379,7 +371,7 @@ export function HistoricalDataView({
               disabled={isPublic}
               title={isPublic ? 'Exporting CSV is unavailable to public users' : 'Export CSV'}
               aria-disabled={isPublic}
-              className={`flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm rounded-lg font-medium transition-all w-full sm:w-auto ${
+              className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full font-medium transition-all w-full sm:w-auto ${
                 isPublic
                   ? 'opacity-40 cursor-not-allowed bg-neutral-200/50 dark:bg-neutral-800/50 text-neutral-400 dark:text-neutral-500 border border-neutral-300 dark:border-neutral-700 pointer-events-auto'
                   : 'cursor-pointer hover:opacity-90'
@@ -387,339 +379,343 @@ export function HistoricalDataView({
               style={{
                 backgroundColor: isPublic
                   ? undefined
-                  : theme === 'dark'
-                  ? '#111B30'
-                  : '#FFFFFF',
+                  : 'var(--panel)',
                 borderColor: isPublic
                   ? undefined
-                  : theme === 'dark'
-                  ? 'rgba(255, 255, 255, 0.15)'
-                  : '#D1D5DB',
+                  : 'var(--line)',
                 color: isPublic
                   ? undefined
-                  : theme === 'dark'
-                  ? '#FFFFFF'
-                  : '#0B132B',
-                border: isPublic ? undefined : '1px solid',
+                  : 'var(--t)',
+                border: isPublic ? undefined : '1px solid var(--line)',
               }}
             >
-              <Download className="h-4 w-4" strokeWidth={2} />
+              <Download className="h-3.5 w-3.5" strokeWidth={2} />
               <span>Export CSV</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Pagination Controls (Raw Mode Only) */}
-      {viewMode === 'raw' && rawReadingsData && totalPages > 1 && (
-        <div
-          className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-6 py-3 border-b mb-4"
-          style={{
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
-          }}
-        >
-          <p
-            className="text-xs sm:text-sm text-center sm:text-left font-medium"
-            style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-          >
-            Page {currentPage} of {totalPages} • Showing {(currentPage - 1) * recordsPerPage + 1} to{' '}
-            {Math.min(currentPage * recordsPerPage, totalRecords)} of {totalRecords} records
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
+      {/* Body: Empty State OR Table & Mobile Cards */}
+      {displayRecords.length === 0 ? (
+        <EcoEmptyState
+          icon={Footprints}
+          title="Tiptoeing around? The tile hasn't felt a single stomp today :<"
+        />
+      ) : (
+        <>
+          {/* Pagination Controls (Raw Mode Only) */}
+          {viewMode === 'raw' && rawReadingsData && totalPages > 1 && (
+            <div
+              className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-6 py-3 border-b mb-4"
               style={{
-                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#D1D5DB',
-                color: theme === 'dark' ? '#FFFFFF' : '#1F2937',
-              }}
-              className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
-              aria-label="Previous Page"
-            >
-              <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
-            </button>
-            <span
-              className="text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold border"
-              style={{
-                backgroundColor: theme === 'dark' ? '#111B30' : '#F3F4F6',
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#E5E7EB',
-                color: theme === 'dark' ? '#39FF88' : '#0F172A',
+                borderColor: 'var(--line)',
               }}
             >
-              {currentPage}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              style={{
-                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#D1D5DB',
-                color: theme === 'dark' ? '#FFFFFF' : '#1F2937',
-              }}
-              className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
-              aria-label="Next Page"
-            >
-              <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
-            </button>
-          </div>
-        </div>
-      )}
+              <p
+                className="text-xs sm:text-sm text-center sm:text-left font-medium"
+                style={{ color: 'var(--mu)' }}
+              >
+                Page {currentPage} of {totalPages} • Showing {(currentPage - 1) * recordsPerPage + 1} to{' '}
+                {Math.min(currentPage * recordsPerPage, totalRecords)} of {totalRecords} records
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    backgroundColor: 'var(--panel)',
+                    borderColor: 'var(--line)',
+                    color: 'var(--t)',
+                  }}
+                  className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
+                </button>
+                <span
+                  className="text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold border"
+                  style={{
+                    backgroundColor: 'var(--soft)',
+                    borderColor: 'var(--line)',
+                    color: 'var(--t)',
+                  }}
+                >
+                  {currentPage}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    backgroundColor: 'var(--panel)',
+                    borderColor: 'var(--line)',
+                    color: 'var(--t)',
+                  }}
+                  className="p-2 rounded-lg border flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
+                  aria-label="Next Page"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
+                </button>
+              </div>
+            </div>
+          )}
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto -mx-6 px-6">
-        <table className="w-full text-left border-collapse" style={{ minWidth: '680px' }}>
-          <thead>
-            <tr
-              className="border-b"
-              style={{
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
-              }}
-            >
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Date
-              </th>
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Time
-              </th>
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Energy
-              </th>
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Voltage
-              </th>
-              <th 
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                title="Equivalent current if capacitor discharges in 1 second"
-              >
-                Equiv. Current
-              </th>
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Power
-              </th>
-              <th
-                className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
-                style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-              >
-                Steps
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto -mx-6 px-6">
+            <table className="w-full text-left border-collapse" style={{ minWidth: '680px' }}>
+              <thead>
+                <tr
+                  className="border-b"
+                  style={{
+                    borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+                  }}
+                >
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Date
+                  </th>
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Time
+                  </th>
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Energy
+                  </th>
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Voltage
+                  </th>
+                  <th 
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    title="Equivalent current if capacitor discharges in 1 second"
+                  >
+                    Equiv. Current
+                  </th>
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Power
+                  </th>
+                  <th
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                  >
+                    Steps
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayRecords.map((record, index) => (
+                  <tr
+                    key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
+                    className="border-b transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{
+                      borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F3F4F6',
+                    }}
+                  >
+                    <td
+                      className="py-3 px-4 text-sm font-semibold"
+                      style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                    >
+                      {record.date}
+                    </td>
+                    <td
+                      className="py-3 px-4 text-sm tabular-nums"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#475569' }}
+                    >
+                      {record.time}
+                    </td>
+                    <td
+                      className="py-3 px-4 text-sm text-right tabular-nums font-bold"
+                      style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
+                    >
+                      {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
+                    </td>
+                    <td
+                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
+                    >
+                      {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
+                    </td>
+                    <td 
+                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
+                      title="Equivalent current if capacitor discharges in 1 second"
+                    >
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
+                    </td>
+                    <td
+                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
+                    >
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
+                    </td>
+                    <td
+                      className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
+                      style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                    >
+                      {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card List View */}
+          <div className="md:hidden space-y-3">
             {displayRecords.map((record, index) => (
-              <tr
+              <div
                 key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
-                className="border-b transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className="p-4 rounded-2xl border transition-all duration-200"
                 style={{
-                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F3F4F6',
+                  backgroundColor: 'var(--panel)',
+                  borderColor: 'var(--line)',
+                  boxShadow: 'var(--card-shadow)',
                 }}
               >
-                <td
-                  className="py-3 px-4 text-sm font-semibold"
-                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                {/* Card Header: Timestamp & Energy Badge */}
+                <div
+                  className="flex items-center justify-between pb-3 mb-3 border-b"
+                  style={{
+                    borderColor: 'var(--line)',
+                  }}
                 >
-                  {record.date}
-                </td>
-                <td
-                  className="py-3 px-4 text-sm tabular-nums"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#475569' }}
-                >
-                  {record.time}
-                </td>
-                <td
-                  className="py-3 px-4 text-sm text-right tabular-nums font-bold"
-                  style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
-                >
-                  {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
-                </td>
-                <td
-                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
-                  style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
-                >
-                  {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
-                </td>
-                <td 
-                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
-                  style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
-                  title="Equivalent current if capacitor discharges in 1 second"
-                >
-                  {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
-                </td>
-                <td
-                  className="py-3 px-4 text-sm text-right tabular-nums font-medium"
-                  style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
-                >
-                  {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
-                </td>
-                <td
-                  className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
-                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
-                >
-                  {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-sm font-bold tracking-tight"
+                      style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                    >
+                      {record.date}
+                    </span>
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    >
+                      • {record.time}
+                    </span>
+                  </div>
+                  <span
+                    className="text-xs font-bold px-2.5 py-0.5 rounded-full tabular-nums"
+                    style={{
+                      backgroundColor: theme === 'dark' ? 'rgba(5, 150, 105, 0.25)' : '#ECFDF5',
+                      color: theme === 'dark' ? '#39FF88' : '#059669',
+                      border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
+                    }}
+                  >
+                    {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
+                  </span>
+                </div>
 
-      {/* Mobile Card List View */}
-      <div className="md:hidden space-y-3">
-        {displayRecords.map((record, index) => (
+                {/* 4-Metric Grid */}
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
+                  {/* VOLTAGE */}
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-wider uppercase"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    >
+                      Voltage
+                    </span>
+                    <span
+                      className="text-base font-extrabold tabular-nums mt-0.5 block"
+                      style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
+                    >
+                      {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
+                    </span>
+                  </div>
+
+                  {/* CURRENT */}
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-wider uppercase"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    >
+                      Current
+                    </span>
+                    <span
+                      className="text-base font-extrabold tabular-nums mt-0.5 block"
+                      style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
+                    >
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
+                    </span>
+                  </div>
+
+                  {/* POWER */}
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-wider uppercase"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    >
+                      Power
+                    </span>
+                    <span
+                      className="text-base font-extrabold tabular-nums mt-0.5 block"
+                      style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
+                    >
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
+                    </span>
+                  </div>
+
+                  {/* STEPS */}
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-wider uppercase"
+                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                    >
+                      Steps
+                    </span>
+                    <span
+                      className="text-base font-extrabold tabular-nums mt-0.5 block"
+                      style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                    >
+                      {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Summary footer */}
           <div
-            key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
-            className="p-4 rounded-2xl border transition-all duration-200"
+            className="mt-4 pt-4 border-t"
             style={{
-              backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
               borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
-              boxShadow: theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(0, 0, 0, 0.04)',
             }}
           >
-            {/* Card Header: Timestamp & Energy Badge */}
-            <div
-              className="flex items-center justify-between pb-3 mb-3 border-b"
-              style={{
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : '#F3F4F6',
-              }}
+            <p
+              className="text-xs font-medium"
+              style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
             >
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-sm font-bold tracking-tight"
-                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
-                >
-                  {record.date}
-                </span>
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                >
-                  • {record.time}
-                </span>
-              </div>
-              <span
-                className="text-xs font-bold px-2.5 py-0.5 rounded-full tabular-nums"
-                style={{
-                  backgroundColor: theme === 'dark' ? 'rgba(5, 150, 105, 0.25)' : '#ECFDF5',
-                  color: theme === 'dark' ? '#39FF88' : '#059669',
-                  border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
-                }}
-              >
-                {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
-              </span>
-            </div>
-
-            {/* 4-Metric Grid */}
-            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-              {/* VOLTAGE */}
-              <div>
-                <span
-                  className="block text-[10px] font-bold tracking-wider uppercase"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                >
-                  Voltage
-                </span>
-                <span
-                  className="text-base font-extrabold tabular-nums mt-0.5 block"
-                  style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
-                >
-                  {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
-                </span>
-              </div>
-
-              {/* CURRENT */}
-              <div>
-                <span
-                  className="block text-[10px] font-bold tracking-wider uppercase"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                >
-                  Current
-                </span>
-                <span
-                  className="text-base font-extrabold tabular-nums mt-0.5 block"
-                  style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
-                >
-                  {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
-                </span>
-              </div>
-
-              {/* POWER */}
-              <div>
-                <span
-                  className="block text-[10px] font-bold tracking-wider uppercase"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                >
-                  Power
-                </span>
-                <span
-                  className="text-base font-extrabold tabular-nums mt-0.5 block"
-                  style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
-                >
-                  {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
-                </span>
-              </div>
-
-              {/* STEPS */}
-              <div>
-                <span
-                  className="block text-[10px] font-bold tracking-wider uppercase"
-                  style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                >
-                  Steps
-                </span>
-                <span
-                  className="text-base font-extrabold tabular-nums mt-0.5 block"
-                  style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
-                >
-                  {record.steps !== undefined ? record.steps.toFixed(0) : '—'}
-                </span>
-              </div>
-            </div>
+              {viewMode === 'aggregated' ? (
+                <>
+                  Showing {displayRecords.length} aggregated records
+                  {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ''}
+                </>
+              ) : (
+                <>
+                  Showing raw sensor readings
+                  {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ' across all time'} • {totalRecords} total records
+                </>
+              )}
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Summary footer */}
-      <div
-        className="mt-4 pt-4 border-t"
-        style={{
-          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
-        }}
-      >
-        <p
-          className="text-xs font-medium"
-          style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-        >
-          {viewMode === 'aggregated' ? (
-            <>
-              Showing {displayRecords.length} aggregated records
-              {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ''}
-            </>
-          ) : (
-            <>
-              Showing raw sensor readings
-              {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ' across all time'} • {totalRecords} total records
-            </>
-          )}
-        </p>
-      </div>
+        </>
+      )}
     </EcoCard>
   );
 }

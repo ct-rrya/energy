@@ -39,20 +39,18 @@ describe('DashboardHeader', () => {
     });
 
     it('does NOT render the large 80px warning card', () => {
-      const { container } = render(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
-      // Old warning card used min-w-[200px] or h-[80px]
+      const { container } = render(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
       expect(container.querySelector('.h-\\[80px\\]')).not.toBeInTheDocument();
       expect(container.querySelector('.min-w-\\[200px\\]')).not.toBeInTheDocument();
-      // Should not show the intimidating "SYSTEM STATUS" uppercase header block
       expect(screen.queryByText('SYSTEM STATUS')).not.toBeInTheDocument();
     });
   });
 
-  describe('System Status States & Subtle Indicators', () => {
-    it('renders Online status with green dot and pulsing animation when connected', () => {
+  describe('Standardized Hardware Status States & Indicators', () => {
+    it('renders Connected status with green dot and pulsing animation when hardware is connected', () => {
       const { container } = render(<DashboardHeader {...defaultProps} systemStatus="connected" />);
 
-      expect(screen.getByText('Online')).toBeInTheDocument();
+      expect(screen.getByText('Connected')).toBeInTheDocument();
       const statusDot = screen.getByRole('status', { name: /system status: connected/i });
       expect(statusDot).toHaveClass('bg-[#3ED98A]');
 
@@ -61,23 +59,27 @@ describe('DashboardHeader', () => {
       expect(pulseElement).toHaveClass('bg-[#3ED98A]');
     });
 
-    it('renders Standby status with amber dot when status is unknown / idle', () => {
-      const { container } = render(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
+    it('renders Waiting status with amber dot when hardware is waiting for connection', () => {
+      const { container } = render(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
 
-      // Subtle Standby replaces the intimidating Warning box
-      expect(screen.getByText('Standby')).toBeInTheDocument();
-      const statusDot = screen.getByRole('status', { name: /system status: unknown/i });
+      expect(screen.getByText('Waiting for hardware connection')).toBeInTheDocument();
+      const statusDot = screen.getByRole('status', { name: /system status: waiting/i });
       expect(statusDot).toHaveClass('bg-[#F59E0B]');
 
-      // No pulse animation on standby
+      // No pulse animation on waiting
       const pulseElement = container.querySelector('.animate-ping');
       expect(pulseElement).not.toBeInTheDocument();
     });
 
-    it('renders Offline status with red dot when disconnected', () => {
+    it('renders Waiting status for unknown initial state', () => {
+      render(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
+      expect(screen.getByText('Waiting for hardware connection')).toBeInTheDocument();
+    });
+
+    it('renders Connection Lost status with red dot when disconnected', () => {
       const { container } = render(<DashboardHeader {...defaultProps} systemStatus="disconnected" />);
 
-      expect(screen.getByText('Offline')).toBeInTheDocument();
+      expect(screen.getByText('Connection Lost')).toBeInTheDocument();
       const statusDot = screen.getByRole('status', { name: /system status: disconnected/i });
       expect(statusDot).toHaveClass('bg-[#EF4444]');
 
@@ -85,7 +87,7 @@ describe('DashboardHeader', () => {
       expect(pulseElement).not.toBeInTheDocument();
     });
 
-    it('prioritizes WebSocket disconnection and displays Offline status', () => {
+    it('prioritizes WebSocket disconnection and displays Connection Lost status', () => {
       render(
         <DashboardHeader
           {...defaultProps}
@@ -94,7 +96,7 @@ describe('DashboardHeader', () => {
         />
       );
 
-      expect(screen.getByText('Offline')).toBeInTheDocument();
+      expect(screen.getByText('Connection Lost')).toBeInTheDocument();
       const statusDot = screen.getByRole('status', { name: /system status: disconnected/i });
       expect(statusDot).toHaveClass('bg-[#EF4444]');
     });
@@ -105,45 +107,44 @@ describe('DashboardHeader', () => {
       render(<DashboardHeader {...defaultProps} systemStatus="connected" />);
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for online/i,
+        name: /view operating status details for connected/i,
       });
       expect(helpButton).toBeInTheDocument();
       expect(helpButton).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('opens tooltip on click/tap and displays plain-language explanation for Online', async () => {
+    it('opens tooltip on click/tap and displays plain-language explanation for Connected', async () => {
       const user = userEvent.setup();
       render(<DashboardHeader {...defaultProps} systemStatus="connected" />);
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for online/i,
+        name: /view operating status details for connected/i,
       });
       await user.click(helpButton);
 
       expect(helpButton).toHaveAttribute('aria-expanded', 'true');
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
-      expect(screen.getByText('System Status: Online')).toBeInTheDocument();
-      expect(screen.getByText(/operating normally/i)).toBeInTheDocument();
-      expect(screen.getByText(/Zero footsteps is normal/i)).toBeInTheDocument();
+      expect(screen.getByText('Hardware Status: Connected')).toBeInTheDocument();
+      expect(screen.getByText(/The hardware has successfully established a connection/i)).toBeInTheDocument();
     });
 
-    it('explains in simple language that zero footsteps is normal in Standby mode', async () => {
+    it('explains in simple language that no hardware is connected in Waiting state', async () => {
       const user = userEvent.setup();
-      render(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
+      render(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for standby/i,
+        name: /view operating status details for waiting for hardware connection/i,
       });
       await user.click(helpButton);
 
-      expect(screen.getByText('System Status: Standby')).toBeInTheDocument();
+      expect(screen.getByText('Hardware Status: Waiting')).toBeInTheDocument();
       expect(
-        screen.getByText(/Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault/i)
+        screen.getByText(/No hardware is currently connected. The system has not established an active connection with the hardware./i)
       ).toBeInTheDocument();
     });
 
-    it('explains the actual reason for disconnection in tooltip', async () => {
+    it('explains the reason for Connection Lost in tooltip', async () => {
       const user = userEvent.setup();
       render(
         <DashboardHeader
@@ -154,15 +155,14 @@ describe('DashboardHeader', () => {
       );
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for offline/i,
+        name: /view operating status details for connection lost/i,
       });
       await user.click(helpButton);
 
-      expect(screen.getByText('System Status: Offline')).toBeInTheDocument();
+      expect(screen.getByText('Hardware Status: Connection Lost')).toBeInTheDocument();
       expect(
-        screen.getByText(/real-time connection to the EcoStep IoT stream is currently disconnected/i)
+        screen.getByText(/Hardware was previously connected, but the active connection was lost./i)
       ).toBeInTheDocument();
-      expect(screen.getByText(/WebSocket telemetry link is disconnected/i)).toBeInTheDocument();
     });
 
     it('shows tooltip on hover for desktop users', () => {
@@ -188,7 +188,7 @@ describe('DashboardHeader', () => {
       render(<DashboardHeader {...defaultProps} systemStatus="connected" />);
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for online/i,
+        name: /view operating status details for connected/i,
       });
       await user.click(helpButton);
       expect(screen.getByRole('tooltip')).toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('DashboardHeader', () => {
       );
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for online/i,
+        name: /view operating status details for connected/i,
       });
       await user.click(helpButton);
       expect(screen.getByRole('tooltip')).toBeInTheDocument();
@@ -226,13 +226,13 @@ describe('DashboardHeader', () => {
 
     it('handles rapid prop updates gracefully', () => {
       const { rerender } = render(<DashboardHeader {...defaultProps} systemStatus="connected" />);
-      expect(screen.getByText('Online')).toBeInTheDocument();
+      expect(screen.getByText('Connected')).toBeInTheDocument();
 
-      rerender(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
-      expect(screen.getByText('Standby')).toBeInTheDocument();
+      rerender(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
+      expect(screen.getByText('Waiting for hardware connection')).toBeInTheDocument();
 
       rerender(<DashboardHeader {...defaultProps} systemStatus="disconnected" />);
-      expect(screen.getByText('Offline')).toBeInTheDocument();
+      expect(screen.getByText('Connection Lost')).toBeInTheDocument();
     });
   });
 });

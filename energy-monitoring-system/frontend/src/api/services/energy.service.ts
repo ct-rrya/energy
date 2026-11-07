@@ -69,12 +69,14 @@ export const energyService = {
    * @param endDate - End date (YYYY-MM-DD or ISO format)
    * @param page - Page number (1-indexed)
    * @param limit - Records per page
+   * @param includeInactive - Whether to include completely inactive zero records (default: false)
    */
   getRawReadings: async (
     startDate?: string,
     endDate?: string,
     page: number = 1,
-    limit: number = 50
+    limit: number = 50,
+    includeInactive: boolean = false
   ): Promise<PaginatedReadingsResponse> => {
     // Backend requires YYYY-MM-DD format, extract date portion if ISO string
     const formatDate = (dateStr?: string) => {
@@ -88,6 +90,7 @@ export const energyService = {
     const params = new URLSearchParams();
     if (formattedStartDate) params.append('startDate', formattedStartDate);
     if (formattedEndDate) params.append('endDate', formattedEndDate);
+    if (includeInactive) params.append('includeInactive', 'true');
     params.append('limit', String(Math.max(limit * 20, 1000)));
 
     const response = await apiClient.get<ApiResponse<EnergyReading[]>>(

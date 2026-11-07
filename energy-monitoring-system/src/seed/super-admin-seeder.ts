@@ -12,7 +12,7 @@ import * as readline from 'readline';
  * This is the bootstrap account that can create other administrators.
  *
  * Environment Variables Optional:
- * - SUPER_ADMIN_NAME: Full name (default: "System Administrator")
+ * - SUPER_ADMIN_NAME: Full name (default: "Ecostep Super")
  * - SUPER_ADMIN_EMAIL: Email (default: "superadmin@ecostep.local")
  *
  * Usage:
@@ -95,7 +95,7 @@ async function bootstrap() {
     logger.log('🔍 Reading configuration...');
 
     const superAdminName =
-      process.env.SUPER_ADMIN_NAME || 'System Administrator';
+      process.env.SUPER_ADMIN_NAME || 'Ecostep Super';
     const superAdminEmail =
       process.env.SUPER_ADMIN_EMAIL || 'superadmin@ecostep.local';
 

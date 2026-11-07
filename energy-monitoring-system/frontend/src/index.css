@@ -238,6 +238,12 @@
     color: var(--t);
   }
 
+  input, select, textarea, button {
+    font-family: var(--font-dm);
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+  }
+
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
@@ -833,40 +839,49 @@ body::before {
   transition: all 0.2s ease;
 }
 
-/* Standby */
-.status-pill.status-standby {
+/* Standby / Waiting */
+.status-pill.status-standby,
+.status-pill.status-waiting {
   background: rgba(245, 166, 35, 0.12);
   border: 1px solid rgba(245, 166, 35, 0.2);
   color: #8A6A00;
 }
 
 .dark .status-pill.status-standby,
-[data-theme="dark"] .status-pill.status-standby {
+.dark .status-pill.status-waiting,
+[data-theme="dark"] .status-pill.status-standby,
+[data-theme="dark"] .status-pill.status-waiting {
   border-color: rgba(245, 166, 35, 0.08);
   color: #E8C45A;
 }
 
-/* Online */
-.status-pill.status-online {
+/* Online / Connected */
+.status-pill.status-online,
+.status-pill.status-connected {
   background: var(--mint);
   border: 1px solid rgba(25, 212, 106, 0.2);
   color: var(--acc);
 }
 
 .dark .status-pill.status-online,
-[data-theme="dark"] .status-pill.status-online {
+.dark .status-pill.status-connected,
+[data-theme="dark"] .status-pill.status-online,
+[data-theme="dark"] .status-pill.status-connected {
   border-color: rgba(25, 212, 106, 0.08);
 }
 
-/* Offline */
-.status-pill.status-offline {
+/* Offline / Disconnected */
+.status-pill.status-offline,
+.status-pill.status-disconnected {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: #EF4444;
 }
 
 .dark .status-pill.status-offline,
-[data-theme="dark"] .status-pill.status-offline {
+.dark .status-pill.status-disconnected,
+[data-theme="dark"] .status-pill.status-offline,
+[data-theme="dark"] .status-pill.status-disconnected {
   border-color: rgba(239, 68, 68, 0.08);
 }
 
@@ -1108,6 +1123,20 @@ body::before {
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
+}
+
+/* Compact Segmented Control */
+.sgc.sm, .sgc-sm {
+  padding: 2.5px;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.sgc.sm span, .sgc.sm button,
+.sgc-sm span, .sgc-sm button {
+  padding: 4px 11px !important;
+  font-size: 12px !important;
+  border-radius: 99px;
 }
 
 .sgc .on, .sgc button[aria-pressed="true"] {
@@ -2567,4 +2596,20 @@ body,
   -webkit-filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Standardized dark select & dropdown popup styles */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #12241A !important;
+  color: #E4F7EA !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #1B3828 !important;
+  color: #1FD566 !important;
 }

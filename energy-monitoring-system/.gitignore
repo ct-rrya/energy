@@ -101,3 +101,6 @@ mobile/.env.local
 
 #unwanted bs
 docs/
+
+# Scratch folder
+scratch/

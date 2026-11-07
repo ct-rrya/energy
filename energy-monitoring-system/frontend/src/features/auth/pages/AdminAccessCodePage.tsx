@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ROUTES } from '@/routes/routes.config';
 
 /**
  * Admin Access Code Login Page
@@ -141,8 +142,12 @@ export default function AdminAccessCodePage() {
     setError('');
 
     try {
-      await loginWithAccessCode({ accessCode });
-      navigate('/dashboard', { replace: true });
+      const loggedInUser = await loginWithAccessCode({ accessCode });
+      if (loggedInUser?.role === 'SUPER_ADMIN') {
+        navigate(ROUTES.ADMIN_MANAGEMENT, { replace: true });
+      } else {
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      }
     } catch (err: any) {
       console.error('Access code login failed:', err);
       setError(

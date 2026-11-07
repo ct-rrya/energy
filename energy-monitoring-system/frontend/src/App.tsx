@@ -5,6 +5,7 @@ import { ToastContainer } from '@/components/common/Toast';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { InactivityProvider } from '@/contexts/InactivityContext';
 import { SocketProvider } from '@/contexts/SocketContext';
+import { HardwareStatusProvider } from '@/contexts/HardwareStatusContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SessionWarningModal } from '@/components/common/SessionWarningModal';
 import { router } from '@/routes';
@@ -51,13 +52,15 @@ function App() {
           <AuthProvider>
             <InactivityProvider timeout={10 * 60 * 1000} warningThreshold={1 * 60 * 1000}>
               <SocketProvider>
-                <RouterProvider router={router} />
-                <ToastContainer />
-                {/* 
-                  SessionWarningModal for admin inactivity timeout
-                  Shows at 9 minutes (1 minute before auto-logout)
-                */}
-                <SessionWarningModal />
+                <HardwareStatusProvider>
+                  <RouterProvider router={router} />
+                  <ToastContainer />
+                  {/* 
+                    SessionWarningModal for admin inactivity timeout
+                    Shows at 9 minutes (1 minute before auto-logout)
+                  */}
+                  <SessionWarningModal />
+                </HardwareStatusProvider>
               </SocketProvider>
             </InactivityProvider>
           </AuthProvider>

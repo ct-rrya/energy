@@ -80,7 +80,7 @@ export interface EcoStepWordmarkProps {
 
 /**
  * EcoStep Wordmark
- * "Eco" in Poppins 700, "Step" in Poppins 500.
+ * "Eco" in DM Sans 700, "Step" in DM Sans 500.
  * Follows light/dark mode via CSS variables (--es-ink and --es-step).
  */
 export function EcoStepWordmark({
@@ -91,13 +91,14 @@ export function EcoStepWordmark({
     <span
       className={`es-brand-wordmark inline-flex items-baseline tracking-[-0.02em] leading-none select-none ${className}`}
       style={{
-        fontFamily: "'Poppins', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         fontSize: typeof fontSize === 'number' ? `${fontSize}px` : fontSize,
       }}
     >
       <span
         style={{
           fontWeight: 700,
+          fontFamily: "'DM Sans', sans-serif",
           color: 'var(--es-ink, #0e1f15)',
         }}
       >
@@ -106,6 +107,7 @@ export function EcoStepWordmark({
       <span
         style={{
           fontWeight: 500,
+          fontFamily: "'DM Sans', sans-serif",
           color: 'var(--es-step, #12a24f)',
         }}
       >

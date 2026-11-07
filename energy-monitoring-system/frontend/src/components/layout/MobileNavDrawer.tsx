@@ -13,6 +13,7 @@ import {
   FileText, 
   Settings, 
   Users,
+  ScrollText,
   X,
   ChevronRight,
   Award,
@@ -43,6 +44,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
+  { to: ROUTES.ADMIN_LOGS, label: 'Audit Logs', Icon: ScrollText, superAdminOnly: true },
 ];
 
 export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
@@ -56,12 +58,14 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
   const isSystemAdmin = isAuthenticated && user && user.role === 'SYSTEM_ADMIN';
   const isAnyAdmin = isSuperAdmin || isSystemAdmin;
 
-  // Filter nav items based on user role
+  // Filter nav items based on user role (Super Admin only has Admins and Logs)
   const navItems = ALL_NAV_ITEMS.filter((item) => {
-    if (!item.systemAdminOnly && !item.superAdminOnly) return true;
-    if (item.systemAdminOnly && isAnyAdmin) return true;
-    if (item.superAdminOnly && isSuperAdmin) return true;
-    return false;
+    if (isSuperAdmin) {
+      return item.superAdminOnly;
+    }
+    if (item.superAdminOnly) return false;
+    if (item.systemAdminOnly) return isSystemAdmin;
+    return true;
   });
 
   // Close drawer on route change

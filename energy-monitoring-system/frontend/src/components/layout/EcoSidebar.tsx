@@ -393,22 +393,23 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
   // Filter nav items based on role
   const navItems = useMemo(() => {
-    return ALL_NAV_ITEMS.filter(item => {
+    if (isSuperAdmin) {
+      // Super Admin account ONLY has Admins and Logs
+      return ALL_NAV_ITEMS.filter((item) => item.superAdminOnly);
+    }
+    return ALL_NAV_ITEMS.filter((item) => {
       if (item.publicOnly && isAnyAdmin) {
         return false;
       }
-      if (!item.systemAdminOnly && !item.superAdminOnly) {
-        return true;
+      if (item.superAdminOnly) {
+        return false;
       }
-      if (item.systemAdminOnly && isAnyAdmin) {
-        return true;
+      if (item.systemAdminOnly) {
+        return isSystemAdmin;
       }
-      if (item.superAdminOnly && isSuperAdmin) {
-        return true;
-      }
-      return false;
+      return true;
     });
-  }, [isAnyAdmin, isSuperAdmin]);
+  }, [isAnyAdmin, isSuperAdmin, isSystemAdmin]);
 
   const handleLogout = async () => {
     try {
@@ -419,10 +420,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   };
 
-  const userName = user?.name || 'Guest';
+  const userName = isSuperAdmin ? 'Ecostep Super' : (user?.name || 'Guest');
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
-  const avatarInitial = isAuthenticated && (user?.name || user?.email)
+  const avatarInitial = isSuperAdmin
+    ? 'E'
+    : isAuthenticated && (user?.name || user?.email)
     ? (user.name || user.email || 'A')[0].toUpperCase()
     : 'G';
 
@@ -454,9 +457,9 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
         {/* Header with Wordmark and Collapse Toggle */}
         <div className="es-nav-header">
           <a href="/#home" className="es-brand-link" aria-label="EcoStep home" title="EcoStep">
-            <EcoStepMark height={30} />
+            <EcoStepMark height={24} />
             <span className="es-brand-text">
-              <EcoStepWordmark fontSize="1.15rem" />
+              <EcoStepWordmark fontSize="1rem" />
             </span>
           </a>
           <button
@@ -566,8 +569,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             {/* Flat Menu Body (single buttons, no second dividers) */}
             <div className="um-body es-popover-body">
-              {/* Settings Navigation (Admin only) */}
-              {isAnyAdmin && (
+              {/* Settings Navigation (System Admin only - Super Admin has Admins and Logs only) */}
+              {isSystemAdmin && (
                 <button
                   type="button"
                   role="menuitem"
@@ -891,8 +894,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
               <div className="my-1 border-t border-[var(--line)] opacity-60" />
 
-              {/* Settings Navigation (Admin only) */}
-              {isAnyAdmin && (
+              {/* Settings Navigation (System Admin only - Super Admin has Admins and Logs only) */}
+              {isSystemAdmin && (
                 <button
                   type="button"
                   className="es-sheet-item"

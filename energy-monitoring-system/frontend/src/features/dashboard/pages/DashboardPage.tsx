@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Settings2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { getUserRole } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
-import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
 import { useMilestones } from '@/features/milestones/hooks/useMilestones';
 import { DashboardHeader } from '../components/DashboardHeader';
@@ -69,11 +69,7 @@ function DashboardPageContent() {
     data: metrics,
   } = useDashboardMetrics();
 
-  const {
-    data: systemStatus,
-  } = useSystemHealth();
-
-  const { lastReading, isConnected: isWebSocketConnected } = useLiveSensorData();
+  const { lastReading } = useLiveSensorData();
 
   // Last known good data cache for fallback (Requirements 19.2, 19.5)
   const [lastGoodReading, setLastGoodReading] = useState<SensorReading | undefined>(undefined);
@@ -137,22 +133,18 @@ function DashboardPageContent() {
     ? metrics
     : lastGoodMetrics;
 
-  // Determine system status for header (Requirements 2.6-2.9)
-  const getSystemStatus = (): 'connected' | 'disconnected' | 'unknown' => {
-    if (systemStatus?.database === 'connected') return 'connected';
-    if (systemStatus?.database === 'disconnected') return 'disconnected';
-    return 'unknown';
-  };
+  // Single source of truth for hardware connection status
+  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
 
   return (
     <div className="page">
-      {/* Dashboard Header with date/time and system status (Requirements 2.1-2.9) */}
+      {/* Dashboard Header with date/time and standardized hardware status */}
       <DashboardHeader
           title="EcoStep Central"
           subtitle="Real-time monitoring of piezoelectric energy harvesting system"
-          systemStatus={getSystemStatus()}
+          systemStatus={hardwareConnectionStatus}
           isPublicUser={isPublicUser}
-          isWebSocketConnected={isWebSocketConnected}
+          isWebSocketConnected={isHardwareConnected}
         />
 
       {/* Admin-only persistent reminder banner when monthly milestone targets are overdue */}

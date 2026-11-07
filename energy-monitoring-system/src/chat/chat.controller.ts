@@ -10,9 +10,12 @@ import {
   Logger,
   UseGuards,
   Ip,
+  Req,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import { JwtService } from '@nestjs/jwt';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -23,6 +26,9 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { OptionalPlayerSessionGuard } from '../gamification/guards/optional-player-session.guard';
 import { CurrentPlayer } from '../players/decorators/current-player.decorator';
 import { Player } from '../players/schemas/player.schema';
+import { AuditService } from '../audit/audit.service';
+import { AUDIT_MODULES, AUDIT_ACTIONS } from '../audit/schemas/audit-log.schema';
+import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 
 /**
  * ChatController
@@ -44,10 +50,12 @@ import { Player } from '../players/schemas/player.schema';
 @Throttle({ chat: { limit: 20, ttl: 60000 } }) // Increased to 20 messages per minute for natural conversation flow
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
+  private readonly jwtService = new JwtService();
 
   constructor(
     private readonly chatbotCore: ChatbotCoreService,
     private readonly sessionManager: SessionManager,
+    private readonly auditService: AuditService,
   ) {}
 
   /**
@@ -293,12 +301,28 @@ export class ChatController {
   async sendMessage(
     @Body() dto: SendMessageDto,
     @Ip() ip: string,
+    @Req() req: Request,
     @CurrentPlayer() player?: Player,
   ): Promise<ChatResponseDto> {
     const messagePreview = dto.message.substring(0, 50);
     this.logger.log(
       `Chat request from IP ${ip}: "${messagePreview}${dto.message.length > 50 ? '...' : ''}" (Player: ${player ? player.username : 'Anonymous visitor'})`,
     );
+
+    // Extract authenticated admin info if present
+    let adminUser: { sub: string; email: string; name?: string; role: string } | null = null;
+    const authHeader = req.headers['authorization'];
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = this.jwtService.decode(token) as any;
+        if (decoded && (decoded.role === 'SUPER_ADMIN' || decoded.role === 'SYSTEM_ADMIN' || decoded.role === 'admin')) {
+          adminUser = decoded;
+        }
+      } catch {
+        // Ignore token decode errors for optional auth
+      }
+    }
 
     try {
       // Validate input (should be caught by ValidationPipe, but double-check)
@@ -344,6 +368,28 @@ export class ChatController {
         `Successfully processed message for session ${session.sessionId}`,
       );
 
+      // Audit log admin interaction (record interaction metadata only, NEVER sensitive chat text)
+      if (adminUser) {
+        await this.auditService.logSuccess({
+          administratorId: adminUser.sub,
+          administratorName: adminUser.name || adminUser.email,
+          administratorRole: adminUser.role,
+          module: AUDIT_MODULES.CHATBOT,
+          action: AUDIT_ACTIONS.CHATBOT_QUERY,
+          target: 'EcoGuide Chatbot',
+          targetType: 'ChatbotSession',
+          ipAddress: extractSafeIp(req),
+          userAgent: req.headers['user-agent'] as string,
+          details: {
+            sessionId: session.sessionId,
+            messageLength: dto.message.length,
+            responseLength: response.text?.length || 0,
+            hasSuggestions: (response.suggestions?.length || 0) > 0,
+            category: 'AI_ASSISTANT_QUERY',
+          },
+        });
+      }
+
       // Return response
       return {
         success: true,
@@ -353,6 +399,28 @@ export class ChatController {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
+      // If admin, record failed AI interaction attempt without sensitive details
+      if (adminUser) {
+        await this.auditService.logFailure(
+          {
+            administratorId: adminUser.sub,
+            administratorName: adminUser.name || adminUser.email,
+            administratorRole: adminUser.role,
+            module: AUDIT_MODULES.CHATBOT,
+            action: AUDIT_ACTIONS.CHATBOT_QUERY,
+            target: 'EcoGuide Chatbot',
+            targetType: 'ChatbotSession',
+            ipAddress: extractSafeIp(req),
+            userAgent: req.headers['user-agent'] as string,
+            details: {
+              messageLength: dto.message?.length || 0,
+              sessionId: dto.sessionId,
+            },
+          },
+          error,
+        );
+      }
+
       // Log error internally with full details
       this.logger.error(
         `Error processing chat message from IP ${ip}`,

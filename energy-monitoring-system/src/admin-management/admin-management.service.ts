@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -35,7 +36,7 @@ import { CreateAdminDto, UpdateAdminStatusDto } from './dto';
  * - All operations audited (caller must log)
  */
 @Injectable()
-export class AdminManagementService {
+export class AdminManagementService implements OnModuleInit {
   private readonly logger = new Logger(AdminManagementService.name);
 
   constructor(
@@ -44,6 +45,20 @@ export class AdminManagementService {
     private authService: AuthService,
     private emailService: EmailService,
   ) {}
+
+  /**
+   * On startup, ensure all SUPER_ADMIN accounts are named 'Ecostep Super'
+   */
+  async onModuleInit() {
+    try {
+      await this.userModel.updateMany(
+        { role: 'SUPER_ADMIN' },
+        { $set: { name: 'Ecostep Super' } },
+      ).exec();
+    } catch (err: any) {
+      this.logger.warn(`Could not sync super admin name: ${err.message}`);
+    }
+  }
 
   /**
    * Generate secure access code
@@ -187,6 +202,12 @@ export class AdminManagementService {
    */
   async createAdmin(createAdminDto: CreateAdminDto): Promise<{ admin: UserDocument; emailSent: boolean }> {
     const { email, name, role } = createAdminDto;
+
+    if (role === 'SUPER_ADMIN') {
+      throw new BadRequestException(
+        'A Super Admin cannot create another Super Admin account. Only System Admins can be added.',
+      );
+    }
 
     // Check if email already exists
     const existingUser = await this.userModel.findOne({ email }).exec();

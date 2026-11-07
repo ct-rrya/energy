@@ -1,33 +1,21 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Optional } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { AuditService } from '../../audit/audit.service';
+import { extractSafeIp } from '../../audit/utils/audit-ip.utils';
 
 /**
  * RolesGuard
  *
  * Authorization guard that checks if the authenticated user has the required role(s).
- *
- * Usage:
- *   @UseGuards(JwtAuthGuard, RolesGuard)
- *   @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
- *   @Get('admin-only')
- *   async adminOnlyRoute() {
- *     // Only users with SUPER_ADMIN or SYSTEM_ADMIN role can access
- *   }
- *
- * Important:
- * - Must be used AFTER JwtAuthGuard (requires req.user to be populated)
- * - Must be used WITH @Roles decorator
- * - If no @Roles decorator, guard allows access (public route)
- *
- * Role Hierarchy:
- * - SUPER_ADMIN: Can manage administrator accounts/access codes
- * - SYSTEM_ADMIN: Can perform operational dashboard functions
- * - PUBLIC_USER: Public monitoring access only
+ * If authorization fails, records an UNAUTHORIZED_ACCESS_ATTEMPT with DENIED status in audit log.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    @Optional() private readonly auditService?: AuditService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     // Get required roles from @Roles decorator
@@ -51,6 +39,33 @@ export class RolesGuard implements CanActivate {
     }
 
     // Check if user has any of the required roles
-    return requiredRoles.includes(user.role);
+    const hasRole = requiredRoles.includes(user.role);
+
+    if (!hasRole && this.auditService) {
+      // Record unauthorized access attempt as DENIED server-side
+      this.auditService.logDenied(
+        {
+          administratorId: user.userId || user._id || '000000000000000000000000',
+          administratorName: user.name || user.email || 'Unauthorized User',
+          administratorRole: user.role || 'PUBLIC_USER',
+          action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+          module: 'SECURITY',
+          target: request.originalUrl || request.url,
+          targetType: 'endpoint',
+          details: {
+            method: request.method,
+            path: request.originalUrl || request.url,
+            userRole: user.role,
+            requiredRoles,
+          },
+          ipAddress: extractSafeIp(request),
+          userAgent: request.headers?.['user-agent'],
+          sessionId: user.jti,
+        },
+        `Forbidden: Role '${user.role}' lacks required permissions [${requiredRoles.join(', ')}]`,
+      ).catch((err) => console.warn('Failed to record denied audit attempt:', err));
+    }
+
+    return hasRole;
   }
 }

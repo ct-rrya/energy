@@ -3,10 +3,11 @@ import {
   IsString,
   IsDateString,
   IsInt,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
@@ -126,4 +127,15 @@ export class DateRangeLimitQueryDto {
   @Min(1)
   @Max(10000)
   limit?: number = 1000;
+
+  @ApiPropertyOptional({
+    description: 'Whether to include completely inactive records (all zero)',
+    example: false,
+    default: false,
+    type: Boolean,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true || value === 1 || value === '1')
+  @IsBoolean()
+  includeInactive?: boolean = false;
 }

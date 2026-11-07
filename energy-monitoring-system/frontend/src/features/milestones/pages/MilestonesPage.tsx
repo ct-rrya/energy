@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { isAdmin } from '@/lib/permissions';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
-import { useSystemHealth } from '@/features/dashboard/hooks/useSystemHealth';
-import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData';
 import { MilestonesRoadmap } from '../components/MilestonesRoadmap';
 import { AdminMilestonesModal } from '../components/AdminMilestonesModal';
 import { useMilestones } from '../hooks/useMilestones';
@@ -13,15 +12,7 @@ export function MilestonesPage() {
   const { user, isAuthenticated } = useAuth();
   const isAdminUser = isAdmin(isAuthenticated, user);
   const isPublicUser = !isAdminUser;
-
-  const { data: systemStatusData } = useSystemHealth();
-  const { isConnected: isWebSocketConnected } = useLiveSensorData();
-
-  const systemStatus = (() => {
-    if (systemStatusData?.database === 'connected') return 'connected' as const;
-    if (systemStatusData?.database === 'disconnected') return 'disconnected' as const;
-    return 'unknown' as const;
-  })();
+  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
 
   const milestoneData = useMilestones();
   const {
@@ -56,9 +47,9 @@ export function MilestonesPage() {
         greeting="Calendar Goals"
         title="Energy Milestones"
         subtitle="Weekly kinetic energy goals and prototype milestone tracking."
-        systemStatus={systemStatus}
+        systemStatus={hardwareConnectionStatus}
         isPublicUser={isPublicUser}
-        isWebSocketConnected={isWebSocketConnected}
+        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Admin Overdue Goal Configuration Reminder Banners */}

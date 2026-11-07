@@ -1,316 +1,364 @@
 import {
   Controller,
   Get,
+  Post,
   Query,
+  Body,
   UseGuards,
   Req,
+  Res,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuditService } from './audit.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { extractSafeIp } from './utils/audit-ip.utils';
 
-/**
- * AuditController
- *
- * Provides API endpoints for querying audit logs.
- *
- * Security:
- * - All endpoints require authentication (JwtAuthGuard)
- * - All endpoints require admin role (SUPER_ADMIN or SYSTEM_ADMIN)
- * - Audit log access is itself audited
- *
- * Endpoints:
- * - GET /audit/logs - Query audit logs with filters and pagination
- * - GET /audit/logs/recent - Get recent audit logs
- * - GET /audit/logs/failures - Get failed actions
- * - GET /audit/logs/my-activity - Get current administrator's activity
- */
+export interface PageViewDto {
+  page: string;
+  path?: string;
+}
+
 @Controller('audit')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   /**
-   * Query audit logs with filters and pagination
-   *
-   * GET /audit/logs?administratorId=xxx&action=LOGIN&result=success&startDate=2024-01-01&endDate=2024-01-31&limit=50&skip=0
-   *
-   * Access: SUPER_ADMIN and SYSTEM_ADMIN
-   *
-   * Query Parameters:
-   * - administratorId (optional): Filter by administrator
-   * - action (optional): Filter by action type
-   * - result (optional): Filter by result (success, failure, partial)
-   * - startDate (optional): Filter by start date (ISO 8601)
-   * - endDate (optional): Filter by end date (ISO 8601)
-   * - limit (optional): Maximum results (default: 100, max: 1000)
-   * - skip (optional): Skip results for pagination (default: 0)
-   *
-   * Response:
-   * {
-   *   "logs": [...],
-   *   "total": 123,
-   *   "limit": 50,
-   *   "skip": 0
-   * }
+   * GET /audit/logs
+   * Query comprehensive audit history with multi-field filtering and pagination.
+   * Access: SUPER_ADMIN only
    */
   @Get('logs')
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
+  @Roles('SUPER_ADMIN')
   async queryLogs(
     @Query('administratorId') administratorId?: string,
+    @Query('adminId') adminId?: string,
+    @Query('administratorRole') administratorRole?: string,
+    @Query('role') role?: string,
     @Query('action') action?: string,
+    @Query('event') event?: string,
+    @Query('module') module?: string,
+    @Query('category') category?: string,
     @Query('result') result?: string,
+    @Query('search') search?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
     @Req() req?: any,
   ) {
-    // Parse and validate query parameters
     const query: any = {};
 
-    if (administratorId) {
-      query.administratorId = administratorId;
+    const effectiveAdminId = adminId || administratorId;
+    if (effectiveAdminId && effectiveAdminId !== 'all') {
+      query.administratorId = effectiveAdminId;
     }
 
-    if (action) {
-      query.action = action;
+    const effectiveRole = role || administratorRole;
+    if (effectiveRole && effectiveRole !== 'all') {
+      query.administratorRole = effectiveRole;
     }
 
-    if (result) {
-      if (!['success', 'failure', 'partial'].includes(result)) {
-        throw new HttpException(
-          'Invalid result value. Must be: success, failure, or partial',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+    const effectiveAction = event || action;
+    if (effectiveAction && effectiveAction !== 'all') {
+      query.action = effectiveAction;
+    }
+
+    const effectiveCategory = category || module;
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      query.category = effectiveCategory;
+      query.module = effectiveCategory;
+    }
+
+    if (result && result !== 'all') {
       query.result = result;
     }
 
+    if (search && search.trim()) {
+      query.search = search.trim();
+    }
+
     if (startDate) {
-      query.startDate = new Date(startDate);
-      if (isNaN(query.startDate.getTime())) {
-        throw new HttpException(
-          'Invalid startDate format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
+      const parsedStart = new Date(startDate);
+      if (!isNaN(parsedStart.getTime())) {
+        query.startDate = parsedStart;
       }
     }
 
     if (endDate) {
-      query.endDate = new Date(endDate);
-      if (isNaN(query.endDate.getTime())) {
-        throw new HttpException(
-          'Invalid endDate format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
+      const parsedEnd = new Date(endDate);
+      if (!isNaN(parsedEnd.getTime())) {
+        query.endDate = parsedEnd;
       }
     }
 
-    // Validate and apply limits
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    if (isNaN(parsedLimit) || parsedLimit < 1) {
-      throw new HttpException(
-        'Invalid limit value. Must be a positive integer.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    if (parsedLimit > 1000) {
-      throw new HttpException(
-        'Limit exceeds maximum allowed value (1000).',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    query.limit = parsedLimit;
+    const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10), 1), 1000) : 50;
+    const parsedSkip = skip ? Math.max(parseInt(skip, 10), 0) : 0;
 
-    const parsedSkip = skip ? parseInt(skip, 10) : 0;
-    if (isNaN(parsedSkip) || parsedSkip < 0) {
-      throw new HttpException(
-        'Invalid skip value. Must be a non-negative integer.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    query.limit = parsedLimit;
     query.skip = parsedSkip;
 
-    // Query logs
-    const [logs, total] = await Promise.all([
+    const [logs, total, counts] = await Promise.all([
       this.auditService.query(query),
       this.auditService.count(query),
+      this.auditService.getCategoryCounts(),
     ]);
-
-    // Log the audit access itself
-    if (req && req.user) {
-      await this.auditService.logSuccess({
-        administratorId: req.user.userId,
-        administratorName: req.user.name || 'Unknown',
-        administratorRole: req.user.role,
-        action: 'VIEW_AUDIT_LOGS',
-        details: {
-          filters: query,
-          resultCount: logs.length,
-        },
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        sessionId: req.user.jti,
-      });
-    }
 
     return {
       logs,
       total,
-      limit: query.limit,
-      skip: query.skip,
+      limit: parsedLimit,
+      skip: parsedSkip,
+      counts,
     };
   }
 
   /**
-   * Get recent audit logs
-   *
-   * GET /audit/logs/recent?limit=50
-   *
-   * Access: SUPER_ADMIN and SYSTEM_ADMIN
-   *
-   * Query Parameters:
-   * - limit (optional): Maximum results (default: 100, max: 1000)
-   *
-   * Response:
-   * {
-   *   "logs": [...]
-   * }
+   * GET /audit/export
+   * Export filtered audit records as a CSV download with timestamps in Asia/Manila.
+   * Access: SUPER_ADMIN only
    */
-  @Get('logs/recent')
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
-  async getRecentLogs(
-    @Query('limit') limit?: string,
+  @Get('export')
+  @Roles('SUPER_ADMIN')
+  async exportCsv(
+    @Query('administratorId') administratorId?: string,
+    @Query('administratorRole') administratorRole?: string,
+    @Query('action') action?: string,
+    @Query('module') module?: string,
+    @Query('result') result?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
     @Req() req?: any,
+    @Res() res?: Response,
   ) {
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 1000) {
-      throw new HttpException(
-        'Invalid limit value. Must be between 1 and 1000.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const query: any = {};
 
-    const logs = await this.auditService.getRecent(parsedLimit);
+    if (administratorId && administratorId !== 'all') query.administratorId = administratorId;
+    if (administratorRole && administratorRole !== 'all') query.administratorRole = administratorRole;
+    if (action && action !== 'all') query.action = action;
+    if (module && module !== 'all') query.module = module;
+    if (result && result !== 'all') query.result = result;
+    if (search && search.trim()) query.search = search.trim();
+    if (startDate) query.startDate = new Date(startDate);
+    if (endDate) query.endDate = new Date(endDate);
 
-    // Log the access
-    if (req && req.user) {
+    const csvContent = await this.auditService.exportCsv(query);
+
+    // Audit the export action
+    if (req?.user) {
       await this.auditService.logSuccess({
-        administratorId: req.user.userId,
-        administratorName: req.user.name || 'Unknown',
-        administratorRole: req.user.role,
-        action: 'VIEW_AUDIT_LOGS',
-        details: {
-          view: 'recent',
-          limit: parsedLimit,
-          resultCount: logs.length,
-        },
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
+        administratorId: req.user.userId || req.user._id,
+        administratorName: req.user.name || 'Super Admin',
+        administratorRole: req.user.role || 'SUPER_ADMIN',
+        module: 'AUDIT_LOGS',
+        action: 'EXPORT_AUDIT_LOGS',
+        details: { filters: query },
+        ipAddress: extractSafeIp(req),
+        userAgent: req.headers?.['user-agent'],
         sessionId: req.user.jti,
       });
     }
 
-    return { logs };
+    if (res) {
+      const filename = `ecostep-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.status(HttpStatus.OK).send(csvContent);
+    }
+
+    return { csv: csvContent };
   }
 
   /**
-   * Get failed actions
-   *
-   * GET /audit/logs/failures?limit=50
-   *
+   * POST /audit/page-view
+   * Record authenticated page & resource navigation events from administrators.
    * Access: SUPER_ADMIN and SYSTEM_ADMIN
-   *
-   * Query Parameters:
-   * - limit (optional): Maximum results (default: 100, max: 1000)
-   *
-   * Response:
-   * {
-   *   "logs": [...]
-   * }
+   */
+  @Post('page-view')
+  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'admin')
+  async recordPageView(@Body() body: PageViewDto, @Req() req: any) {
+    if (!req.user) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const pageModule = (body.page || 'PORTAL').toUpperCase();
+    const pagePath = body.path || `/${pageModule.toLowerCase()}`;
+
+    await this.auditService.logSuccess({
+      administratorId: req.user.userId || req.user._id,
+      administratorName: req.user.name || 'Administrator',
+      administratorRole: req.user.role || 'SYSTEM_ADMIN',
+      module: pageModule,
+      action: 'PAGE_VIEW',
+      target: pagePath,
+      targetType: 'page',
+      details: {
+        page: pageModule,
+        path: pagePath,
+      },
+      ipAddress: extractSafeIp(req),
+      userAgent: req.headers?.['user-agent'],
+      sessionId: req.user.jti,
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * GET /audit/meta
+   * Returns metadata for UI filters: distinct administrators, categories, and counts
+   */
+  @Get('meta')
+  @Roles('SUPER_ADMIN')
+  async getAuditMetadata() {
+    const [administrators, modules, counts] = await Promise.all([
+      this.auditService.getDistinctAdministrators(),
+      this.auditService.getDistinctModules(),
+      this.auditService.getCategoryCounts(),
+    ]);
+
+    const categories = [
+      'Authentication',
+      'Reports',
+      'Milestones',
+      'Diagnostics',
+    ];
+
+    return {
+      administrators,
+      modules,
+      categories,
+      counts,
+    };
+  }
+
+  /**
+   * GET /audit/logs/failures
+   * Get failed actions for immediate security inspection
    */
   @Get('logs/failures')
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
-  async getFailures(
-    @Query('limit') limit?: string,
-    @Req() req?: any,
-  ) {
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 1000) {
-      throw new HttpException(
-        'Invalid limit value. Must be between 1 and 1000.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  @Roles('SUPER_ADMIN')
+  async getFailures(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10), 1), 1000) : 50;
     const logs = await this.auditService.getFailures(parsedLimit);
-
-    // Log the access
-    if (req && req.user) {
-      await this.auditService.logSuccess({
-        administratorId: req.user.userId,
-        administratorName: req.user.name || 'Unknown',
-        administratorRole: req.user.role,
-        action: 'VIEW_AUDIT_LOGS',
-        details: {
-          view: 'failures',
-          limit: parsedLimit,
-          resultCount: logs.length,
-        },
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        sessionId: req.user.jti,
-      });
-    }
-
     return { logs };
   }
 
   /**
-   * Get current administrator's activity
-   *
-   * GET /audit/logs/my-activity?limit=50
-   *
-   * Access: SUPER_ADMIN and SYSTEM_ADMIN
-   *
-   * Query Parameters:
-   * - limit (optional): Maximum results (default: 100, max: 1000)
-   *
-   * Response:
-   * {
-   *   "logs": [...]
-   * }
+   * GET /audit/logs/my-activity
+   * Get current administrator's own activity history
    */
   @Get('logs/my-activity')
-  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN')
-  async getMyActivity(
-    @Query('limit') limit?: string,
-    @Req() req?: any,
-  ) {
-    if (!req || !req.user || !req.user.userId) {
-      throw new HttpException(
-        'Authentication required',
-        HttpStatus.UNAUTHORIZED,
-      );
+  @Roles('SUPER_ADMIN', 'SYSTEM_ADMIN', 'admin')
+  async getMyActivity(@Query('limit') limit?: string, @Req() req?: any) {
+    if (!req?.user?.userId && !req?.user?._id) {
+      throw new HttpException('Authentication required', HttpStatus.UNAUTHORIZED);
     }
 
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 1000) {
-      throw new HttpException(
-        'Invalid limit value. Must be between 1 and 1000.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const logs = await this.auditService.getByAdministrator(
-      req.user.userId,
-      parsedLimit,
-    );
+    const userId = req.user.userId || req.user._id;
+    const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10), 1), 1000) : 50;
+    const logs = await this.auditService.getByAdministrator(userId.toString(), parsedLimit);
 
     return { logs };
+  }
+}
+
+/**
+ * LogsController
+ * Provides standard route endpoint GET /api/logs for SUPER_ADMIN
+ * No update or delete routes exist.
+ */
+@Controller('logs')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class LogsController {
+  constructor(private readonly auditService: AuditService) {}
+
+  @Get()
+  @Roles('SUPER_ADMIN')
+  async getLogs(
+    @Query('administratorId') administratorId?: string,
+    @Query('adminId') adminId?: string,
+    @Query('administratorRole') administratorRole?: string,
+    @Query('role') role?: string,
+    @Query('action') action?: string,
+    @Query('event') event?: string,
+    @Query('module') module?: string,
+    @Query('category') category?: string,
+    @Query('result') result?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
+    const query: any = {};
+
+    const effectiveAdminId = adminId || administratorId;
+    if (effectiveAdminId && effectiveAdminId !== 'all') {
+      query.administratorId = effectiveAdminId;
+    }
+
+    const effectiveRole = role || administratorRole;
+    if (effectiveRole && effectiveRole !== 'all') {
+      query.administratorRole = effectiveRole;
+    }
+
+    const effectiveAction = event || action;
+    if (effectiveAction && effectiveAction !== 'all') {
+      query.action = effectiveAction;
+    }
+
+    const effectiveCategory = category || module;
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      query.category = effectiveCategory;
+      query.module = effectiveCategory;
+    }
+
+    if (result && result !== 'all') {
+      query.result = result;
+    }
+
+    if (search && search.trim()) {
+      query.search = search.trim();
+    }
+
+    if (startDate) {
+      const parsedStart = new Date(startDate);
+      if (!isNaN(parsedStart.getTime())) {
+        query.startDate = parsedStart;
+      }
+    }
+
+    if (endDate) {
+      const parsedEnd = new Date(endDate);
+      if (!isNaN(parsedEnd.getTime())) {
+        query.endDate = parsedEnd;
+      }
+    }
+
+    const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10), 1), 1000) : 50;
+    const parsedSkip = skip ? Math.max(parseInt(skip, 10), 0) : 0;
+
+    query.limit = parsedLimit;
+    query.skip = parsedSkip;
+
+    const [logs, total, counts] = await Promise.all([
+      this.auditService.query(query),
+      this.auditService.count(query),
+      this.auditService.getCategoryCounts(),
+    ]);
+
+    return {
+      logs,
+      total,
+      limit: parsedLimit,
+      skip: parsedSkip,
+      counts,
+    };
   }
 }

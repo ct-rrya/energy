@@ -69,6 +69,22 @@ export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
   private readonly timezone: string;
 
+  /**
+   * MongoDB filter condition matching records with meaningful activity.
+   * Excludes completely inactive records where all 5 core measurements are zero:
+   * Voltage, Current, Power, Energy, and Step count.
+   * A record remains visible if at least one measurement is positive (> 0).
+   */
+  public static readonly MEANINGFUL_ACTIVITY_FILTER = {
+    $or: [
+      { voltage: { $gt: 0 } },
+      { current: { $gt: 0 } },
+      { power: { $gt: 0 } },
+      { energy: { $gt: 0 } },
+      { stepCount: { $gt: 0 } },
+    ],
+  };
+
   // Environmental conversion factors (US EPA standards)
   // Note: Input energy is in mWh, so we need to convert to kWh for standard factors
   private readonly CO2_PER_KWH = 0.5; // kg CO2 per kWh
@@ -736,6 +752,7 @@ export class AnalyticsService {
             $lte: this.getEndOfDay(new Date(endDate)),
           },
           source: 'hardware',
+          $or: AnalyticsService.MEANINGFUL_ACTIVITY_FILTER.$or,
         },
       },
       {
@@ -818,6 +835,23 @@ export class AnalyticsService {
     // Filter by sensor
     if (sensorId) {
       matchStage.sensorId = new Types.ObjectId(sensorId);
+    }
+
+    // Apply consistent zero-activity filtering across electrical, energy, and step charts
+    // Excludes completely inactive records (where voltage, current, power, energy, and stepCount are all 0)
+    // Preserves records with at least one nonzero measurement (meaningful activity)
+    // Preserves legitimate zero values in individual fields without distorting aggregation or totals
+    const isActivityMetric = [
+      MetricType.POWER,
+      MetricType.VOLTAGE,
+      MetricType.CURRENT,
+      MetricType.ENERGY,
+      MetricType.STEPS,
+      MetricType.CAPACITOR_VOLTAGE,
+    ].includes(metric);
+
+    if (isActivityMetric) {
+      matchStage.$or = AnalyticsService.MEANINGFUL_ACTIVITY_FILTER.$or;
     }
 
     // Determine field to aggregate based on metric

@@ -300,3 +300,37 @@ export function calculateSummaryStats(data: ChartDataPoint[]): {
     total,
   };
 }
+
+/**
+ * Checks if a telemetry record has meaningful activity.
+ * Excluded from normal historical presentation ONLY when all 5 measurements are zero:
+ * - Voltage
+ * - Current
+ * - Power
+ * - Energy
+ * - Step count
+ *
+ * A record remains visible if at least one of these measurements indicates meaningful activity (> 0).
+ * Strictly distinguishes between 0, valid positive numbers, null, undefined, and NaN.
+ */
+export function hasMeaningfulActivity(record: {
+  voltage?: number | null;
+  current?: number | null;
+  power?: number | null;
+  energy?: number | null;
+  steps?: number | null;
+  stepCount?: number | null;
+}): boolean {
+  if (!record) return false;
+
+  const isPositive = (val: unknown): boolean =>
+    typeof val === 'number' && !isNaN(val) && val > 0;
+
+  return (
+    isPositive(record.voltage) ||
+    isPositive(record.current) ||
+    isPositive(record.power) ||
+    isPositive(record.energy) ||
+    isPositive(record.steps ?? record.stepCount)
+  );
+}

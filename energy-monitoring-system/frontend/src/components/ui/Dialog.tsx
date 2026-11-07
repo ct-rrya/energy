@@ -102,6 +102,7 @@ export function Dialog({
           className
         )}
         style={{
+          fontFamily: "'DM Sans', sans-serif",
           backgroundColor: colors.cardBackground,
           boxShadow: theme === 'light' 
             ? '0 20px 50px rgba(0, 0, 0, 0.2)' 

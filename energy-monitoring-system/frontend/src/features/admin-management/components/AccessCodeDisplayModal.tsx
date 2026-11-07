@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check, Copy, Key, AlertTriangle, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Check, Copy, Key, X, AlertTriangle } from 'lucide-react';
 
 interface AccessCodeDisplayModalProps {
   accessCode: string;
@@ -9,14 +10,7 @@ interface AccessCodeDisplayModalProps {
 
 /**
  * Access Code Display Modal
- *
- * Displays the administrator's access code ONCE after creation or reset.
- *
- * Security:
- * - Code is shown only once
- * - Cannot be retrieved later
- * - Requires manual confirmation before closing
- * - Provides copy-to-clipboard functionality
+ * Displays the administrator's access code ONCE with DM Sans typography and clean copy controls.
  */
 export function AccessCodeDisplayModal({
   accessCode,
@@ -40,125 +34,100 @@ export function AccessCodeDisplayModal({
     if (confirmed) {
       onClose();
     } else {
-      alert('Please confirm that you have saved the access code before closing.');
+      alert('Please check the box confirming you have saved this access code before closing.');
     }
   };
 
-  return (
-    <>
-      {/* Backdrop - Cannot click to close */}
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+  if (typeof document === 'undefined') return null;
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
-          {/* Close Button (only if confirmed) */}
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/80 backdrop-blur-sm p-4 sm:p-6 font-['DM_Sans',sans-serif]"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="min-h-full flex items-center justify-center">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-md my-8 rounded-2xl border border-[var(--line,rgba(255,255,255,0.12))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] shadow-2xl overflow-hidden flex flex-col p-6 animate-in fade-in zoom-in-95 duration-150"
+        >
+          {/* Close button if confirmed */}
           {confirmed && (
             <button
+              type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 p-1 rounded-lg text-[var(--mu,#87A993)] hover:text-[var(--t,#E4F7EA)] hover:bg-[var(--soft,rgba(255,255,255,0.06))] transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X size={18} />
             </button>
           )}
 
           {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
-              <Key className="w-8 h-8 text-white" />
+          <div className="text-center mb-5">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] rounded-2xl mb-3 shadow-sm">
+              <Key size={22} />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-lg font-bold text-[var(--t,#E4F7EA)] mb-1">
               Access Code Generated
             </h2>
-            <p className="text-sm text-gray-600">
-              For: <strong>{administratorName}</strong>
+            <p className="text-xs text-[var(--mu,#87A993)]">
+              For: <strong className="text-[var(--t,#E4F7EA)]">{administratorName}</strong>
             </p>
           </div>
 
-          {/* Access Code Display */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border-2 border-blue-200">
-            <div className="text-center">
-              <p className="text-sm text-blue-800 font-medium mb-2">
-                Administrator Access Code
-              </p>
-              <div className="font-mono text-3xl font-bold text-blue-900 tracking-widest mb-4">
-                {accessCode}
-              </div>
-              <button
-                onClick={handleCopy}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  copied
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-blue-700 hover:bg-blue-100 border border-blue-300'
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy to Clipboard</span>
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Warning banner */}
+          <div className="p-3 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-300">
+            <AlertTriangle size={15} className="shrink-0 text-amber-400 mt-0.5" />
+            <span>
+              This access code is shown <strong>only once</strong>. Please copy and store it securely.
+            </span>
           </div>
 
-          {/* Critical Warning */}
-          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-bold text-amber-900 mb-2">
-                  ⚠️ CRITICAL: Save This Code Immediately
-                </h3>
-                <ul className="text-xs text-amber-800 space-y-1">
-                  <li>• This code will <strong>NEVER be shown again</strong></li>
-                  <li>• It cannot be retrieved from the system later</li>
-                  <li>• The administrator needs this code to login</li>
-                  <li>• Store it securely (password manager recommended)</li>
-                  <li>• You can reset it later, but it will generate a new code</li>
-                </ul>
-              </div>
+          {/* Code box */}
+          <div className="p-4 mb-4 rounded-xl bg-[var(--soft,rgba(255,255,255,0.04))] border border-[var(--line,rgba(255,255,255,0.1))] text-center">
+            <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--mu,#87A993)] mb-1.5">
+              Secure Access Code
             </div>
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-widest text-[#10B981] select-all my-2 font-['DM_Sans',sans-serif]">
+              {accessCode}
+            </div>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                copied
+                  ? 'bg-[#10B981] text-white'
+                  : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.15))] hover:border-[#10B981]'
+              }`}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              <span>{copied ? 'Copied to Clipboard!' : 'Copy Access Code'}</span>
+            </button>
           </div>
 
           {/* Confirmation Checkbox */}
-          <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg mb-6 cursor-pointer hover:bg-gray-100 transition-colors">
+          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))] mb-5 cursor-pointer text-xs text-[var(--mu,#87A993)]">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="mt-0.5 accent-[#10B981] rounded cursor-pointer"
             />
-            <span className="text-sm text-gray-700">
-              I confirm that I have <strong>saved this access code</strong> and
-              understand it will not be displayed again
-            </span>
+            <span>I have copied or safely stored this access code and understand it cannot be displayed again.</span>
           </label>
 
-          {/* Action Button */}
+          {/* Close Action */}
           <button
+            type="button"
             onClick={handleClose}
             disabled={!confirmed}
-            className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-              confirmed
-                ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[#10B981] hover:bg-[#059669] text-white"
           >
-            {confirmed ? 'Close (Code Saved)' : 'Confirm Above to Close'}
+            Done & Close
           </button>
-
-          {/* Footer Note */}
-          <p className="text-xs text-center text-gray-500 mt-4">
-            Provide this code securely to {administratorName}
-          </p>
         </div>
       </div>
-    </>
+    </div>,
+    document.body,
   );
 }

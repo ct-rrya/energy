@@ -857,6 +857,7 @@ export class EnergyService {
     startDate?: string,
     endDate?: string,
     limit: number = 1000,
+    includeInactive: boolean = false,
   ): Promise<EnergyReadingDocument[]> {
     const filter: Record<string, any> = {};
 
@@ -870,6 +871,19 @@ export class EnergyService {
         end.setHours(23, 59, 59, 999);
         filter.timestamp.$lte = end;
       }
+    }
+
+    // Exclude completely inactive records by default (all 5 values are 0: voltage, current, power, energy, stepCount)
+    // Preserves records with at least one nonzero measurement (meaningful activity)
+    // When includeInactive is true (e.g. for diagnostics / troubleshooting), returns all raw records
+    if (!includeInactive) {
+      filter.$or = [
+        { voltage: { $gt: 0 } },
+        { current: { $gt: 0 } },
+        { power: { $gt: 0 } },
+        { energy: { $gt: 0 } },
+        { stepCount: { $gt: 0 } },
+      ];
     }
 
     const safeLimit = Math.min(limit || 1000, 10000);
