@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Zap, 
   Sun, 
   Moon, 
   Home, 
@@ -19,6 +18,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
+import { EcoStepMark, EcoStepWordmark } from '@/components/common/EcoStepLogo';
 
 interface MobileHeaderProps {
   onOpenMenu?: () => void;
@@ -104,25 +104,21 @@ export function MobileHeader({ onOpenMenu, showMenuButton = false }: MobileHeade
       }}
     >
       {/* Left: Brand Logo & Title */}
-      <Link
-        to={ROUTES.DASHBOARD}
-        className="flex items-center gap-2.5 min-w-0"
-        aria-label="EcoStep Dashboard"
+      <a
+        href="/#home"
+        className="flex items-center gap-2.5 min-w-0 no-underline text-inherit"
+        aria-label="EcoStep"
       >
-        <div className="w-8 h-8 rounded-lg bg-[#16a34a] dark:bg-[#22c55e] text-white grid place-items-center shadow-xs flex-shrink-0">
-          <Zap size={18} strokeWidth={2.4} fill="currentColor" />
-        </div>
+        <EcoStepMark height={28} />
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="font-extrabold text-base tracking-tight leading-none text-current">
-            EcoStep
-          </span>
+          <EcoStepWordmark fontSize="1.1rem" />
           {isAnyAdmin && (
             <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/20">
               Admin
             </span>
           )}
         </div>
-      </Link>
+      </a>
 
       {/* Right: Quick Action & Expandable Menu Icon */}
       <div className="flex items-center gap-1.5 sm:gap-2 relative">

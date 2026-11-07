@@ -146,7 +146,7 @@ export const chat = {
         
         // Handle specific error cases
         if (response.status === 401) {
-          throw new Error('Please log in to use EcoChat.');
+          throw new Error('Please log in to use EcoGuide.');
         }
         
         if (response.status === 429) {

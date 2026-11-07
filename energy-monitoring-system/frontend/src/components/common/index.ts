@@ -15,3 +15,4 @@ export * from './EcoEmptyState';
 export * from './CustomDropdown';
 export * from './CustomRadio';
 export * from './MonthDropdown';
+export * from './SplashScreen';

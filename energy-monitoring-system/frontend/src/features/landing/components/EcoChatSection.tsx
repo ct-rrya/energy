@@ -30,7 +30,7 @@ export function EcoChatSection() {
               lineHeight: 1.15,
             }}
           >
-            Ask EcoChat anything
+            Ask EcoGuide anything
           </h2>
           <p
             className="sub"
@@ -160,7 +160,7 @@ export function EcoChatSection() {
       {/* Left: Text and button */}
       <div>
         <h2 className="landing-h2" style={{ color: 'var(--landing-ink)', margin: '0 0 14px' }}>
-          Ask EcoChat anything about EcoStep
+          Ask EcoGuide anything about EcoStep
         </h2>
         <p
           className="sub"
@@ -190,7 +190,7 @@ export function EcoChatSection() {
             boxShadow: 'var(--landing-shadow)',
           }}
         >
-          Ask EcoStep
+          Ask EcoGuide
           <span className="arrow-micro">→</span>
         </button>
       </div>
@@ -208,7 +208,7 @@ export function EcoChatSection() {
           }}
         >
           <div className="who" style={{ fontWeight: 800, marginBottom: '4px', color: 'var(--landing-ink)' }}>
-            EcoChat
+            EcoGuide
           </div>
           <div style={{ color: 'var(--landing-ink)' }}>
             Hi! I'm your EcoStep assistant. Ask me about energy status, analytics, or system insights.
@@ -242,7 +242,7 @@ export function EcoChatSection() {
           }}
         >
           <div className="who" style={{ fontWeight: 800, marginBottom: '4px', color: 'var(--landing-ink)' }}>
-            EcoChat
+            EcoGuide
           </div>
           <div style={{ color: 'var(--landing-ink)' }}>
             Each step presses the piezoelectric tile, which turns that pressure into a small electric charge we measure.

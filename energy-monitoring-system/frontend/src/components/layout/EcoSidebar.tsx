@@ -17,10 +17,12 @@ import {
   ChevronLeft,
   MessageSquare,
   Award,
+  ScrollText,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
+import { EcoStepMark, EcoStepWordmark } from '@/components/common/EcoStepLogo';
 const ChatPanel = lazy(() => import('@/features/chat').then(m => ({ default: m.ChatPanel })));
 import '@/styles/eco-sidebar.css';
 
@@ -36,15 +38,15 @@ interface NavItem {
 
 const ALL_NAV_ITEMS: NavItem[] = [
   // Public routes (shown to everyone)
-  { to: ROUTES.HOME, label: 'Home', Icon: House, end: true },
-  { to: ROUTES.DASHBOARD, label: 'EcoStep Central', Icon: Activity },
-  { to: ROUTES.ANALYTICS, label: 'Historical Analytics', Icon: TrendingUp },
-  { to: ROUTES.MILESTONES, label: 'Energy Milestones', Icon: Award },
+  { to: ROUTES.DASHBOARD, label: 'Central', Icon: Activity },
+  { to: ROUTES.ANALYTICS, label: 'Trends', Icon: TrendingUp },
+  { to: ROUTES.MILESTONES, label: 'Milestone', Icon: Award },
   // Operational features for all admins
-  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Tile Performance Diagnostics', Icon: Stethoscope, systemAdminOnly: true },
-  { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText, systemAdminOnly: true },
-  // SUPER_ADMIN only route (admin management)
-  { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admin Management', Icon: Users, superAdminOnly: true },
+  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, systemAdminOnly: true },
+  { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText, systemAdminOnly: true },
+  // SUPER_ADMIN only routes
+  { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admins', Icon: Users, superAdminOnly: true },
+  { to: ROUTES.ADMIN_LOGS, label: 'Logs', Icon: ScrollText, superAdminOnly: true },
 ];
 
 interface EcoSidebarProps {
@@ -359,7 +361,10 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           el.classList.contains('dashboard-secondary-metrics') ||
           el.classList.contains('g4') ||
           el.classList.contains('g3') ||
-          el.classList.contains('g2')
+          el.classList.contains('g2') ||
+          el.classList.contains('es-splash-root') ||
+          el.hasAttribute('data-no-blur') ||
+          el.getAttribute('role') === 'dialog'
         ) {
           return;
         }
@@ -433,8 +438,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       id="shell"
       data-theme={theme}
       style={{
-        '--left-w': leftCollapsed ? '72px' : '200px',
-        '--left-panel-w': leftCollapsed ? '72px' : '200px',
+        '--left-w': leftCollapsed ? '72px' : '224px',
+        '--left-panel-w': leftCollapsed ? '72px' : '224px',
         '--right-w': rightCollapsed ? '56px' : '330px',
         '--right-panel-w': rightCollapsed ? '56px' : '330px',
       } as React.CSSProperties}
@@ -448,9 +453,11 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       >
         {/* Header with Wordmark and Collapse Toggle */}
         <div className="es-nav-header">
-          <a href="/" className="es-brand-link" aria-label="EcoStep home" title="EcoStep">
-            <span className="es-brand-mark-circle">E</span>
-            <span className="es-brand-text">EcoStep</span>
+          <a href="/#home" className="es-brand-link" aria-label="EcoStep home" title="EcoStep">
+            <EcoStepMark height={30} />
+            <span className="es-brand-text">
+              <EcoStepWordmark fontSize="1.15rem" />
+            </span>
           </a>
           <button
             type="button"
@@ -633,9 +640,11 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
         {/* Mobile Top Bar (<= 768px) */}
         <header className="es-mobile-topbar" aria-label="Mobile top bar">
-          <a href="/#home" className="es-mobile-brand" aria-label="EcoStep Home">
-            <span className="es-brand-mark-circle">E</span>
-            <span className="es-mobile-brand-text">EcoStep</span>
+          <a href="/#home" className="es-mobile-brand" aria-label="EcoStep">
+            <EcoStepMark height={28} />
+            <span className="es-mobile-brand-text">
+              <EcoStepWordmark fontSize="1.1rem" />
+            </span>
           </a>
 
           <div className="es-mobile-topbar-actions">
@@ -674,23 +683,23 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.ANALYTICS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Analytics"
+              aria-label="Trends"
             >
               <span className="es-mobile-tab-pill">
                 <TrendingUp size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Analytics</span>
+              <span className="es-mobile-tab-label">Trends</span>
             </NavLink>
 
             <NavLink
               to={ROUTES.MILESTONES}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Milestones"
+              aria-label="Milestone"
             >
               <span className="es-mobile-tab-pill">
                 <Award size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Milestones</span>
+              <span className="es-mobile-tab-label">Milestone</span>
             </NavLink>
 
             <button
@@ -708,23 +717,23 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.ADMIN_DIAGNOSTICS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Diagnostics"
+              aria-label="Health"
             >
               <span className="es-mobile-tab-pill">
                 <Stethoscope size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Diagnostics</span>
+              <span className="es-mobile-tab-label">Health</span>
             </NavLink>
 
             <NavLink
               to={ROUTES.REPORTS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Reports"
+              aria-label="Ledger"
             >
               <span className="es-mobile-tab-pill">
                 <FileText size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Reports</span>
+              <span className="es-mobile-tab-label">Ledger</span>
             </NavLink>
           </>
         ) : (
@@ -732,12 +741,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.ANALYTICS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Analytics"
+              aria-label="Trends"
             >
               <span className="es-mobile-tab-pill">
                 <TrendingUp size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Analytics</span>
+              <span className="es-mobile-tab-label">Trends</span>
             </NavLink>
 
             <button
@@ -755,12 +764,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.MILESTONES}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Milestones"
+              aria-label="Milestone"
             >
               <span className="es-mobile-tab-pill">
                 <Award size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Milestones</span>
+              <span className="es-mobile-tab-label">Milestone</span>
             </NavLink>
 
             <NavLink
@@ -815,16 +824,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 onClick={() => setMobileUserSheetOpen(false)}
               >
                 <Activity size={20} strokeWidth={1.8} />
-                <span>EcoStep Central</span>
-              </NavLink>
-
-              <NavLink
-                to={ROUTES.MILESTONES}
-                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                onClick={() => setMobileUserSheetOpen(false)}
-              >
-                <Award size={20} strokeWidth={1.8} />
-                <span>Energy Milestones</span>
+                <span>Central</span>
               </NavLink>
 
               <NavLink
@@ -833,7 +833,16 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 onClick={() => setMobileUserSheetOpen(false)}
               >
                 <TrendingUp size={20} strokeWidth={1.8} />
-                <span>Historical Analytics</span>
+                <span>Trends</span>
+              </NavLink>
+
+              <NavLink
+                to={ROUTES.MILESTONES}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <Award size={20} strokeWidth={1.8} />
+                <span>Milestone</span>
               </NavLink>
 
               {isAnyAdmin && (
@@ -844,7 +853,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                     onClick={() => setMobileUserSheetOpen(false)}
                   >
                     <Stethoscope size={20} strokeWidth={1.8} />
-                    <span>Tile Performance Diagnostics</span>
+                    <span>Health</span>
                   </NavLink>
 
                   <NavLink
@@ -853,20 +862,31 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                     onClick={() => setMobileUserSheetOpen(false)}
                   >
                     <FileText size={20} strokeWidth={1.8} />
-                    <span>Reports</span>
+                    <span>Ledger</span>
                   </NavLink>
                 </>
               )}
 
               {isSuperAdmin && (
-                <NavLink
-                  to={ROUTES.ADMIN_MANAGEMENT}
-                  className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                  onClick={() => setMobileUserSheetOpen(false)}
-                >
-                  <Users size={20} strokeWidth={1.8} />
-                  <span>Admin Management</span>
-                </NavLink>
+                <>
+                  <NavLink
+                    to={ROUTES.ADMIN_MANAGEMENT}
+                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setMobileUserSheetOpen(false)}
+                  >
+                    <Users size={20} strokeWidth={1.8} />
+                    <span>Admins</span>
+                  </NavLink>
+
+                  <NavLink
+                    to={ROUTES.ADMIN_LOGS}
+                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setMobileUserSheetOpen(false)}
+                  >
+                    <ScrollText size={20} strokeWidth={1.8} />
+                    <span>Logs</span>
+                  </NavLink>
+                </>
               )}
 
               <div className="my-1 border-t border-[var(--line)] opacity-60" />

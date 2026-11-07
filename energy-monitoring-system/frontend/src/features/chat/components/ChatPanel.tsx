@@ -160,7 +160,7 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
         ref={panelRef}
         className={panelClasses}
         role="complementary"
-        aria-label="Chat"
+        aria-label="EcoGuide"
         id="ecoguide-panel"
       >
         {/* Collapsed Slim Rail (56px) */}

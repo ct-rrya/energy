@@ -10,6 +10,14 @@
      * ══════════════════════════════════════════════════════════════════════ */
     --font-dm: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     
+    /* EcoStep Brand Kit Tokens */
+    --es-tile: #1fd566;
+    --es-panel: #12a24f;
+    --es-hot: #ffd84a;
+    --es-hot-panel: #c99a00;
+    --es-ink: #0e1f15;
+    --es-step: #12a24f;
+
     /* LIGHT MODE TOKENS */
     --t: #0D1B14;
     --mu: #5B6B62;
@@ -91,6 +99,13 @@
    * DARK MODE THEME TOKENS
    * ══════════════════════════════════════════════════════════════════════ */
   .dark, [data-theme="dark"] {
+    /* EcoStep Brand Kit Tokens */
+    --es-tile: #1fd566;
+    --es-panel: #12a24f;
+    --es-hot: #ffd84a;
+    --es-hot-panel: #c99a00;
+    --es-ink: #eaf7ee;
+    --es-step: #22e06a;
     --t: #E4F7EA;
     --mu: #93A89C;
     --panel: #12241A;
@@ -2543,4 +2558,13 @@ body,
     transform: none !important;
     animation: none !important;
   }
+}
+
+/* Ensure EcoStep Splash Screen is always razor sharp and unaffected by page blur transitions */
+.es-splash-root,
+.es-splash-root * {
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }

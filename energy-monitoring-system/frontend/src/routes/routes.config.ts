@@ -9,6 +9,7 @@ export const ROUTES = {
   // Admin routes
   ADMIN_LOGIN: '/admin/login',
   ADMIN_MANAGEMENT: '/admin-management',
+  ADMIN_LOGS: '/admin/logs',
 
   // Dashboard and monitoring routes
   DASHBOARD: '/dashboard',
@@ -28,5 +29,6 @@ export const ROUTES = {
   PROFILE: '/profile',
 
   // Special routes
+  SPLASH: '/splash',
   NOT_FOUND: '/404',
 } as const;

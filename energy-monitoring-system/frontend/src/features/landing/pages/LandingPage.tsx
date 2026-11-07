@@ -24,7 +24,7 @@ const SECTIONS = [
   { id: 'home', label: 'Home' },
   { id: 'how', label: 'How it works' },
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'ecochat', label: 'EcoChat' },
+  { id: 'ecoguide', label: 'EcoGuide' },
   { id: 'about', label: 'About' },
 ] as const;
 
@@ -423,30 +423,30 @@ export function LandingPage() {
         </section>
 
         <section
-          id="ecochat"
+          id="ecoguide"
           className="es-chat"
           ref={(el) => {
             sectionRefs.current[3] = el;
           }}
         >
           <div className="l">
-            <h2>Ask EcoChat anything about EcoStep</h2>
+            <h2>Ask EcoGuide anything about EcoStep</h2>
             <p className="lead">
               The built-in AI assistant helps visitors understand the system
               and find the energy data they need.
             </p>
             <Link className="es-btn" to={ROUTES.DASHBOARD}>
-              Ask EcoStep &rarr;
+              Ask EcoGuide &rarr;
             </Link>
           </div>
           <div className="msgs">
             <div className="bb">
-              <b>EcoChat</b>Hi! I’m your EcoStep assistant. Ask me about energy
+              <b>EcoGuide</b>Hi! I’m your EcoStep assistant. Ask me about energy
               status, analytics, or system insights.
             </div>
             <div className="bb me">How does a footstep make power?</div>
             <div className="bb">
-              <b>EcoChat</b>Each step presses the piezoelectric tile, which
+              <b>EcoGuide</b>Each step presses the piezoelectric tile, which
               turns that pressure into a small electric charge we measure.
             </div>
           </div>

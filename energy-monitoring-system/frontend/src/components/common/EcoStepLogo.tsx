@@ -1,64 +1,193 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export interface EcoStepMarkProps extends React.SVGProps<SVGSVGElement> {
+  height?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
 /**
- * EcoStep Logo Component
- * An integrated design where a leaf's silhouette subtly resembles a footprint
- * Deep forest green (#1A312C) with teal (#428475) and mint (#89D7B7) accents
+ * EcoStep Mark Component
+ * Renders the official 10-tile "E" mark with energized hot tile (2,1).
+ * Geometry strictly from ecostep-mark-inline-themeable.svg (viewBox 276 188 258 434).
+ * Themeable via CSS variables: --es-tile, --es-panel, --es-hot, --es-hot-panel.
  */
-export function EcoStepLogo({ className = "h-8 w-8" }: { className?: string }) {
+export function EcoStepMark({
+  height = 30,
+  className = '',
+  style,
+  ...props
+}: EcoStepMarkProps) {
+  // Calculate proportional width so the mark never stretches (aspect ratio 258:434)
+  const calculatedWidth = Math.round(height * (258 / 434));
+
   return (
     <svg
-      viewBox="0 0 100 100"
-      fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
+      viewBox="276 188 258 434"
+      width={calculatedWidth}
+      height={height}
+      role="img"
+      aria-label="EcoStep"
+      preserveAspectRatio="xMidYMid meet"
+      className={`es-mark-svg shrink-0 select-none ${className}`}
+      style={{
+        height: `${height}px`,
+        width: `${calculatedWidth}px`,
+        display: 'inline-block',
+        ...style,
+      }}
+      {...props}
     >
-      {/* Main leaf body that subtly forms footprint shape */}
-      <path
-        d="M50 10 C 30 15, 20 30, 20 50 C 20 65, 30 75, 40 80 L 45 85 C 46 86, 48 87, 50 87 C 52 87, 54 86, 55 85 L 60 80 C 70 75, 80 65, 80 50 C 80 30, 70 15, 50 10 Z"
-        fill="#1A312C"
-        opacity="0.95"
-      />
-      
-      {/* Secondary leaf vein - creates footprint arch */}
-      <path
-        d="M50 15 C 50 15, 45 35, 42 50 C 40 60, 42 70, 45 78"
-        stroke="#428475"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      
-      {/* Toe impressions - small circular accents */}
-      <circle cx="45" cy="28" r="4" fill="#89D7B7" opacity="0.7" />
-      <circle cx="55" cy="25" r="3.5" fill="#89D7B7" opacity="0.6" />
-      <circle cx="50" cy="35" r="3" fill="#428475" opacity="0.5" />
-      
-      {/* Heel accent - bottom curve */}
-      <ellipse
-        cx="50"
-        cy="75"
-        rx="12"
-        ry="8"
-        fill="#428475"
-        opacity="0.3"
-      />
-      
-      {/* Subtle leaf veins */}
-      <path
-        d="M50 20 Q 60 35, 65 50"
-        stroke="#89D7B7"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.4"
-      />
-      <path
-        d="M50 20 Q 40 35, 35 50"
-        stroke="#89D7B7"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.4"
-      />
+      {/* Row 0 */}
+      <rect x="278.44" y="189.84" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="292.34" y="203.74" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+      <rect x="367.03" y="189.84" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="380.93" y="203.74" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+      <rect x="455.62" y="189.84" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="469.52" y="203.74" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+
+      {/* Row 1 */}
+      <rect x="278.44" y="278.44" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="292.34" y="292.34" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+
+      {/* Row 2 (hot tile at 2,1) */}
+      <rect x="278.44" y="367.03" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="292.34" y="380.93" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+      <rect x="367.03" y="367.03" width="75.94" height="75.94" rx="8.86" fill="var(--es-hot,#ffd84a)" />
+      <rect x="380.93" y="380.93" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-hot-panel,#c99a00)" strokeWidth="4.05" strokeOpacity="0.55" />
+
+      {/* Row 3 */}
+      <rect x="278.44" y="455.62" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="292.34" y="469.52" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+
+      {/* Row 4 */}
+      <rect x="278.44" y="544.22" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="292.34" y="558.12" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+      <rect x="367.03" y="544.22" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="380.93" y="558.12" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
+      <rect x="455.62" y="544.22" width="75.94" height="75.94" rx="8.86" fill="var(--es-tile,#1fd566)" />
+      <rect x="469.52" y="558.12" width="48.1" height="48.1" rx="6.3" fill="none" stroke="var(--es-panel,#12a24f)" strokeWidth="4.05" strokeOpacity="0.55" />
     </svg>
   );
+}
+
+export interface EcoStepWordmarkProps {
+  fontSize?: number | string;
+  className?: string;
+}
+
+/**
+ * EcoStep Wordmark
+ * "Eco" in Poppins 700, "Step" in Poppins 500.
+ * Follows light/dark mode via CSS variables (--es-ink and --es-step).
+ */
+export function EcoStepWordmark({
+  fontSize = '1.15rem',
+  className = '',
+}: EcoStepWordmarkProps) {
+  return (
+    <span
+      className={`es-brand-wordmark inline-flex items-baseline tracking-[-0.02em] leading-none select-none ${className}`}
+      style={{
+        fontFamily: "'Poppins', sans-serif",
+        fontSize: typeof fontSize === 'number' ? `${fontSize}px` : fontSize,
+      }}
+    >
+      <span
+        style={{
+          fontWeight: 700,
+          color: 'var(--es-ink, #0e1f15)',
+        }}
+      >
+        Eco
+      </span>
+      <span
+        style={{
+          fontWeight: 500,
+          color: 'var(--es-step, #12a24f)',
+        }}
+      >
+        Step
+      </span>
+    </span>
+  );
+}
+
+export interface EcoStepBrandLockupProps {
+  markHeight?: number;
+  wordmarkSize?: number | string;
+  showWordmark?: boolean;
+  href?: string;
+  className?: string;
+  onClick?: () => void;
+}
+
+/**
+ * Official EcoStep Brand Lockup (Mark + Wordmark)
+ * Clicking navigates to landing page (#home).
+ */
+export function EcoStepBrandLockup({
+  markHeight = 30,
+  wordmarkSize = '1.15rem',
+  showWordmark = true,
+  href = '/#home',
+  className = '',
+  onClick,
+}: EcoStepBrandLockupProps) {
+  const content = (
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <EcoStepMark height={markHeight} />
+      {showWordmark && <EcoStepWordmark fontSize={wordmarkSize} />}
+    </span>
+  );
+
+  if (href) {
+    if (href.startsWith('/#') || href.startsWith('#')) {
+      return (
+        <a
+          href={href}
+          onClick={onClick}
+          aria-label="EcoStep"
+          className="inline-flex items-center text-inherit no-underline cursor-pointer group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm"
+        >
+          {content}
+        </a>
+      );
+    }
+    return (
+      <Link
+        to={href}
+        onClick={onClick}
+        aria-label="EcoStep"
+        className="inline-flex items-center text-inherit no-underline cursor-pointer group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-sm"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label="EcoStep"
+      className="inline-flex items-center text-inherit cursor-pointer"
+    >
+      {content}
+    </div>
+  );
+}
+
+/**
+ * Backwards compatible EcoStepLogo component
+ */
+export function EcoStepLogo({
+  className = 'h-8 w-8',
+}: {
+  className?: string;
+}) {
+  return <EcoStepMark height={30} className={className} />;
 }

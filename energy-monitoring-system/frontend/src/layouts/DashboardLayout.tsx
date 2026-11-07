@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { DesktopDashboardLayout } from './DesktopDashboardLayout';
+import { SplashScreen } from '@/components/common/SplashScreen';
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -15,5 +16,13 @@ interface DashboardLayoutProps {
  *   EcoGuide full-height bottom sheet, and Guest/User bottom sheet
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  return <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>;
+  const [searchParams] = useSearchParams();
+  const forceSplash = searchParams.get('splash') === 'true';
+
+  return (
+    <>
+      <SplashScreen forceShow={forceSplash} />
+      <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>
+    </>
+  );
 }

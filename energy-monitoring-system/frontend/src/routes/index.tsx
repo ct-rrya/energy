@@ -10,13 +10,13 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 // Core pages (loaded immediately)
 import { LandingPage } from '@/features/landing/pages/LandingPage';
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import AdminAccessCodePage from '@/features/auth/pages/AdminAccessCodePage';
 import AdminManagementPage from '@/features/admin-management/pages/AdminManagementPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
 import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 
 // Lazy-loaded pages
-const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AnalyticsPage = lazy(() => import('@/features/analytics/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const MilestonesPage = lazy(() => import('@/features/milestones/pages/MilestonesPage').then(m => ({ default: m.MilestonesPage })));
 const EnergyMonitoringPage = lazy(() => import('@/features/energy/pages/EnergyMonitoringPage').then(m => ({ default: m.EnergyMonitoringPage })));
@@ -27,6 +27,8 @@ const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').th
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
+const LogsPage = lazy(() => import('@/features/admin/pages/LogsPage').then(m => ({ default: m.LogsPage })));
+const SplashPreviewPage = lazy(() => import('@/features/dashboard/pages/SplashPreviewPage').then(m => ({ default: m.SplashPreviewPage })));
 
 /**
  * Loading fallback component for lazy-loaded routes
@@ -70,6 +72,16 @@ export const router = createBrowserRouter([
     element: <HealthCheckPage />,
   },
 
+  // Splash Screen Preview (Standalone)
+  {
+    path: ROUTES.SPLASH,
+    element: (
+      <LazyRoute>
+        <SplashPreviewPage />
+      </LazyRoute>
+    ),
+  },
+
   // Admin Access Code Login (ONLY login page in the system)
   {
     path: ROUTES.ADMIN_LOGIN,
@@ -87,11 +99,7 @@ export const router = createBrowserRouter([
       // Dashboard - Public access (read-only for public users, full access for admins)
       {
         path: ROUTES.DASHBOARD,
-        element: (
-          <LazyRoute>
-            <DashboardPage />
-          </LazyRoute>
-        ),
+        element: <DashboardPage />,
       },
 
       // Analytics - Public access
@@ -215,6 +223,18 @@ export const router = createBrowserRouter([
           <AdminRoute requireSuperAdmin={true}>
             <AdminManagementPage />
           </AdminRoute>
+        ),
+      },
+
+      // Audit & System Logs (SUPER_ADMIN only)
+      {
+        path: ROUTES.ADMIN_LOGS,
+        element: (
+          <LazyRoute>
+            <AdminRoute requireSuperAdmin={true}>
+              <LogsPage />
+            </AdminRoute>
+          </LazyRoute>
         ),
       },
     ],

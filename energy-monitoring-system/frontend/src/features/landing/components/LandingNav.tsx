@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, type RefObject } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Footprints, Sun, Moon, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Sun, Moon, Menu, X, ArrowUpRight } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useSlidingIndicator } from '../hooks/useSlidingIndicator';
 import { ROUTES } from '@/routes/routes.config';
+import { EcoStepMark, EcoStepWordmark } from '@/components/common/EcoStepLogo';
 
 interface LandingNavProps {
   activeIndex: number;
@@ -15,7 +16,7 @@ const NAV_ITEMS = [
   { label: 'Home', sectionId: 'home' },
   { label: 'How it works', sectionId: 'how' },
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
-  { label: 'EcoChat', sectionId: 'ecochat' },
+  { label: 'EcoGuide', sectionId: 'ecoguide' },
   { label: 'About', sectionId: 'about' },
 ];
 
@@ -150,36 +151,18 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
           style={{
             display: 'flex',
             alignItems: 'center',
+            gap: '10px',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
             padding: 0,
             color: 'var(--landing-ink)',
-            fontWeight: 800,
-            fontSize: '18px',
-            letterSpacing: '-0.02em',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
-          {/* Logo Icon */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 2,
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
-              background: 'var(--landing-green)',
-              display: 'grid',
-              placeItems: 'center',
-              color: 'var(--landing-green-ink)',
-              boxShadow: '0 4px 12px rgba(25, 212, 106, 0.3)',
-              flexShrink: 0,
-            }}
-          >
-            <Footprints size={20} strokeWidth={2.4} />
-          </div>
+          {/* Official EcoStep Brand Mark */}
+          <EcoStepMark height={30} />
 
           {/* Brand Text: Slides away smoothly when scrolling on desktop, stays visible on mobile */}
           <span
@@ -187,19 +170,18 @@ export function LandingNav({ activeIndex, sectionRefs }: LandingNavProps) {
             style={{
               position: 'relative',
               zIndex: 1,
-              letterSpacing: '-0.02em',
               whiteSpace: 'nowrap',
               display: 'inline-block',
               transform: !isMobile && showCollapsedMenu ? 'translateX(-32px)' : 'translateX(0)',
               opacity: !isMobile && showCollapsedMenu ? 0 : 1,
-              maxWidth: !isMobile && showCollapsedMenu ? '0px' : '90px',
-              marginLeft: !isMobile && showCollapsedMenu ? '0px' : '9px',
+              maxWidth: !isMobile && showCollapsedMenu ? '0px' : '110px',
+              marginLeft: !isMobile && showCollapsedMenu ? '0px' : '0px',
               transition:
-                'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               pointerEvents: !isMobile && showCollapsedMenu ? 'none' : 'auto',
             }}
           >
-            EcoStep
+            <EcoStepWordmark fontSize="1.15rem" />
           </span>
         </button>
       </div>

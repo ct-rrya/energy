@@ -42,7 +42,7 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
 
-  const handleOpenEcoChat = () => {
+  const handleOpenEcoGuide = () => {
     window.dispatchEvent(new CustomEvent('ecostep:openchat', { bubbles: true }));
   };
 
@@ -55,29 +55,29 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.DASHBOARD),
     },
     {
-      id: 'analytics',
-      label: 'Analytics',
+      id: 'trends',
+      label: 'Trends',
       icon: Activity,
       isActive: isAnalytics,
       onClick: () => navigate(ROUTES.ANALYTICS),
     },
     {
-      id: 'milestones',
-      label: 'Milestones',
+      id: 'milestone',
+      label: 'Milestone',
       icon: Award,
       isActive: isMilestones,
       onClick: () => navigate(ROUTES.MILESTONES),
     },
     {
-      id: 'diagnostics',
-      label: 'Diagnostics',
+      id: 'health',
+      label: 'Health',
       icon: Stethoscope,
       isActive: isDiagnostics,
       onClick: () => navigate(ROUTES.ADMIN_DIAGNOSTICS),
     },
     {
-      id: 'reports',
-      label: 'Reports',
+      id: 'ledger',
+      label: 'Ledger',
       icon: FileText,
       isActive: isReports,
       onClick: () => navigate(ROUTES.REPORTS),
@@ -93,25 +93,25 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.DASHBOARD),
     },
     {
-      id: 'analytics',
-      label: 'Analytics',
+      id: 'trends',
+      label: 'Trends',
       icon: Activity,
       isActive: isAnalytics,
       onClick: () => navigate(ROUTES.ANALYTICS),
     },
     {
-      id: 'milestones',
-      label: 'Milestones',
+      id: 'milestone',
+      label: 'Milestone',
       icon: Award,
       isActive: isMilestones,
       onClick: () => navigate(ROUTES.MILESTONES),
     },
     {
-      id: 'ecochat',
+      id: 'ecoguide',
       label: 'EcoGuide',
       icon: MessageSquare,
       isActive: false,
-      onClick: handleOpenEcoChat,
+      onClick: handleOpenEcoGuide,
     },
   ];
 

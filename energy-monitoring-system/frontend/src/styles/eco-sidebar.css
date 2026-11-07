@@ -36,7 +36,7 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--left-w, 200px);
+  width: var(--left-w, 224px);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -89,11 +89,16 @@
 .es-brand-link {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
+}
+
+.es-brand-link .es-mark-svg {
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .es-brand-mark-circle {
@@ -153,6 +158,12 @@
   margin: 0 !important;
   padding: 0 !important;
   flex: none !important;
+}
+
+.es-side.collapsed .es-brand-link .es-mark-svg,
+.sidebar.collapsed .es-brand-link .es-mark-svg {
+  margin: 0 auto !important;
+  transform: scale(1.05);
 }
 
 .es-side.collapsed .es-brand-mark-circle,
@@ -727,7 +738,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: var(--left-w, 200px);
+  left: var(--left-w, 224px);
   right: var(--right-w, 330px);
   overflow-y: auto;
   overflow-x: hidden;
