@@ -9,6 +9,7 @@ import { SessionManager } from './session.manager';
 import { SendMessageDto } from './dto/send-message.dto';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { OptionalPlayerSessionGuard } from '../gamification/guards/optional-player-session.guard';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * Unit tests for ChatController
@@ -56,6 +57,13 @@ describe('ChatController', () => {
             getOrCreateSession: jest.fn(),
             updateSession: jest.fn(),
             getSessionCount: jest.fn(),
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            logSuccess: jest.fn().mockResolvedValue({}),
+            logFailure: jest.fn().mockResolvedValue({}),
           },
         },
       ],

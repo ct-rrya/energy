@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ROUTES } from '@/routes/routes.config';
+import { EcoStepBrandLockup } from '@/components/common/EcoStepLogo';
 
 /**
  * Admin Access Code Login Page
@@ -185,18 +186,11 @@ export default function AdminAccessCodePage() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <div 
-              className="inline-flex items-center justify-center w-16 h-16 sm:w-18 sm:h-18 rounded-2xl mb-4 border transition-transform duration-300 hover:scale-105"
-              style={{
-                background: theme === 'light' 
-                  ? 'linear-gradient(135deg, #EFF6FF 0%, #E0F2FE 100%)' 
-                  : 'linear-gradient(135deg, rgba(57, 255, 136, 0.12) 0%, rgba(11, 19, 43, 0.8) 100%)',
-                borderColor: theme === 'light' ? 'rgba(31, 163, 92, 0.2)' : 'rgba(57, 255, 136, 0.25)',
-                boxShadow: '0 0 24px rgba(57, 255, 136, 0.15)',
-              }}
-            >
-              <Shield className="w-8 h-8" style={{ color: '#39FF88' }} />
+            {/* EcoStep Brand Lockup */}
+            <div className="flex items-center justify-center mb-6">
+              <EcoStepBrandLockup markHeight={34} wordmarkSize="1.5rem" href={ROUTES.HOME} />
             </div>
+
             <h1 
               className="text-2xl sm:text-3xl font-bold tracking-tight mb-2"
               style={{ color: theme === 'light' ? '#0B132B' : '#F5F7FA' }}

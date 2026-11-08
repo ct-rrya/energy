@@ -4,7 +4,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { GeminiAIService } from '../ai/gemini-ai.service';
-import { GamificationService } from '../gamification/gamification.service';
+import { MilestonesService } from '../milestones/milestones.service';
 
 describe('ChatbotCoreService', () => {
   let service: ChatbotCoreService;
@@ -12,7 +12,7 @@ describe('ChatbotCoreService', () => {
   let energyService: jest.Mocked<EnergyService>;
   let subscribersService: jest.Mocked<SubscribersService>;
   let geminiAIService: jest.Mocked<GeminiAIService>;
-  let gamificationService: jest.Mocked<GamificationService>;
+  let milestonesService: jest.Mocked<MilestonesService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -61,44 +61,73 @@ describe('ChatbotCoreService', () => {
           },
         },
         {
-          provide: GamificationService,
+          provide: MilestonesService,
           useValue: {
-            getAllMissions: jest.fn().mockReturnValue([
-              {
-                id: 'piezo-intro',
-                title: 'Introduction to Piezoelectricity',
-                subtitle: 'From mechanical force to electrical charge',
-                description: 'Learn crystal dipole mechanics',
-                xpReward: 100,
-                isCompleted: false,
+            getMilestonesProgress: jest.fn().mockResolvedValue({
+              yearMonth: '2026-11',
+              monthLabel: 'November 2026',
+              monthlyMilestone: {
+                id: 'monthly',
+                periodKey: '2026-11',
+                label: 'Monthly Goal (November 2026)',
+                dayRangeLabel: 'Nov 1–30',
+                days: 30,
+                startDate: '2026-11-01T00:00:00.000Z',
+                endDate: '2026-11-30T23:59:59.999Z',
+                state: 'CURRENT',
+                targetMWh: 0.1,
+                currentMWh: 0.045,
+                targetWh: 0.0001,
+                currentWh: 0.000045,
+                progressPercentage: 45.0,
+                isAchieved: false,
+                stepCount: 225,
+                realWorldEquivalents: {
+                  phoneCharges: 0.003,
+                  phoneChargePercent: 0.3,
+                  ledHours: 0.009,
+                  iotBeaconDays: 9.0,
+                  comparisonText: '45% towards November goal (0.045 / 0.100 mWh)',
+                  explanation: 'Generated 0.045 mWh across 225 footsteps',
+                },
+                aiComment: 'Steady progress toward this month’s goal!',
               },
-            ]),
-            getPlayerProgress: jest.fn().mockResolvedValue({
-              playerId: 'p123',
-              username: 'LearnerOne',
-              xp: 250,
-              level: 2,
-              levelProgress: {
-                currentXp: 250,
-                level: 2,
-                levelTitle: 'Energy Harvester',
-                currentLevelMinXp: 100,
-                nextLevelXp: 450,
-                xpToNextLevel: 150,
-                progressPercentage: 62,
-                isMaxLevel: false,
-              },
-              completedMissions: ['piezo-intro'],
-              totalMissions: 5,
-              badges: [
+              weeklyMilestones: [
                 {
-                  id: 'curie-apprentice',
-                  name: 'Curie Apprentice',
-                  description: 'Completed your first mission',
-                  icon: '⚡',
-                  isUnlocked: true,
+                  id: 'week_2',
+                  periodKey: '2026-11-W2',
+                  label: 'Week 2 (Nov 8–14)',
+                  weekNumber: 2,
+                  dayRangeLabel: 'Nov 8–14',
+                  days: 7,
+                  startDate: '2026-11-08T00:00:00.000Z',
+                  endDate: '2026-11-14T23:59:59.999Z',
+                  state: 'CURRENT',
+                  targetMWh: 0.025,
+                  currentMWh: 0.015,
+                  targetWh: 0.000025,
+                  currentWh: 0.000015,
+                  progressPercentage: 60.0,
+                  isAchieved: false,
+                  stepCount: 80,
+                  realWorldEquivalents: {
+                    phoneCharges: 0.001,
+                    phoneChargePercent: 0.1,
+                    ledHours: 0.003,
+                    iotBeaconDays: 3.0,
+                    comparisonText: '60% towards Week 2 target',
+                    explanation: 'Generated 0.015 mWh across 80 footsteps',
+                  },
+                  aiComment: 'Great momentum this week!',
                 },
               ],
+              milestones: [],
+              availableMonths: ['2026-10', '2026-11'],
+              currentMonth: '2026-11',
+              allTimeEnergyMWh: 0.45,
+              allTimeEnergyWh: 0.00045,
+              allTimeSteps: 2250,
+              lastUpdated: '2026-11-08T05:00:00.000Z',
             }),
           },
         },
@@ -110,7 +139,7 @@ describe('ChatbotCoreService', () => {
     energyService = module.get(EnergyService);
     subscribersService = module.get(SubscribersService);
     geminiAIService = module.get(GeminiAIService);
-    gamificationService = module.get(GamificationService);
+    milestonesService = module.get(MilestonesService);
   });
 
   it('should be defined', () => {
@@ -506,33 +535,24 @@ describe('ChatbotCoreService', () => {
     });
   });
 
-  describe('Phase 5 — EcoGuide Educational & Gamification Capabilities', () => {
-    it('should return personalized missions and recommendations for authenticated player', async () => {
-      const mockPlayer: any = {
-        _id: 'p123',
-        id: 'p123',
-        username: 'LearnerOne',
-        xp: 250,
-        level: 2,
-        completedMissions: [],
-        badges: [],
-      };
-
+  describe('Phase 5 — EcoGuide Educational & Milestones Capabilities', () => {
+    it('should return milestone goals, monthly target, and active weekly target for milestones command', async () => {
       const context: MessageContext = {
         userId: 'user-1',
         channel: 'web',
-        player: mockPlayer,
       };
 
-      const response = await service.processMessage('missions', context);
+      const response = await service.processMessage('milestones', context);
 
-      expect(response.text).toContain('EcoStep Academy Missions for LearnerOne');
-      expect(response.text).toContain('Recommended Next');
-      expect(response.suggestions).toContain('progress');
-      expect(response.suggestions).toContain('guide');
+      expect(response.text).toContain('EcoStep Milestone Goals (November 2026)');
+      expect(response.text).toContain('Monthly Goal:');
+      expect(response.text).toContain('0.100 mWh');
+      expect(response.text).toContain('Week 2');
+      expect(response.suggestions).toContain('today');
+      expect(response.suggestions).toContain('status');
     });
 
-    it('should return curriculum overview and prompt to start guest session for unauthenticated visitor', async () => {
+    it('should route legacy missions command to milestones goals display', async () => {
       const context: MessageContext = {
         userId: 'guest-1',
         channel: 'web',
@@ -540,44 +560,20 @@ describe('ChatbotCoreService', () => {
 
       const response = await service.processMessage('missions', context);
 
-      expect(response.text).toContain('EcoStep Academy Missions');
-      expect(response.text).toContain('Start or restore a guest player session');
-      expect(response.suggestions).toContain('progress');
+      expect(response.text).toContain('EcoStep Milestone Goals');
+      expect(response.text).toContain('Monthly Goal:');
     });
 
-    it('should return level, XP, and badge showcase for authenticated player progress', async () => {
-      const mockPlayer: any = {
-        _id: 'p123',
-        username: 'LearnerOne',
-        xp: 250,
-        level: 2,
-      };
-
+    it('should route legacy progress command to milestones goals display', async () => {
       const context: MessageContext = {
         userId: 'user-1',
         channel: 'web',
-        player: mockPlayer,
       };
 
       const response = await service.processMessage('progress', context);
 
-      expect(response.text).toContain('Player Progress — LearnerOne');
-      expect(response.text).toContain('Level 2');
-      expect(response.text).toContain('Curie Apprentice');
-      expect(response.suggestions).toContain('missions');
-    });
-
-    it('should explain that progress tracking requires guest session for unauthenticated visitors', async () => {
-      const context: MessageContext = {
-        userId: 'anon-1',
-        channel: 'web',
-      };
-
-      const response = await service.processMessage('progress', context);
-
-      expect(response.text).toContain('requires an active guest session');
-      expect(response.suggestions).toContain('missions');
-      expect(response.suggestions).toContain('guide');
+      expect(response.text).toContain('EcoStep Milestone Goals');
+      expect(response.text).toContain('Harvested:');
     });
 
     it('should return educational curriculum and formula guide for guide command', async () => {
@@ -591,7 +587,8 @@ describe('ChatbotCoreService', () => {
       expect(response.text).toContain('EcoGuide — Your EcoStep Learning Assistant');
       expect(response.text).toContain('Piezoelectricity');
       expect(response.text).toContain('P = V');
-      expect(response.suggestions).toContain('missions');
+      expect(response.text).toContain('Milestone Goals');
+      expect(response.suggestions).toContain('milestones');
     });
 
     it('should allow educational questions about Pierre & Jacques Curie and piezoelectric discovery', () => {
@@ -672,53 +669,36 @@ describe('ChatbotCoreService', () => {
       expect(response.text).toContain('E = P');
     });
 
-    it('Scenario 4: "How much XP do I have?" provides actual authenticated player progress', async () => {
-      const mockPlayer: any = {
-        _id: 'p123',
-        username: 'LearnerOne',
-        xp: 250,
-        level: 2,
-      };
-
+    it('Scenario 4: "What is our milestone goal this month?" provides authoritative monthly target and progress', async () => {
       const context: MessageContext = {
         userId: 'user-1',
         channel: 'web',
-        player: mockPlayer,
       };
 
       geminiAIService.isAvailable.mockReturnValue(false);
 
-      const response = await service.processMessage('How much XP do I have?', context);
+      const response = await service.processMessage('What is our milestone goal this month?', context);
 
-      expect(response.text).toContain('LearnerOne');
-      expect(response.text).toContain('250 XP');
-      expect(response.text).toContain('Level 2');
+      expect(response.text).toContain('November 2026');
+      expect(response.text).toContain('0.100 mWh');
+      expect(response.text).toContain('45.0% achieved');
     });
 
-    it('Scenario 5: "What mission should I do next?" suggests a real, unfinished mission', async () => {
-      const mockPlayer: any = {
-        _id: 'p123',
-        username: 'LearnerOne',
-        xp: 250,
-        level: 2,
-        completedMissions: [],
-      };
-
+    it('Scenario 5: "How close are we to reaching our milestone goal?" provides accurate progress feedback', async () => {
       const context: MessageContext = {
         userId: 'user-1',
         channel: 'web',
-        player: mockPlayer,
       };
 
       geminiAIService.isAvailable.mockReturnValue(false);
 
-      const response = await service.processMessage('What mission should I do next?', context);
+      const response = await service.processMessage('How close are we to reaching our milestone goal?', context);
 
-      expect(response.text).toContain('Introduction to Piezoelectricity');
-      expect(response.text).toContain('+100 XP');
+      expect(response.text).toContain('0.100 mWh');
+      expect(response.text).toContain('0.045 mWh');
     });
 
-    it('Scenario 6: No active player session responds helpfully without fabricated personal progress', async () => {
+    it('Scenario 6: Deprecated missions/XP query explains transition to Milestone Goals', async () => {
       const context: MessageContext = {
         userId: 'anon-user',
         channel: 'web',
@@ -728,9 +708,8 @@ describe('ChatbotCoreService', () => {
 
       const response = await service.processMessage('How much XP do I have?', context);
 
-      expect(response.text).toContain('requires an active guest session in the EcoStep Mission Hub');
-      expect(response.text).not.toContain('LearnerOne');
-      expect(response.text).not.toContain('You have 250 XP');
+      expect(response.text).toContain('EcoStep has retired missions and XP in favor of real-world Milestone Goals');
+      expect(response.suggestions).toContain('milestones');
     });
 
     it('Scenario 7: Missing sensor data provides a transparent explanation without invented readings', async () => {

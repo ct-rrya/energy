@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/routes.config';
 import { useTheme } from '@/contexts/ThemeContext';
+import { EcoStepBrandLockup } from '@/components/common/EcoStepLogo';
+import { EcoStepMat } from '../components/EcoStepMat';
 import '@/styles/landing.css';
 
 const DEMO_VALUES = [12, 18, 14, 25, 21, 30, 17, 26, 15, 32, 24, 19];
@@ -30,15 +32,11 @@ const SECTIONS = [
 
 export function LandingPage() {
   const { toggleTheme } = useTheme();
-  const [stepsCount, setStepsCount] = useState(0);
-  const [energyVal, setEnergyVal] = useState(0);
-  const [isPressed, setIsPressed] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
-  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Enable landing page styling and ensure document scrolling is unlocked while mounted
   useEffect(() => {
@@ -121,22 +119,6 @@ export function LandingPage() {
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
-    };
-  }, []);
-
-  const handleStepClick = () => {
-    setStepsCount((c) => c + 1);
-    setEnergyVal((e) => e + 0.12);
-    setIsPressed(true);
-    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
-    pressTimerRef.current = setTimeout(() => {
-      setIsPressed(false);
-    }, 90);
-  };
-
   return (
     <div className={`es-lp ${isScrolled ? 'sm' : ''}`}>
       <div className="es-bgl" aria-hidden="true" />
@@ -144,24 +126,12 @@ export function LandingPage() {
       <div className="es-edge-blur-bottom" aria-hidden="true" />
 
       <header className="es-hd" id="hd">
-        <a className="es-logo" href="#home" aria-label="EcoStep home">
-          <i>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#0D1B14"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            >
-              <ellipse cx="8" cy="8" rx="2.6" ry="3.6" />
-              <ellipse cx="16" cy="14" rx="2.6" ry="3.6" />
-              <path d="M8 13v2M16 6v1" />
-            </svg>
-          </i>
-          <b>EcoStep</b>
-        </a>
+        <EcoStepBrandLockup
+          markHeight={32}
+          wordmarkSize="1.35rem"
+          href="#home"
+          className="es-logo"
+        />
 
         <nav className="es-nv" aria-label="Primary">
           {SECTIONS.map((sec, idx) => (
@@ -246,6 +216,15 @@ export function LandingPage() {
         id="pn"
         onClick={() => setMenuOpen(false)}
       >
+        <div className="es-pn-brand">
+          <EcoStepBrandLockup
+            markHeight={26}
+            wordmarkSize="1.15rem"
+            href="#home"
+            className="es-logo"
+            onClick={() => setMenuOpen(false)}
+          />
+        </div>
         <div className="es-pn-links">
           {SECTIONS.map((sec, idx) => (
             <a
@@ -291,26 +270,7 @@ export function LandingPage() {
             </div>
           </div>
           <div className="r">
-            <button
-              type="button"
-              className={`step ${isPressed ? 'pr' : ''}`}
-              id="step"
-              onClick={handleStepClick}
-            >
-              Step here
-            </button>
-            <div className="stats">
-              <div>
-                <b id="sc">{stepsCount}</b>Steps
-              </div>
-              <div>
-                <b id="en">{energyVal.toFixed(1)}</b>mWh (demo)
-              </div>
-            </div>
-            <p className="cap">
-              Interactive demo with simulated values. Live readings are on the
-              Dashboard page.
-            </p>
+            <EcoStepMat className="w-full max-w-[540px] mx-auto select-none" />
           </div>
         </section>
 
@@ -472,8 +432,16 @@ export function LandingPage() {
               View Dashboard
             </Link>
           </div>
-          <footer>
-            EcoStep Energy Monitoring System, Cebu Technological University
+          <footer className="es-footer">
+            <div className="es-footer-brand">
+              <EcoStepBrandLockup
+                markHeight={26}
+                wordmarkSize="1.15rem"
+                href="#home"
+                className="es-logo"
+              />
+            </div>
+            <span>EcoStep Energy Monitoring System, Cebu Technological University</span>
           </footer>
         </section>
       </main>

@@ -3,7 +3,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { GeminiAIService } from '../ai/gemini-ai.service';
-import { GamificationService } from '../gamification/gamification.service';
+import { MilestonesService } from '../milestones/milestones.service';
 import { Player } from '../players/schemas/player.schema';
 
 /**
@@ -54,7 +54,7 @@ export interface QuickReply {
  * - Consumes Energy Service for data queries
  * - Consumes Subscribers Service for subscriptions
  * - Consumes Gemini AI Service for natural language
- * - Consumes Gamification Service for missions, levels, and progress
+ * - Consumes Milestones Service for kinetic energy generation targets & progress
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 2.8, 6.8, 9.9
  */
@@ -68,8 +68,8 @@ export class ChatbotCoreService {
     private readonly subscribersService: SubscribersService,
     @Inject(forwardRef(() => GeminiAIService))
     private readonly geminiAIService: GeminiAIService,
-    @Inject(forwardRef(() => GamificationService))
-    private readonly gamificationService: GamificationService,
+    @Inject(forwardRef(() => MilestonesService))
+    private readonly milestonesService: MilestonesService,
   ) {}
 
   /**
@@ -135,15 +135,21 @@ export class ChatbotCoreService {
       money: 'savings',
       current: 'energy',
       info: 'about',
-      missions: 'missions',
-      mission: 'missions',
-      learning: 'missions',
-      academy: 'missions',
-      progress: 'progress',
-      level: 'progress',
-      xp: 'progress',
-      badges: 'progress',
-      rank: 'progress',
+      missions: 'milestones',
+      mission: 'milestones',
+      learning: 'guide',
+      academy: 'milestones',
+      progress: 'milestones',
+      level: 'milestones',
+      xp: 'milestones',
+      badges: 'milestones',
+      rank: 'milestones',
+      milestones: 'milestones',
+      milestone: 'milestones',
+      goals: 'milestones',
+      goal: 'milestones',
+      targets: 'milestones',
+      target: 'milestones',
       guide: 'guide',
       ecoguide: 'guide',
       learn: 'guide',
@@ -187,8 +193,7 @@ export class ChatbotCoreService {
       'help',
       'hello',
       'analytics_menu',
-      'missions',
-      'progress',
+      'milestones',
       'guide',
     ];
 
@@ -316,11 +321,10 @@ export class ChatbotCoreService {
       case 'about':
         return this.handleAbout();
 
+      case 'milestones':
       case 'missions':
-        return this.handleMissions(context);
-
       case 'progress':
-        return this.handleProgress(context);
+        return this.handleMilestones();
 
       case 'guide':
         return this.handleGuide();
@@ -415,49 +419,62 @@ export class ChatbotCoreService {
   ): ChatbotResponse {
     if (intent === 'greeting') {
       return {
-        text: `Hey there! 👋 I'm EcoGuide, your energy and physics companion. Ready to explore footstep kinetic harvesting whenever you are!`,
-        suggestions: ['status', 'energy', 'guide', 'missions'],
+        text: `Hey there! 👋 I'm EcoGuide, your energy and physics companion. Ready to explore footstep kinetic harvesting and milestone goals whenever you are!`,
+        suggestions: ['status', 'energy', 'milestones', 'guide'],
       };
     }
 
-    if (intent === 'player_progress') {
-      if (context.player && dataContext.playerProgress) {
-        const p = dataContext.playerProgress;
-        const lp = p.levelProgress;
-        let text = `${p.username}, you are Level ${p.level} (${lp.levelTitle}) with ${p.xp} XP! `;
-        if (lp.isMaxLevel) {
-          text += `You have reached the maximum level!`;
-        } else {
-          text += `You need ${lp.xpToNextLevel} XP to reach Level ${p.level + 1} (${lp.progressPercentage}% progress).`;
+    if (intent === 'milestones_query') {
+      const ms = dataContext?.milestones;
+      if (ms?.monthlyMilestone) {
+        const m = ms.monthlyMilestone;
+        const target = m.targetMWh?.toFixed(3) || '0.100';
+        const current = m.currentMWh?.toFixed(3) || '0.000';
+        const pct = m.progressPercentage?.toFixed(1) || '0.0';
+        const label = ms.monthLabel || 'this month';
+        if (m.isAchieved) {
+          return {
+            text: `🎉 Milestone achieved for ${label}! We've reached ${current} mWh, surpassing our ${target} mWh goal. Keep walking to set new records!`,
+            suggestions: ['milestones', 'today', 'status'],
+          };
         }
         return {
-          text,
-          suggestions: ['missions', 'guide', 'status'],
-        };
-      } else {
-        return {
-          text: `Tracking personal XP, levels, and badges requires an active guest session in the EcoStep Mission Hub! You can still explore all physics lessons and live floor readings freely.`,
-          suggestions: ['missions', 'guide', 'status'],
+          text: `For ${label}, our milestone goal is ${target} mWh. We've harvested ${current} mWh so far (${pct}% achieved). Every footstep counts!`,
+          suggestions: ['milestones', 'today', 'status'],
         };
       }
+      return {
+        text: `Milestone goals track our weekly and monthly clean energy harvest. Check out 'milestones' for current targets and progress!`,
+        suggestions: ['milestones', 'today', 'status'],
+      };
     }
 
-    if (intent === 'mission_recommendation') {
-      const allMissions = dataContext.allMissions || [];
-      const unfinished = allMissions.filter((m: any) => !m.isCompleted);
-      if (unfinished.length > 0) {
-        const next = unfinished[0];
+    if (intent === 'deprecated_missions') {
+      return {
+        text: `EcoStep has retired missions and XP in favor of real-world Milestone Goals! We now track weekly and monthly kinetic generation targets from actual footsteps.`,
+        suggestions: ['milestones', 'status', 'guide'],
+      };
+    }
+
+    if (intent === 'current_status' || intent === 'energy_query') {
+      const stats = dataContext?.todayStats;
+      if (stats && stats.readingCount > 0) {
+        const mWh = stats.totalEnergyMWh?.toFixed(2) || '0.00';
         return {
-          text: `I recommend tackling **${next.title}** (+${next.xpReward} XP)! It covers ${next.subtitle} and will give your progress bar a nice boost.`,
-          suggestions: ['progress', 'guide', 'status'],
+          text: `Today's harvest is sitting at ${mWh} mWh across ${stats.readingCount} steps. Keep walking and let's bank some more power!`,
+          suggestions: ['today', 'energy', 'help'],
         };
       }
+      return {
+        text: `Today's energy total is 0 mWh—the tiles are awake and ready, but nobody's walked on them yet today. Time to get some steps in!`,
+        suggestions: ['today', 'energy', 'help'],
+      };
     }
 
     const lower = message.toLowerCase();
     if (lower.includes('1 mw') || lower.includes('1mw') || lower.includes('milliwatt')) {
       return {
-        text: `1 milliwatt (1 mW) is 0.001 Watts—a micro-scale energy amount! A single footstep generates milliwatt pulses that store up in capacitors to power clean IoT electronics without batteries.`,
+        text: `1 milliwatt (1 mW) is 0.001 Watts—a micro-scale energy amount! Single footsteps add up fast like coins in a piggy bank to power clean sensors without batteries.`,
         suggestions: ['energy', 'status', 'guide'],
       };
     }
@@ -467,14 +484,14 @@ export class ChatbotCoreService {
       (lower.includes('power') && lower.includes('energy'))
     ) {
       return {
-        text: `Power ($P = V \\times I$, in Watts or mW) is how fast energy is generated right now, like your car's speedometer. Energy ($E = P \\times t$, in mWh or Joules) is the total work accumulated over time, like your odometer!`,
+        text: `Power ($P = V \\times I$, in Watts or mW) is how fast energy is flowing right this second, like water pouring from a tap. Energy ($E = P \\times t$, in mWh or Joules) is the total amount you've actually collected over time, like the water filling up your glass or charging your phone battery!`,
         suggestions: ['energy', 'status', 'guide'],
       };
     }
 
     return {
-      text: `I'm having a brief connection hiccup reaching my AI brain, but I'm still here! Feel free to ask about energy, missions, or check 'status' anytime.`,
-      suggestions: ['status', 'energy', 'guide'],
+      text: `I'm having a brief connection hiccup reaching my AI brain, but I'm still here! Feel free to ask about energy, milestone goals, or check 'status' anytime.`,
+      suggestions: ['status', 'energy', 'milestones', 'help'],
     };
   }
 
@@ -545,11 +562,14 @@ export class ChatbotCoreService {
     }
 
     // 3. Check for Unrelated People, Presidents, Politics, and General Trivia ("who is who")
-    // Allow questions asking about EcoStep, EcoGuide, Academy missions, or educational physics (e.g. Pierre & Jacques Curie, PZT)
+    // Allow questions asking about EcoStep, EcoGuide, Milestone goals, or educational physics (e.g. Pierre & Jacques Curie, PZT)
     const isAllowedTopic =
       lower.includes('ecostep') ||
       lower.includes('ecochat') ||
       lower.includes('ecoguide') ||
+      lower.includes('milestone') ||
+      lower.includes('goal') ||
+      lower.includes('target') ||
       lower.includes('curie') ||
       lower.includes('jacques') ||
       lower.includes('pierre') ||
@@ -585,8 +605,8 @@ export class ChatbotCoreService {
         return {
           allowed: false,
           refusal: {
-            text: '🌿 I am EcoGuide, the learning and energy assistant for EcoStep. I can answer questions related to the EcoStep kinetic energy harvesting system, piezoelectric physics, electrical formulas, and EcoStep Academy missions. How can I assist you with EcoStep today?',
-            suggestions: ['status', 'missions', 'guide'],
+            text: '🌿 I am EcoGuide, the learning and energy assistant for EcoStep. I can answer questions related to the EcoStep kinetic energy harvesting system, piezoelectric physics, electrical formulas, and milestone energy goals. How can I assist you with EcoStep today?',
+            suggestions: ['status', 'milestones', 'guide'],
             metadata: {
               commandType: 'trivia_restriction',
               dataSource: 'guardrail',
@@ -712,55 +732,47 @@ export class ChatbotCoreService {
       return 'greeting';
     }
 
-    // 2. Player progress, XP, Level, Badges
+    // 2. Milestones & Goals Query
     if (
-      lowerMessage.includes('my progress') ||
-      lowerMessage.includes('my level') ||
-      lowerMessage.includes('what level') ||
-      lowerMessage.includes('what is my level') ||
+      lowerMessage.includes('milestone') ||
+      lowerMessage.includes('milestones') ||
+      lowerMessage.includes('goal') ||
+      lowerMessage.includes('goals') ||
+      lowerMessage.includes('target') ||
+      lowerMessage.includes('targets') ||
+      lowerMessage.includes('on track') ||
+      lowerMessage.includes('how close') ||
+      lowerMessage.includes('how much energy left') ||
+      lowerMessage.includes('reach the goal') ||
+      lowerMessage.includes('achieve the goal') ||
+      lowerMessage.includes('monthly goal') ||
+      lowerMessage.includes('weekly goal') ||
+      lowerMessage.includes('milestone progress') ||
+      lowerMessage.includes('goal progress') ||
+      lowerMessage.includes('target progress') ||
+      /\b(milestone|milestones|goal|goals|target|targets)\b/i.test(lowerMessage)
+    ) {
+      return 'milestones_query';
+    }
+
+    // 3. Deprecated missions / XP query
+    if (
+      lowerMessage.includes('mission') ||
+      lowerMessage.includes('missions') ||
       lowerMessage.includes('my xp') ||
       lowerMessage.includes('how much xp') ||
       lowerMessage.includes('how many xp') ||
       lowerMessage.includes('my points') ||
+      lowerMessage.includes('my level') ||
+      lowerMessage.includes('what level') ||
+      lowerMessage.includes('what is my level') ||
       lowerMessage.includes('next level') ||
-      lowerMessage.includes('how close am i') ||
-      lowerMessage.includes('my badge') ||
-      lowerMessage.includes('my badges') ||
-      lowerMessage.includes('which badges') ||
-      lowerMessage.includes('unlocked badges') ||
-      lowerMessage.includes('my rank') ||
-      lowerMessage.includes('player progress') ||
-      /\b(how much xp|what level am i|check my progress|how many points)\b/i.test(lowerMessage)
-    ) {
-      return 'player_progress';
-    }
-
-    // 3. Mission recommendations
-    if (
-      lowerMessage.includes('next mission') ||
-      lowerMessage.includes('what mission') ||
-      lowerMessage.includes('which mission') ||
-      lowerMessage.includes('recommend a mission') ||
-      lowerMessage.includes('recommend mission') ||
-      lowerMessage.includes('should i complete next') ||
-      lowerMessage.includes('should i do next') ||
-      lowerMessage.includes('what should i do next') ||
-      lowerMessage.includes('what to do next') ||
-      lowerMessage.includes('complete next')
-    ) {
-      return 'mission_recommendation';
-    }
-
-    // 4. Quiz guidance
-    if (
+      lowerMessage.includes('badge') ||
+      lowerMessage.includes('badges') ||
       lowerMessage.includes('quiz') ||
-      lowerMessage.includes('wrong answer') ||
-      lowerMessage.includes('answer wrong') ||
-      lowerMessage.includes('why did i get') ||
-      lowerMessage.includes('quiz question') ||
-      lowerMessage.includes('quiz explanation')
+      /\b(how much xp|what level am i|what mission|complete next)\b/i.test(lowerMessage)
     ) {
-      return 'quiz_guidance';
+      return 'deprecated_missions';
     }
 
     // 5. Educational physics & concepts
@@ -872,23 +884,11 @@ export class ChatbotCoreService {
     try {
       const dataContext: any = {};
 
-      // 1. Authoritative Gamification Context
-      if (context?.player) {
-        try {
-          dataContext.hasPlayer = true;
-          dataContext.playerProgress = await this.gamificationService.getPlayerProgress(context.player);
-          dataContext.allMissions = this.gamificationService.getAllMissions(context.player);
-        } catch (pErr) {
-          this.logger.warn(`Failed to fetch player gamification progress: ${pErr.message}`);
-          dataContext.hasPlayer = false;
-        }
-      } else {
-        dataContext.hasPlayer = false;
-        try {
-          dataContext.allMissions = this.gamificationService.getAllMissions();
-        } catch (mErr) {
-          this.logger.warn(`Failed to fetch public educational missions: ${mErr.message}`);
-        }
+      // 1. Authoritative Milestones & Goals Context
+      try {
+        dataContext.milestones = await this.milestonesService.getMilestonesProgress();
+      } catch (mErr) {
+        this.logger.warn(`Failed to fetch milestone goals: ${mErr.message}`);
       }
 
       // 2. Telemetry and Analytics Context
@@ -941,52 +941,36 @@ export class ChatbotCoreService {
       prompt += `**Special Directive for Greeting / Test Message:**\n`;
       prompt += `- The user is saying hello or testing the connection.\n`;
       prompt += `- Respond warmly, briefly, and with a touch of wit as EcoGuide in 1-2 conversational sentences.\n`;
-      prompt += `- DO NOT list levels, XP, badges, missions, or system statistics.\n`;
-      prompt += `- Invite them to ask about footstep energy or physics whenever they are ready.\n\n`;
-    } else if (intent === 'player_progress') {
-      prompt += `**Authoritative Player Progress Data:**\n`;
-      if (dataContext.hasPlayer && dataContext.playerProgress) {
-        const p = dataContext.playerProgress;
-        const lp = p.levelProgress;
-        prompt += `- Authenticated Player: "${p.username}"\n`;
-        prompt += `- Current Level: ${p.level} (${lp.levelTitle})\n`;
-        prompt += `- Total XP: ${p.xp} XP\n`;
-        if (lp.isMaxLevel) {
-          prompt += `- Next Level: Max Level reached!\n`;
-        } else {
-          prompt += `- Next Level: Level ${p.level + 1} (${lp.xpToNextLevel} XP needed, ${lp.progressPercentage}% progress)\n`;
+      prompt += `- DO NOT list levels, XP, missions, formulas, or raw data unsolicited.\n`;
+      prompt += `- Invite them to ask about footstep kinetic energy, electrical physics, or milestone goals whenever they are ready.\n\n`;
+    } else if (intent === 'milestones_query') {
+      prompt += `**Milestones & Energy Goals Context:**\n`;
+      if (dataContext.milestones) {
+        const ms = dataContext.milestones;
+        const m = ms.monthlyMilestone;
+        prompt += `- Current Month: ${ms.monthLabel || 'Current Month'} (${ms.yearMonth})\n`;
+        prompt += `- Monthly Target: ${m?.targetMWh?.toFixed(3) || '0.100'} mWh (${m?.targetWh?.toFixed(6) || '0.000100'} Wh)\n`;
+        prompt += `- Monthly Harvested So Far: ${m?.currentMWh?.toFixed(3) || '0.000'} mWh (${m?.progressPercentage?.toFixed(1) || '0.0'}% of goal)\n`;
+        prompt += `- Monthly Goal Achieved: ${m?.isAchieved ? 'YES (Goal met!)' : 'Not yet (In progress)'}\n`;
+        prompt += `- Steps Counted This Month: ${m?.stepCount || 0} steps\n`;
+
+        const activeWeek = (ms.weeklyMilestones || []).find((w: any) => w.state === 'CURRENT') || ms.weeklyMilestones?.[0];
+        if (activeWeek) {
+          prompt += `- Active Week: ${activeWeek.label} (${activeWeek.dayRangeLabel})\n`;
+          prompt += `- Weekly Target: ${activeWeek.targetMWh?.toFixed(3) || '0.025'} mWh\n`;
+          prompt += `- Weekly Harvested: ${activeWeek.currentMWh?.toFixed(3) || '0.000'} mWh (${activeWeek.progressPercentage?.toFixed(1) || '0.0'}%)\n`;
+          prompt += `- Weekly Goal Achieved: ${activeWeek.isAchieved ? 'YES' : 'Not yet'}\n`;
         }
-        prompt += `- Completed Missions: ${p.completedMissions.length} of ${p.totalMissions}\n`;
-        const unlockedBadges = (p.badges || []).filter((b: any) => b.isUnlocked);
-        prompt += `- Unlocked Badges: ${unlockedBadges.map((b: any) => `${b.icon} ${b.name}`).join(', ') || 'None yet'}\n`;
-        prompt += `- Directive: Answer the user's progress question directly and accurately using these authoritative numbers. Be positive, encouraging, and clear.\n\n`;
-      } else {
-        prompt += `- Player Session: No active guest session is authenticated.\n`;
-        prompt += `- Directive: Explain politely and helpfully that personal XP, level, and badge tracking requires starting or resuming a guest session in the EcoStep Mission Hub. Reassure them that all science lessons and energy readings can still be explored freely. NEVER invent or guess player XP or levels.\n\n`;
+        prompt += `- All-Time Generation: ${ms.allTimeEnergyMWh?.toFixed(3) || '0.000'} mWh across ${ms.allTimeSteps || 0} total footsteps\n`;
+        if (m?.realWorldEquivalents?.comparisonText) {
+          prompt += `- Real-World Impact: ${m.realWorldEquivalents.comparisonText}\n`;
+        }
       }
-    } else if (intent === 'mission_recommendation') {
-      prompt += `**Mission Recommendation Context:**\n`;
-      const allMissions = dataContext.allMissions || [];
-      const unfinished = allMissions.filter((m: any) => !m.isCompleted);
-      if (unfinished.length > 0) {
-        const next = unfinished[0];
-        prompt += `- Recommended Next Mission: "${next.title}" (+${next.xpReward} XP)\n`;
-        prompt += `- Focus / Subtitle: ${next.subtitle}\n`;
-        prompt += `- Description: ${next.description}\n`;
-        prompt += `- Directive: Suggest this mission with genuine enthusiasm! Highlight why it's interesting and mention the +${next.xpReward} XP reward. Keep it concise (1 short paragraph).\n\n`;
-      } else if (dataContext.hasPlayer) {
-        prompt += `- Status: All available missions are completed!\n`;
-        prompt += `- Directive: Congratulate the student warmly on finishing every Academy mission!\n\n`;
-      } else {
-        prompt += `- Status: Visitor asking for mission recommendation without an active session.\n`;
-        prompt += `- Directive: Suggest starting with Mission 1: "Introduction to Piezoelectricity" (+50 XP). Mention that logging into a guest session in the Mission Hub will save their quiz progress and award XP.\n\n`;
-      }
-    } else {
-      // General, Science, or Status query:
-      // STRICT RULE: Do not dump player progress unless asked!
-      if (dataContext.hasPlayer && dataContext.playerProgress) {
-        prompt += `*(Note: Player "${dataContext.playerProgress.username}" is active. DO NOT display their level, XP, or missions unless they asked.)*\n\n`;
-      }
+      prompt += `- Directive: Answer the user's question about milestones or targets directly and accurately using these numbers. Be punchy, witty, and encouraging. If achieved, celebrate! If in progress, cheer them on to step on the tiles.\n\n`;
+    } else if (intent === 'deprecated_missions') {
+      prompt += `**Missions & XP Deprecated Directive:**\n`;
+      prompt += `- The user is asking about gamified missions, XP, levels, or badges.\n`;
+      prompt += `- Directive: Warmly and clearly explain that EcoStep has retired the gamified missions and XP system in favor of real-world **Milestone Goals** that track weekly and monthly kinetic energy generation from actual footsteps. If relevant, mention this month's energy target.\n\n`;
     }
 
     const wantsDetail = /\b(explain in detail|detailed|elaborate|deep dive|comprehensive|full explanation|in depth|step by step)\b/i.test(message);
@@ -1018,23 +1002,24 @@ export class ChatbotCoreService {
     } else {
       prompt += `**Telemetry Context (No Readings Yet):**\n`;
       prompt += `- Today's readings: 0 mWh (tiles in standby, waiting for footsteps).\n`;
-      prompt += `- Directive: If asked about generation right now, state concisely and cheerfully that tiles are idle waiting for steps to generate clean milliwatts. Do not invent readings.\n\n`;
+      prompt += `- Directive: If asked about generation or status right now, be witty and straightforward: state that tiles are active and ready, but nobody has stepped on them yet today. Keep it punchy and relatable. Do NOT use odometer or car analogies.\n\n`;
     }
 
     // 4. Core Educational Science Reference (Use at most ONE per response)
     prompt += `**Core Physics Reference (Use at most ONE per response):**\n`;
-    prompt += `- Power ($P = V \\times I$, Watts or mW): Instantaneous generation rate (like a speedometer).\n`;
-    prompt += `- Energy ($E = P \\times t$, mWh or Joules): Accumulated work over time (like an odometer).\n`;
+    prompt += `- Power: Power = Voltage × Current ($P = V \\times I$, Watts or mW)—flow rate in the moment (like water pouring from a tap).\n`;
+    prompt += `- Energy: Energy = Power × Time ($E = P \\times t$, mWh or Joules)—total work collected over time (like water filling a glass or charging a battery).\n`;
     prompt += `- 1 mW ($0.001\\text{ W}$): Micro-power scale typical of kinetic pulses; footsteps store up in capacitors to run clean IoT sensors.\n`;
     prompt += `- Piezoelectric effect (Curie brothers, 1880): Compressing crystal lattices (PZT ceramic) generates potential difference.\n\n`;
 
     // 5. EcoGuide Persona Directives
     prompt += `**EcoGuide Persona & Directives:**\n`;
-    prompt += `1. Answer the user's specific question FIRST.\n`;
-    prompt += `2. Tone: Positive, witty, and encouraging—even when output is low or zero.\n`;
-    prompt += `3. Default Length: 1–3 short sentences (~30–60 words) unless user explicitly requested detail.\n`;
-    prompt += `4. DO NOT recommend a mission or list XP unless the user specifically asked for them.\n`;
-    prompt += `5. Do NOT end every response with a question or call to action.\n`;
+    prompt += `1. Personality: Witty, sharp, and straightforward. Answer the user's specific question FIRST with zero filler.\n`;
+    prompt += `2. Formula Presentation: Always format formulas so they are clearly understandable to anyone—pair words and symbols like "Power = Voltage × Current ($P = V \\times I$)". Never output raw unrendered LaTeX commands like "\\times" in plain text.\n`;
+    prompt += `3. Relatable analogies ONLY: NEVER use obscure metaphors (NO odometers, NO complex machinery). If comparing, use everyday modern things like phone battery percentage, steps on your smartwatch, or charging earbuds.\n`;
+    prompt += `4. Default Length: 1–3 short, punchy sentences (~25–50 words) unless user explicitly requested detail.\n`;
+    prompt += `5. Milestones & Goals Grounding: Report the authoritative targets and progress percentages provided in the context; never fabricate numbers.\n`;
+    prompt += `6. Do NOT end every response with a question or call to action.\n`;
 
     return prompt;
   }
@@ -1045,30 +1030,28 @@ export class ChatbotCoreService {
   private getSuggestionsForIntent(intent: string): string[] {
     switch (intent) {
       case 'greeting':
-        return ['status', 'energy', 'guide', 'missions'];
-      case 'mission_recommendation':
-        return ['progress', 'guide', 'status'];
-      case 'player_progress':
-        return ['missions', 'guide', 'status'];
-      case 'quiz_guidance':
-        return ['missions', 'guide', 'help'];
+        return ['status', 'energy', 'milestones', 'guide'];
+      case 'milestones_query':
+        return ['today', 'status', 'energy', 'help'];
+      case 'deprecated_missions':
+        return ['milestones', 'status', 'guide'];
       case 'educational_physics':
-        return ['energy', 'status', 'missions'];
+        return ['energy', 'status', 'milestones', 'guide'];
       case 'current_status':
-        return ['today', 'energy', 'help'];
+        return ['today', 'energy', 'milestones', 'help'];
       case 'dashboard_help':
-        return ['status', 'energy', 'today'];
+        return ['status', 'energy', 'milestones', 'today'];
       case 'historical':
-        return ['week', 'month', 'status'];
+        return ['week', 'month', 'milestones', 'status'];
       case 'power_query':
       case 'energy_query':
-        return ['today', 'battery', 'status'];
+        return ['today', 'battery', 'milestones', 'status'];
       case 'steps_query':
-        return ['energy', 'today', 'status'];
+        return ['energy', 'today', 'milestones', 'status'];
       case 'electrical_query':
         return ['status', 'energy', 'help'];
       default:
-        return ['missions', 'status', 'guide'];
+        return ['milestones', 'status', 'guide'];
     }
   }
 
@@ -1089,8 +1072,8 @@ export class ChatbotCoreService {
    */
   private async handleWelcome(): Promise<ChatbotResponse> {
     return {
-      text: `👋 Hey there! Welcome to EcoGuide—your companion for kinetic energy, piezoelectric physics, and EcoStep Academy missions. What would you like to explore today?`,
-      suggestions: ['status', 'missions', 'guide', 'help'],
+      text: `👋 Hey there! Welcome to EcoGuide—your companion for kinetic energy, piezoelectric physics, and milestone energy goals. What would you like to explore today?`,
+      suggestions: ['status', 'milestones', 'guide', 'help'],
     };
   }
 
@@ -1099,138 +1082,67 @@ export class ChatbotCoreService {
    */
   private async handleHelp(): Promise<ChatbotResponse> {
     return {
-      text: `🌿 **EcoGuide Learning & Energy Assistant**\n\nHere is what you can ask me:\n\n🎓 **EcoStep Academy**\n• Missions — View learning missions & XP rewards\n• Progress — Check your level, XP, and badges\n• Guide — Learn piezoelectric physics & formulas\n\n📊 **Energy Monitoring**\n• Status — Real-time power and overall stats\n• Energy — Generation metrics and readings\n• Battery — Energy storage and status\n\n📈 **Analytics**\n• Today — Today's energy summary\n• Week / Month — Extended generation trends\n• Peak — Peak power performance\n\n🌱 **Environmental Impact**\n• Impact — CO₂ avoided & tree equivalents\n• Savings — Estimated electricity cost savings\n\n💡 *Try asking: "What mission should I complete next?" or "How does piezoelectricity work?"*`,
-      suggestions: ['missions', 'progress', 'status', 'guide'],
+      text: `🌿 **EcoGuide Learning & Energy Assistant**\n\nHere is what you can ask me:\n\n🎯 **Milestones & Goals**\n• Milestones — View current monthly & weekly generation targets and progress\n• Guide — Learn piezoelectric physics & electrical formulas\n\n📊 **Energy Monitoring**\n• Status — Real-time power and overall stats\n• Energy — Generation metrics and readings\n• Battery — Energy storage and status\n\n📈 **Analytics**\n• Today — Today's energy summary\n• Week / Month — Extended generation trends\n• Peak — Peak power performance\n\n🌱 **Environmental Impact**\n• Impact — CO₂ avoided & tree equivalents\n• Savings — Estimated electricity cost savings\n\n💡 *Try asking: "What is our milestone goal this month?" or "How close are we to this week's target?"*`,
+      suggestions: ['milestones', 'status', 'energy', 'guide'],
     };
   }
 
   /**
-   * Handle Missions Command
-   * Recommends missions and displays completion status
+   * Handle Milestones Command
+   * Displays monthly & weekly kinetic energy goals, target mWh, current generation, and progress
    */
-  private async handleMissions(context: MessageContext): Promise<ChatbotResponse> {
+  private async handleMilestones(): Promise<ChatbotResponse> {
     try {
-      const missions = this.gamificationService.getAllMissions(context.player);
+      const data = await this.milestonesService.getMilestonesProgress();
+      const m = data.monthlyMilestone;
+      const monthProgress = m?.progressPercentage ? m.progressPercentage.toFixed(1) : '0.0';
+      const monthTarget = m?.targetMWh !== undefined ? m.targetMWh.toFixed(3) : '0.100';
+      const monthCurrent = m?.currentMWh !== undefined ? m.currentMWh.toFixed(3) : '0.000';
+      const monthStatus = m?.isAchieved ? '✅ Target Achieved!' : `${monthProgress}% achieved`;
 
-      if (context.player) {
-        const progress = await this.gamificationService.getPlayerProgress(context.player);
-        const completedCount = progress.completedMissions.length;
-        const totalCount = missions.length;
-        const nextUnfinished = missions.find((m) => !m.isCompleted);
+      // Find active/current week
+      const currentWeek =
+        (data.weeklyMilestones || []).find((w) => w.state === 'CURRENT') ||
+        data.weeklyMilestones?.[0];
 
-        let text = `🎯 **EcoStep Academy Missions for ${progress.username}**\n\n`;
-        text += `📊 **Progress:** ${completedCount}/${totalCount} completed • Level ${progress.level} (${progress.levelProgress.levelTitle})\n\n`;
+      let text = `🎯 **EcoStep Milestone Goals (${data.monthLabel})**\n\n`;
+      text += `📅 **Monthly Goal:**\n`;
+      text += `• Target: **${monthTarget} mWh**\n`;
+      text += `• Harvested: **${monthCurrent} mWh** (${monthStatus})\n`;
+      text += `• Steps Counted: **${(m?.stepCount || 0).toLocaleString()} steps**\n\n`;
 
-        if (nextUnfinished) {
-          text += `👉 **Recommended Next:** **${nextUnfinished.title}**\n`;
-          text += `• Focus: ${nextUnfinished.subtitle}\n`;
-          text += `• Reward: +${nextUnfinished.xpReward} XP\n`;
-          text += `• Description: ${nextUnfinished.description}\n\n`;
-        } else {
-          text += `🏆 **Incredible work!** You have completed all available Academy missions!\n\n`;
-        }
+      if (currentWeek) {
+        const weekProgress = currentWeek.progressPercentage ? currentWeek.progressPercentage.toFixed(1) : '0.0';
+        const weekTarget = currentWeek.targetMWh !== undefined ? currentWeek.targetMWh.toFixed(3) : '0.025';
+        const weekCurrent = currentWeek.currentMWh !== undefined ? currentWeek.currentMWh.toFixed(3) : '0.000';
+        const weekStatus = currentWeek.isAchieved ? '✅ Target Achieved!' : `${weekProgress}% achieved`;
 
-        text += `**All Missions:**\n`;
-        missions.forEach((m) => {
-          const status = m.isCompleted ? '✅ Completed' : `⏳ Available (+${m.xpReward} XP)`;
-          text += `• **${m.title}** — ${status}\n`;
-        });
-
-        text += `\n💡 Ask me: *"How does piezoelectricity work?"* or *"Why is energy stored in capacitors?"*`;
-
-        return {
-          text,
-          suggestions: ['progress', 'guide', 'status'],
-          metadata: {
-            commandType: 'missions',
-            dataSource: 'gamification_service',
-          },
-        };
+        text += `📆 **${currentWeek.label} (${currentWeek.dayRangeLabel}):**\n`;
+        text += `• Target: **${weekTarget} mWh**\n`;
+        text += `• Harvested: **${weekCurrent} mWh** (${weekStatus})\n`;
+        text += `• Steps Counted: **${(currentWeek.stepCount || 0).toLocaleString()} steps**\n\n`;
       }
 
-      // Unauthenticated guest visitor
-      let text = `🎓 **EcoStep Academy Missions**\n\n`;
-      text += `Learn piezoelectricity, electrical circuits, and clean energy harvesting through interactive missions and quizzes.\n\n`;
-      text += `**Available Missions:**\n`;
-      missions.forEach((m) => {
-        text += `• **${m.title}** (+${m.xpReward} XP) — ${m.subtitle}\n`;
-      });
-      text += `\n💡 *Tip: Start or restore a guest player session in the Mission Hub to track your XP, earn badges, and get personalized recommendations!*`;
+      text += `⚡ **All-Time Generation:** ${(data.allTimeEnergyMWh || 0).toFixed(3)} mWh (${(data.allTimeSteps || 0).toLocaleString()} total steps)\n`;
+
+      if (m?.realWorldEquivalents?.comparisonText) {
+        text += `🌱 **Impact:** ${m.realWorldEquivalents.comparisonText}\n`;
+      }
+
+      text += `\n💡 *Tip: Every footstep on the kinetic tiles adds clean energy toward our milestone goals!*`;
 
       return {
         text,
-        suggestions: ['progress', 'guide', 'status'],
+        suggestions: ['today', 'status', 'energy', 'help'],
         metadata: {
-          commandType: 'missions',
-          dataSource: 'gamification_service',
+          commandType: 'milestones',
+          dataSource: 'milestones_service',
         },
       };
     } catch (error) {
-      this.logger.error('Failed to retrieve missions', error);
+      this.logger.error('Failed to retrieve milestone goals', error);
       return {
-        text: 'Educational missions are temporarily unavailable. Please try again shortly.',
-        suggestions: ['status', 'help'],
-      };
-    }
-  }
-
-  /**
-   * Handle Progress Command
-   * Displays player XP, level, next level gap, and badges
-   */
-  private async handleProgress(context: MessageContext): Promise<ChatbotResponse> {
-    try {
-      if (context.player) {
-        const progress = await this.gamificationService.getPlayerProgress(context.player);
-        const lp = progress.levelProgress;
-        const unlockedBadges = progress.badges.filter((b) => b.isUnlocked);
-
-        let text = `⭐ **Player Progress — ${progress.username}**\n\n`;
-        text += `🏅 **Level ${progress.level}** — *${lp.levelTitle}*\n`;
-        text += `⚡ **Total XP:** ${progress.xp} XP\n`;
-
-        if (lp.isMaxLevel) {
-          text += `🌟 **Max Level Reached!** You are an EcoStep Master!\n`;
-        } else {
-          text += `📈 **Next Level:** Level ${progress.level + 1} (${lp.xpToNextLevel} XP needed, ${lp.progressPercentage}% progress)\n`;
-        }
-
-        text += `🎯 **Missions:** ${progress.completedMissions.length}/${progress.totalMissions} completed\n`;
-        text += `🎖️ **Badges Unlocked (${unlockedBadges.length}/${progress.badges.length}):**\n`;
-
-        if (unlockedBadges.length > 0) {
-          unlockedBadges.forEach((b) => {
-            text += `• ${b.icon} **${b.name}** — ${b.description}\n`;
-          });
-        } else {
-          text += `• *No badges unlocked yet. Complete your first mission to earn the Curie Apprentice badge!*\n`;
-        }
-
-        text += `\n💡 Type "missions" to see available learning challenges!`;
-
-        return {
-          text,
-          suggestions: ['missions', 'guide', 'status'],
-          metadata: {
-            commandType: 'progress',
-            dataSource: 'gamification_service',
-          },
-        };
-      }
-
-      // Unauthenticated visitor
-      return {
-        text: `⭐ **Player Progress**\n\nPersonal progress tracking requires an active guest session.\n\nTo view your XP, level, badges, and personalized mission recommendations, start or resume a guest session in the EcoStep Mission Hub.\n\nIn the meantime, you can ask me any educational question about piezoelectricity and energy harvesting!`,
-        suggestions: ['missions', 'guide', 'status'],
-        metadata: {
-          commandType: 'progress',
-          dataSource: 'gamification_service',
-        },
-      };
-    } catch (error) {
-      this.logger.error('Failed to get player progress', error);
-      return {
-        text: 'Player progress is temporarily unavailable. Please try again shortly.',
+        text: 'Milestone goals are temporarily unavailable. Please try again shortly.',
         suggestions: ['status', 'help'],
       };
     }
@@ -1242,8 +1154,8 @@ export class ChatbotCoreService {
    */
   private async handleGuide(): Promise<ChatbotResponse> {
     return {
-      text: `🌿 **EcoGuide — Your EcoStep Learning Assistant**\n\nI am here to help you master clean kinetic energy concepts:\n\n• ⚡ **Piezoelectricity:** How mechanical compression of crystal dipoles (PZT ceramics) generates electrical potential.\n• 📐 **Electrical Formulas:**\n  - Power: $P = V \\times I$ (Watts = Volts × Amperes)\n  - Energy: $E = P \\times t$ (Joules or Watt-hours)\n  - Ohm's Law: $V = I \\times R$\n• 🛠️ **EcoStep Architecture:** Kinetic footstep tiles ➔ Bridge Rectifier (AC to DC) ➔ Smoothing Capacitor / Storage ➔ ESP32 / PZEM Sensors ➔ Real-time Dashboard.\n• 🎯 **Academy Missions:** Concepts, study guides, and quiz assistance.\n\nAsk me anything! For example:\n- *"How does a piezoelectric tile generate electricity?"*\n- *"What is the difference between power and energy?"*\n- *"What mission should I complete next?"*`,
-      suggestions: ['missions', 'status', 'energy'],
+      text: `🌿 **EcoGuide — Your EcoStep Learning Assistant**\n\nI am here to help you master clean kinetic energy concepts:\n\n• ⚡ **Piezoelectricity:** How mechanical compression of crystal dipoles (PZT ceramics) generates electrical potential.\n• 📐 **Electrical Formulas:**\n  - Power: $P = V \\times I$ (Watts = Volts × Amperes)\n  - Energy: $E = P \\times t$ (Joules or Watt-hours)\n  - Ohm's Law: $V = I \\times R$\n• 🛠️ **EcoStep Architecture:** Kinetic footstep tiles ➔ Bridge Rectifier (AC to DC) ➔ Smoothing Capacitor / Storage ➔ ESP32 / PZEM Sensors ➔ Real-time Dashboard.\n• 🎯 **Milestone Goals:** Tracking real-time progress toward weekly and monthly kinetic generation targets set by administrators.\n\nAsk me anything! For example:\n- *"How does a piezoelectric tile generate electricity?"*\n- *"What is our milestone goal this month?"*\n- *"How close are we to this week's target?"*`,
+      suggestions: ['milestones', 'status', 'energy'],
       metadata: {
         commandType: 'guide',
         dataSource: 'system',
@@ -1583,8 +1495,9 @@ export class ChatbotCoreService {
       about: 'ℹ️ About',
       subscribe: '🔔 Subscribe',
       hello: '🏠 Main Menu',
-      missions: '🎯 Missions',
-      progress: '⭐ Progress',
+      missions: '🎯 Milestones',
+      milestones: '🎯 Milestones',
+      progress: '🎯 Milestones',
       guide: '🌿 EcoGuide',
     };
 

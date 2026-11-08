@@ -8,9 +8,19 @@
 
 import type { ChatMessage } from '../chat.types';
 import { marked } from 'marked';
+import markedKatex from 'marked-katex-extension';
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
+import 'katex/dist/katex.min.css';
 import '../chat.css';
+
+// Configure marked with KaTeX extension for math formulas
+marked.use(
+  markedKatex({
+    throwOnError: false,
+    nonStandard: true,
+  })
+);
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -37,13 +47,20 @@ export function MessageBubble({ message, showTimestamp = false }: MessageBubbleP
   };
 
   const renderBotMessage = (text: string) => {
-    // Parse markdown
+    // Parse markdown with KaTeX math rendering
     const rawHtml = marked.parse(text, { async: false }) as string;
     
-    // Sanitize HTML
+    // Sanitize HTML while preserving KaTeX and MathML elements
     const cleanHtml = DOMPurify.sanitize(rawHtml, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'a'],
-      ALLOWED_ATTR: ['href', 'target', 'rel'],
+      USE_PROFILES: { html: true, mathMl: true, svg: true },
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'a',
+        'span', 'div',
+        'math', 'annotation', 'semantics', 'mrow', 'mi', 'mo', 'mn',
+        'msup', 'msub', 'msubsup', 'mfrac', 'msqrt', 'mroot', 'mtext',
+        'mspace', 'mover', 'munder', 'munderover',
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style', 'aria-hidden', 'display', 'viewBox'],
     });
 
     return (

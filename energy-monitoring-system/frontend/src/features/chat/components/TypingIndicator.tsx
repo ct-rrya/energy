@@ -9,12 +9,16 @@ import '../chat.css';
 
 export function TypingIndicator() {
   return (
-    <div className="chat-message-bubble chat-message-bot">
+    <div
+      className="chat-message-bubble chat-message-bot chat-typing-bubble"
+      role="status"
+      aria-label="EcoStep is typing"
+    >
       <span className="sr-only">EcoStep is typing</span>
-      <div className="typing-indicator">
-        <span className="typing-dot" style={{ animationDelay: '0ms' }} />
-        <span className="typing-dot" style={{ animationDelay: '150ms' }} />
-        <span className="typing-dot" style={{ animationDelay: '300ms' }} />
+      <div className="typing-indicator" aria-hidden="true">
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="typing-dot" />
       </div>
     </div>
   );

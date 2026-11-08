@@ -311,7 +311,7 @@ export class ChatController {
 
     // Extract authenticated admin info if present
     let adminUser: { sub: string; email: string; name?: string; role: string } | null = null;
-    const authHeader = req.headers['authorization'];
+    const authHeader = req?.headers?.['authorization'];
     if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       try {

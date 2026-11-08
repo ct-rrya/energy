@@ -47,19 +47,19 @@ describe('EcoGuide Frontend Components', () => {
   });
 
   describe('SuggestionChips', () => {
-    it('renders educational and mission-focused suggestion prompts', () => {
+    it('renders educational and milestone suggestion prompts', () => {
       const onChipClick = vi.fn();
 
       render(<SuggestionChips onChipClick={onChipClick} />);
 
       expect(
-        screen.getByText('What mission should I complete next?'),
+        screen.getByText('What is our milestone goal this month?'),
       ).toBeInTheDocument();
       expect(
         screen.getByText('How does piezoelectricity work?'),
       ).toBeInTheDocument();
       expect(
-        screen.getByText('How close am I to the next level?'),
+        screen.getByText('How close are we to this week’s target?'),
       ).toBeInTheDocument();
       expect(
         screen.getByText('What does power generation mean?'),
@@ -75,10 +75,10 @@ describe('EcoGuide Frontend Components', () => {
       render(<SuggestionChips onChipClick={onChipClick} />);
 
       fireEvent.click(
-        screen.getByText('What mission should I complete next?'),
+        screen.getByText('What is our milestone goal this month?'),
       );
       expect(onChipClick).toHaveBeenCalledWith(
-        'What mission should I complete next?',
+        'What is our milestone goal this month?',
       );
     });
   });
@@ -91,9 +91,9 @@ describe('EcoGuide Frontend Components', () => {
   });
 
   describe('Docked ChatPanel', () => {
-    it('renders as complementary aside with aria-label="Chat"', () => {
+    it('renders as complementary aside with aria-label="EcoGuide"', () => {
       render(<ChatPanel />);
-      const aside = screen.getByRole('complementary', { name: 'Chat' });
+      const aside = screen.getByRole('complementary', { name: /EcoGuide|Chat/i });
       expect(aside).toBeInTheDocument();
       expect(aside).toHaveClass('docked-chat-panel');
     });
@@ -101,7 +101,7 @@ describe('EcoGuide Frontend Components', () => {
     it('defaults to collapsed on medium screen (< 1280px) and toggles to expanded', () => {
       // Default jsdom width is 1024px (medium screen -> collapsed)
       render(<ChatPanel />);
-      const aside = screen.getByRole('complementary', { name: 'Chat' });
+      const aside = screen.getByRole('complementary', { name: /EcoGuide|Chat/i });
       expect(aside).toHaveClass('collapsed');
 
       // Rail expand button is present
@@ -119,7 +119,7 @@ describe('EcoGuide Frontend Components', () => {
     it('honors localStorage expanded setting and toggles with Ctrl+J shortcut', () => {
       localStorage.setItem('ecostep_chat_docked_expanded', 'true');
       render(<ChatPanel />);
-      const aside = screen.getByRole('complementary', { name: 'Chat' });
+      const aside = screen.getByRole('complementary', { name: /EcoGuide|Chat/i });
 
       expect(aside).toHaveClass('expanded');
 
