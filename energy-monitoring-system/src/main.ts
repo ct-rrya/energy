@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { registerUptimeHealthRoute } from './health/uptime-health';
 
 /**
  * Bootstrap function
@@ -90,6 +91,9 @@ async function bootstrap() {
     credentials: true, // ✅ Enable credentials
     maxAge: 3600,
   });
+
+  // Register unprefixed lightweight GET /health endpoint for UptimeRobot
+  registerUptimeHealthRoute(app);
 
   // Set global API prefix (e.g., /api/...)
   const apiPrefix = configService.get<string>('app.apiPrefix') || 'api';
@@ -201,6 +205,7 @@ async function bootstrap() {
     `📊 Public Telemetry: http://localhost:${port}/${apiPrefix}/public/telemetry`,
   );
   console.log(`❤️  Health check: http://localhost:${port}/${apiPrefix}/health`);
+  console.log(`🩺 UptimeRobot health: http://localhost:${port}/health`);
   console.log(`🔍 Liveness: http://localhost:${port}/${apiPrefix}/health/live`);
   console.log(
     `✅ Readiness: http://localhost:${port}/${apiPrefix}/health/ready`,
