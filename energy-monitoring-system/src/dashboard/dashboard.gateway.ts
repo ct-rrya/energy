@@ -1,6 +1,7 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -54,10 +55,9 @@ import {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
     credentials: true,
   },
-  namespace: '/dashboard', // WebSocket namespace: ws://localhost:3000/dashboard
 })
 export class DashboardGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   server: Server;
@@ -68,6 +68,29 @@ export class DashboardGateway
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
+
+  /**
+   * Register the '/dashboard' namespace alongside the root '/' namespace
+   * so clients connecting to either path authenticate and receive broadcasts.
+   */
+  afterInit(server: Server) {
+    if (typeof server?.of !== 'function') {
+      return;
+    }
+    const dashboardNs = server.of('/dashboard');
+    dashboardNs.on('connection', (client: Socket) => {
+      void this.handleConnection(client);
+      client.on('disconnect', () => this.handleDisconnect(client));
+      client.on('statistics:request', () => this.handleStatisticsRequest(client));
+    });
+  }
+
+  private emitToDashboard(event: string, data: any): void {
+    this.server?.to('dashboard').emit(event, data);
+    if (typeof this.server?.of === 'function') {
+      this.server.of('/dashboard').to('dashboard').emit(event, data);
+    }
+  }
 
   /**
    * Handle Client Connection
@@ -187,7 +210,7 @@ export class DashboardGateway
    */
   broadcastNewReading(reading: NewReadingEventDto) {
     this.logger.debug(`Broadcasting new reading: ${reading.id}`);
-    this.server.to('dashboard').emit('reading:new', reading);
+    this.emitToDashboard('reading:new', reading);
   }
 
   /**
@@ -201,7 +224,7 @@ export class DashboardGateway
    */
   broadcastSensorUpdate(sensor: SensorUpdateEventDto) {
     this.logger.debug(`Broadcasting sensor update: ${sensor.id}`);
-    this.server.to('dashboard').emit('sensor:update', sensor);
+    this.emitToDashboard('sensor:update', sensor);
   }
 
   /**
@@ -215,7 +238,7 @@ export class DashboardGateway
    */
   broadcastStatistics(statistics: StatisticsUpdateEventDto) {
     this.logger.debug('Broadcasting statistics update');
-    this.server.to('dashboard').emit('statistics:update', statistics);
+    this.emitToDashboard('statistics:update', statistics);
   }
 
   /**
@@ -231,7 +254,7 @@ export class DashboardGateway
     this.logger.warn(
       `Broadcasting power alert: ${alert.sensorName} - ${alert.power}W > ${alert.threshold}W`,
     );
-    this.server.to('dashboard').emit('alert:power', alert);
+    this.emitToDashboard('alert:power', alert);
   }
 
   /**
@@ -249,7 +272,7 @@ export class DashboardGateway
     sensorLocation: string,
   ) {
     this.logger.log(`Broadcasting sensor online: ${sensorName}`);
-    this.server.to('dashboard').emit('sensor:online', {
+    this.emitToDashboard('sensor:online', {
       sensorId,
       sensorName,
       sensorLocation,
@@ -274,7 +297,7 @@ export class DashboardGateway
     lastSeenAt: Date,
   ) {
     this.logger.warn(`Broadcasting sensor offline: ${sensorName}`);
-    this.server.to('dashboard').emit('sensor:offline', {
+    this.emitToDashboard('sensor:offline', {
       sensorId,
       sensorName,
       sensorLocation,
@@ -296,7 +319,7 @@ export class DashboardGateway
     this.logger.warn(
       `Broadcasting new alert: ${alert.type} - ${alert.severity}`,
     );
-    this.server.to('dashboard').emit('alert:created', alert);
+    this.emitToDashboard('alert:created', alert);
   }
 
   /**
@@ -308,7 +331,7 @@ export class DashboardGateway
    */
   broadcastAlertAcknowledged(alert: any) {
     this.logger.log(`Broadcasting alert acknowledged: ${alert.id}`);
-    this.server.to('dashboard').emit('alert:acknowledged', alert);
+    this.emitToDashboard('alert:acknowledged', alert);
   }
 
   /**
@@ -320,7 +343,7 @@ export class DashboardGateway
    */
   broadcastAlertResolved(alert: any) {
     this.logger.log(`Broadcasting alert resolved: ${alert.id}`);
-    this.server.to('dashboard').emit('alert:resolved', alert);
+    this.emitToDashboard('alert:resolved', alert);
   }
 
   /**
@@ -340,14 +363,23 @@ export class DashboardGateway
    *
    * @returns Number of connected clients (0 if not initialized)
    */
-  getConnectedClientsCount(): number {
-    // Enhanced null check: Verify full initialization chain
-    // This prevents errors during early application startup when
-    // Socket.IO namespace and sockets Map are still being initialized
-    if (!this.server?.sockets?.sockets) {
-      return 0;
+  private getAllNamespaceSockets(): Socket[] {
+    const sockets: Socket[] = [];
+    const rootSockets = this.server?.sockets?.sockets;
+    if (rootSockets) {
+      sockets.push(...rootSockets.values());
     }
-    return this.server.sockets.sockets.size;
+    if (typeof this.server?.of === 'function') {
+      const dashSockets = this.server.of('/dashboard')?.sockets;
+      if (dashSockets) {
+        sockets.push(...dashSockets.values());
+      }
+    }
+    return sockets;
+  }
+
+  getConnectedClientsCount(): number {
+    return this.getAllNamespaceSockets().length;
   }
 
   /**
@@ -365,7 +397,8 @@ export class DashboardGateway
    * @param data - Event payload data
    */
   emitToAdmins(event: string, data: any): void {
-    if (!this.server?.sockets?.sockets) {
+    const sockets = this.getAllNamespaceSockets();
+    if (sockets.length === 0 && !this.server?.sockets) {
       this.logger.warn(
         `Cannot emit to admins: Server not initialized for event ${event}`,
       );
@@ -375,7 +408,7 @@ export class DashboardGateway
     let adminCount = 0;
 
     // Iterate through all connected sockets and emit only to admins
-    this.server.sockets.sockets.forEach((socket) => {
+    sockets.forEach((socket) => {
       const role = socket.data.user?.role;
       if (role === 'admin' || role === 'SYSTEM_ADMIN' || role === 'SUPER_ADMIN') {
         socket.emit(event, data);
