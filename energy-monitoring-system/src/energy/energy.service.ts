@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import { toZonedTime } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay } from 'date-fns';
 import {
   EnergyReading,
@@ -63,18 +63,12 @@ export class EnergyService {
    */
   private getDailyBoundary(date?: Date): { todayStart: Date; todayEnd: Date } {
     const targetDate = date || new Date();
-    
-    // Convert to project timezone
+
+    // Convert to project timezone, take day bounds, then convert back to UTC
     const zonedDate = toZonedTime(targetDate, this.timezone);
-    
-    // Set to midnight (start of day)
-    const todayStart = new Date(zonedDate);
-    todayStart.setHours(0, 0, 0, 0);
-    
-    // Set to end of day
-    const todayEnd = new Date(zonedDate);
-    todayEnd.setHours(23, 59, 59, 999);
-    
+    const todayStart = fromZonedTime(startOfDay(zonedDate), this.timezone);
+    const todayEnd = fromZonedTime(endOfDay(zonedDate), this.timezone);
+
     return { todayStart, todayEnd };
   }
 
@@ -110,14 +104,7 @@ export class EnergyService {
    * - No delta calculation needed (values are not cumulative)
    */
   async getTodayEnergyTotal() {
-    const now = new Date();
-    
-    // Get current time in Manila timezone
-    const zonedNow = toZonedTime(now, this.timezone);
-    
-    // Get start and end of day (this gives us correct UTC boundaries)
-    const todayStart = startOfDay(zonedNow);
-    const todayEnd = endOfDay(zonedNow);
+    const { todayStart, todayEnd } = this.getDailyBoundary();
 
     this.logger.debug(
       `Calculating today's energy total for ${todayStart.toISOString()} to ${todayEnd.toISOString()} in timezone ${this.timezone}`,
@@ -286,10 +273,7 @@ export class EnergyService {
    * Example: 0.009722 mWh would round to 0 kWh, misleading the AI.
    */
   async getTodayRawStatistics() {
-    const now = new Date();
-    const zonedNow = toZonedTime(now, this.timezone);
-    const todayStart = startOfDay(zonedNow);
-    const todayEnd = endOfDay(zonedNow);
+    const { todayStart, todayEnd } = this.getDailyBoundary();
 
     try {
       const result = await this.readingModel.aggregate([
@@ -360,15 +344,7 @@ export class EnergyService {
    * @returns Daily statistics with totals and peaks
    */
   async getTodayDetailedStats() {
-    const now = new Date();
-    const zonedNow = toZonedTime(now, this.timezone);
-    
-    // Set today's boundaries in Manila timezone
-    const todayStart = new Date(zonedNow);
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const todayEnd = new Date(zonedNow);
-    todayEnd.setHours(23, 59, 59, 999);
+    const { todayStart, todayEnd } = this.getDailyBoundary();
 
     this.logger.debug(
       `Calculating today's detailed stats for ${todayStart.toISOString()} to ${todayEnd.toISOString()}`,
