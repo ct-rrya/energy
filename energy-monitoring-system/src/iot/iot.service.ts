@@ -321,7 +321,9 @@ export class IotService {
 
     // Create reading document with all new fields
     const reading = new this.readingModel({
-      sensorId, // Link to sensor
+      sensorId: Types.ObjectId.isValid(sensorId)
+        ? new Types.ObjectId(sensorId)
+        : sensorId, // Link to sensor as ObjectId when valid
       voltage: readingDto.voltage,
       current: currentFromESP32, // Use ESP32's calculated current (P/V)
       power: readingDto.power,
@@ -404,12 +406,24 @@ export class IotService {
    * - Add pagination with skip/limit
    * - Add aggregation (avg, min, max)
    */
+  /**
+   * Build a MongoDB filter matching sensorId whether stored as ObjectId or string.
+   */
+  private buildSensorIdMatch(
+    sensorId: string,
+  ): { $in: Array<Types.ObjectId | string> } | string {
+    if (!Types.ObjectId.isValid(sensorId)) {
+      return sensorId;
+    }
+    return { $in: [new Types.ObjectId(sensorId), sensorId] };
+  }
+
   async getReadingsBySensor(
     sensorId: string,
     limit: number = 100,
   ): Promise<EnergyReadingDocument[]> {
     return this.readingModel
-      .find({ sensorId })
+      .find({ sensorId: this.buildSensorIdMatch(sensorId) })
       .sort({ timestamp: -1 }) // Newest first
       .limit(limit)
       .exec();
@@ -599,7 +613,7 @@ export class IotService {
     }
 
     const reading = await this.readingModel
-      .findOne({ sensorId: new Types.ObjectId(sensorId) })
+      .findOne({ sensorId: this.buildSensorIdMatch(sensorId) })
       .sort({ timestamp: -1 })
       .exec();
 
@@ -661,7 +675,7 @@ export class IotService {
     }
 
     // Build query filter
-    const filter: any = { sensorId: new Types.ObjectId(sensorId) };
+    const filter: any = { sensorId: this.buildSensorIdMatch(sensorId) };
 
     // Add date range filter
     if (query.startDate || query.endDate) {
@@ -728,7 +742,7 @@ export class IotService {
     }
 
     // Build match filter
-    const matchFilter: any = { sensorId: new Types.ObjectId(sensorId) };
+    const matchFilter: any = { sensorId: this.buildSensorIdMatch(sensorId) };
 
     // Add date range filter
     if (query.startDate || query.endDate) {
@@ -1107,7 +1121,7 @@ export class IotService {
 
       // Get previous reading
       const previousReading = await this.readingModel
-        .findOne({ sensorId })
+        .findOne({ sensorId: this.buildSensorIdMatch(sensorId) })
         .sort({ timestamp: -1 })
         .skip(1) // Skip current reading
         .limit(1)
