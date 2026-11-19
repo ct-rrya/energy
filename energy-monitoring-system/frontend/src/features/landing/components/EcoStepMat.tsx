@@ -5,20 +5,6 @@ export interface EcoStepMatProps {
   showLabels?: boolean;
 }
 
-// One footprint (left foot). The right foot is the same shape mirrored with scale(-1 1).
-function Foot({ transform }: { transform?: string }) {
-  return (
-    <g fill="#E4F7EA" transform={transform}>
-      <path d="M-14 -14C-16 -28 -6 -34 4 -32C14 -30 18 -20 17 -10C16 2 10 8 9 18C8 28 6 40 -4 40C-14 40 -16 30 -14 20C-13 10 -13 0 -14 -14Z" />
-      <ellipse cx="10" cy="-41" rx="6.2" ry="6.8" />
-      <ellipse cx="-0.5" cy="-43.5" rx="4.8" ry="5.4" />
-      <ellipse cx="-9" cy="-41.5" rx="4.2" ry="4.8" />
-      <ellipse cx="-15" cy="-36.5" rx="3.6" ry="4.2" />
-      <ellipse cx="-18.5" cy="-30" rx="3" ry="3.5" />
-    </g>
-  );
-}
-
 export function EcoStepMat({ className, showLabels = true }: EcoStepMatProps) {
   const rawId = useId();
   const id = rawId.replace(/:/g, '');
@@ -85,10 +71,6 @@ export function EcoStepMat({ className, showLabels = true }: EcoStepMatProps) {
         <circle cx="125" cy="240" r="19" /><circle cx="125" cy="315" r="19" /><circle cx="125" cy="390" r="19" />
         <circle cx="385" cy="240" r="19" /><circle cx="385" cy="315" r="19" /><circle cx="385" cy="390" r="19" />
       </g>
-
-      {/* footprints */}
-      <Foot transform="translate(232 322) rotate(-6)" />
-      <Foot transform="translate(280 304) rotate(6) scale(-1 1)" />
 
       {/* energy line to dashboard */}
       <path className="ecostep-flow" d="M460 315 C 545 315, 545 300, 545 262" fill="none" stroke="#2BDE7C" strokeWidth="4" strokeLinecap="round" />
