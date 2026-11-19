@@ -9,6 +9,7 @@ const mockConnect = vi.fn();
 const mockConnectSimulated = vi.fn();
 const mockDisconnect = vi.fn();
 const mockSendCredentials = vi.fn();
+const mockRequestWiFiScan = vi.fn().mockResolvedValue(undefined);
 const mockIsConnected = vi.fn(() => false);
 let capturedCallback: any = null;
 
@@ -36,6 +37,7 @@ vi.mock('../EcoStepBleClient', () => {
       connectSimulated = mockConnectSimulated;
       disconnect = mockDisconnect;
       sendWiFiCredentials = mockSendCredentials;
+      requestWiFiScan = mockRequestWiFiScan;
     },
   };
 });

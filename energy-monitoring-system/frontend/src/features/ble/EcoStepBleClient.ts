@@ -262,6 +262,45 @@ export class EcoStepBleClient {
   }
 
   /**
+   * Ask the connected ESP32 to scan nearby 2.4 GHz Wi-Fi networks via BLE (`{"cmd":"scan"}`).
+   * The ESP32 responds on the notify characteristic with `{"event":"wifi_list","networks":[...]}`.
+   */
+  public async requestWiFiScan(): Promise<void> {
+    if (this.isSimulation) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      this.onStatusChange({
+        state: 'notification',
+        payload: {
+          event: 'wifi_list',
+          networks: [
+            { ssid: 'CTU-Campus-WiFi', rssi: -52, secure: true },
+            { ssid: 'EcoStep-Lab-2.4G', rssi: -61, secure: true },
+            { ssid: 'Guest-Open', rssi: -74, secure: false },
+          ],
+        },
+        message: 'Nearby Wi-Fi networks loaded (Demo Mode).',
+        type: 'info',
+      });
+      return;
+    }
+
+    if (!this.writeChar || !this.isConnected()) {
+      return;
+    }
+
+    const encodedData = new TextEncoder().encode(JSON.stringify({ cmd: 'scan' }));
+    try {
+      if (typeof this.writeChar.writeValueWithResponse === 'function') {
+        await this.writeChar.writeValueWithResponse(encodedData);
+      } else {
+        await this.writeChar.writeValue(encodedData);
+      }
+    } catch (err) {
+      console.warn('[BLE] Failed to request Wi-Fi scan from ESP32:', err);
+    }
+  }
+
+  /**
    * Send Wi-Fi credentials to the ESP32 over BLE
    */
   public async sendWiFiCredentials(ssid: string, pass: string): Promise<void> {

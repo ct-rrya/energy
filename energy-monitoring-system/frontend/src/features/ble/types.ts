@@ -28,7 +28,22 @@ export interface StepTelemetryNotification {
   freq?: number;
 }
 
-export type BleNotificationPayload = WiFiStatusNotification | StepTelemetryNotification | Record<string, unknown>;
+export interface ScannedWiFiNetwork {
+  ssid: string;
+  rssi?: number;
+  secure?: boolean;
+}
+
+export interface WiFiListNotification {
+  event: 'wifi_list';
+  networks: ScannedWiFiNetwork[];
+}
+
+export type BleNotificationPayload =
+  | WiFiStatusNotification
+  | WiFiListNotification
+  | StepTelemetryNotification
+  | Record<string, unknown>;
 
 export interface BleStatusMessage {
   state: BleConnectionState | 'notification';

@@ -12,7 +12,9 @@ import {
   Radio, 
   Zap,
   Copy,
-  Check
+  Check,
+  RefreshCw,
+  Lock
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -20,6 +22,8 @@ import { EcoStepBleClient, BLE_CONFIG } from '../EcoStepBleClient';
 import type { 
   BleStatusMessage, 
   WiFiStatusNotification, 
+  WiFiListNotification,
+  ScannedWiFiNetwork,
   StepTelemetryNotification 
 } from '../types';
 
@@ -39,6 +43,9 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [copiedFlag, setCopiedFlag] = useState(false);
   const [showAlreadyConnectedWarning, setShowAlreadyConnectedWarning] = useState(false);
+  const [availableNetworks, setAvailableNetworks] = useState<ScannedWiFiNetwork[]>([]);
+  const [isScanningNetworks, setIsScanningNetworks] = useState(false);
+  const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Status state
   const [statusText, setStatusText] = useState<string>('');
@@ -74,9 +81,16 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ecostep:hardware-connected', { detail: { source: 'ble' } }));
         }
+        // Request nearby Wi-Fi list from ESP32 automatically after connecting
+        setIsScanningNetworks(true);
+        if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+        scanTimeoutRef.current = setTimeout(() => setIsScanningNetworks(false), 5000);
+        void client.requestWiFiScan();
       } else if (status.state === 'disconnected') {
         setIsConnecting(false);
         setIsProvisioning(false);
+        setIsScanningNetworks(false);
+        setAvailableNetworks([]);
         setShowAlreadyConnectedWarning(false);
         setStep(1);
         if (typeof window !== 'undefined') {
@@ -90,7 +104,15 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
       // Handle real-time notification events from ESP32
       if (status.state === 'notification' && status.payload) {
         const payload = status.payload as any;
-        if (payload.event === 'wifi_status') {
+        if (payload.event === 'wifi_list' && Array.isArray(payload.networks)) {
+          const listEvt = payload as WiFiListNotification;
+          if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+          setIsScanningNetworks(false);
+          const unique = listEvt.networks.filter(
+            (n, idx, arr) => n?.ssid && arr.findIndex((x) => x.ssid === n.ssid) === idx
+          );
+          setAvailableNetworks(unique);
+        } else if (payload.event === 'wifi_status') {
           const wifiEvt = payload as WiFiStatusNotification;
           setWifiStatus(wifiEvt);
           if (wifiEvt.status === 'CONNECTING') {
@@ -157,7 +179,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     }
   };
 
-  // Warn admin if reopening modal while ESP32 is still connected, or focus SSID input
+  // Warn admin ONLY when opening the modal (e.g. clicking Setup button) while ESP32 is already connected
   useEffect(() => {
     if (isOpen) {
       if (bleClientRef.current?.isConnected()) {
@@ -165,9 +187,15 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
       } else {
         setShowAlreadyConnectedWarning(false);
       }
-      if (step === 2 && ssidInputRef.current) {
-        ssidInputRef.current.focus();
-      }
+    } else {
+      setShowAlreadyConnectedWarning(false);
+    }
+  }, [isOpen]);
+
+  // Focus SSID input when entering Step 2
+  useEffect(() => {
+    if (isOpen && step === 2 && ssidInputRef.current) {
+      ssidInputRef.current.focus();
     }
   }, [isOpen, step]);
 
@@ -246,6 +274,15 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     } catch {
       setIsConnecting(false);
     }
+  };
+
+  // Request nearby Wi-Fi networks from ESP32
+  const handleScanNetworks = async () => {
+    if (!bleClientRef.current?.isConnected()) return;
+    setIsScanningNetworks(true);
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+    scanTimeoutRef.current = setTimeout(() => setIsScanningNetworks(false), 5000);
+    await bleClientRef.current.requestWiFiScan();
   };
 
   // Send Wi-Fi credentials action
@@ -491,6 +528,62 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 >
                   Disconnect
                 </button>
+              </div>
+
+              {/* Available Wi-Fi Networks Scanned by ESP32 */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[var(--mu)] uppercase tracking-wider">
+                    Available Wi-Fi Networks
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleScanNetworks}
+                    disabled={isScanningNetworks}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#19D46A] hover:opacity-80 disabled:opacity-50 cursor-pointer"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isScanningNetworks ? 'animate-spin' : ''}`} />
+                    {isScanningNetworks ? 'Scanning...' : 'Scan Networks'}
+                  </button>
+                </div>
+
+                {availableNetworks.length > 0 ? (
+                  <div
+                    className="max-h-36 overflow-y-auto rounded-xl border border-[var(--line)] divide-y divide-[var(--line)]"
+                    style={{ backgroundColor: isDark ? '#12241A' : 'var(--soft)' }}
+                  >
+                    {availableNetworks.map((net) => {
+                      const isSelected = ssid === net.ssid;
+                      return (
+                        <button
+                          key={net.ssid}
+                          type="button"
+                          onClick={() => setSsid(net.ssid)}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-500/20 text-[#19D46A] font-semibold'
+                              : 'text-[var(--t)] hover:bg-[var(--panel)]'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 truncate">
+                            <Wifi className="h-3.5 w-3.5 shrink-0 text-[#19D46A]" />
+                            <span className="truncate">{net.ssid}</span>
+                          </span>
+                          <span className="flex items-center gap-2 shrink-0 text-[10px] text-[var(--mu)]">
+                            {net.rssi !== undefined && <span>{net.rssi} dBm</span>}
+                            {net.secure !== false && <Lock className="h-3 w-3" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-[var(--mu)] rounded-xl border border-dashed border-[var(--line)] px-3 py-2">
+                    {isScanningNetworks
+                      ? 'Asking ESP32 to scan nearby 2.4 GHz Wi-Fi networks...'
+                      : 'No scanned list received from ESP32 yet. Click "Scan Networks" or enter the SSID below.'}
+                  </p>
+                )}
               </div>
 
               {/* Wi-Fi SSID Field */}
