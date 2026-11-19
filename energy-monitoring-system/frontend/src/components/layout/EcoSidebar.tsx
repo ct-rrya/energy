@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Award,
   ScrollText,
+  Info,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +42,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.DASHBOARD, label: 'Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Trends', Icon: TrendingUp },
   { to: ROUTES.MILESTONES, label: 'Milestone', Icon: Award },
+  { to: ROUTES.ABOUT, label: 'About', Icon: Info },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText, systemAdminOnly: true },

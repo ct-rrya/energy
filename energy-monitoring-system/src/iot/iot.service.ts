@@ -1037,6 +1037,14 @@ export class IotService {
     // Step 3: Store reading
     const reading = await this.storeReading(sensor._id.toString(), readingDto);
 
+    // Step 3.5: Broadcast new reading to dashboard and push to Firebase (fire and forget)
+    this.broadcastNewReading(reading, sensor).catch((error) => {
+      this.logger.error('Failed to broadcast new piezo reading:', error);
+    });
+    this.pushToFirebase(reading, sensor).catch((error) => {
+      this.logger.error('Failed to push piezo reading to Firebase:', error);
+    });
+
     // Step 4: Detect piezo trigger (async, don't await)
     this.detectPiezoTrigger(reading, sensor).catch((error) => {
       this.logger.error('Failed to detect piezo trigger:', error);

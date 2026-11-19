@@ -113,10 +113,11 @@ export class DashboardGateway
         client.handshake.headers?.authorization?.split(' ')[1];
 
       if (!token) {
-        this.logger.warn(
-          `Connection rejected: No token provided - ${client.id}`,
+        client.data.user = { role: 'public' };
+        client.join('dashboard');
+        this.logger.log(
+          `Public client connected to dashboard: ${client.id}`,
         );
-        client.disconnect();
         return;
       }
 

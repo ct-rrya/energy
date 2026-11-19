@@ -41,34 +41,18 @@ export function SocketProvider({ children }: SocketProviderProps) {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Only connect if authenticated
-    if (!isAuthenticated) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
-      return;
-    }
-
-    // Get JWT token for authentication
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      console.warn('[Socket] No auth token available');
-      return;
-    }
+    // Get JWT token if authenticated; otherwise connect as public read-only viewer
+    const token = isAuthenticated ? localStorage.getItem('auth_token') : null;
 
     // Get socket URL from environment
     const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
     console.log('[Socket] Connecting to:', socketUrl);
 
-    // Create socket connection with authentication
+    // Create socket connection (authenticated admin or public viewer)
     const newSocket = io(socketUrl, {
       path: '/socket.io',
-      auth: {
-        token: token,
-      },
+      auth: token ? { token } : {},
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,

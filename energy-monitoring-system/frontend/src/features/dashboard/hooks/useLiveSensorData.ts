@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/api/client';
 import { useSocket } from '@/contexts/SocketContext';
 import { db } from '@/lib/firebase';
@@ -26,6 +26,8 @@ import type { SensorReading } from '../types/dashboard.types';
  */
 export function useLiveSensorData() {
   const { socket, isConnected: isSocketConnected } = useSocket();
+  const queryClient = useQueryClient();
+  const initialSnapshotHandledRef = useRef(false);
   const [lastReading, setLastReading] = useState<SensorReading | undefined>(undefined);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
 
@@ -91,6 +93,13 @@ export function useLiveSensorData() {
             timestamp: data.timestamp, // Already ISO string from backend
           });
           setIsFirebaseConnected(true);
+
+          if (initialSnapshotHandledRef.current) {
+            void queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+            void queryClient.invalidateQueries({ queryKey: ['milestones'] });
+          } else {
+            initialSnapshotHandledRef.current = true;
+          }
         }
       },
       (error) => {
@@ -101,9 +110,9 @@ export function useLiveSensorData() {
 
     // Cleanup listener on unmount
     return () => unsubscribe();
-  }, []); // Empty deps — attach once on mount
+  }, [queryClient]);
 
-  // FALLBACK: Subscribe to WebSocket events if Firebase unavailable
+  // Subscribe to WebSocket events alongside Firestore so whichever arrives first updates the UI
   useEffect(() => {
     if (!socket) return;
 
@@ -111,22 +120,22 @@ export function useLiveSensorData() {
 
     // Listen for new sensor readings (sent when ESP32 uploads)
     const handleNewReading = (data: any) => {
-      // Only use Socket.IO if Firebase is disconnected
-      if (!isFirebaseConnected) {
-        console.log('[useLiveSensorData] New reading from WebSocket (Firebase unavailable)');
-        
-        setLastReading({
-          sensorId: data.sensorId || '',
-          voltage: data.voltage || 0,
-          current: data.current || 0,
-          power: data.power || 0,
-          energy: data.energy || 0,
-          stepCount: data.stepCount || 0,
-          timestamp: new Date(data.timestamp).toISOString(),
-        });
-      } else {
-        console.log('[useLiveSensorData] Ignoring WebSocket (Firebase active)');
-      }
+      console.log('[useLiveSensorData] New reading from WebSocket:', data);
+
+      setLastReading({
+        sensorId: data.sensorId || '',
+        voltage: data.voltage || 0,
+        current: data.current || 0,
+        power: data.power || 0,
+        energy: data.energy || 0,
+        stepCount: data.stepCount || 0,
+        timestamp: data.timestamp
+          ? new Date(data.timestamp).toISOString()
+          : new Date().toISOString(),
+      });
+
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+      void queryClient.invalidateQueries({ queryKey: ['milestones'] });
     };
 
     socket.on('reading:new', handleNewReading);
@@ -135,7 +144,7 @@ export function useLiveSensorData() {
     return () => {
       socket.off('reading:new', handleNewReading);
     };
-  }, [socket, isFirebaseConnected]); // Re-subscribe when Firebase state changes
+  }, [socket, queryClient]);
 
   return {
     lastReading,

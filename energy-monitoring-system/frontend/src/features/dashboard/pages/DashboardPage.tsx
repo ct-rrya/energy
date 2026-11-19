@@ -110,9 +110,14 @@ function DashboardPageContent() {
 
   // Use cached data as fallback when validation fails (Requirements 19.2, 19.6)
   const displayReading = (() => {
-    // If no activity today, don't show stale readings from previous days
+    // Show reading if today's metrics have steps OR if the live reading itself is from today
     const todaySteps = metrics?.todayTotalSteps ?? lastGoodMetrics?.todayTotalSteps;
-    const hasActivityToday = todaySteps !== undefined && todaySteps > 0;
+    const candidateReading = lastReading ?? lastGoodReading;
+    const isCandidateFromToday = candidateReading?.timestamp
+      ? new Date(candidateReading.timestamp).toDateString() === new Date().toDateString()
+      : false;
+    const hasActivityToday =
+      (todaySteps !== undefined && todaySteps > 0) || isCandidateFromToday;
 
     if (!hasActivityToday) {
       // No activity today - return undefined to show empty state

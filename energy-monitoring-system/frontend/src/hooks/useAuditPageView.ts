@@ -8,6 +8,7 @@ const ROUTE_PAGE_NAMES: Record<string, string> = {
   '/central': 'EcoStep Central Dashboard',
   '/analytics': 'Historical Analytics & Trends',
   '/milestones': 'Energy Milestones',
+  '/about': 'About EcoStep',
   '/energy': 'Energy Monitoring',
   '/reports': 'Reports & Ledger',
   '/admin/diagnostics': 'Hardware Diagnostics & Calibration',
