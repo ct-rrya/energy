@@ -204,7 +204,7 @@ export class AuthController {
     summary: 'Administrator access code login',
     description:
       'Authenticates administrator with personal access code for shared-workstation use. ' +
-      'Returns JWT token with session tracking for 10-minute inactivity timeout.',
+      'Returns JWT token for administrator session.',
   })
   @ApiResponse({
     status: 200,
@@ -279,28 +279,6 @@ export class AuthController {
     return {
       success: true,
       message: 'Logged out successfully',
-    };
-  }
-
-  /**
-   * Session Timeout
-   * Records session expiration / idle timeout server-side
-   */
-  @Post('session-timeout')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Administrator session timeout / expiration' })
-  async sessionTimeout(@Req() req: any) {
-    await this.auditService.logAudit(req, {
-      category: 'Authentication',
-      event: 'Session Timeout',
-      result: 'SUCCESS',
-      details: { reason: 'idle_timeout' },
-    });
-
-    return {
-      success: true,
-      message: 'Session expiration recorded',
     };
   }
 }

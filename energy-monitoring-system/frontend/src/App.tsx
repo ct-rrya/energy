@@ -3,11 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ToastContainer } from '@/components/common/Toast';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { InactivityProvider } from '@/contexts/InactivityContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { HardwareStatusProvider } from '@/contexts/HardwareStatusContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { SessionWarningModal } from '@/components/common/SessionWarningModal';
 import { router } from '@/routes';
 
 /**
@@ -40,9 +38,6 @@ const queryClient = new QueryClient({
  * FloatingChatButton is rendered globally here to be accessible
  * on all routes (Home and Dashboard).
  * Requirements: 4.1
- * 
- * InactivityProvider manages 10-minute timeout for admin sessions.
- * SessionWarningModal displays warning at 9 minutes.
  */
 function App() {
   return (
@@ -50,19 +45,12 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <InactivityProvider timeout={10 * 60 * 1000} warningThreshold={1 * 60 * 1000}>
-              <SocketProvider>
-                <HardwareStatusProvider>
-                  <RouterProvider router={router} />
-                  <ToastContainer />
-                  {/* 
-                    SessionWarningModal for admin inactivity timeout
-                    Shows at 9 minutes (1 minute before auto-logout)
-                  */}
-                  <SessionWarningModal />
-                </HardwareStatusProvider>
-              </SocketProvider>
-            </InactivityProvider>
+            <SocketProvider>
+              <HardwareStatusProvider>
+                <RouterProvider router={router} />
+                <ToastContainer />
+              </HardwareStatusProvider>
+            </SocketProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
