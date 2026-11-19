@@ -44,6 +44,8 @@ export class EcoStepBleClient {
   public isSimulation: boolean = false;
   private simulationTimer: any = null;
   private telemetryTimer: any = null;
+  private isManualDisconnect: boolean = false;
+  private isReconnecting: boolean = false;
 
   constructor(onStatusChange: (status: BleStatusMessage) => void = () => {}) {
     this.onStatusChange = onStatusChange;
@@ -143,71 +145,21 @@ export class EcoStepBleClient {
         throw new Error('No device selected.');
       }
 
-      // Handle accidental or spontaneous GATT disconnection
+      this.isManualDisconnect = false;
+
+      // Handle accidental or spontaneous GATT disconnection with automatic reconnect attempts
       this.onDisconnectListener = () => {
         this.server = null;
         this.writeChar = null;
         this.notifyChar = null;
-        this.onStatusChange({
-          state: 'disconnected',
-          message: 'Device disconnected.',
-          type: 'warning',
-        });
+        if (this.isManualDisconnect || this.isReconnecting) {
+          return;
+        }
+        void this.tryAutoReconnect();
       };
       this.device.addEventListener('gattserverdisconnected', this.onDisconnectListener);
 
-      this.onStatusChange({
-        state: 'connecting',
-        message: 'Connecting to device GATT server...',
-        type: 'info',
-      });
-
-      if (!this.device.gatt) {
-        throw new Error('Device does not support GATT connectivity.');
-      }
-
-      this.server = await this.device.gatt.connect();
-
-      this.onStatusChange({
-        state: 'connecting',
-        message: 'Discovering EcoStep provisioning service...',
-        type: 'info',
-      });
-
-      const service = await this.server.getPrimaryService(BLE_CONFIG.serviceUuid);
-      this.writeChar = await service.getCharacteristic(BLE_CONFIG.charWriteUuid);
-      this.notifyChar = await service.getCharacteristic(BLE_CONFIG.charNotifyUuid);
-
-      // Subscribe to telemetry and status notifications
-      await this.notifyChar.startNotifications();
-
-      this.onNotificationListener = (event: any) => {
-        const targetValue = event?.target?.value;
-        if (!targetValue) return;
-
-        const decoder = new TextDecoder('utf-8');
-        const jsonStr = decoder.decode(targetValue);
-        try {
-          const payload = JSON.parse(jsonStr) as BleNotificationPayload;
-          this.onStatusChange({
-            state: 'notification',
-            payload,
-            message: `Received status update from ${BLE_CONFIG.deviceName}`,
-            type: 'info',
-          });
-        } catch {
-          console.warn('Non-JSON BLE payload received:', jsonStr);
-        }
-      };
-
-      this.notifyChar.addEventListener('characteristicvaluechanged', this.onNotificationListener);
-
-      this.onStatusChange({
-        state: 'connected',
-        message: `Connected to ${this.device.name || BLE_CONFIG.deviceName}!`,
-        type: 'success',
-      });
-
+      await this.establishGattSession();
       return true;
     } catch (err: any) {
       const rawMsg = err?.message || '';
@@ -226,6 +178,86 @@ export class EcoStepBleClient {
         type: 'error',
       });
       throw err;
+    }
+  }
+
+  private async establishGattSession(): Promise<void> {
+    if (!this.device?.gatt) {
+      throw new Error('Device does not support GATT connectivity.');
+    }
+
+    this.onStatusChange({
+      state: 'connecting',
+      message: 'Connecting to device GATT server...',
+      type: 'info',
+    });
+
+    this.server = await this.device.gatt.connect();
+
+    this.onStatusChange({
+      state: 'connecting',
+      message: 'Discovering EcoStep provisioning service...',
+      type: 'info',
+    });
+
+    const service = await this.server.getPrimaryService(BLE_CONFIG.serviceUuid);
+    this.writeChar = await service.getCharacteristic(BLE_CONFIG.charWriteUuid);
+    this.notifyChar = await service.getCharacteristic(BLE_CONFIG.charNotifyUuid);
+
+    await this.notifyChar.startNotifications();
+
+    this.onNotificationListener = (event: any) => {
+      const targetValue = event?.target?.value;
+      if (!targetValue) return;
+
+      const decoder = new TextDecoder('utf-8');
+      const jsonStr = decoder.decode(targetValue);
+      try {
+        const payload = JSON.parse(jsonStr) as BleNotificationPayload;
+        this.onStatusChange({
+          state: 'notification',
+          payload,
+          message: `Received status update from ${BLE_CONFIG.deviceName}`,
+          type: 'info',
+        });
+      } catch {
+        console.warn('Non-JSON BLE payload received:', jsonStr);
+      }
+    };
+
+    this.notifyChar.addEventListener('characteristicvaluechanged', this.onNotificationListener);
+
+    this.onStatusChange({
+      state: 'connected',
+      message: `Connected to ${this.device.name || BLE_CONFIG.deviceName}!`,
+      type: 'success',
+    });
+  }
+
+  private async tryAutoReconnect(): Promise<void> {
+    if (!this.device?.gatt || this.isManualDisconnect) return;
+    this.isReconnecting = true;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      if (this.isManualDisconnect || !this.device) break;
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+        if (this.isManualDisconnect || !this.device) break;
+        await this.establishGattSession();
+        this.isReconnecting = false;
+        return;
+      } catch {
+        // Retry next attempt
+      }
+    }
+
+    this.isReconnecting = false;
+    if (!this.isManualDisconnect) {
+      this.onStatusChange({
+        state: 'disconnected',
+        message: 'Device disconnected.',
+        type: 'warning',
+      });
     }
   }
 
@@ -339,6 +371,8 @@ export class EcoStepBleClient {
    * Disconnect from device and clean up event listeners
    */
   public disconnect(): void {
+    this.isManualDisconnect = true;
+    this.isReconnecting = false;
     if (this.simulationTimer) {
       clearTimeout(this.simulationTimer);
       this.simulationTimer = null;

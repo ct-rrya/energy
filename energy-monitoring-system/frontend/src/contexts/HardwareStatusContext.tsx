@@ -86,6 +86,7 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
   const [lastSeenAt, setLastSeenAt] = useState<Date | null>(null);
 
   const lastSeenMsRef = useRef<number | null>(null);
+  const isBleConnectedRef = useRef<boolean>(false);
   const statusRef = useRef<HardwareConnectionStatus>(status);
   statusRef.current = status;
   const hasEverConnectedRef = useRef<boolean>(hasEverConnected);
@@ -255,10 +256,16 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     if (typeof window === 'undefined') return;
 
     const handleCustomConnected = (e: any) => {
+      if (e.detail?.source === 'ble') {
+        isBleConnectedRef.current = true;
+      }
       markHardwareConnected(e.detail?.reading);
     };
 
-    const handleCustomDisconnected = () => {
+    const handleCustomDisconnected = (e: any) => {
+      if (!e.detail?.source || e.detail?.source === 'ble') {
+        isBleConnectedRef.current = false;
+      }
       markHardwareDisconnected();
     };
 
@@ -271,10 +278,10 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     };
   }, [markHardwareConnected, markHardwareDisconnected]);
 
-  // Stale check timer: Transitions connected -> disconnected if no telemetry received for > 60s
+  // Stale check timer: Transitions connected -> disconnected if no telemetry received for > 60s (unless BLE GATT is actively connected)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (statusRef.current === 'connected') {
+      if (statusRef.current === 'connected' && !isBleConnectedRef.current) {
         const lastSeen = lastSeenMsRef.current;
         if (lastSeen && Date.now() - lastSeen > TIMEOUT_MS) {
           console.log('[HardwareStatus] Telemetry heartbeat timeout (>60s) -> Connection Lost');
@@ -286,9 +293,9 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     return () => clearInterval(interval);
   }, []);
 
-  // If Socket.IO drops while we are connected, mark as connection lost
+  // If Socket.IO drops while we are connected (and BLE is not active), mark as connection lost
   useEffect(() => {
-    if (!isSocketConnected && statusRef.current === 'connected') {
+    if (!isSocketConnected && statusRef.current === 'connected' && !isBleConnectedRef.current) {
       const lastSeen = lastSeenMsRef.current;
       // If no recent packet within 5 seconds when socket dropped, mark disconnected
       if (!lastSeen || Date.now() - lastSeen > 5000) {

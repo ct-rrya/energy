@@ -47,10 +47,12 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
   // Client reference
   const bleClientRef = useRef<EcoStepBleClient | null>(null);
+  const ssidRef = useRef(ssid);
+  ssidRef.current = ssid;
   const modalRef = useRef<HTMLDivElement>(null);
   const ssidInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize BLE Client
+  // Initialize BLE Client once on mount (do not depend on ssid so typing doesn't disconnect BLE)
   useEffect(() => {
     const client = new EcoStepBleClient((status: BleStatusMessage) => {
       if (status.message) {
@@ -86,7 +88,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
           setWifiStatus(wifiEvt);
           if (wifiEvt.status === 'CONNECTING') {
             setIsProvisioning(true);
-            setStatusText(`ESP32 is attempting to connect to "${wifiEvt.ssid || ssid}"...`);
+            setStatusText(`ESP32 is attempting to connect to "${wifiEvt.ssid || ssidRef.current}"...`);
             setStatusType('info');
           } else if (wifiEvt.status === 'CONNECTED') {
             setIsProvisioning(false);
@@ -102,12 +104,13 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('ecostep:hardware-connected', {
               detail: {
+                source: 'ble',
                 reading: {
                   power: payload.power,
                   voltage: payload.voltage,
                   current: payload.current,
                   energy: payload.energy,
-                  stepCount: payload.stepCount,
+                  stepCount: payload.stepCount ?? payload.steps,
                   timestamp: payload.timestamp || new Date().toISOString(),
                 }
               }
@@ -122,7 +125,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     return () => {
       client.disconnect();
     };
-  }, [ssid]);
+  }, []);
 
   const isSupported = bleClientRef.current?.isSupported() ?? true;
   const isSecure = bleClientRef.current?.isSecureContext() ?? true;
@@ -183,13 +186,12 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   }, [isOpen]);
 
   const handleClose = useCallback(() => {
-    if (bleClientRef.current?.isConnected()) {
-      bleClientRef.current.disconnect();
+    if (!bleClientRef.current?.isConnected()) {
+      setStep(1);
+      setStatusText('');
+      setWifiStatus(null);
+      setLatestTelemetry(null);
     }
-    setStep(1);
-    setStatusText('');
-    setWifiStatus(null);
-    setLatestTelemetry(null);
     setIsConnecting(false);
     setIsProvisioning(false);
     onClose();
