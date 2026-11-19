@@ -101,7 +101,7 @@ export class EcoStepBleClient {
 
     this.onStatusChange({
       state: 'connected',
-      message: 'Connected to EcoStep-Harvester (Demo / Simulated)!',
+      message: 'Connection with ESP32 (EcoStep-Harvester — Demo Mode) was successful!',
       type: 'success',
     });
 
@@ -229,7 +229,7 @@ export class EcoStepBleClient {
 
     this.onStatusChange({
       state: 'connected',
-      message: `Connected to ${this.device.name || BLE_CONFIG.deviceName}!`,
+      message: `Connection with ESP32 (${this.device.name || BLE_CONFIG.deviceName}) was successful! You can now configure Wi-Fi or close this window.`,
       type: 'success',
     });
   }

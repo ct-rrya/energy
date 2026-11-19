@@ -9,6 +9,7 @@ const mockConnect = vi.fn();
 const mockConnectSimulated = vi.fn();
 const mockDisconnect = vi.fn();
 const mockSendCredentials = vi.fn();
+const mockIsConnected = vi.fn(() => false);
 let capturedCallback: any = null;
 
 vi.mock('../EcoStepBleClient', () => {
@@ -30,9 +31,7 @@ vi.mock('../EcoStepBleClient', () => {
       isSecureContext() {
         return true;
       }
-      isConnected() {
-        return false;
-      }
+      isConnected = mockIsConnected;
       connect = mockConnect;
       connectSimulated = mockConnectSimulated;
       disconnect = mockDisconnect;
@@ -44,6 +43,7 @@ vi.mock('../EcoStepBleClient', () => {
 describe('EcoStep BLE Components', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsConnected.mockReturnValue(false);
     capturedCallback = null;
   });
 
@@ -184,6 +184,23 @@ describe('EcoStep BLE Components', () => {
         expect(statusBox).toHaveTextContent(/Successfully connected to Wi-Fi/i);
         expect(statusBox).toHaveTextContent('192.168.1.150');
       });
+    });
+
+    it('warns the admin when reopening the modal while ESP32 is still connected', async () => {
+      const user = userEvent.setup();
+      mockIsConnected.mockReturnValue(true);
+
+      const { rerender } = render(<EcoStepBleModal isOpen={false} onClose={vi.fn()} />);
+      rerender(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/ESP32 Is Already Connected/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /keep current connection/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /disconnect & reconnect/i })).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: /disconnect & reconnect/i }));
+      expect(mockDisconnect).toHaveBeenCalledTimes(1);
     });
   });
 });

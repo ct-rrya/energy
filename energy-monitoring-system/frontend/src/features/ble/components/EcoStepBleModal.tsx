@@ -38,6 +38,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   const [isConnecting, setIsConnecting] = useState(false);
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [copiedFlag, setCopiedFlag] = useState(false);
+  const [showAlreadyConnectedWarning, setShowAlreadyConnectedWarning] = useState(false);
   
   // Status state
   const [statusText, setStatusText] = useState<string>('');
@@ -64,13 +65,19 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
       if (status.state === 'connected') {
         setIsConnecting(false);
+        setShowAlreadyConnectedWarning(false);
         setStep(2);
+        if (!status.message) {
+          setStatusText(`Connection with ESP32 (${BLE_CONFIG.deviceName}) was successful!`);
+        }
+        setStatusType('success');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ecostep:hardware-connected', { detail: { source: 'ble' } }));
         }
       } else if (status.state === 'disconnected') {
         setIsConnecting(false);
         setIsProvisioning(false);
+        setShowAlreadyConnectedWarning(false);
         setStep(1);
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('ecostep:hardware-disconnected', { detail: { source: 'ble' } }));
@@ -150,9 +157,14 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     }
   };
 
-  // Reset or focus on open
+  // Warn admin if reopening modal while ESP32 is still connected, or focus SSID input
   useEffect(() => {
     if (isOpen) {
+      if (bleClientRef.current?.isConnected()) {
+        setShowAlreadyConnectedWarning(true);
+      } else {
+        setShowAlreadyConnectedWarning(false);
+      }
       if (step === 2 && ssidInputRef.current) {
         ssidInputRef.current.focus();
       }
@@ -200,6 +212,10 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   // Pair & Connect action
   const handleConnect = async () => {
     if (!bleClientRef.current) return;
+    if (bleClientRef.current.isConnected()) {
+      setShowAlreadyConnectedWarning(true);
+      return;
+    }
     setIsConnecting(true);
     setStatusText('');
     try {
@@ -207,6 +223,17 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     } catch {
       setIsConnecting(false);
     }
+  };
+
+  // Explicit disconnect + reconnect confirmation action
+  const handleConfirmReconnect = () => {
+    bleClientRef.current?.disconnect();
+    setShowAlreadyConnectedWarning(false);
+    setStep(1);
+    setWifiStatus(null);
+    setLatestTelemetry(null);
+    setStatusText('Previous ESP32 connection closed. You can now pair and reconnect.');
+    setStatusType('info');
   };
 
   // Simulated connect for testing without BLE hardware or when flags are disabled
@@ -316,6 +343,44 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
           </div>
         )}
 
+        {/* Already Connected Reconnect Warning */}
+        {showAlreadyConnectedWarning && (
+          <div
+            role="alert"
+            className="mt-4 p-4 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs space-y-3"
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-300 text-sm">
+                  ESP32 Is Already Connected
+                </p>
+                <p className="mt-1 text-[var(--t)] opacity-90 leading-relaxed">
+                  Your browser already has an active Bluetooth connection to{' '}
+                  <strong>{BLE_CONFIG.deviceName}</strong>. Proceeding to reconnect will
+                  disconnect the current session.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAlreadyConnectedWarning(false)}
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-[var(--t)] bg-[var(--soft)] hover:bg-[var(--line)] border border-[var(--line)] transition-colors cursor-pointer"
+              >
+                Keep Current Connection
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReconnect}
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-[#0D1B14] transition-colors cursor-pointer"
+              >
+                Disconnect &amp; Reconnect
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Modal Body */}
         <div className="mt-5 space-y-5">
           {/* Progress Indicator */}
@@ -409,9 +474,11 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   </span>
                   <div className="text-left">
                     <p className="text-xs font-semibold text-[#19D46A]">
-                      Connected to {BLE_CONFIG.deviceName} {bleClientRef.current?.isSimulation ? '(Demo Mode)' : ''}
+                      ESP32 Connection Successful {bleClientRef.current?.isSimulation ? '(Demo Mode)' : ''}
                     </p>
-                    <p className="text-[11px] text-[var(--mu)]">GATT Service Active & Subscribed</p>
+                    <p className="text-[11px] text-[var(--mu)]">
+                      Connected to {BLE_CONFIG.deviceName} via Bluetooth — ready to configure Wi-Fi.
+                    </p>
                   </div>
                 </div>
                 <button
