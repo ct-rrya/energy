@@ -135,7 +135,7 @@ function parseExplicitDateToken(token: string, zonedNow: Date): { date: Date; ha
     return { date: new Date(y, m, d), hasExplicitYear: true };
   }
 
-  // 2. Numeric MM/DD/YYYY or MM/DD
+  // 2. Numeric MM/DD/YYYY or MM/DD (defaults to current year; upcoming dates remain in current year as isFuture=true)
   const slashMatch = clean.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
   if (slashMatch) {
     const m = Number(slashMatch[1]) - 1;
@@ -146,17 +146,10 @@ function parseExplicitDateToken(token: string, zonedNow: Date): { date: Date; ha
       y = slashMatch[3].length === 2 ? 2000 + Number(slashMatch[3]) : Number(slashMatch[3]);
     }
     if (!isValidCalendarDate(y, m, d)) return null;
-    let candidate = new Date(y, m, d);
-    if (!hasExplicitYear && startOfDay(candidate).getTime() > endOfDay(zonedNow).getTime()) {
-      const prevYear = y - 1;
-      if (isValidCalendarDate(prevYear, m, d)) {
-        candidate = new Date(prevYear, m, d);
-      }
-    }
-    return { date: candidate, hasExplicitYear };
+    return { date: new Date(y, m, d), hasExplicitYear };
   }
 
-  // 3. Month Day [Year] (e.g. "Nov 18", "November 18th 2026")
+  // 3. Month Day [Year] (e.g. "Nov 18", "Dec 25", "November 18th 2026")
   const mdyRegex = new RegExp(`^(${MONTH_PATTERN})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+(\\d{4}))?$`, 'i');
   const mdyMatch = clean.match(mdyRegex);
   if (mdyMatch) {
@@ -165,17 +158,10 @@ function parseExplicitDateToken(token: string, zonedNow: Date): { date: Date; ha
     const hasExplicitYear = Boolean(mdyMatch[3]);
     const y = hasExplicitYear ? Number(mdyMatch[3]) : zonedNow.getFullYear();
     if (!isValidCalendarDate(y, m, d)) return null;
-    let candidate = new Date(y, m, d);
-    if (!hasExplicitYear && startOfDay(candidate).getTime() > endOfDay(zonedNow).getTime()) {
-      const prevYear = y - 1;
-      if (isValidCalendarDate(prevYear, m, d)) {
-        candidate = new Date(prevYear, m, d);
-      }
-    }
-    return { date: candidate, hasExplicitYear };
+    return { date: new Date(y, m, d), hasExplicitYear };
   }
 
-  // 4. Day [of] Month [Year] (e.g. "18 Nov", "18th of November 2026")
+  // 4. Day [of] Month [Year] (e.g. "18 Nov", "25th of December")
   const dmyRegex = new RegExp(`^(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+of)?\\s+(${MONTH_PATTERN})\\.?(?:\\s+(\\d{4}))?$`, 'i');
   const dmyMatch = clean.match(dmyRegex);
   if (dmyMatch) {
@@ -184,14 +170,7 @@ function parseExplicitDateToken(token: string, zonedNow: Date): { date: Date; ha
     const hasExplicitYear = Boolean(dmyMatch[3]);
     const y = hasExplicitYear ? Number(dmyMatch[3]) : zonedNow.getFullYear();
     if (!isValidCalendarDate(y, m, d)) return null;
-    let candidate = new Date(y, m, d);
-    if (!hasExplicitYear && startOfDay(candidate).getTime() > endOfDay(zonedNow).getTime()) {
-      const prevYear = y - 1;
-      if (isValidCalendarDate(prevYear, m, d)) {
-        candidate = new Date(prevYear, m, d);
-      }
-    }
-    return { date: candidate, hasExplicitYear };
+    return { date: new Date(y, m, d), hasExplicitYear };
   }
 
   return null;
@@ -239,17 +218,10 @@ export function parseDateIntent(
     const d1 = Number(sameMonthMatch[2]);
     const d2 = Number(sameMonthMatch[3]);
     const hasYear = Boolean(sameMonthMatch[4]);
-    let y = hasYear ? Number(sameMonthMatch[4]) : zonedNow.getFullYear();
+    const y = hasYear ? Number(sameMonthMatch[4]) : zonedNow.getFullYear();
     if (isValidCalendarDate(y, m, d1) && isValidCalendarDate(y, m, d2) && d1 <= d2) {
-      let startZ = new Date(y, m, d1);
-      let endZ = new Date(y, m, d2);
-      if (!hasYear && startOfDay(startZ).getTime() > endOfDay(zonedNow).getTime()) {
-        y -= 1;
-        if (isValidCalendarDate(y, m, d1) && isValidCalendarDate(y, m, d2)) {
-          startZ = new Date(y, m, d1);
-          endZ = new Date(y, m, d2);
-        }
-      }
+      const startZ = new Date(y, m, d1);
+      const endZ = new Date(y, m, d2);
       return buildRangeIntent(
         startZ,
         endZ,
@@ -416,23 +388,25 @@ export function parseDateIntent(
   }
 
   // -------------------------------------------------------------------------
-  // 4. Explicit month name (e.g. "in October", "October 2026", "for September")
+  // 4. Explicit month name (e.g. "in October", "December", "last December", "October 2026")
   // -------------------------------------------------------------------------
   const monthOnlyRe = new RegExp(
-    `(?:\\b(?:in|for|during|of)\\s+)?\\b(${MONTH_PATTERN})\\b(?:\\s+(\\d{4}))?`,
+    `(?:\\b(last|in|for|during|of)\\s+)?\\b(${MONTH_PATTERN})\\b(?:\\s+(\\d{4}))?`,
     'i',
   );
   const monthMatch = text.match(monthOnlyRe);
   if (monthMatch) {
-    // Avoid false positive on English auxiliary verb "may" (e.g. "may I ask") unless capitalized or preceded by in/for/during/of or followed by a year
-    const rawWord = monthMatch[1];
-    const hasPrepOrYear = Boolean(monthMatch[2]) || /\b(?:in|for|during|of)\s+may\b/i.test(text);
+    // Avoid false positive on English auxiliary verb "may" (e.g. "may I ask") unless capitalized or preceded by in/for/during/of/last or followed by a year
+    const modifier = (monthMatch[1] || '').toLowerCase();
+    const rawWord = monthMatch[2];
+    const hasPrepOrYear = Boolean(monthMatch[3]) || Boolean(modifier);
     if (rawWord.toLowerCase() !== 'may' || hasPrepOrYear || rawWord === 'May') {
       const m = MONTH_MAP[rawWord.toLowerCase()];
-      const hasYear = Boolean(monthMatch[2]);
-      let y = hasYear ? Number(monthMatch[2]) : zonedNow.getFullYear();
+      const hasYear = Boolean(monthMatch[3]);
+      let y = hasYear ? Number(monthMatch[3]) : zonedNow.getFullYear();
       let startZ = new Date(y, m, 1);
-      if (!hasYear && startOfDay(startZ).getTime() > endOfDay(zonedNow).getTime()) {
+      // Only roll back to previous year when explicitly relative ("last December") and not already in the past
+      if (!hasYear && modifier === 'last' && startOfDay(startZ).getTime() >= startOfMonth(zonedNow).getTime()) {
         y -= 1;
         startZ = new Date(y, m, 1);
       }

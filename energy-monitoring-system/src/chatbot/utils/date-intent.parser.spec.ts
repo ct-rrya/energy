@@ -74,13 +74,25 @@ describe('parseDateIntent (Asia/Manila -> UTC)', () => {
     expect(slash.start?.toISOString()).toBe('2026-11-17T16:00:00.000Z');
   });
 
-  it('rolls back year when month/day without year would be in the future', () => {
-    // NOW is Nov 21, 2026 -> "Dec 25" without year rolls back to Dec 25, 2025
-    const res = parseDateIntent('How much energy on Dec 25?', NOW);
-    expect(res.kind).toBe('day');
-    expect(res.isFuture).toBe(false);
-    expect(res.label).toBe('Dec 25, 2025');
-    expect(res.start?.toISOString()).toBe('2025-12-24T16:00:00.000Z');
+  it('keeps upcoming explicit calendar dates in the current year and flags isFuture=true', () => {
+    // NOW is Nov 21, 2026 -> "Dec 25" without year stays in 2026 and is flagged as future
+    const dec25 = parseDateIntent('How much energy on Dec 25?', NOW);
+    expect(dec25.kind).toBe('day');
+    expect(dec25.isFuture).toBe(true);
+    expect(dec25.label).toBe('Dec 25, 2026');
+    expect(dec25.start?.toISOString()).toBe('2026-12-24T16:00:00.000Z');
+
+    // Upcoming explicit month stays in current year and is flagged as future
+    const dec = parseDateIntent('How much energy in December?', NOW);
+    expect(dec.kind).toBe('range');
+    expect(dec.isFuture).toBe(true);
+    expect(dec.label).toBe('December 2026');
+
+    // Relative "last December" explicitly rolls back to previous year
+    const lastDec = parseDateIntent('How much energy last December?', NOW);
+    expect(lastDec.kind).toBe('range');
+    expect(lastDec.isFuture).toBe(false);
+    expect(lastDec.label).toBe('December 2025');
   });
 
   it('flags explicit future dates as isFuture=true', () => {
