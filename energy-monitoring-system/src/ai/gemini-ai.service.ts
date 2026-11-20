@@ -54,41 +54,87 @@ enum AIErrorType {
 export class GeminiAIService {
   private readonly logger = new Logger(GeminiAIService.name);
   
-  // Gemini client and model
-  private readonly genAI: GoogleGenerativeAI;
-  private readonly geminiModel: any;
+  // Gemini client pool (supports up to 10+ API keys with automatic failover rotation)
+  private readonly geminiClients: Array<{
+    genAI: GoogleGenerativeAI;
+    model: any;
+    embeddingModel: any;
+  }> = [];
+  private activeGeminiKeyIndex: number = 0;
   private readonly geminiEnabled: boolean = false;
+  private readonly geminiModelName: string;
+  private readonly geminiFallbackModels: string[];
+  private readonly geminiEmbeddingModelName: string;
   
   // Groq client
   private readonly groq: Groq;
   private readonly groqEnabled: boolean = false;
   private groqModel: string = 'openai/gpt-oss-120b';
+  private readonly groqFallbackModels: string[];
 
   constructor(private configService: ConfigService) {
     this.logger.log('Initializing AI Service with Groq fallback...');
 
-    // Allow custom GROQ_MODEL from environment if provided
+    // Allow custom GROQ_MODEL / GEMINI_MODEL from environment if provided
     const configuredGroqModel = this.configService.get<string>('GROQ_MODEL');
     if (configuredGroqModel) {
       this.groqModel = configuredGroqModel;
     }
+    this.groqFallbackModels = Array.from(
+      new Set([this.groqModel, 'openai/gpt-oss-20b', 'llama-3.1-8b-instant']),
+    );
+    this.geminiModelName =
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-3.8-flash';
+    this.geminiFallbackModels = Array.from(
+      new Set([this.geminiModelName, 'gemini-3.8-flash-lite']),
+    );
+    this.geminiEmbeddingModelName =
+      this.configService.get<string>('GEMINI_EMBEDDING_MODEL') ||
+      'gemini-embedding-001';
 
-    // Initialize Gemini (Primary Provider)
-    const geminiApiKey = this.configService.get<string>('GEMINI_API_KEY');
-    
-    if (!geminiApiKey || geminiApiKey === 'your-gemini-api-key-here') {
-      this.logger.warn('GEMINI_API_KEY not configured');
+    // Collect Gemini API keys from GEMINI_API_KEYS (comma-separated), GEMINI_API_KEY_1..10, and GEMINI_API_KEY
+    const rawKeys: string[] = [];
+    const csvKeys = this.configService.get<string>('GEMINI_API_KEYS');
+    if (csvKeys) {
+      rawKeys.push(...csvKeys.split(',').map((k) => k.trim()));
+    }
+    for (let i = 1; i <= 10; i++) {
+      const numberedKey = this.configService.get<string>(`GEMINI_API_KEY_${i}`);
+      if (numberedKey) rawKeys.push(numberedKey.trim());
+    }
+    const singleKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (singleKey) rawKeys.push(singleKey.trim());
+
+    const uniqueKeys = Array.from(
+      new Set(
+        rawKeys.filter(
+          (k) => k.length > 0 && k !== 'your-gemini-api-key-here',
+        ),
+      ),
+    );
+
+    if (uniqueKeys.length === 0) {
+      this.logger.warn('No GEMINI_API_KEY / GEMINI_API_KEYS configured');
     } else {
-      try {
-        this.genAI = new GoogleGenerativeAI(geminiApiKey);
-        this.geminiModel = this.genAI.getGenerativeModel({
-          model: 'gemini-3.5-flash',
-        });
+      for (const apiKey of uniqueKeys) {
+        try {
+          const genAI = new GoogleGenerativeAI(apiKey);
+          this.geminiClients.push({
+            genAI,
+            model: genAI.getGenerativeModel({ model: this.geminiModelName }),
+            embeddingModel: genAI.getGenerativeModel({
+              model: this.geminiEmbeddingModelName,
+            }),
+          });
+        } catch (error: any) {
+          this.logger.error('Failed to initialize a Gemini key:', error.message);
+        }
+      }
+      if (this.geminiClients.length > 0) {
         this.geminiEnabled = true;
-        this.logger.log('✅ Gemini AI initialized (Primary Provider)');
-        this.logger.log('   Model: gemini-3.5-flash');
-      } catch (error) {
-        this.logger.error('Failed to initialize Gemini:', error.message);
+        this.logger.log(
+          `✅ Gemini AI initialized (${this.geminiClients.length} key(s) in pool, model: ${this.geminiModelName}, embedding: ${this.geminiEmbeddingModelName})`,
+        );
       }
     }
 
@@ -143,8 +189,16 @@ export class GeminiAIService {
       return AIErrorType.RATE_LIMIT;
     }
 
-    // Server errors (5xx)
-    if (status >= 500 && status < 600) {
+    // Server errors (5xx / 503 overloaded / unavailable)
+    if (
+      (status >= 500 && status < 600) ||
+      message.includes('503') ||
+      message.includes('502') ||
+      message.includes('500') ||
+      message.includes('unavailable') ||
+      message.includes('overloaded') ||
+      message.includes('high demand')
+    ) {
       return AIErrorType.SERVER_ERROR;
     }
 
@@ -158,7 +212,10 @@ export class GeminiAIService {
       return AIErrorType.AUTH_ERROR;
     }
 
-    // Invalid request (don't fallback)
+    // Invalid request (don't fallback, except model_not_found/404 which should try next model)
+    if (status === 404 || message.includes('model_not_found') || message.includes('404 not found')) {
+      return AIErrorType.UNKNOWN;
+    }
     if (status === 400 || message.includes('invalid') || message.includes('malformed')) {
       return AIErrorType.INVALID_REQUEST;
     }
@@ -195,38 +252,115 @@ export class GeminiAIService {
   /**
    * Query Gemini
    * 
-   * Attempts to query Gemini AI with timeout
+   * Attempts to query Gemini AI with timeout and automatic rotation across all configured API keys.
    * 
    * @param prompt - The prompt to send
    * @returns AI response or throws error
    */
   private async queryGemini(prompt: string): Promise<string> {
+    if (this.geminiClients.length === 0) {
+      throw new Error('Gemini AI not initialized');
+    }
+
     this.logger.debug(`[Gemini] Sending prompt (${prompt.length} chars)...`);
 
-    // Create timeout promise (10 second timeout)
-    let timeoutId: NodeJS.Timeout;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Gemini API timeout after 10s')),
-        10000,
-      );
-    });
+    let lastError: any;
+    const totalKeys = this.geminiClients.length;
 
-    try {
-      // Race between API call and timeout
-      const result = await Promise.race([
-        this.geminiModel.generateContent(prompt),
-        timeoutPromise,
-      ]);
+    for (let mIdx = 0; mIdx < this.geminiFallbackModels.length; mIdx++) {
+      const modelName = this.geminiFallbackModels[mIdx];
 
-      const response = result.response;
-      const text = response.text();
-      
-      this.logger.debug(`[Gemini] ✅ Success (${text.length} chars)`);
-      return text;
-    } finally {
-      clearTimeout(timeoutId!);
+      for (let attempt = 0; attempt < totalKeys; attempt++) {
+        const keyIdx = (this.activeGeminiKeyIndex + attempt) % totalKeys;
+        const client = this.geminiClients[keyIdx];
+        const modelInstance =
+          modelName === this.geminiModelName
+            ? client.model
+            : client.genAI.getGenerativeModel({ model: modelName });
+
+        let timeoutId: NodeJS.Timeout;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error(`Gemini API timeout after 10s (${modelName})`)),
+            10000,
+          );
+        });
+
+        try {
+          const result = await Promise.race([
+            modelInstance.generateContent(prompt),
+            timeoutPromise,
+          ]);
+
+          const text = (result?.response?.text?.() || '').trim();
+          if (!text) {
+            throw new Error(`Gemini (${modelName}) returned empty response`);
+          }
+          this.activeGeminiKeyIndex = keyIdx;
+          this.logger.debug(
+            `[Gemini] ✅ Success with model=${modelName} key=#${keyIdx + 1} (${text.length} chars)`,
+          );
+          return text;
+        } catch (error: any) {
+          lastError = error;
+          const errType = this.classifyError(error, AIProvider.GEMINI);
+          if (!this.shouldFallback(errType)) {
+            throw error;
+          }
+
+          if (attempt + 1 < totalKeys) {
+            this.logger.warn(
+              `[Gemini] ${modelName} key #${keyIdx + 1} failed (${errType}); rotating to key #${((keyIdx + 1) % totalKeys) + 1}...`,
+            );
+            this.activeGeminiKeyIndex = (keyIdx + 1) % totalKeys;
+            continue;
+          }
+
+          if (mIdx + 1 < this.geminiFallbackModels.length) {
+            this.logger.warn(
+              `[Gemini] ${modelName} exhausted (${errType}); retrying with fallback model ${this.geminiFallbackModels[mIdx + 1]}...`,
+            );
+            break;
+          }
+        } finally {
+          clearTimeout(timeoutId!);
+        }
+      }
     }
+
+    throw lastError || new Error('All Gemini models and API keys failed');
+  }
+
+  /**
+   * Generate Vector Embedding via Gemini Embedding Model (with key pool rotation)
+   */
+  async embedText(text: string): Promise<number[] | null> {
+    if (!this.geminiEnabled || this.geminiClients.length === 0 || !text?.trim()) {
+      return null;
+    }
+
+    const totalKeys = this.geminiClients.length;
+    for (let attempt = 0; attempt < totalKeys; attempt++) {
+      const keyIdx = (this.activeGeminiKeyIndex + attempt) % totalKeys;
+      const client = this.geminiClients[keyIdx];
+      try {
+        const res = await client.embeddingModel.embedContent(text);
+        const values = res?.embedding?.values;
+        if (Array.isArray(values) && values.length > 0) {
+          this.activeGeminiKeyIndex = keyIdx;
+          return values;
+        }
+      } catch (error: any) {
+        const errType = this.classifyError(error, AIProvider.GEMINI);
+        if (attempt + 1 < totalKeys && this.shouldFallback(errType)) {
+          this.activeGeminiKeyIndex = (keyIdx + 1) % totalKeys;
+          continue;
+        }
+        this.logger.warn(`[Gemini Embed] Key #${keyIdx + 1} failed: ${error?.message}`);
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -244,16 +378,6 @@ export class GeminiAIService {
   ): Promise<string> {
     this.logger.debug(`[Groq] Sending prompt (${prompt.length} chars)...`);
 
-    // Create timeout promise (10 second timeout)
-    let timeoutId: NodeJS.Timeout;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Groq API timeout after 10s')),
-        10000,
-      );
-    });
-
-    // Race between API call and timeout
     const messages: any[] = [];
     if (includeEcoChatContext) {
       messages.push({
@@ -271,28 +395,53 @@ export class GeminiAIService {
       });
     }
 
-    try {
-      const completion = await Promise.race([
-        this.groq.chat.completions.create({
-          messages,
-          model: this.groqModel,
-          temperature: includeEcoChatContext ? 0.3 : 0.7,
-          max_tokens: 500,
-        }),
-        timeoutPromise,
-      ]);
+    let lastError: any;
 
-      const text = completion.choices[0]?.message?.content || '';
-      
-      if (!text) {
-        throw new Error('Groq returned empty response');
+    for (let mIdx = 0; mIdx < this.groqFallbackModels.length; mIdx++) {
+      const modelName = this.groqFallbackModels[mIdx];
+      let timeoutId: NodeJS.Timeout;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error(`Groq API timeout after 15s (${modelName})`)),
+          15000,
+        );
+      });
+
+      try {
+        const completion = await Promise.race([
+          this.groq.chat.completions.create({
+            messages,
+            model: modelName,
+            temperature: includeEcoChatContext ? 0.3 : 0.7,
+            max_tokens: 500,
+          }),
+          timeoutPromise,
+        ]);
+
+        const text = (completion?.choices?.[0]?.message?.content || '').trim();
+
+        if (!text) {
+          throw new Error(`Groq (${modelName}) returned empty response`);
+        }
+
+        this.logger.debug(`[Groq] ✅ Success with model=${modelName} (${text.length} chars)`);
+        return text;
+      } catch (error: any) {
+        lastError = error;
+        const errType = this.classifyError(error, AIProvider.GROQ);
+        if (mIdx + 1 < this.groqFallbackModels.length && this.shouldFallback(errType)) {
+          this.logger.warn(
+            `[Groq] ${modelName} failed (${errType}: ${error?.message}); retrying with ${this.groqFallbackModels[mIdx + 1]}...`,
+          );
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId!);
       }
-
-      this.logger.debug(`[Groq] ✅ Success (${text.length} chars)`);
-      return text;
-    } finally {
-      clearTimeout(timeoutId!);
     }
+
+    throw lastError || new Error('All Groq models failed');
   }
 
   /**
@@ -392,7 +541,7 @@ export class GeminiAIService {
     let lastError: any = null;
 
     // Try Gemini first (if enabled)
-    if (this.geminiEnabled && this.geminiModel) {
+    if (this.geminiEnabled && this.geminiClients.length > 0) {
       try {
         const result = await this.queryGemini(finalPrompt);
         this.logger.log('[Gemini] ✅ Request successful');
@@ -495,7 +644,7 @@ Keep it concise and practical.`;
    * @returns true if at least one AI provider is enabled and ready
    */
   isAvailable(): boolean {
-    return (this.geminiEnabled && !!this.geminiModel) || (this.groqEnabled && !!this.groq);
+    return (this.geminiEnabled && this.geminiClients.length > 0) || (this.groqEnabled && !!this.groq);
   }
 
   /**
@@ -508,7 +657,7 @@ Keep it concise and practical.`;
    */
   getProviderStatus(): { gemini: boolean; groq: boolean; anyAvailable: boolean } {
     return {
-      gemini: this.geminiEnabled && !!this.geminiModel,
+      gemini: this.geminiEnabled && this.geminiClients.length > 0,
       groq: this.groqEnabled && !!this.groq,
       anyAvailable: this.isAvailable(),
     };

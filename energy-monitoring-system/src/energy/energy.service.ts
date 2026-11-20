@@ -36,6 +36,23 @@ import {
  * - { sensorId: 1, timestamp: -1 } - Sensor time series
  * - { timestamp: -1, sensorId: 1 } - Recent readings
  */
+export interface RangeStatistics {
+  startUtc: string;
+  endUtc: string;
+  totalEnergyMWh: number;
+  totalSteps: number;
+  peakPowerW: number;
+  avgPowerW: number;
+  minPowerW: number;
+  maxVoltageV: number;
+  avgVoltageV: number;
+  peakCurrentA: number;
+  avgCurrentA: number;
+  readingCount: number;
+  firstReadingAt: string | null;
+  lastReadingAt: string | null;
+}
+
 @Injectable()
 export class EnergyService {
   private readonly logger = new Logger(EnergyService.name);
@@ -522,6 +539,223 @@ export class EnergyService {
         avgCurrent: Math.round((totalCurrent / readings.length) * 1000) / 1000,
         count: readings.length,
       };
+    }
+  }
+
+  /**
+   * Get Statistics for an Arbitrary UTC Window
+   *
+   * Reuses the exact same hardware filter (`source: 'hardware'`), `receivedAt`
+   * boundary semantics, energy increment summation (mWh), and per-sensor
+   * `$setWindowFields` step-delta logic (with reset handling & fallback)
+   * as `getTodayRawStatistics` and `getTodayDetailedStats`.
+   */
+  async getStatisticsForRange(
+    startUtc: Date,
+    endUtc: Date,
+  ): Promise<RangeStatistics> {
+    const empty: RangeStatistics = {
+      startUtc: startUtc.toISOString(),
+      endUtc: endUtc.toISOString(),
+      totalEnergyMWh: 0,
+      totalSteps: 0,
+      peakPowerW: 0,
+      avgPowerW: 0,
+      minPowerW: 0,
+      maxVoltageV: 0,
+      avgVoltageV: 0,
+      peakCurrentA: 0,
+      avgCurrentA: 0,
+      readingCount: 0,
+      firstReadingAt: null,
+      lastReadingAt: null,
+    };
+
+    try {
+      const result = await this.readingModel.aggregate([
+        {
+          $match: {
+            receivedAt: {
+              $gte: startUtc,
+              $lte: endUtc,
+            },
+            source: 'hardware' as any,
+          },
+        },
+        {
+          $sort: { sensorId: 1, receivedAt: 1 },
+        },
+        {
+          $setWindowFields: {
+            partitionBy: '$sensorId',
+            sortBy: { receivedAt: 1 },
+            output: {
+              previousStepCount: {
+                $shift: {
+                  output: '$stepCount',
+                  by: -1,
+                },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            stepDelta: {
+              $cond: {
+                if: { $eq: ['$previousStepCount', null] },
+                then: { $ifNull: ['$stepCount', 0] },
+                else: {
+                  $cond: {
+                    if: { $lt: ['$stepCount', '$previousStepCount'] },
+                    then: { $ifNull: ['$stepCount', 0] },
+                    else: { $subtract: ['$stepCount', '$previousStepCount'] },
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalEnergyMWh: { $sum: { $ifNull: ['$energy', 0] } },
+            totalSteps: { $sum: '$stepDelta' },
+            peakPowerW: { $max: '$power' },
+            avgPowerW: { $avg: '$power' },
+            minPowerW: { $min: '$power' },
+            maxVoltageV: { $max: '$voltage' },
+            avgVoltageV: { $avg: '$voltage' },
+            peakCurrentA: { $max: '$current' },
+            avgCurrentA: { $avg: '$current' },
+            readingCount: { $sum: 1 },
+            firstReadingAt: { $min: '$receivedAt' },
+            lastReadingAt: { $max: '$receivedAt' },
+          },
+        },
+      ]);
+
+      if (result.length === 0) {
+        return empty;
+      }
+
+      const stats = result[0];
+      return {
+        startUtc: startUtc.toISOString(),
+        endUtc: endUtc.toISOString(),
+        totalEnergyMWh: stats.totalEnergyMWh || 0,
+        totalSteps: Math.round(stats.totalSteps || 0),
+        peakPowerW: stats.peakPowerW || 0,
+        avgPowerW: stats.avgPowerW || 0,
+        minPowerW: stats.minPowerW || 0,
+        maxVoltageV: stats.maxVoltageV || 0,
+        avgVoltageV: stats.avgVoltageV || 0,
+        peakCurrentA: stats.peakCurrentA || 0,
+        avgCurrentA: stats.avgCurrentA || 0,
+        readingCount: stats.readingCount || 0,
+        firstReadingAt: stats.firstReadingAt
+          ? new Date(stats.firstReadingAt).toISOString()
+          : null,
+        lastReadingAt: stats.lastReadingAt
+          ? new Date(stats.lastReadingAt).toISOString()
+          : null,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Range statistics aggregation failed, using in-memory fallback: ${error.message}`,
+      );
+
+      const readings = await this.readingModel
+        .find({
+          receivedAt: {
+            $gte: startUtc,
+            $lte: endUtc,
+          },
+          source: 'hardware' as any,
+        })
+        .sort({ sensorId: 1, receivedAt: 1 })
+        .lean()
+        .exec();
+
+      if (readings.length === 0) {
+        return empty;
+      }
+
+      let totalEnergyMWh = 0;
+      let totalSteps = 0;
+      let peakPowerW = 0;
+      let minPowerW = Infinity;
+      let sumPowerW = 0;
+      let maxVoltageV = 0;
+      let sumVoltageV = 0;
+      let peakCurrentA = 0;
+      let sumCurrentA = 0;
+      let firstTs = Infinity;
+      let lastTs = -Infinity;
+      const sensorPrevSteps = new Map<string, number>();
+
+      for (const r of readings as any[]) {
+        const sid = String(r.sensorId);
+        const prev = sensorPrevSteps.get(sid);
+        const curr = r.stepCount || 0;
+        if (prev === undefined || curr < prev) {
+          totalSteps += curr;
+        } else {
+          totalSteps += curr - prev;
+        }
+        sensorPrevSteps.set(sid, curr);
+
+        const p = r.power || 0;
+        const v = r.voltage || 0;
+        const c = r.current || 0;
+        totalEnergyMWh += r.energy || 0;
+        peakPowerW = Math.max(peakPowerW, p);
+        minPowerW = Math.min(minPowerW, p);
+        sumPowerW += p;
+        maxVoltageV = Math.max(maxVoltageV, v);
+        sumVoltageV += v;
+        peakCurrentA = Math.max(peakCurrentA, c);
+        sumCurrentA += c;
+
+        const ts = r.receivedAt ? new Date(r.receivedAt).getTime() : NaN;
+        if (!Number.isNaN(ts)) {
+          firstTs = Math.min(firstTs, ts);
+          lastTs = Math.max(lastTs, ts);
+        }
+      }
+
+      return {
+        startUtc: startUtc.toISOString(),
+        endUtc: endUtc.toISOString(),
+        totalEnergyMWh,
+        totalSteps: Math.round(totalSteps),
+        peakPowerW,
+        avgPowerW: sumPowerW / readings.length,
+        minPowerW: minPowerW === Infinity ? 0 : minPowerW,
+        maxVoltageV,
+        avgVoltageV: sumVoltageV / readings.length,
+        peakCurrentA,
+        avgCurrentA: sumCurrentA / readings.length,
+        readingCount: readings.length,
+        firstReadingAt: Number.isFinite(firstTs) ? new Date(firstTs).toISOString() : null,
+        lastReadingAt: Number.isFinite(lastTs) ? new Date(lastTs).toISOString() : null,
+      };
+    }
+  }
+
+  /**
+   * Earliest recorded hardware reading timestamp (used to detect queries preceding system logs).
+   */
+  async getEarliestReadingTimestamp(): Promise<Date | null> {
+    try {
+      const doc = await this.readingModel
+        .findOne({ source: 'hardware' as any }, { receivedAt: 1 })
+        .sort({ receivedAt: 1 })
+        .lean()
+        .exec();
+      return (doc as any)?.receivedAt ? new Date((doc as any).receivedAt) : null;
+    } catch {
+      return null;
     }
   }
 

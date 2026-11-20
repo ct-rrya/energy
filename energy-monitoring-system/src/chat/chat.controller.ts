@@ -17,7 +17,7 @@ import {
 import type { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
 import { ChatbotCoreService } from '../chatbot/chatbot-core.service';
@@ -47,7 +47,8 @@ import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 @ApiTags('Public Chat')
 @Controller('chat')
 @UseGuards(RateLimitGuard, OptionalPlayerSessionGuard)
-@Throttle({ chat: { limit: 20, ttl: 60000 } }) // Increased to 20 messages per minute for natural conversation flow
+@SkipThrottle({ default: true, auth: true, iot: true, telemetry: true })
+@Throttle({ chat: { limit: 40, ttl: 60000 } })
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
   private readonly jwtService = new JwtService();
@@ -348,14 +349,24 @@ export class ChatController {
         timestamp: new Date(),
       });
 
+      // Prepare sessionData with conversation history + last resolved date context
+      session.metadata = session.metadata || {};
+      const sessionData = {
+        messages: session.messageHistory,
+        lastDateContext: session.metadata.lastDateContext ?? null,
+      };
+
       // Process message through chatbot core with optional player context
       const response = await this.chatbotCore.processMessage(dto.message, {
         userId: session.sessionId,
         channel: 'web',
-        sessionData: session.messageHistory,
+        sessionData,
         originalText: dto.message,
         player,
       });
+
+      // Persist updated/cleared date context back onto the session
+      session.metadata.lastDateContext = sessionData.lastDateContext ?? null;
 
       // Add bot response to session history
       await this.sessionManager.updateSession(session.sessionId, {
