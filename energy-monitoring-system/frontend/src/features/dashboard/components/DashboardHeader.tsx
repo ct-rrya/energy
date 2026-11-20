@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { Calendar, RefreshCw } from 'lucide-react';
+import { QueryClientContext } from '@tanstack/react-query';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 
@@ -22,6 +23,7 @@ export interface DashboardHeaderProps {
   isWebSocketConnected?: boolean;
   greeting?: string;
   action?: React.ReactNode;
+  onRefresh?: () => void | Promise<void>;
 }
 
 /**
@@ -35,9 +37,28 @@ export const DashboardHeader = React.memo(function DashboardHeader({
   isWebSocketConnected,
   greeting = 'Welcome to EcoStep',
   action,
+  onRefresh,
 }: DashboardHeaderProps) {
   const hardwareStatus = useHardwareStatus();
+  const queryClient = useContext(QueryClientContext);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    const minSpin = new Promise((resolve) => setTimeout(resolve, 450));
+    try {
+      await Promise.allSettled([
+        onRefresh?.(),
+        queryClient?.invalidateQueries(),
+        hardwareStatus.refreshStatus(),
+        minSpin,
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, onRefresh, queryClient, hardwareStatus]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -103,6 +124,22 @@ export const DashboardHeader = React.memo(function DashboardHeader({
             status={effectiveStatus} 
             isWebSocketConnected={effectiveWebSocketConnected}
           />
+
+          {/* Refresh Data Button beside Status Pill */}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-label="Refresh data"
+            title="Refresh data"
+            className="header-refresh-btn"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`}
+              strokeWidth={2.2}
+            />
+            <span className="header-refresh-label">Refresh</span>
+          </button>
         </div>
 
         {action && (
