@@ -131,12 +131,13 @@ export class EnergyService {
       const result = await this.readingModel.aggregate([
         {
           // Match readings received today (use server timestamp, not ESP32 timestamp)
+          // Matches compound index { source: 1, receivedAt: -1 }
           $match: {
+            source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
             receivedAt: {
               $gte: todayStart,
               $lte: todayEnd,
             },
-            source: 'hardware' as any, // REQUIREMENT 12.1: Filter for hardware data only
           },
         },
         {
@@ -1175,14 +1176,15 @@ export class EnergyService {
    * - Relatively fast for moderate datasets
    */
   async getTotalStatistics() {
-    const totalReadings = await this.readingModel.countDocuments();
-
-    const todayStats = await this.getTodayEnergyTotal();
-
-    const lastReading = await this.readingModel
-      .findOne()
-      .sort({ timestamp: -1 })
-      .exec();
+    const [totalReadings, todayStats, lastReading] = await Promise.all([
+      this.readingModel.countDocuments().exec(),
+      this.getTodayEnergyTotal(),
+      this.readingModel
+        .findOne({}, { timestamp: 1, power: 1, sensorId: 1 })
+        .sort({ timestamp: -1 })
+        .lean()
+        .exec(),
+    ]);
 
     return {
       totalReadings,

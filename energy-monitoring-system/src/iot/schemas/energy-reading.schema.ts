@@ -578,7 +578,8 @@ export const EnergyReadingSchema = SchemaFactory.createForClass(EnergyReading);
  *    - Reduces storage costs
  */
 EnergyReadingSchema.index({ sensorId: 1, timestamp: -1 });
-EnergyReadingSchema.index({ source: 1, timestamp: -1 }); // New: Filter by source
+EnergyReadingSchema.index({ source: 1, timestamp: -1 }); // Filter by source + timestamp
+EnergyReadingSchema.index({ source: 1, receivedAt: -1 }); // Supports $match { source, receivedAt } in daily/range aggregations
 
 /**
  * Schema Transformation

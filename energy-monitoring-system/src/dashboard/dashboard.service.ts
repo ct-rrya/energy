@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DashboardGateway } from './dashboard.gateway';
 import { EnergyService } from '../energy/energy.service';
+import { GeminiAIService } from '../ai/gemini-ai.service';
 import { StatisticsUpdateEventDto } from './dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -46,10 +47,14 @@ export class DashboardService
   private readonly logger = new Logger(DashboardService.name);
   private statisticsInterval: NodeJS.Timeout;
   private readonly updateIntervalMs: number;
+  private readonly metricsCacheTtlMs = 15_000;
+  private metricsCache: { data: any; expiresAt: number } | null = null;
+  private metricsInFlight: Promise<any> | null = null;
 
   constructor(
     private dashboardGateway: DashboardGateway,
     private energyService: EnergyService,
+    private geminiAIService: GeminiAIService,
     private configService: ConfigService,
     @InjectModel(Sensor.name) private sensorModel: Model<SensorDocument>,
   ) {
@@ -157,13 +162,11 @@ export class DashboardService
 
       this.logger.debug('Broadcasting statistics update...');
 
-      // Get statistics from EnergyService
-      const stats = await this.energyService.getTotalStatistics();
-
-      // Get active sensors count
-      const activeSensors = await this.sensorModel.countDocuments({
-        isActive: true,
-      });
+      // Fetch statistics and active sensor count concurrently
+      const [stats, activeSensors] = await Promise.all([
+        this.energyService.getTotalStatistics(),
+        this.sensorModel.countDocuments({ isActive: true }).exec(),
+      ]);
 
       // Format statistics event
       const statisticsEvent: StatisticsUpdateEventDto = {
@@ -201,6 +204,122 @@ export class DashboardService
    */
   getGateway(): DashboardGateway {
     return this.dashboardGateway;
+  }
+
+  /**
+   * Get Dashboard Metrics (with 15-second in-memory TTL cache + concurrent DB queries)
+   */
+  async getDashboardMetrics() {
+    const now = Date.now();
+    if (this.metricsCache && now < this.metricsCache.expiresAt) {
+      return this.metricsCache.data;
+    }
+
+    if (this.metricsInFlight) {
+      return this.metricsInFlight;
+    }
+
+    this.metricsInFlight = this.computeDashboardMetrics()
+      .then((metrics) => {
+        this.metricsCache = {
+          data: metrics,
+          expiresAt: Date.now() + this.metricsCacheTtlMs,
+        };
+        return metrics;
+      })
+      .finally(() => {
+        this.metricsInFlight = null;
+      });
+
+    return this.metricsInFlight;
+  }
+
+  private async computeDashboardMetrics() {
+    this.logger.debug('Computing dashboard metrics (cache miss)...');
+
+    // Run all independent MongoDB queries concurrently
+    const [stats, detailedStats, activeSensors, rawStats] = await Promise.all([
+      this.energyService.getTotalStatistics(),
+      this.energyService.getTodayDetailedStats(),
+      this.sensorModel.countDocuments({ isActive: true }).exec(),
+      this.energyService.getTodayRawStatistics(),
+    ]);
+
+    // Generate AI insight for today's energy data
+    let aiInsight: string | undefined;
+    try {
+      const todayEnergy = rawStats.totalEnergyMWh;
+      const avgPower = rawStats.avgPowerW;
+      const maxPower = rawStats.peakPowerW;
+      const readingCount = rawStats.readingCount;
+      const totalSteps = detailedStats.totalSteps;
+
+      let statusGuidance: string;
+      if (readingCount === 0) {
+        statusGuidance = 'NO_READINGS';
+      } else if (todayEnergy === 0 && maxPower === 0) {
+        statusGuidance = 'ZERO_GENERATION';
+      } else if (todayEnergy > 0 && todayEnergy < 0.001) {
+        statusGuidance = 'MINIMAL_GENERATION';
+      } else {
+        statusGuidance = 'NORMAL_GENERATION';
+      }
+
+      const prompt = `You are analyzing a piezoelectric energy monitoring system. Here's today's data:
+
+STATUS: ${statusGuidance}
+- Total energy harvested: ${todayEnergy} milliwatt-hours (mWh)
+- Average power: ${avgPower} watts (W)
+- Peak power: ${maxPower} watts (W)  
+- Number of readings: ${readingCount}
+- Total footsteps detected: ${totalSteps}
+
+IMPORTANT RULES:
+1. If STATUS is NO_READINGS: Say "No sensor data recorded today"
+2. If STATUS is ZERO_GENERATION: Say "System active but no energy generated yet"
+3. If STATUS is MINIMAL_GENERATION: Acknowledge the tiny energy (use mW or μW if appropriate)
+4. If STATUS is NORMAL_GENERATION: Provide performance insight
+
+Provide ONE concise statement (60-100 characters) about today's performance.
+
+Examples for MINIMAL_GENERATION:
+- "Minimal activity: ${(avgPower * 1000).toFixed(2)}mW avg, ${totalSteps} steps detected"
+- "Light usage today: ${maxPower.toFixed(4)}W peak from ${totalSteps} steps"
+
+Examples for NORMAL_GENERATION:
+- "Strong performance: ${maxPower.toFixed(1)}W peak power"
+- "Steady generation throughout the day"`;
+
+      const aiResponse = await this.geminiAIService.processQuery(prompt);
+      if (aiResponse) {
+        aiInsight =
+          aiResponse.length > 150
+            ? aiResponse.substring(0, 147) + '...'
+            : aiResponse;
+      }
+    } catch (error: any) {
+      this.logger.error(`[AI] Failed to generate AI insight: ${error.message}`);
+      aiInsight = undefined;
+    }
+
+    return {
+      dailyEnergy: stats.todayStats.estimatedEnergyKWh,
+      totalReadings: stats.totalReadings,
+      todayTotalPower: stats.todayStats.totalPower,
+      todayAvgPower: stats.todayStats.avgPower,
+      todayEstimatedEnergyKWh: stats.todayStats.estimatedEnergyKWh,
+      todayTotalSteps: detailedStats.totalSteps,
+      todayMaxVoltage: detailedStats.maxVoltage,
+      todayPeakPower: detailedStats.peakPower,
+      todayPeakCurrent: detailedStats.peakCurrent,
+      todayAvgVoltage: detailedStats.avgVoltage,
+      todayAvgCurrent: detailedStats.avgCurrent,
+      activeSensors,
+      lastReadingAt: stats.lastReading?.timestamp || null,
+      lastReadingPower: stats.lastReading?.power || null,
+      lastReadingSensorId: stats.lastReading?.sensorId || null,
+      aiInsight,
+    };
   }
 
   /**
