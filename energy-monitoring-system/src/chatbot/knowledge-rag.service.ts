@@ -26,61 +26,61 @@ const ECOSTEP_BRAIN_KNOWLEDGE: Array<{
   section: string;
   content: string;
 }> = [
-  {
-    source: 'ecostep_brain',
-    section: 'System Overview & Mission',
-    content:
-      'EcoStep is a smart piezoelectric footstep kinetic energy harvesting and real-time IoT monitoring system developed at Cebu Technological University (CTU) Daanbantayan Campus. Website: https://ecostep.cebutech.digital. Backend API: https://ecostep-backend-3rod.onrender.com. Every footstep compresses piezoelectric (PZT) discs inside the floor tile, generating electrical energy that is rectified, buffered in capacitors, sampled by an ESP32 microcontroller, and streamed live to the cloud dashboard.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Research Team (CTU Daanbantayan)',
-    content:
-      'The EcoStep Research Team consists of 6 members: Lord Jason Riveral (Project Lead & Hardware Lead), Merry Apple Edaño (Software and Manuscript Lead), Jerome Magdadaro (Hardware Assistant), Jhemarsh Lee Conde (Documentation and Debugging), Alyza Pitogo (Documentation and Debugging), and Francis Keith Banan (Documentation & Hardware Worker).',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Public Website Pages & Navigation',
-    content:
-      'Public visitors need no login to explore: Landing Page (/) with How it works, EcoStepMat animation, Dashboard preview, EcoGuide preview, and About section (YouTube promo video + Research Team); Central Dashboard (/dashboard) showing live POWER OUTPUT (mW, Live vs Standby), STEPS TODAY, ENERGY TODAY (mWh), Voltage, Current, hardware status pill, and a Refresh button; Trends (/analytics) for historical charts with zero-record filtering; Milestone (/milestones) for monthly & weekly energy goals; About (/about); and EcoGuide AI assistant.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'User Roles, Security & Admin Pages',
-    content:
-      'EcoStep has 3 access levels: (1) Public Visitors get read-only access and live read-only Socket.IO updates without logging in. (2) SYSTEM_ADMIN logs in via Access Code at /admin/login (no inactivity auto-logout; stays signed in until manual logout) and unlocks Health (/admin/diagnostics), Ledger (/reports), and Settings (/settings). (3) SUPER_ADMIN is restricted to Admins (/admin-management) and Logs (/admin/logs) audit trails. Hardware ESP32 units authenticate via X-API-Key header and must have status active.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Real-Time Architecture & Database Collections',
-    content:
-      'Telemetry flows from ESP32 via POST /api/iot/readings or POST /api/iot/piezo/readings to NestJS, stored in MongoDB Atlas (energy-monitoring database) with compound index { sensorId, timestamp } (IXSCAN). Every reading triggers dual real-time push: Socket.IO (reading:new) and Firebase Firestore (liveReadings/latest), plus automatic React Query cache invalidation on the frontend. Core MongoDB collections: users, sensors, energy_readings, alerts, reports, audit_logs, milestone_targets, diagnostic_tests, daily_diagnostic_tasks, reference_configs, notification_logs, subscribers, players, and knowledge_chunks.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Dashboard Logical Rules & Timezone',
-    content:
-      'All daily totals (STEPS TODAY, ENERGY TODAY, todayTotalPower) use Asia/Manila (UTC+8) midnight-to-midnight boundaries converted to UTC via fromZonedTime. Central shows Live when a valid reading from today arrives and Standby (0.0000 mW) when idle. STEPS TODAY computes per-sensor step deltas and handles ESP32 counter resets without double-counting. The hardware status badge shows Waiting, Connected (active telemetry within 60s or active BLE), or Connection Lost (>60s without telemetry when not on BLE).',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Web Bluetooth (BLE) Wi-Fi Provisioning',
-    content:
-      'In Settings (/settings), admins can pair directly from Chrome or Edge over HTTPS with the ESP32 (EcoStep-Harvester) via Web Bluetooth without a native mobile app. On connect, EcoStep displays "ESP32 Connection Successful", requests a 2.4 GHz Wi-Fi scan ({"cmd":"scan"} -> wifi_list) with manual SSID fallback, stays connected when the modal closes, auto-retries GATT reconnection up to 3 times on brief drops, and warns "ESP32 Is Already Connected" if reopened while paired.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'Tile Health Diagnostics, Milestones & Ledger Reports',
-    content:
-      'Tile Health (/admin/diagnostics) compares a firm footstep test against a 30-day normal output baseline (mWh per step, ±34% normal zone) via Start test mode and logs Daily tasks and All runs. Milestones (/milestones) tracks monthly and weekly kinetic energy targets; admins configure targets by the 2nd day of each month (Asia/Manila) or see an overdue reminder banner. Ledger (/reports) generates downloadable PDF and Excel energy reports by date range.',
-  },
-  {
-    source: 'ecostep_brain',
-    section: 'SOP Verification & Performance Benchmarks',
-    content:
-      'Automated SOP verification on ecostep.cebutech.digital achieved: SOP 2.2 Batch Reliability 20/20 packets saved (100% PSTR, HTTP 201); SOP 2.3A DB Integrity 5/5 passed (IXSCAN true, 0 duplicates, lastSeenAt synced); SOP 2.3B API Latency 135.05-205.05 ms (mean 156.12 ms, <500 ms Pass); SOP 2.4A E2E UI Latency mean 929.6 ms (steady-state T2-T5: 765.75 ms, <3000 ms Pass); SOP 2.4B UI Accuracy 100% match between MongoDB and Dashboard.',
-  },
-];
+    {
+      source: 'ecostep_brain',
+      section: 'System Overview & Mission',
+      content:
+        'EcoStep is a smart piezoelectric footstep kinetic energy harvesting and real-time IoT monitoring system developed at Cebu Technological University (CTU) Daanbantayan Campus. Website: https://ecostep.cebutech.digital. Backend API: https://ecostep-xvck.onrender.com. Every footstep compresses piezoelectric (PZT) discs inside the floor tile, generating electrical energy that is rectified, buffered in capacitors, sampled by an ESP32 microcontroller, and streamed live to the cloud dashboard.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Research Team (CTU Daanbantayan)',
+      content:
+        'The EcoStep Research Team consists of 6 members: Lord Jason Riveral (Project Lead & Hardware Lead), Merry Apple Edaño (Software and Manuscript Lead), Jerome Magdadaro (Hardware Assistant), Jhemarsh Lee Conde (Documentation and Debugging), Alyza Pitogo (Documentation and Debugging), and Francis Keith Banan (Documentation & Hardware Worker).',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Public Website Pages & Navigation',
+      content:
+        'Public visitors need no login to explore: Landing Page (/) with How it works, EcoStepMat animation, Dashboard preview, EcoGuide preview, and About section (YouTube promo video + Research Team); Central Dashboard (/dashboard) showing live POWER OUTPUT (mW, Live vs Standby), STEPS TODAY, ENERGY TODAY (mWh), Voltage, Current, hardware status pill, and a Refresh button; Trends (/analytics) for historical charts with zero-record filtering; Milestone (/milestones) for monthly & weekly energy goals; About (/about); and EcoGuide AI assistant.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'User Roles, Security & Admin Pages',
+      content:
+        'EcoStep has 3 access levels: (1) Public Visitors get read-only access and live read-only Socket.IO updates without logging in. (2) SYSTEM_ADMIN logs in via Access Code at /admin/login (no inactivity auto-logout; stays signed in until manual logout) and unlocks Health (/admin/diagnostics), Ledger (/reports), and Settings (/settings). (3) SUPER_ADMIN is restricted to Admins (/admin-management) and Logs (/admin/logs) audit trails. Hardware ESP32 units authenticate via X-API-Key header and must have status active.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Real-Time Architecture & Database Collections',
+      content:
+        'Telemetry flows from ESP32 via POST /api/iot/readings or POST /api/iot/piezo/readings to NestJS, stored in MongoDB Atlas (energy-monitoring database) with compound index { sensorId, timestamp } (IXSCAN). Every reading triggers dual real-time push: Socket.IO (reading:new) and Firebase Firestore (liveReadings/latest), plus automatic React Query cache invalidation on the frontend. Core MongoDB collections: users, sensors, energy_readings, alerts, reports, audit_logs, milestone_targets, diagnostic_tests, daily_diagnostic_tasks, reference_configs, notification_logs, subscribers, players, and knowledge_chunks.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Dashboard Logical Rules & Timezone',
+      content:
+        'All daily totals (STEPS TODAY, ENERGY TODAY, todayTotalPower) use Asia/Manila (UTC+8) midnight-to-midnight boundaries converted to UTC via fromZonedTime. Central shows Live when a valid reading from today arrives and Standby (0.0000 mW) when idle. STEPS TODAY computes per-sensor step deltas and handles ESP32 counter resets without double-counting. The hardware status badge shows Waiting, Connected (active telemetry within 60s or active BLE), or Connection Lost (>60s without telemetry when not on BLE).',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Web Bluetooth (BLE) Wi-Fi Provisioning',
+      content:
+        'In Settings (/settings), admins can pair directly from Chrome or Edge over HTTPS with the ESP32 (EcoStep-Harvester) via Web Bluetooth without a native mobile app. On connect, EcoStep displays "ESP32 Connection Successful", requests a 2.4 GHz Wi-Fi scan ({"cmd":"scan"} -> wifi_list) with manual SSID fallback, stays connected when the modal closes, auto-retries GATT reconnection up to 3 times on brief drops, and warns "ESP32 Is Already Connected" if reopened while paired.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'Tile Health Diagnostics, Milestones & Ledger Reports',
+      content:
+        'Tile Health (/admin/diagnostics) compares a firm footstep test against a 30-day normal output baseline (mWh per step, ±34% normal zone) via Start test mode and logs Daily tasks and All runs. Milestones (/milestones) tracks monthly and weekly kinetic energy targets; admins configure targets by the 2nd day of each month (Asia/Manila) or see an overdue reminder banner. Ledger (/reports) generates downloadable PDF and Excel energy reports by date range.',
+    },
+    {
+      source: 'ecostep_brain',
+      section: 'SOP Verification & Performance Benchmarks',
+      content:
+        'Automated SOP verification on ecostep.cebutech.digital achieved: SOP 2.2 Batch Reliability 20/20 packets saved (100% PSTR, HTTP 201); SOP 2.3A DB Integrity 5/5 passed (IXSCAN true, 0 duplicates, lastSeenAt synced); SOP 2.3B API Latency 135.05-205.05 ms (mean 156.12 ms, <500 ms Pass); SOP 2.4A E2E UI Latency mean 929.6 ms (steady-state T2-T5: 765.75 ms, <3000 ms Pass); SOP 2.4B UI Accuracy 100% match between MongoDB and Dashboard.',
+    },
+  ];
 
 @Injectable()
 export class KnowledgeRagService implements OnModuleInit {
@@ -93,7 +93,7 @@ export class KnowledgeRagService implements OnModuleInit {
     @InjectModel(KnowledgeChunk.name)
     private readonly chunkModel: Model<KnowledgeChunkDocument>,
     private readonly geminiService: GeminiAIService,
-  ) {}
+  ) { }
 
   onModuleInit(): void {
     // Non-blocking background sync so server startup is never delayed
