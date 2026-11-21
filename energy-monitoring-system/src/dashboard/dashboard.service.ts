@@ -47,9 +47,13 @@ export class DashboardService
   private readonly logger = new Logger(DashboardService.name);
   private statisticsInterval: NodeJS.Timeout;
   private readonly updateIntervalMs: number;
-  private readonly metricsCacheTtlMs = 15_000;
+  private readonly metricsCacheTtlMs = 60_000;
+  private readonly aiInsightTtlMs = 60_000;
   private metricsCache: { data: any; expiresAt: number } | null = null;
   private metricsInFlight: Promise<any> | null = null;
+  private lastAiInsight: string | null = null;
+  private aiInsightUpdatedAt: number = 0;
+  private aiInsightInFlight: boolean = false;
 
   constructor(
     private dashboardGateway: DashboardGateway,
@@ -207,7 +211,16 @@ export class DashboardService
   }
 
   /**
-   * Get Dashboard Metrics (with 15-second in-memory TTL cache + concurrent DB queries)
+   * Invalidate the dashboard metrics cache when a new reading arrives so the
+   * next request fetches fresh MongoDB aggregates and schedules a background AI refresh.
+   */
+  invalidateMetricsCache(): void {
+    this.metricsCache = null;
+    this.aiInsightUpdatedAt = 0;
+  }
+
+  /**
+   * Get Dashboard Metrics (60s in-memory TTL cache + non-blocking background AI insight)
    */
   async getDashboardMetrics() {
     const now = Date.now();
@@ -234,38 +247,53 @@ export class DashboardService
     return this.metricsInFlight;
   }
 
-  private async computeDashboardMetrics() {
-    this.logger.debug('Computing dashboard metrics (cache miss)...');
+  private getDefaultInsight(rawStats: any, detailedStats: any): string {
+    const todayEnergy = rawStats?.totalEnergyMWh ?? 0;
+    const avgPower = rawStats?.avgPowerW ?? 0;
+    const maxPower = rawStats?.peakPowerW ?? 0;
+    const readingCount = rawStats?.readingCount ?? 0;
+    const totalSteps = detailedStats?.totalSteps ?? 0;
 
-    // Run all independent MongoDB queries concurrently
-    const [stats, detailedStats, activeSensors, rawStats] = await Promise.all([
-      this.energyService.getTotalStatistics(),
-      this.energyService.getTodayDetailedStats(),
-      this.sensorModel.countDocuments({ isActive: true }).exec(),
-      this.energyService.getTodayRawStatistics(),
-    ]);
+    if (readingCount === 0) {
+      return 'No sensor data recorded today';
+    }
+    if (todayEnergy === 0 && maxPower === 0) {
+      return 'System active but no energy generated yet';
+    }
+    if (todayEnergy < 0.001) {
+      return `Minimal activity: ${(avgPower * 1000).toFixed(2)}mW avg, ${totalSteps} steps detected`;
+    }
+    return `Active generation: ${maxPower.toFixed(4)}W peak from ${totalSteps} steps`;
+  }
 
-    // Generate AI insight for today's energy data
-    let aiInsight: string | undefined;
-    try {
-      const todayEnergy = rawStats.totalEnergyMWh;
-      const avgPower = rawStats.avgPowerW;
-      const maxPower = rawStats.peakPowerW;
-      const readingCount = rawStats.readingCount;
-      const totalSteps = detailedStats.totalSteps;
+  private refreshAiInsightInBackground(rawStats: any, detailedStats: any): void {
+    const now = Date.now();
+    if (this.aiInsightInFlight) {
+      return;
+    }
+    if (this.lastAiInsight && now - this.aiInsightUpdatedAt < this.aiInsightTtlMs) {
+      return;
+    }
 
-      let statusGuidance: string;
-      if (readingCount === 0) {
-        statusGuidance = 'NO_READINGS';
-      } else if (todayEnergy === 0 && maxPower === 0) {
-        statusGuidance = 'ZERO_GENERATION';
-      } else if (todayEnergy > 0 && todayEnergy < 0.001) {
-        statusGuidance = 'MINIMAL_GENERATION';
-      } else {
-        statusGuidance = 'NORMAL_GENERATION';
-      }
+    this.aiInsightInFlight = true;
+    const todayEnergy = rawStats.totalEnergyMWh;
+    const avgPower = rawStats.avgPowerW;
+    const maxPower = rawStats.peakPowerW;
+    const readingCount = rawStats.readingCount;
+    const totalSteps = detailedStats.totalSteps;
 
-      const prompt = `You are analyzing a piezoelectric energy monitoring system. Here's today's data:
+    let statusGuidance: string;
+    if (readingCount === 0) {
+      statusGuidance = 'NO_READINGS';
+    } else if (todayEnergy === 0 && maxPower === 0) {
+      statusGuidance = 'ZERO_GENERATION';
+    } else if (todayEnergy > 0 && todayEnergy < 0.001) {
+      statusGuidance = 'MINIMAL_GENERATION';
+    } else {
+      statusGuidance = 'NORMAL_GENERATION';
+    }
+
+    const prompt = `You are analyzing a piezoelectric energy monitoring system. Here's today's data:
 
 STATUS: ${statusGuidance}
 - Total energy harvested: ${todayEnergy} milliwatt-hours (mWh)
@@ -290,17 +318,45 @@ Examples for NORMAL_GENERATION:
 - "Strong performance: ${maxPower.toFixed(1)}W peak power"
 - "Steady generation throughout the day"`;
 
-      const aiResponse = await this.geminiAIService.processQuery(prompt);
-      if (aiResponse) {
-        aiInsight =
-          aiResponse.length > 150
-            ? aiResponse.substring(0, 147) + '...'
-            : aiResponse;
-      }
-    } catch (error: any) {
-      this.logger.error(`[AI] Failed to generate AI insight: ${error.message}`);
-      aiInsight = undefined;
-    }
+    void this.geminiAIService
+      .processQuery(prompt)
+      .then((aiResponse) => {
+        if (aiResponse) {
+          const trimmed =
+            aiResponse.length > 150
+              ? aiResponse.substring(0, 147) + '...'
+              : aiResponse;
+          this.lastAiInsight = trimmed;
+          this.aiInsightUpdatedAt = Date.now();
+          if (this.metricsCache?.data) {
+            this.metricsCache.data.aiInsight = trimmed;
+          }
+        }
+      })
+      .catch((error: any) => {
+        this.logger.warn(`[AI] Background insight refresh failed: ${error?.message || error}`);
+      })
+      .finally(() => {
+        this.aiInsightInFlight = false;
+      });
+  }
+
+  private async computeDashboardMetrics() {
+    this.logger.debug('Computing dashboard metrics (cache miss)...');
+
+    // Run all independent MongoDB queries concurrently
+    const [stats, detailedStats, activeSensors, rawStats] = await Promise.all([
+      this.energyService.getTotalStatistics(),
+      this.energyService.getTodayDetailedStats(),
+      this.sensorModel.countDocuments({ isActive: true }).exec(),
+      this.energyService.getTodayRawStatistics(),
+    ]);
+
+    // Refresh AI insight asynchronously in the background without blocking HTTP response
+    this.refreshAiInsightInBackground(rawStats, detailedStats);
+
+    const aiInsight =
+      this.lastAiInsight || this.getDefaultInsight(rawStats, detailedStats);
 
     return {
       dailyEnergy: stats.todayStats.estimatedEnergyKWh,

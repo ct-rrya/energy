@@ -477,6 +477,9 @@ export class IotService {
     sensor: any,
   ): Promise<void> {
     try {
+      // Invalidate cached dashboard metrics so next load reflects the new reading
+      this.dashboardService.invalidateMetricsCache?.();
+
       const gateway = this.dashboardService.getGateway();
 
       const event: NewReadingEventDto = {
