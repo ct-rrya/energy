@@ -6,7 +6,8 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { AuthService } from './auth.service';
 import { LoginDto, AuthResponseDto, AccessCodeLoginDto } from './dto';
 import { AuditService } from '../audit/audit.service';
@@ -38,6 +39,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
  */
 @ApiTags('Authentication')
 @Controller('auth')
+@UseGuards(RateLimitGuard)
+@SkipThrottle({ default: true, chat: true, iot: true, telemetry: true })
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

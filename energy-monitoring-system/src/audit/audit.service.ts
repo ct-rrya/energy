@@ -309,10 +309,13 @@ export class AuditService {
           ],
         });
       } else {
+        const safeCategory = targetCategory
+          .slice(0, 100)
+          .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         conditions.push({
           $or: [
-            { category: { $regex: new RegExp(targetCategory, 'i') } },
-            { module: { $regex: new RegExp(targetCategory, 'i') } },
+            { category: { $regex: new RegExp(safeCategory, 'i') } },
+            { module: { $regex: new RegExp(safeCategory, 'i') } },
           ],
         });
       }
@@ -347,7 +350,10 @@ export class AuditService {
     }
 
     if (query.search && query.search.trim()) {
-      const term = query.search.trim();
+      const term = query.search
+        .trim()
+        .slice(0, 100)
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(term, 'i');
       conditions.push({
         $or: [

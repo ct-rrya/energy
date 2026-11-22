@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatController } from './chat.controller';
 import { SessionManager } from './session.manager';
 import { ChatbotModule } from '../chatbot/chatbot.module';
@@ -15,7 +17,13 @@ import { PlayersModule } from '../players/players.module';
   imports: [
     ChatbotModule, // For ChatbotCoreService
     PlayersModule, // For OptionalPlayerSessionGuard
-    // ThrottlerModule will be configured at app level
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('jwt.secret'),
+      }),
+    }),
   ],
   controllers: [ChatController],
   providers: [SessionManager],

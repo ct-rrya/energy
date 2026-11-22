@@ -37,6 +37,7 @@ export class SessionManager {
   private readonly sessions = new Map<string, ChatSession>();
   private readonly sessionTimeoutMinutes: number;
   private readonly maxMessageHistory = 20;
+  private readonly maxSessions = 1000;
 
   constructor() {
     // Default to 30 minutes, can be configured via env
@@ -62,6 +63,22 @@ export class SessionManager {
         return existing;
       }
       this.logger.debug(`Session ${sessionId} not found or expired`);
+    }
+
+    // Bound in-memory sessions to prevent memory exhaustion DoS
+    if (this.sessions.size >= this.maxSessions) {
+      let oldestId: string | null = null;
+      let oldestTime = Infinity;
+      for (const [id, sess] of this.sessions.entries()) {
+        const t = sess.lastActivity.getTime();
+        if (t < oldestTime) {
+          oldestTime = t;
+          oldestId = id;
+        }
+      }
+      if (oldestId) {
+        this.sessions.delete(oldestId);
+      }
     }
 
     // Create new session

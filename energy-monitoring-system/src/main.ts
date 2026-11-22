@@ -22,6 +22,9 @@ async function bootstrap() {
   // Create NestJS application
   const app = await NestFactory.create(AppModule);
 
+  // Trust 1 reverse-proxy hop (Render/Cloudflare) so req.ip is accurate and X-Forwarded-For cannot be spoofed
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // Get configuration service
   const configService = app.get(ConfigService);
 
@@ -175,22 +178,24 @@ async function bootstrap() {
     )
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
-    customSiteTitle: 'EcoStep API Documentation',
-    customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info { margin: 50px 0 }
-      .swagger-ui .info .title { color: #1A312C }
-    `,
-    swaggerOptions: {
-      persistAuthorization: true, // Persist auth across page refreshes
-      docExpansion: 'none', // Collapse all operations by default
-      filter: true, // Enable filtering
-      tagsSorter: 'alpha', // Sort tags alphabetically
-      operationsSorter: 'alpha', // Sort operations alphabetically
-    },
-  });
+  if (isDevelopment || process.env.ENABLE_SWAGGER === 'true') {
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+      customSiteTitle: 'EcoStep API Documentation',
+      customCss: `
+        .swagger-ui .topbar { display: none }
+        .swagger-ui .info { margin: 50px 0 }
+        .swagger-ui .info .title { color: #1A312C }
+      `,
+      swaggerOptions: {
+        persistAuthorization: true, // Persist auth across page refreshes
+        docExpansion: 'none', // Collapse all operations by default
+        filter: true, // Enable filtering
+        tagsSorter: 'alpha', // Sort tags alphabetically
+        operationsSorter: 'alpha', // Sort operations alphabetically
+      },
+    });
+  }
 
   // Start server
   const port = configService.get<number>('app.port') || 3000;

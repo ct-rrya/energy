@@ -49,7 +49,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.get<string>('jwt.secret') || 'default-secret',
+        secret: configService.getOrThrow<string>('jwt.secret'),
         signOptions: {
           expiresIn: configService.get<string>('jwt.expiresIn') || '7d',
         } as any,

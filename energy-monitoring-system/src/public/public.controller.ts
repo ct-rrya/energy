@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { TelemetryDto } from './dto/telemetry.dto';
 import { EnergyService } from '../energy/energy.service';
 
@@ -21,6 +22,8 @@ import { EnergyService } from '../energy/energy.service';
  */
 @ApiTags('Public API')
 @Controller('public')
+@UseGuards(RateLimitGuard)
+@SkipThrottle({ default: true, auth: true, chat: true, iot: true })
 export class PublicController {
   private readonly logger = new Logger(PublicController.name);
 

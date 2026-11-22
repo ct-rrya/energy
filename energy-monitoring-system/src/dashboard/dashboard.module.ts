@@ -66,7 +66,7 @@ import { Sensor, SensorSchema } from '../sensors/schemas/sensor.schema';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret') || 'default-secret',
+        secret: configService.getOrThrow<string>('jwt.secret'),
         signOptions: {
           expiresIn: configService.get<string>('jwt.expiresIn') || '7d',
         } as any,

@@ -29,23 +29,21 @@ import { Request } from 'express';
 @Injectable()
 export class RateLimitGuard extends ThrottlerGuard {
   /**
-   * Extract the real IP address from the request
-   * Handles X-Forwarded-For header for proxied requests
+   * Extract the real client IP address safely (resistant to X-Forwarded-For spoofing).
+   * Prefers Cloudflare's cf-connecting-ip when present, otherwise Express's req.ip
+   * (resolved using `trust proxy` configured in main.ts).
    */
   protected getTracker(req: Request): Promise<string> {
-    // Check X-Forwarded-For header first (common when behind reverse proxy)
-    const forwardedFor = req.headers['x-forwarded-for'];
-
-    if (forwardedFor) {
-      // X-Forwarded-For can contain multiple IPs, use the first one (client IP)
-      const ips = Array.isArray(forwardedFor)
-        ? forwardedFor[0]
-        : forwardedFor.split(',')[0];
-      return Promise.resolve(ips.trim());
+    const cfIp = req.headers['cf-connecting-ip'];
+    if (cfIp) {
+      const ip = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+      if (ip && ip.trim()) {
+        return Promise.resolve(ip.trim());
+      }
     }
 
-    // Fall back to direct connection IP
-    return Promise.resolve(req.ip || req.socket.remoteAddress || 'unknown');
+    // Rely on Express req.ip (respects `trust proxy`) instead of untrusted leftmost X-Forwarded-For
+    return Promise.resolve(req.ip || req.socket?.remoteAddress || 'unknown');
   }
 
   /**

@@ -51,12 +51,12 @@ import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 @Throttle({ chat: { limit: 40, ttl: 60000 } })
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
-  private readonly jwtService = new JwtService();
 
   constructor(
     private readonly chatbotCore: ChatbotCoreService,
     private readonly sessionManager: SessionManager,
     private readonly auditService: AuditService,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -316,12 +316,13 @@ export class ChatController {
     if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       try {
-        const decoded = this.jwtService.decode(token) as any;
-        if (decoded && (decoded.role === 'SUPER_ADMIN' || decoded.role === 'SYSTEM_ADMIN' || decoded.role === 'admin')) {
-          adminUser = decoded;
+        // Verify JWT signature (never trust unverified decode) to prevent audit log spoofing
+        const verified = this.jwtService.verify(token) as any;
+        if (verified && (verified.role === 'SUPER_ADMIN' || verified.role === 'SYSTEM_ADMIN' || verified.role === 'admin')) {
+          adminUser = verified;
         }
       } catch {
-        // Ignore token decode errors for optional auth
+        // Ignore invalid/expired/unsigned tokens for optional auth
       }
     }
 

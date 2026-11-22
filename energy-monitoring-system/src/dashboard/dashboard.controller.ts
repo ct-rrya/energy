@@ -1,5 +1,7 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { DashboardService } from './dashboard.service';
 
 /**
@@ -11,6 +13,9 @@ import { DashboardService } from './dashboard.service';
  */
 @ApiTags('Dashboard')
 @Controller('dashboard')
+@UseGuards(RateLimitGuard)
+@SkipThrottle({ default: true, auth: true, chat: true, iot: true })
+@Throttle({ telemetry: { limit: 120, ttl: 60000 } })
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
