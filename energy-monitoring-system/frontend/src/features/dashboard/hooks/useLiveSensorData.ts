@@ -32,7 +32,7 @@ export function useLiveSensorData() {
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
 
   // Fetch initial/fallback data from REST API
-  const { data: apiData } = useQuery<SensorReading | undefined>({
+  const { data: apiData } = useQuery<SensorReading | null>({
     queryKey: ['sensor', 'latest'],
     queryFn: async () => {
       try {
@@ -42,7 +42,7 @@ export function useLiveSensorData() {
         
         const readings = response.data;
         if (!readings || readings.length === 0) {
-          return undefined;
+          return null;
         }
 
         const latestReading = readings[0];
@@ -57,7 +57,7 @@ export function useLiveSensorData() {
         };
       } catch (error) {
         console.warn('[useLiveSensorData] Failed to fetch latest reading:', error);
-        return undefined;
+        return null;
       }
     },
     refetchInterval: (isFirebaseConnected || isSocketConnected) ? false : 10000, // Only poll if both Firebase + Socket.IO down

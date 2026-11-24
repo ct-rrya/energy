@@ -222,7 +222,7 @@ describe('MetricCard', () => {
       expect(screen.getByText('0')).toBeInTheDocument();
     });
 
-    it('applies reduced opacity for empty state', () => {
+    it('maintains full contrast opacity for empty state', () => {
       const { container } = render(
         <MetricCard
           label="Empty"
@@ -233,8 +233,9 @@ describe('MetricCard', () => {
         />
       );
 
-      const valueContainer = container.querySelector('.opacity-50');
+      const valueContainer = container.querySelector('.opacity-100');
       expect(valueContainer).toBeInTheDocument();
+      expect(container.querySelector('.opacity-50')).not.toBeInTheDocument();
     });
 
     it('shows unit even in empty state', () => {

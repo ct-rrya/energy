@@ -193,66 +193,19 @@ html:has(.es-lp) #root {
   -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
-/* Entrance Blur-Fade Motion on Key Sections & Cards */
+/* Keep all Home page sections immediately visible (no hidden scroll-reveal gating) */
 .es-lp section .l,
 .es-lp section .r,
-.es-lp section > h2,
-.es-lp section > .lead,
-.es-lp section > .es-row,
-.es-lp section > .cap,
+.es-lp section>h2,
+.es-lp section>.lead,
+.es-lp section>.es-row,
+.es-lp section>.cap,
 .es-lp .es-cd,
 .es-lp .lp,
 .es-lp .bb {
-  opacity: 0;
-  filter: blur(5px);
-  transform: translate3d(0, 10px, 0);
-  transition:
-    opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.es-lp section.in-view .l,
-.es-lp section.in-view .r,
-.es-lp section.in-view > h2,
-.es-lp section.in-view > .lead,
-.es-lp section.in-view > .es-row,
-.es-lp section.in-view > .cap,
-.es-lp section.in-view .es-cd,
-.es-lp section.in-view .lp,
-.es-lp section.in-view .bb {
   opacity: 1;
   filter: none;
   transform: none;
-}
-
-.es-lp section.in-view .r,
-.es-lp section.in-view > .lead {
-  transition-delay: 25ms;
-}
-
-.es-lp section.in-view .lp,
-.es-lp section.in-view > .es-row {
-  transition-delay: 45ms;
-}
-
-.es-lp section.in-view .es-cd:nth-child(1),
-.es-lp section.in-view .bb:nth-child(1) {
-  transition-delay: 25ms;
-}
-
-.es-lp section.in-view .es-cd:nth-child(2),
-.es-lp section.in-view .bb:nth-child(2) {
-  transition-delay: 50ms;
-}
-
-.es-lp section.in-view .es-cd:nth-child(3),
-.es-lp section.in-view .bb:nth-child(3) {
-  transition-delay: 75ms;
-}
-
-.es-lp section.in-view .es-cd:nth-child(4) {
-  transition-delay: 100ms;
 }
 
 .es-lp h1,
@@ -324,7 +277,7 @@ html:has(.es-lp) #root {
   pointer-events: none;
 }
 
-.es-lp .es-hd > * {
+.es-lp .es-hd>* {
   pointer-events: auto;
 }
 
@@ -981,17 +934,21 @@ html:has(.es-lp) #root {
   .es-lp .cards {
     grid-template-columns: 1fr 1fr;
   }
+
   .es-lp .es-nv a {
     padding: 7px 12px;
     font-size: 13.5px;
   }
+
   .es-lp .es-hd {
     padding-inline: 20px;
   }
+
   .es-lp .es-logo i {
     width: 38px;
     height: 38px;
   }
+
   .es-lp .es-ic {
     width: 38px;
     height: 38px;
@@ -1127,19 +1084,22 @@ html:has(.es-lp) #root {
   }
 
   .es-lp h1 {
-    font-size: clamp(2.25rem, 10.66vw, 2.5rem); /* 40px at 375px */
+    font-size: clamp(2.25rem, 10.66vw, 2.5rem);
+    /* 40px at 375px */
     line-height: 1;
     letter-spacing: -0.045em;
   }
 
   .es-lp h2 {
-    font-size: clamp(1.75rem, 8vw, 1.875rem); /* 30px at 375px */
+    font-size: clamp(1.75rem, 8vw, 1.875rem);
+    /* 30px at 375px */
     line-height: 1.06;
     letter-spacing: -0.035em;
   }
 
   .es-lp .lead {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
+    /* 14px */
     line-height: 1.5;
     max-width: 100%;
   }
@@ -1154,7 +1114,8 @@ html:has(.es-lp) #root {
     min-height: 44px;
     height: 44px;
     padding: 0 clamp(14px, 4.2vw, 20px);
-    font-size: clamp(0.8125rem, 3.7vw, 0.9375rem); /* 13–15px */
+    font-size: clamp(0.8125rem, 3.7vw, 0.9375rem);
+    /* 13–15px */
     gap: 6px;
     white-space: nowrap;
   }
@@ -1226,14 +1187,16 @@ html:has(.es-lp) #root {
   .es-lp .es-cd h3 {
     grid-column: 2;
     grid-row: 1;
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
+    /* 18px */
     line-height: 1.25;
   }
 
   .es-lp .es-cd p {
     grid-column: 2;
     grid-row: 2;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
+    /* 14px */
     line-height: 1.45;
   }
 
@@ -1361,12 +1324,12 @@ html:has(.es-lp) #root {
     flex-wrap: wrap;
   }
 
-  .es-lp .dash > .es-row {
+  .es-lp .dash>.es-row {
     justify-content: center;
     margin-top: 6px;
   }
 
-  .es-lp .dash > .cap {
+  .es-lp .dash>.cap {
     align-self: center;
     text-align: center;
     font-size: 0.6875rem;
@@ -1407,7 +1370,8 @@ html:has(.es-lp) #root {
 
   .es-lp .bb {
     max-width: 88%;
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
+    /* 13px */
     line-height: 1.45;
     padding: 14px 16px;
     border-radius: 20px;
@@ -1433,7 +1397,8 @@ html:has(.es-lp) #root {
   }
 
   .es-lp .abt h2 {
-    font-size: clamp(1.875rem, 8.53vw, 2.125rem); /* 32px at 375px */
+    font-size: clamp(1.875rem, 8.53vw, 2.125rem);
+    /* 32px at 375px */
     max-width: 14ch;
   }
 
@@ -1457,6 +1422,7 @@ html:has(.es-lp) #root {
   html.landing-page-active {
     scroll-behavior: auto;
   }
+
   .es-lp * {
     transition: none !important;
     filter: none !important;

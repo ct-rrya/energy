@@ -24,8 +24,8 @@ import { ChartNoAxesColumn } from 'lucide-react';
 import type { ChartEmptyStateProps } from './chartTypes';
 
 export function ChartEmptyState({
-  message = 'No data available',
-  suggestion = 'Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.',
+  message = 'No footsteps recorded yet',
+  suggestion = 'Walk across the EcoStep tile to start generating and viewing live energy charts.',
   height = 400,
 }: ChartEmptyStateProps) {
   const { theme } = useTheme();
@@ -92,7 +92,7 @@ export function ChartEmptyState({
 
       {/* Screen reader text */}
       <span className="sr-only">
-        No data available. {suggestion}
+        {message}. {suggestion}
       </span>
     </div>
   );

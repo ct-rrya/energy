@@ -362,7 +362,25 @@ export class MilestonesService {
   }
 
   /**
-   * Get targets for a specific month (falls back to defaults if not customized)
+   * Evenly splits a monthly energy target across the calendar weeks in that month.
+   * Ensures weekly targets always match the monthly goal cleanly (e.g. 0.1 mWh / 5 weeks = 0.02 mWh).
+   */
+  private buildEvenWeeklyTargets(monthlyTargetMWh: number, weekCount: number) {
+    const count = Math.max(1, weekCount);
+    const perWeek = round6(monthlyTargetMWh / count);
+    return {
+      week1MWh: perWeek,
+      week2MWh: perWeek,
+      week3MWh: perWeek,
+      week4MWh: perWeek,
+      week5MWh: perWeek,
+      week6MWh: perWeek,
+    };
+  }
+
+  /**
+   * Get targets for a specific month (falls back to defaults if not customized).
+   * Weekly targets are always split evenly from the monthly target across that month's calendar weeks.
    */
   async getTargetsForMonth(yearMonth?: string): Promise<{
     yearMonth: string;
@@ -390,15 +408,18 @@ export class MilestonesService {
       ? yearMonth
       : `${manila.year}-${String(manila.month).padStart(2, '0')}`;
 
+    const [yStr, mStr] = effectiveMonth.split('-');
+    const weekBlocks = this.generateCalendarWeekBlocks(parseInt(yStr, 10), parseInt(mStr, 10));
     const { deadlineUtc, deadlineLabel } = this.getManilaMonthDeadline(effectiveMonth);
     const targets = await this.getTargets();
     const stored = targets.monthlyConfigurations?.[effectiveMonth];
 
     if (stored) {
+      const monthlyMWh = round6(stored.monthlyTargetMWh);
       return {
         yearMonth: effectiveMonth,
-        monthlyTargetMWh: stored.monthlyTargetMWh,
-        weeklyTargetsMWh: { ...stored.weeklyTargetsMWh },
+        monthlyTargetMWh: monthlyMWh,
+        weeklyTargetsMWh: this.buildEvenWeeklyTargets(monthlyMWh, weekBlocks.length),
         isConfigured: true,
         status: stored.status || 'CONFIGURED',
         isLocked: stored.isLocked ?? true,
@@ -411,21 +432,13 @@ export class MilestonesService {
     }
 
     // Default configuration based on piezoelectric prototype telemetry (Pilot preset default)
-    const baseMonth = targets.target1MonthMWh || 0.1;
-    const baseWeek = targets.target1WeekMWh || 0.025;
+    const baseMonth = round6(targets.target1MonthMWh || 0.1);
     const status: MonthConfigurationStatus = nowUtc > deadlineUtc ? 'OVERDUE' : 'PENDING';
 
     return {
       yearMonth: effectiveMonth,
       monthlyTargetMWh: baseMonth,
-      weeklyTargetsMWh: {
-        week1MWh: baseWeek,
-        week2MWh: baseWeek,
-        week3MWh: baseWeek,
-        week4MWh: baseWeek,
-        week5MWh: baseWeek,
-        week6MWh: baseWeek,
-      },
+      weeklyTargetsMWh: this.buildEvenWeeklyTargets(baseMonth, weekBlocks.length),
       isConfigured: false,
       status,
       isLocked: false,
@@ -468,46 +481,24 @@ export class MilestonesService {
     }
 
     const currentMonthConfig = await this.getTargetsForMonth(targetMonth);
+    const [tYearStr, tMonthStr] = targetMonth.split('-');
+    const weekBlocks = this.generateCalendarWeekBlocks(parseInt(tYearStr, 10), parseInt(tMonthStr, 10));
 
     const updatedMonthMWh = dto.monthlyTargetMWh !== undefined
       ? round6(dto.monthlyTargetMWh)
+      : dto.target1MonthMWh !== undefined
+      ? round6(dto.target1MonthMWh)
       : currentMonthConfig.monthlyTargetMWh;
 
-    const weeklyConfig = { ...currentMonthConfig.weeklyTargetsMWh };
+    // Weekly targets are always split evenly from the monthly target across the month's calendar weeks
+    const weeklyConfig = this.buildEvenWeeklyTargets(updatedMonthMWh, weekBlocks.length);
 
-    // Shared weekly target automatically applies to all weeks of the month
-    if (dto.weeklyTargetMWh !== undefined) {
-      const val = round6(dto.weeklyTargetMWh);
-      weeklyConfig.week1MWh = val;
-      weeklyConfig.week2MWh = val;
-      weeklyConfig.week3MWh = val;
-      weeklyConfig.week4MWh = val;
-      weeklyConfig.week5MWh = val;
-      weeklyConfig.week6MWh = val;
-    } else if (dto.weeklyTargetsMWh) {
-      if (dto.weeklyTargetsMWh.week1MWh !== undefined) weeklyConfig.week1MWh = round6(dto.weeklyTargetsMWh.week1MWh);
-      if (dto.weeklyTargetsMWh.week2MWh !== undefined) weeklyConfig.week2MWh = round6(dto.weeklyTargetsMWh.week2MWh);
-      if (dto.weeklyTargetsMWh.week3MWh !== undefined) weeklyConfig.week3MWh = round6(dto.weeklyTargetsMWh.week3MWh);
-      if (dto.weeklyTargetsMWh.week4MWh !== undefined) weeklyConfig.week4MWh = round6(dto.weeklyTargetsMWh.week4MWh);
-      if (dto.weeklyTargetsMWh.week5MWh !== undefined) weeklyConfig.week5MWh = round6(dto.weeklyTargetsMWh.week5MWh);
-      if (dto.weeklyTargetsMWh.week6MWh !== undefined) weeklyConfig.week6MWh = round6(dto.weeklyTargetsMWh.week6MWh);
-    }
-
-    // Support legacy properties for backwards compatibility
-    if (dto.target1WeekMWh !== undefined) {
-      const val = round6(dto.target1WeekMWh);
-      existing.target1WeekMWh = val;
-      if (dto.weeklyTargetMWh === undefined && !dto.weeklyTargetsMWh) {
-        weeklyConfig.week1MWh = val;
-        weeklyConfig.week2MWh = val;
-        weeklyConfig.week3MWh = val;
-        weeklyConfig.week4MWh = val;
-        weeklyConfig.week5MWh = val;
-        weeklyConfig.week6MWh = val;
-      }
-    }
+    // Keep legacy fields synchronized for backwards compatibility
     if (dto.target1MonthMWh !== undefined) {
       existing.target1MonthMWh = round6(dto.target1MonthMWh);
+    }
+    if (dto.target1WeekMWh !== undefined) {
+      existing.target1WeekMWh = round6(dto.target1WeekMWh);
     }
 
     const nowIso = new Date().toISOString();
@@ -569,8 +560,8 @@ export class MilestonesService {
    * Aggregate accumulated energy and step count for a given time window.
    *
    * Energy: Incremental hardware energy (mWh) summed directly without continuous-power extrapolation.
-   * Steps: Reuses the sensor-partitioned delta pipeline ($setWindowFields) from energy.service.ts
-   * to accurately handle counter resets, multiple sensors, and the initial reading within the window.
+   * Steps: ESP32 resets stepCount to 0 after each upload batch, so sum stepCount directly
+   * to stay 100% consistent with Analytics Historical Records and Central Dashboard.
    */
   async getAccumulatedEnergyForPeriod(startDate: Date, endDate: Date): Promise<{ energyMWh: number; steps: number }> {
     try {
@@ -591,50 +582,10 @@ export class MilestonesService {
       const result = await this.energyReadingModel.aggregate([
         { $match: matchStage },
         {
-          $sort: { sensorId: 1, receivedAt: 1, timestamp: 1 },
-        },
-        {
-          // Calculate previous stepCount for delta calculation partitioned by sensor
-          $setWindowFields: {
-            partitionBy: '$sensorId',
-            sortBy: { receivedAt: 1, timestamp: 1 },
-            output: {
-              previousStepCount: {
-                $shift: {
-                  output: '$stepCount',
-                  by: -1,
-                },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            stepDelta: {
-              $cond: {
-                if: { $eq: ['$previousStepCount', null] },
-                then: { $ifNull: ['$stepCount', 0] },
-                else: {
-                  $cond: {
-                    if: { $lt: ['$stepCount', '$previousStepCount'] },
-                    then: { $ifNull: ['$stepCount', 0] },
-                    else: {
-                      $subtract: [
-                        { $ifNull: ['$stepCount', 0] },
-                        { $ifNull: ['$previousStepCount', 0] },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
           $group: {
             _id: null,
-            totalEnergyMWh: { $sum: '$energy' },
-            totalSteps: { $sum: '$stepDelta' },
+            totalEnergyMWh: { $sum: { $ifNull: ['$energy', 0] } },
+            totalSteps: { $sum: { $ifNull: ['$stepCount', 0] } },
             readingCount: { $sum: 1 },
           },
         },
@@ -882,21 +833,22 @@ export class MilestonesService {
     // 1. Upcoming Milestone
     if (state === 'UPCOMING' || comparison?.category === 'UPCOMING') {
       const variants = [
-        `Scheduled for later on the calendar. The piezoelectric crystals are resting up before campus stomps all over them.`,
-        `Upcoming stretch. No footsteps expected yet, unless someone discovered campus time travel.`,
-        `On standby in the calendar. Crystals off-duty until the campus arrives.`,
-        `Waiting for this week to arrive. The tile is conserving its energy for the rush.`,
+        `Not started yet — scheduled for later on the calendar. No footsteps expected until this period begins.`,
+        `Not started yet. This upcoming stretch will begin tracking footsteps when the week arrives.`,
+        `Not started yet — scheduled on the calendar. Footsteps will begin logging once this period opens.`,
       ];
       return variants[getVariantIndex(seed, variants.length)];
     }
 
     // 2. No activity
     if ((currentMWh === 0 && stepCount === 0) || comparison?.category === 'NO_ACTIVITY') {
+      if (state === 'COMPLETED') {
+        return `No footsteps were recorded during ${label}.`;
+      }
       const variants = [
-        `Zero footsteps registered so far. Did someone cancel morning lectures, or is everyone mastering levitation?`,
-        `The floor tile is awake and alert, but the hallway seems suspiciously quiet. Waiting on campus feet.`,
-        `Pure silence on the sensors. The piezoelectric crystals are getting plenty of beauty sleep.`,
-        `Not a single step yet. The tile is ready whenever campus decides to get moving.`,
+        `Zero footsteps registered so far. The tile is in standby, waiting for footsteps.`,
+        `No footsteps yet this period. The tile is in standby and ready for campus walkers.`,
+        `Quiet on the floor so far. The tile is in standby, waiting for the first footsteps.`,
       ];
       return variants[getVariantIndex(seed, variants.length)];
     }
@@ -1082,11 +1034,16 @@ export class MilestonesService {
     const monthState: MilestoneLifecycleState =
       nowUtc > monthEndUtc ? 'COMPLETED' : nowUtc < monthStartUtc ? 'UPCOMING' : 'CURRENT';
 
-    const monthComment = !isConfigured
-      ? configurationPolicy.status === 'OVERDUE'
-        ? `Goal targets for ${monthLabel} are overdue (deadline was ${configurationPolicy.deadlineLabel}). EcoStep will evaluate milestone achievements once targets are configured.`
-        : `Target configuration is pending for ${monthLabel} (due ${configurationPolicy.deadlineLabel}). Telemetry is actively recording.`
-      : this.safeGenerateAIComment(monthLabel, monthRawPct, monthAchieved, monthEnergyMWh, monthSteps, undefined, monthState);
+    const monthComment =
+      monthState === 'UPCOMING'
+        ? !isConfigured
+          ? `Not started yet — scheduled for ${monthLabel}. Target configuration is due ${configurationPolicy.deadlineLabel}.`
+          : this.safeGenerateAIComment(monthLabel, monthRawPct, monthAchieved, monthEnergyMWh, monthSteps, undefined, monthState)
+        : !isConfigured
+        ? configurationPolicy.status === 'OVERDUE'
+          ? `Goal targets for ${monthLabel} are overdue (deadline was ${configurationPolicy.deadlineLabel}). EcoStep will evaluate milestone achievements once targets are configured.`
+          : `Target configuration is pending for ${monthLabel} (due ${configurationPolicy.deadlineLabel}). Telemetry is actively recording.`
+        : this.safeGenerateAIComment(monthLabel, monthRawPct, monthAchieved, monthEnergyMWh, monthSteps, undefined, monthState);
 
     const monthlyMilestone: MilestoneProgressItem = {
       id: 'monthly',
@@ -1109,10 +1066,11 @@ export class MilestonesService {
     };
 
     // 3. Pre-fetch weekly telemetry concurrently using Sunday–Saturday calendar rows
+    const evenWeeklyTargetMWh = round6(monthTargetMWh / Math.max(1, weekBlocks.length));
     const rawWeekly = await Promise.all(
       weekBlocks.map(async (block) => {
         const telemetry = await this.getAccumulatedEnergyForPeriod(block.startDate, block.endDate);
-        const targetMWh = (targetsConfig.weeklyTargetsMWh as any)[`week${block.weekNumber}MWh`] ?? targetsConfig.weeklyTargetsMWh.week1MWh;
+        const targetMWh = evenWeeklyTargetMWh;
         // Policy: Unconfigured targets must NEVER silently fabricate achievements
         const isAchieved = isConfigured && targetMWh > 0 ? telemetry.energyMWh >= targetMWh : false;
         const rawPct = targetMWh > 0 ? (telemetry.energyMWh / targetMWh) * 100 : 0;
@@ -1196,11 +1154,16 @@ export class MilestonesService {
         item.state,
       );
 
-      const weekComment = !isConfigured
-        ? configurationPolicy.status === 'OVERDUE'
-          ? `${label} milestone evaluation is on hold pending overdue monthly target configuration.`
-          : `${label} target configuration is pending. Footsteps and energy are actively logging.`
-        : aiComment;
+      const weekComment =
+        item.state === 'UPCOMING'
+          ? !isConfigured
+            ? `Not started yet — ${label} is scheduled for ${monthLabel}. Target configuration is pending.`
+            : aiComment
+          : !isConfigured
+          ? configurationPolicy.status === 'OVERDUE'
+            ? `${label} milestone evaluation is on hold pending overdue monthly target configuration.`
+            : `${label} target configuration is pending. Footsteps and energy are actively logging.`
+          : aiComment;
 
       const progressItem: MilestoneProgressItem = {
         id: `week_${item.block.weekNumber}`,

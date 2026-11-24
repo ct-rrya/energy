@@ -513,7 +513,7 @@ export class ChatbotCoreService {
         };
       }
       return {
-        text: `Today's energy total is 0 mWh—the tiles are awake and ready, but nobody's walked on them yet today. Time to get some steps in!`,
+        text: `Today's energy total is 0 mWh—the tile is in standby, waiting for footsteps. Step on the tile to start generating power!`,
         suggestions: ['today', 'energy', 'help'],
       };
     }
@@ -1124,7 +1124,7 @@ export class ChatbotCoreService {
         prompt += `- STATUS: PRECEDES SYSTEM LOGS — 0 readings found. The earliest recorded EcoStep hardware reading is from ${earliestPht} (${PROJECT_TIMEZONE}).\n`;
         prompt += `- Directive: Clearly inform the user that no data exists for ${dateIntent.label} because it precedes the system's earliest logged reading (${earliestPht}). Do NOT invent numbers.\n\n`;
       } else {
-        prompt += `- STATUS: NO READINGS — 0 readings, 0 steps, and 0.0000 mWh recorded for ${dateIntent.label}.\n`;
+        prompt += `- STATUS: NO READINGS — 0 readings, 0 steps, and 0.00 mWh recorded for ${dateIntent.label}.\n`;
         prompt += `- Directive: Gracefully inform the user that 0 readings were recorded for ${dateIntent.label}. Do NOT invent or substitute numbers from other dates.\n\n`;
       }
     } else {
@@ -1133,33 +1133,45 @@ export class ChatbotCoreService {
       const hasTodayData = (todayStats?.readingCount ?? 0) > 0 || todaySteps > 0;
 
       if (hasTodayData) {
+        const formattedTodayEnergy =
+          todayEnergyMWh > 0 && todayEnergyMWh < 1
+            ? todayEnergyMWh.toFixed(3)
+            : todayEnergyMWh.toFixed(2);
         prompt += `**Live Database Telemetry Context (MongoDB — Today's Key Metric):**\n`;
-        prompt += `- Today (${PROJECT_TIMEZONE}): ${todayEnergyMWh.toFixed(2)} mWh across ${todaySteps} footstep events (${todayEnergyMWh.toFixed(4)} mWh, ${todayStats?.readingCount ?? 0} readings).\n`;
+        prompt += `- Today (${PROJECT_TIMEZONE}): ${formattedTodayEnergy} mWh across ${todaySteps} footsteps (${todayStats?.readingCount ?? 0} readings).\n`;
         if (todayDetailed?.maxVoltage !== undefined) {
-          prompt += `- Today Peaks: Max Voltage ${Number(todayDetailed.maxVoltage).toFixed(2)} V, Peak Power ${Number(todayDetailed.peakPower ?? 0).toFixed(4)} W, Peak Current ${Number(todayDetailed.peakCurrent ?? 0).toFixed(4)} A.\n`;
+          prompt += `- Today Peaks: Max Voltage ${Number(todayDetailed.maxVoltage).toFixed(2)} V, Peak Power ${(Number(todayDetailed.peakPower ?? 0) * 1000).toFixed(2)} mW, Peak Current ${(Number(todayDetailed.peakCurrent ?? 0) * 1000).toFixed(2)} mA.\n`;
         }
-        prompt += `- Directive: Mention ONLY the single most relevant measurement matching the user's question in 1–3 concise sentences.\n`;
+        prompt += `- Directive: Mention ONLY the single most relevant measurement matching the user's question in 1–3 concise sentences using clean 2–3 decimal formatting.\n`;
       } else {
         prompt += `**Live Database Telemetry Context (MongoDB — Today: No Readings Yet):**\n`;
-        prompt += `- Today (${PROJECT_TIMEZONE}): 0 steps and 0.0000 mWh recorded so far today (tiles currently in standby for today).\n`;
+        prompt += `- Today (${PROJECT_TIMEZONE}): 0 steps and 0.00 mWh recorded so far today (Status: Standby — waiting for footsteps. The tile only sends data when stepped on, so Standby is normal when idle).\n`;
       }
 
       if (latest) {
         const latestVoltage = Number(latest.voltageV ?? latest.voltage ?? 0).toFixed(2);
-        const latestCurrent = Number(latest.currentA ?? latest.current ?? 0).toFixed(4);
-        const latestPower = Number(latest.powerW ?? latest.power ?? 0).toFixed(4);
-        const latestEnergy = Number(latest.energy ?? 0).toFixed(4);
+        const latestCurrentMA = (Number(latest.currentA ?? latest.current ?? 0) * 1000).toFixed(2);
+        const latestPowerMW = Number(latest.powerW ?? latest.power ?? 0).toFixed(2);
+        const latestEnergyNum = Number(latest.energy ?? 0);
+        const latestEnergy =
+          latestEnergyNum > 0 && latestEnergyNum < 1
+            ? latestEnergyNum.toFixed(3)
+            : latestEnergyNum.toFixed(2);
         const latestStepCount = latest.stepCount ?? 0;
         const latestTs = latest.timestamp ? new Date(latest.timestamp).toISOString() : 'unknown';
-        prompt += `- Latest Recorded Reading (at ${latestTs}): Voltage=${latestVoltage} V, Current=${latestCurrent} A, Power=${latestPower} mW, Energy=${latestEnergy} mWh, StepCount=${latestStepCount}.\n`;
+        prompt += `- Latest Recorded Reading (at ${latestTs}): Voltage=${latestVoltage} V, Current=${latestCurrentMA} mA, Power=${latestPowerMW} mW, Energy=${latestEnergy} mWh, StepCount=${latestStepCount}.\n`;
       } else {
         prompt += `- Latest Recorded Reading: None in database.\n`;
       }
 
       if (ms) {
         const m = ms.monthlyMilestone;
-        prompt += `- This Month (${ms.monthLabel || ms.yearMonth || 'Current'}): ${m?.currentMWh?.toFixed(4) || '0.0000'} mWh across ${m?.stepCount ?? 0} steps (Target: ${m?.targetMWh?.toFixed(3) || '0.100'} mWh).\n`;
-        prompt += `- All-Time Accumulated Totals: ${ms.allTimeEnergyMWh?.toFixed(4) || '0.0000'} mWh across ${ms.allTimeSteps ?? 0} total footsteps.\n`;
+        const monthMWh = m?.currentMWh ?? 0;
+        const monthFormatted = monthMWh > 0 && monthMWh < 1 ? monthMWh.toFixed(3) : monthMWh.toFixed(2);
+        const allTimeMWh = ms.allTimeEnergyMWh ?? 0;
+        const allTimeFormatted = allTimeMWh > 0 && allTimeMWh < 1 ? allTimeMWh.toFixed(3) : allTimeMWh.toFixed(2);
+        prompt += `- This Month (${ms.monthLabel || ms.yearMonth || 'Current'}): ${monthFormatted} mWh across ${m?.stepCount ?? 0} steps (Target: ${m?.targetMWh?.toFixed(3) || '0.100'} mWh).\n`;
+        prompt += `- All-Time Accumulated Totals: ${allTimeFormatted} mWh across ${ms.allTimeSteps ?? 0} total footsteps.\n`;
       }
 
       prompt += `- Timeframe Rule: Answer using the EXACT matching timeframe the user asked for (if they ask for "total/accumulated", report the All-Time or Monthly totals even if Today is 0; if they ask for latest voltage/power/current, report the Latest Recorded Reading; only say 0 if the requested timeframe is actually 0).\n\n`;

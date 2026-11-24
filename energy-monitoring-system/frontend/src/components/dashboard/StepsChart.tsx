@@ -3,7 +3,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
-import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './chartUtils';
+import {
+  transformToChartData,
+  isDatasetEmpty,
+  hasDuplicateFormattedDates,
+  formatSmartChartTimestamp,
+  computeNiceYAxis,
+} from './chartUtils';
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
 import {
@@ -52,7 +58,7 @@ export const StepsChart = React.memo(function StepsChart({
 }: StepsChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  
+
   // Subscribe to real-time WebSocket updates
   useChartRealTimeUpdates();
 
@@ -96,6 +102,17 @@ export const StepsChart = React.memo(function StepsChart({
   const isSparse = chartData.length > 0 && chartData.length < 2;
   const chartHeight = isMobile ? 240 : 270;
 
+  const effectiveXGranularity = propGranularity ?? 'day';
+  const showTimeOnXAxis = useMemo(
+    () => hasDuplicateFormattedDates(chartData, effectiveXGranularity),
+    [chartData, effectiveXGranularity]
+  );
+
+  const yAxisScale = useMemo(() => {
+    const maxVal = chartData.reduce((m, pt) => Math.max(m, pt.value || 0), 0);
+    return computeNiceYAxis(maxVal, { minMax: 4, integerOnly: true, targetSteps: 4 });
+  }, [chartData]);
+
   // Theme-aware colors
   const colors = {
     bar: theme === 'light' ? '#2FBF71' : '#3ED98A', // EcoStep green
@@ -104,10 +121,23 @@ export const StepsChart = React.memo(function StepsChart({
   };
 
   const chartMargin = {
-    top: 8,
-    right: isMobile ? 8 : 16,
-    left: isMobile ? -12 : 0,
-    bottom: isMobile ? 8 : 0,
+    top: 12,
+    right: isMobile ? 12 : 20,
+    left: isMobile ? 4 : 12,
+    bottom: isMobile ? 12 : 4,
+  };
+
+  const yAxisWidth = isMobile ? 48 : 58;
+  const yAxisLabel = {
+    value: 'Steps',
+    angle: -90,
+    position: 'insideLeft' as const,
+    offset: isMobile ? 2 : 0,
+    style: {
+      fill: colors.textColor,
+      fontSize: isMobile ? '11px' : '12px',
+      textAnchor: 'middle' as const,
+    },
   };
 
   const subtitle = periodLabel
@@ -136,23 +166,19 @@ export const StepsChart = React.memo(function StepsChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, propGranularity ?? 'day')}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, effectiveXGranularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
-              label={{
-                value: 'Steps',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => Math.max(dataMax, 4)]}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
               allowDecimals={false}
             />
             <Tooltip
@@ -176,7 +202,7 @@ export const StepsChart = React.memo(function StepsChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, propGranularity ?? 'day')}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, effectiveXGranularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               angle={isMobile ? -45 : 0}
@@ -184,17 +210,13 @@ export const StepsChart = React.memo(function StepsChart({
               style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
-              label={{
-                value: 'Steps',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => Math.max(dataMax, 4)]}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
               allowDecimals={false}
             />
             <Tooltip

@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { useMilestones } from '../hooks/useMilestones';
 import { MilestoneCelebrationModal } from './MilestoneCelebrationModal';
 import { Sparkles } from 'lucide-react';
@@ -38,6 +39,8 @@ export function MilestonesRoadmap({
 }: MilestonesRoadmapProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { status: hardwareStatus } = useHardwareStatus();
+  const isDisconnected = hardwareStatus === 'disconnected';
 
   const fallbackHook = useMilestones(controlledMonth);
   const milestoneHook = externalHook ?? fallbackHook;
@@ -55,16 +58,22 @@ export function MilestonesRoadmap({
   // Selected week item ID ('week_1'..'week_6')
   const [selectedItemId, setSelectedItemId] = useState<string>('week_1');
   const [celebratingMilestone, setCelebratingMilestone] = useState<MilestoneItem | null>(null);
+  const lastSyncedMonthRef = useRef<string | undefined>(undefined);
 
-  // When selectedMonth changes, default to current week or week_1
+  // Only reset selected week when switching months (or if the selected ID doesn't exist yet),
+  // never overriding a user's clicked week during background refetches.
   useEffect(() => {
-    if (weeklyMilestones.length > 0) {
+    if (weeklyMilestones.length === 0) return;
+
+    const monthChanged = lastSyncedMonthRef.current !== selectedMonth;
+    const selectionStillValid = weeklyMilestones.some((w) => w.id === selectedItemId);
+
+    if (monthChanged || !selectionStillValid) {
+      lastSyncedMonthRef.current = selectedMonth;
       const currentWeek = weeklyMilestones.find((w) => w.state === 'CURRENT');
       setSelectedItemId(currentWeek ? currentWeek.id : weeklyMilestones[0].id);
-    } else {
-      setSelectedItemId('week_1');
     }
-  }, [selectedMonth, weeklyMilestones]);
+  }, [selectedMonth, weeklyMilestones, selectedItemId]);
 
   // Active milestone for week inspection
   const activeMilestone = useMemo<MilestoneItem | null>(() => {
@@ -134,10 +143,15 @@ export function MilestonesRoadmap({
   // Dynamic witty campus companion observation
   const observation = useMemo(() => {
     if (!activeMilestone) {
-      return {
-        headline: 'Tile is awake and ready, but the hallway seems suspiciously quiet.',
-        subtext: 'Tile in standby · Waiting for pedestrian steps',
-      };
+      return isDisconnected
+        ? {
+            headline: 'Connection lost — trying to reconnect to live feed.',
+            subtext: 'Connection lost · Reconnecting automatically',
+          }
+        : {
+            headline: 'No footsteps recorded yet. The tile is in standby, waiting for footsteps.',
+            subtext: 'Tile in standby · Waiting for footsteps',
+          };
     }
     return getCompanionCommentary({
       id: activeMilestone.id,
@@ -151,8 +165,9 @@ export function MilestonesRoadmap({
       stepCount: weekSteps,
       aiComment: activeMilestone.aiComment,
       comparison: activeMilestone.comparison,
+      isDisconnected,
     });
-  }, [activeMilestone, weekProgressPct, weekEnergy, weekTarget, weekSteps]);
+  }, [activeMilestone, weekProgressPct, weekEnergy, weekTarget, weekSteps, isDisconnected]);
 
   return (
     <div className={`flex flex-col gap-3.5 sm:gap-4 ${className}`}>
@@ -180,13 +195,13 @@ export function MilestonesRoadmap({
                 className="text-[36px] sm:text-[46px] font-[500] tracking-[-0.03em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {isLoading ? '...' : formatMWh(monthEnergy)}
+                {isLoading ? '...' : formatMWh(monthEnergy, 3)}
               </span>
               <span className="text-[16px] sm:text-[18px] font-medium text-[#087A3A] dark:text-[#19D46A]">
                 mWh
               </span>
               <span className="text-[13px] sm:text-[14px] text-[#50665a] dark:text-[#93A89C] font-normal">
-                of {formatMWh(monthTarget)} mWh
+                of {formatMWh(monthTarget, 3)} mWh
               </span>
             </div>
 
@@ -204,6 +219,18 @@ export function MilestonesRoadmap({
                 className="h-full bg-[#16a34a] rounded-full transition-all duration-700"
               />
             </div>
+
+            {/* Everyday real-world LED light comparison (~20 mW indicator LED = 180 sec per mWh) */}
+            <p className="m-0 text-[11px] sm:text-xs text-[#50665a] dark:text-[#93A89C]">
+              {monthEnergy > 0
+                ? (() => {
+                    const ledSeconds = Math.max(1, Math.round(monthEnergy * 180));
+                    return ledSeconds >= 60
+                      ? `Enough to light a small LED for ~${(ledSeconds / 60).toFixed(1)} min`
+                      : `Enough to light a small LED for ~${ledSeconds} sec`;
+                  })()
+                : '~50 footsteps lights a small LED for ~1 sec'}
+            </p>
           </div>
 
           {/* Right Column: 2x2 Key Metrics Grid - matching main dashboard typography (DM Sans, 500, tabular-nums, -0.02em) */}
@@ -268,7 +295,7 @@ export function MilestonesRoadmap({
         >
           <div className="min-w-[560px] sm:min-w-0 w-full">
             <svg
-              role="img"
+              role="group"
               aria-label={`${selectedMonth} milestone trail`}
               viewBox="0 0 920 205"
               xmlns="http://www.w3.org/2000/svg"
@@ -382,27 +409,33 @@ export function MilestonesRoadmap({
                 return (
                   <g
                     key={milestone.id}
-                    onClick={(e) => {
-                      (e.currentTarget as SVGGElement)?.blur();
-                      setSelectedItemId(milestone.id);
-                    }}
-                    onPointerDown={(e) => e.preventDefault()}
-                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setSelectedItemId(milestone.id)}
                     style={{
                       cursor: 'pointer',
                       outline: 'none',
                       WebkitTapHighlightColor: 'transparent',
                     }}
-                    className="outline-none focus:outline-none focus-visible:outline-none focus:ring-0 select-none ring-0 border-0"
+                    className="group outline-none focus:outline-none focus-visible:outline-none select-none transition-opacity hover:opacity-90"
                     role="button"
                     aria-label={`Select ${milestone.label}`}
+                    aria-pressed={isSelected}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
                         setSelectedItemId(milestone.id);
                       }
                     }}
                   >
+                    {/* Generous transparent hit target covering both node circle and Week label card */}
+                    <rect
+                      x={x - 42}
+                      y={y - 30}
+                      width="84"
+                      height="88"
+                      rx="12"
+                      fill="transparent"
+                    />
                     {/* Outer Dashed Halo for Active / Selected Station */}
                     {(isSelected || isCurrent) && (
                       <circle
@@ -538,6 +571,10 @@ export function MilestonesRoadmap({
                 >
                   In progress
                 </span>
+              ) : activeMilestone.state === 'COMPLETED' ? (
+                <span className="text-[11px] font-medium rounded-full px-2.5 py-0.5 bg-[var(--soft)] text-[var(--mu)] border border-[var(--line)]">
+                  Not reached
+                </span>
               ) : (
                 <span className="text-[11px] font-medium rounded-full px-2.5 py-0.5 bg-[var(--soft)] text-[var(--mu)] border border-[var(--line)]">
                   Upcoming
@@ -565,13 +602,13 @@ export function MilestonesRoadmap({
                 className="text-xl sm:text-2xl font-[500] tracking-[-0.03em] leading-none text-[var(--t)] tabular-nums font-sans"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {isLoading ? '...' : formatMWh(weekEnergy)}
+                {isLoading ? '...' : formatMWh(weekEnergy, 3)}
               </span>
               <span className="text-sm font-medium text-[var(--acc)] font-sans">
                 mWh
               </span>
               <span className="text-xs text-[var(--mu)] font-sans">
-                of {formatMWh(weekTarget)} mWh
+                of {formatMWh(weekTarget, 3)} mWh
               </span>
 
               {/* Comparative week-over-week telemetry badge */}

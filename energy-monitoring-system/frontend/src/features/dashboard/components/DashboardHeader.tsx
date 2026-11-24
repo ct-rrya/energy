@@ -167,33 +167,33 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
         statusKey: 'disconnected',
         dotColor: 'bg-[#EF4444]',
         statusClass: 'status-disconnected status-offline',
-        title: 'Hardware Status: Connection Lost',
-        description: 'Hardware was previously connected, but the active connection was lost.',
+        title: 'System Status: Connection Lost',
+        description: 'Unable to reach the live EcoStep server. Trying to reconnect automatically.',
       };
     }
 
     switch (status) {
       case 'connected':
         return {
-          label: 'Connected',
+          label: 'Live',
           statusKey: 'connected',
           dotColor: 'bg-[#3ED98A]',
           pulseColor: 'bg-[#3ED98A]',
           statusClass: 'status-connected status-online',
-          title: 'Hardware Status: Connected',
-          description: "The hardware has successfully established a connection with the backend or the system's designated communication channel.",
+          title: 'System Status: Live',
+          description: 'Footstep readings are actively streaming from the piezoelectric tile.',
         };
 
       case 'waiting':
       case 'unknown':
       default:
         return {
-          label: 'Waiting for hardware connection',
+          label: 'Standby',
           statusKey: 'waiting',
           dotColor: 'bg-[#F59E0B]',
           statusClass: 'status-waiting status-standby',
-          title: 'Hardware Status: Waiting',
-          description: 'No hardware is currently connected. The system has not established an active connection with the hardware.',
+          title: 'System Status: Standby',
+          description: 'Connected to EcoStep. The tile only sends readings when someone steps on it, so Standby is normal when idle.',
         };
     }
   };

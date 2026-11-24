@@ -26,25 +26,28 @@ export interface HardwareStatusContextValue {
 
 const DEFAULT_STATUS_CONFIG = {
   waiting: {
-    label: 'Waiting for hardware connection',
-    shortLabel: 'Waiting',
-    description: 'No hardware is currently connected. The system has not established an active connection with the hardware.',
+    label: 'Standby',
+    shortLabel: 'Standby',
+    description:
+      'Connected to EcoStep. The tile only sends readings when someone steps on it, so Standby is normal when idle.',
     dotColor: 'bg-[#F59E0B]',
     pulseColor: undefined,
     statusClass: 'status-waiting status-standby',
   },
   connected: {
-    label: 'Connected',
-    shortLabel: 'Connected',
-    description: "The hardware has successfully established a connection with the backend or the system's designated communication channel.",
+    label: 'Live',
+    shortLabel: 'Live',
+    description:
+      'Footstep readings are actively streaming from the piezoelectric tile.',
     dotColor: 'bg-[#3ED98A]',
     pulseColor: 'bg-[#3ED98A]',
     statusClass: 'status-connected status-online',
   },
   disconnected: {
     label: 'Connection Lost',
-    shortLabel: 'Disconnected',
-    description: 'Hardware was previously connected, but the active connection was lost.',
+    shortLabel: 'Offline',
+    description:
+      'Unable to reach the live EcoStep server. Trying to reconnect automatically.',
     dotColor: 'bg-[#EF4444]',
     pulseColor: undefined,
     statusClass: 'status-disconnected status-offline',
@@ -68,7 +71,7 @@ export const HardwareStatusContext = createContext<HardwareStatusContextValue>({
   refreshStatus: async () => {},
 });
 
-const TIMEOUT_MS = 60_000; // 60 seconds without telemetry marks connection lost
+const TIMEOUT_MS = 60_000; // 60 seconds without a footstep reading returns to Standby
 const SESSION_STORAGE_KEY = 'ecostep_hardware_has_connected';
 
 export function HardwareStatusProvider({ children }: { children: React.ReactNode }) {
@@ -87,6 +90,7 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
 
   const lastSeenMsRef = useRef<number | null>(null);
   const isBleConnectedRef = useRef<boolean>(false);
+  const hadSocketConnectionRef = useRef<boolean>(false);
   const statusRef = useRef<HardwareConnectionStatus>(status);
   statusRef.current = status;
   const hasEverConnectedRef = useRef<boolean>(hasEverConnected);
@@ -156,29 +160,17 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
           return;
         }
 
-        // Reading is older than 60s
+        // Reading is older than 60s — tile only sends on footsteps, so this is normal Standby
         setLastReading(formattedReading);
-        if (hasEverConnectedRef.current) {
-          setStatus('disconnected');
-        } else {
-          setStatus('waiting');
-        }
+        setStatus('waiting');
         return;
       }
 
-      // No readings found at all
-      if (hasEverConnectedRef.current) {
-        setStatus('disconnected');
-      } else {
-        setStatus('waiting');
-      }
+      // No readings found yet — server responded cleanly, so tile is in Standby
+      setStatus('waiting');
     } catch {
-      // In case of network error, preserve waiting or disconnected state
-      if (hasEverConnectedRef.current) {
-        setStatus('disconnected');
-      } else {
-        setStatus('waiting');
-      }
+      // Backend API request failed — connection to server is lost
+      setStatus('disconnected');
     }
   }, []);
 
@@ -196,15 +188,26 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
         (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            markHardwareConnected({
-              sensorId: data.sensorId,
-              voltage: data.voltage,
-              current: data.current,
-              power: data.power,
-              energy: data.energy,
-              stepCount: data.stepCount,
-              timestamp: data.timestamp,
-            });
+            const rawTs = data.timestamp;
+            const parsedMs = rawTs ? new Date(rawTs).getTime() : NaN;
+            const isFresh = Number.isFinite(parsedMs) && Date.now() - parsedMs <= TIMEOUT_MS;
+
+            const reading: SensorReading = {
+              sensorId: data.sensorId || '',
+              voltage: data.voltage || 0,
+              current: data.current || 0,
+              power: data.power || 0,
+              energy: data.energy || 0,
+              stepCount: data.stepCount || 0,
+              timestamp: Number.isFinite(parsedMs) ? new Date(parsedMs).toISOString() : new Date().toISOString(),
+            };
+
+            if (isFresh) {
+              markHardwareConnected(reading);
+            } else {
+              // Historical Firestore snapshot (>60s old): keep latest reading cached without marking Live
+              setLastReading(reading);
+            }
           }
         },
         (error) => {
@@ -278,14 +281,14 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     };
   }, [markHardwareConnected, markHardwareDisconnected]);
 
-  // Stale check timer: Transitions connected -> disconnected if no telemetry received for > 60s (unless BLE GATT is actively connected)
+  // Idle check timer: Returns Live -> Standby if no footstep reading received for > 60s (unless BLE GATT is actively connected)
   useEffect(() => {
     const interval = setInterval(() => {
       if (statusRef.current === 'connected' && !isBleConnectedRef.current) {
         const lastSeen = lastSeenMsRef.current;
         if (lastSeen && Date.now() - lastSeen > TIMEOUT_MS) {
-          console.log('[HardwareStatus] Telemetry heartbeat timeout (>60s) -> Connection Lost');
-          setStatus('disconnected');
+          console.log('[HardwareStatus] No footsteps for >60s -> Standby');
+          setStatus('waiting');
         }
       }
     }, 1000);
@@ -293,14 +296,17 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     return () => clearInterval(interval);
   }, []);
 
-  // If Socket.IO drops while we are connected (and BLE is not active), mark as connection lost
+  // Track real Socket.IO server connectivity: only mark Connection Lost when an established server socket drops
   useEffect(() => {
-    if (!isSocketConnected && statusRef.current === 'connected' && !isBleConnectedRef.current) {
-      const lastSeen = lastSeenMsRef.current;
-      // If no recent packet within 5 seconds when socket dropped, mark disconnected
-      if (!lastSeen || Date.now() - lastSeen > 5000) {
-        setStatus('disconnected');
+    if (isSocketConnected) {
+      hadSocketConnectionRef.current = true;
+      if (statusRef.current === 'disconnected') {
+        const lastSeen = lastSeenMsRef.current;
+        const isFresh = lastSeen !== null && Date.now() - lastSeen <= TIMEOUT_MS;
+        setStatus(isFresh ? 'connected' : 'waiting');
       }
+    } else if (hadSocketConnectionRef.current && !isBleConnectedRef.current) {
+      setStatus('disconnected');
     }
   }, [isSocketConnected]);
 

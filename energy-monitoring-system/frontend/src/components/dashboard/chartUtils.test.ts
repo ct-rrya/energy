@@ -9,6 +9,10 @@ import {
   transformToChartData,
   calculateCumulative,
   formatChartTimestamp,
+  hasDuplicateFormattedDates,
+  formatSmartChartTimestamp,
+  computeNiceYAxis,
+  formatAdaptiveEnergy,
   limitDataPoints,
   formatValueWithUnit,
   isDatasetEmpty,
@@ -350,5 +354,35 @@ describe('calculateSummaryStats', () => {
 
     expect(result.min).toBe(-10);
     expect(result.total).toBe(40);
+  });
+});
+
+describe('computeNiceYAxis & smart chart formatting', () => {
+  it('computes clean integer Y-axis ticks for steps (e.g. 25 -> 0, 10, 20, 30)', () => {
+    const scale = computeNiceYAxis(25, { minMax: 4, integerOnly: true, targetSteps: 4 });
+    expect(scale.ticks).toEqual([0, 10, 20, 30]);
+    expect(scale.domain).toEqual([0, 30]);
+  });
+
+  it('computes clean decimal ticks for micro-scale energy (0.0632 mWh -> 0, 0.02, 0.04, 0.06, 0.08)', () => {
+    const scale = computeNiceYAxis(0.063247, { minMax: 0.1, targetSteps: 4 });
+    expect(scale.ticks).toEqual([0, 0.02, 0.04, 0.06, 0.08]);
+    expect(scale.decimals).toBe(2);
+  });
+
+  it('detects duplicate formatted dates and appends times when needed', () => {
+    const pts: ChartDataPoint[] = [
+      { timestamp: '2026-11-19T01:00:00Z', value: 16 },
+      { timestamp: '2026-11-19T08:00:00Z', value: 25 },
+      { timestamp: '2026-11-20T03:00:00Z', value: 19 },
+    ];
+    expect(hasDuplicateFormattedDates(pts, 'day')).toBe(true);
+    const label = formatSmartChartTimestamp(pts[0].timestamp, 'day', true);
+    expect(label).toMatch(/Nov 19, \d{1,2}:\d{2} (AM|PM)/);
+  });
+
+  it('formats micro-scale cumulative energy with 3 decimals (0.063247 -> 0.063 mWh)', () => {
+    expect(formatAdaptiveEnergy(0.063247, 'mWh')).toBe('0.063 mWh');
+    expect(formatAdaptiveEnergy(45, 'mWh')).toBe('45.00 mWh');
   });
 });

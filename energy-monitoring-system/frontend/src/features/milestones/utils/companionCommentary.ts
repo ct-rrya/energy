@@ -35,6 +35,7 @@ export function getCompanionCommentary(milestone: {
   stepCount: number;
   aiComment?: string;
   comparison?: MilestoneComparison;
+  isDisconnected?: boolean;
 }): CompanionObservation {
   const {
     id,
@@ -46,6 +47,7 @@ export function getCompanionCommentary(milestone: {
     stepCount,
     aiComment,
     comparison,
+    isDisconnected = false,
   } = milestone;
 
   const pct = Math.round(progressPercentage);
@@ -56,9 +58,13 @@ export function getCompanionCommentary(milestone: {
   let subtext = `${stepCount.toLocaleString()} footsteps recorded`;
 
   if (state === 'UPCOMING' || comparison?.category === 'UPCOMING') {
-    subtext = 'Scheduled calendar period · 0 footsteps recorded';
+    subtext = 'Not started yet · 0 footsteps recorded';
+  } else if (state === 'COMPLETED' && currentMWh === 0 && stepCount === 0) {
+    subtext = 'Period ended · No footsteps recorded';
   } else if (currentMWh === 0 && stepCount === 0) {
-    subtext = 'Tile in standby · Waiting for pedestrian steps';
+    subtext = isDisconnected
+      ? 'Connection lost · Trying to reconnect'
+      : 'Tile in standby · Waiting for footsteps';
   } else if (comparison?.category === 'RECORD_HIGH') {
     const change = comparison.energyChangePct !== null ? ` (+${comparison.energyChangePct}%)` : '';
     subtext = `New weekly record${change} · ${stepCount.toLocaleString()} footsteps recorded`;
@@ -92,10 +98,9 @@ export function getCompanionCommentary(milestone: {
   // 1. Upcoming
   if (state === 'UPCOMING') {
     const variants = [
-      'Still in the future. The piezoelectric crystals are resting up before campus stomps all over them.',
-      'Upcoming stretch. No footsteps expected yet, unless someone discovered time travel.',
-      'Scheduled for later. The tiles are conserving their patience for when this week begins.',
-      'On standby in the calendar. Crystals off-duty until the campus arrives.',
+      'Not started yet — scheduled on the calendar. Footsteps will begin logging once this week arrives.',
+      'Not started yet. This upcoming stretch will begin tracking footsteps when the week opens.',
+      'Not started yet — scheduled for later on the calendar.',
     ];
     return {
       headline: variants[getVariantIndex(seed, variants.length)],
@@ -105,11 +110,22 @@ export function getCompanionCommentary(milestone: {
 
   // 2. Zero activity
   if (currentMWh === 0 && stepCount === 0) {
+    if (state === 'COMPLETED') {
+      return {
+        headline: 'No footsteps were recorded during this week.',
+        subtext,
+      };
+    }
+    if (isDisconnected) {
+      return {
+        headline: 'Connection lost — trying to reconnect to live feed.',
+        subtext,
+      };
+    }
     const variants = [
-      'Zero footsteps registered so far. Did someone cancel morning lectures, or is everyone mastering levitation?',
-      'Tile is awake and ready, but the hallway seems suspiciously quiet.',
-      'The quartz crystals are waiting. All they need is some gravity and commitment.',
-      'Silence on the floor. Waiting for the first brave soul to head across the tiles.',
+      'Zero footsteps registered so far. The tile is in standby, waiting for footsteps.',
+      'No footsteps yet this week. The tile is in standby and ready for campus walkers.',
+      'Quiet on the floor so far. The tile is in standby, waiting for the first footsteps.',
     ];
     return {
       headline: variants[getVariantIndex(seed, variants.length)],

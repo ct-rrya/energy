@@ -22,8 +22,10 @@ async function bootstrap() {
   // Create NestJS application
   const app = await NestFactory.create(AppModule);
 
-  // Trust 1 reverse-proxy hop (Render/Cloudflare) so req.ip is accurate and X-Forwarded-For cannot be spoofed
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  // Trust 1 reverse-proxy hop only in production (Render/Cloudflare) so direct local clients cannot spoof X-Forwarded-For
+  if (process.env.NODE_ENV === 'production') {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
 
   // Get configuration service
   const configService = app.get(ConfigService);

@@ -12,7 +12,7 @@ export function MilestonesPage() {
   const { user, isAuthenticated } = useAuth();
   const isAdminUser = isAdmin(isAuthenticated, user);
   const isPublicUser = !isAdminUser;
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   const milestoneData = useMilestones();
   const {
@@ -46,10 +46,9 @@ export function MilestonesPage() {
       <DashboardHeader
         greeting="Calendar Goals"
         title="Energy Milestones"
-        subtitle="Weekly kinetic energy goals and prototype milestone tracking."
+        subtitle="Weekly & monthly kinetic energy goals"
         systemStatus={hardwareConnectionStatus}
         isPublicUser={isPublicUser}
-        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Admin Overdue Goal Configuration Reminder Banners */}

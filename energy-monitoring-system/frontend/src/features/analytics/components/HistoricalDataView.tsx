@@ -178,7 +178,7 @@ export function HistoricalDataView({
         return {
           rawTimestamp: timestamp.getTime(),
           date: format(timestamp, 'MMM dd, yyyy'),
-          time: format(timestamp, 'HH:mm'),
+          time: format(timestamp, 'h:mm a'),
           energy: point.value,
           voltage: voltageData?.dataPoints[index]?.value,
           current: currentData?.dataPoints[index]?.value,
@@ -196,7 +196,7 @@ export function HistoricalDataView({
       const timestamp = new Date(reading.timestamp);
       return {
         date: format(timestamp, 'MMM dd, yyyy'),
-        time: format(timestamp, 'HH:mm:ss'),
+        time: format(timestamp, 'h:mm:ss a'),
         energy: reading.energy,
         voltage: reading.voltage,
         current: reading.current,
@@ -228,17 +228,17 @@ export function HistoricalDataView({
   const handleExport = () => {
     if (isPublic || !displayRecords.length) return;
 
-    const headers = ['Date', 'Time', 'Energy (mWh)', 'Voltage (V)', 'Equiv. Current (mA)', 'Power (mW)', 'Steps'];
+    const headers = ['Date', 'Time', 'Energy (mWh)', 'Voltage (V)', 'Current (mA)', 'Power (mW)', 'Steps'];
     const csvContent = [
       headers.join(','),
       ...displayRecords.map(record =>
         [
           record.date,
           record.time,
-          record.energy !== undefined && record.energy !== null ? record.energy.toFixed(2) : '',
+          record.energy !== undefined && record.energy !== null ? record.energy.toFixed(3) : '',
           record.voltage !== undefined && record.voltage !== null ? record.voltage.toFixed(1) : '',
-          record.current !== undefined && record.current !== null ? (record.current * 1000).toFixed(1) : '',
-          record.power !== undefined && record.power !== null ? (record.power * 1000).toFixed(3) : '',
+          record.current !== undefined && record.current !== null ? (record.current * 1000).toFixed(3) : '',
+          record.power !== undefined && record.power !== null ? (record.power * 1000).toFixed(2) : '',
           record.steps !== undefined && record.steps !== null ? record.steps.toFixed(0) : '',
         ].join(',')
       ),
@@ -302,14 +302,14 @@ export function HistoricalDataView({
                 className="text-sm mt-0.5"
                 style={{ color: 'var(--mu)' }}
               >
-                {totalRecords} {viewMode === 'raw' ? 'raw readings' : 'data points'}
+                {totalRecords} {viewMode === 'raw' ? 'individual readings' : 'summary records'}
                 {!includeInactive && ' • Active only'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-            {/* Zero-Activity Filter Toggle (Admin troubleshooting access) */}
+            {/* Quiet-Period Filter Toggle */}
             <button
               type="button"
               onClick={() => {
@@ -328,10 +328,10 @@ export function HistoricalDataView({
                   ? (theme === 'dark' ? '#FACC15' : '#854D0E')
                   : 'var(--mu)',
               }}
-              title={includeInactive ? 'Showing all records including inactive zeros' : 'Hiding completely zero-valued records'}
+              title={includeInactive ? 'Showing all periods, including quiet rows with zero activity' : 'Showing only rows with recorded footsteps or energy'}
               aria-pressed={includeInactive}
             >
-              <span>{includeInactive ? 'All Records (Inc. 0s)' : 'Active Records Only'}</span>
+              <span>{includeInactive ? 'Include Quiet' : 'Active Only'}</span>
             </button>
 
             {/* View Mode Toggle - EcoStep Design System Segmented Control */}
@@ -344,10 +344,10 @@ export function HistoricalDataView({
                 }}
                 className={`flex items-center justify-center gap-1.5 ${viewMode === 'aggregated' ? 'on' : ''}`}
                 aria-pressed={viewMode === 'aggregated'}
-                aria-label="Switch to aggregated view"
+                aria-label="Switch to summary view"
               >
                 <BarChart3 className="inline-block h-3.5 w-3.5" strokeWidth={2} />
-                <span>Aggregated</span>
+                <span>Summary</span>
               </button>
               <button
                 type="button"
@@ -357,41 +357,31 @@ export function HistoricalDataView({
                 }}
                 className={`flex items-center justify-center gap-1.5 ${viewMode === 'raw' ? 'on' : ''}`}
                 aria-pressed={viewMode === 'raw'}
-                aria-label="Switch to raw data view"
+                aria-label="Switch to all readings view"
               >
                 <TableIcon className="inline-block h-3.5 w-3.5" strokeWidth={2} />
-                <span>Raw Data</span>
+                <span>All Readings</span>
               </button>
             </div>
 
-            {/* Export Button (Disabled for public users) */}
-            <button
-              type="button"
-              onClick={isPublic ? undefined : handleExport}
-              disabled={isPublic}
-              title={isPublic ? 'Exporting CSV is unavailable to public users' : 'Export CSV'}
-              aria-disabled={isPublic}
-              className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full font-medium transition-all w-full sm:w-auto ${
-                isPublic
-                  ? 'opacity-40 cursor-not-allowed bg-neutral-200/50 dark:bg-neutral-800/50 text-neutral-400 dark:text-neutral-500 border border-neutral-300 dark:border-neutral-700 pointer-events-auto'
-                  : 'cursor-pointer hover:opacity-90'
-              }`}
-              style={{
-                backgroundColor: isPublic
-                  ? undefined
-                  : 'var(--panel)',
-                borderColor: isPublic
-                  ? undefined
-                  : 'var(--line)',
-                color: isPublic
-                  ? undefined
-                  : 'var(--t)',
-                border: isPublic ? undefined : '1px solid var(--line)',
-              }}
-            >
-              <Download className="h-3.5 w-3.5" strokeWidth={2} />
-              <span>Export CSV</span>
-            </button>
+            {/* Export Button (Admins only — hidden from public guests so it doesn't look broken) */}
+            {!isPublic && (
+              <button
+                type="button"
+                onClick={handleExport}
+                title="Export CSV"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full font-medium transition-all w-full sm:w-auto cursor-pointer hover:opacity-90"
+                style={{
+                  backgroundColor: 'var(--panel)',
+                  borderColor: 'var(--line)',
+                  color: 'var(--t)',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                <span>Export CSV</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -499,9 +489,9 @@ export function HistoricalDataView({
                   <th 
                     className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
-                    title="Equivalent current if capacitor discharges in 1 second"
+                    title="Estimated electrical current generated"
                   >
-                    Equiv. Current
+                    Current
                   </th>
                   <th
                     className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
@@ -542,7 +532,7 @@ export function HistoricalDataView({
                       className="py-3 px-4 text-sm text-right tabular-nums font-bold"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
                     >
-                      {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
+                      {record.energy !== undefined ? `${record.energy.toFixed(record.energy > 0 && record.energy < 1 ? 3 : 2)} mWh` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
@@ -553,15 +543,15 @@ export function HistoricalDataView({
                     <td 
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
-                      title="Equivalent current if capacitor discharges in 1 second"
+                      title="Estimated electrical current generated"
                     >
-                      {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(record.current > 0 && record.current * 1000 < 0.1 ? 3 : 1)} mA` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
                     >
-                      {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(2)} mW` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
@@ -616,7 +606,7 @@ export function HistoricalDataView({
                       border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
                     }}
                   >
-                    {record.energy !== undefined ? `${record.energy.toFixed(2)} mWh` : '—'}
+                    {record.energy !== undefined ? `${record.energy.toFixed(record.energy > 0 && record.energy < 1 ? 3 : 2)} mWh` : '—'}
                   </span>
                 </div>
 
@@ -650,7 +640,7 @@ export function HistoricalDataView({
                       className="text-base font-extrabold tabular-nums mt-0.5 block"
                       style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
                     >
-                      {record.current !== undefined ? `${(record.current * 1000).toFixed(1)} mA` : '—'}
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(record.current > 0 && record.current * 1000 < 0.1 ? 3 : 1)} mA` : '—'}
                     </span>
                   </div>
 
@@ -666,7 +656,7 @@ export function HistoricalDataView({
                       className="text-base font-extrabold tabular-nums mt-0.5 block"
                       style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
                     >
-                      {record.power !== undefined ? `${(record.power * 1000).toFixed(3)} mW` : '—'}
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(2)} mW` : '—'}
                     </span>
                   </div>
 
@@ -703,12 +693,12 @@ export function HistoricalDataView({
             >
               {viewMode === 'aggregated' ? (
                 <>
-                  Showing {displayRecords.length} aggregated records
+                  Showing {displayRecords.length} summary records
                   {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ''}
                 </>
               ) : (
                 <>
-                  Showing raw sensor readings
+                  Showing individual readings
                   {startDate && endDate ? ` from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}` : ' across all time'} • {totalRecords} total records
                 </>
               )}

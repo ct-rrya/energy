@@ -1,10 +1,15 @@
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const apiProxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://localhost:3000';
+
+  return {
   plugins: [react(), svgr()],
   resolve: {
     alias: {
@@ -77,8 +82,17 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: apiProxyTarget,
         changeOrigin: true,
+        secure: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Rewrite Origin header to match target so deployed backends don't reject localhost dev requests via CORS
+            if (proxyReq.getHeader('origin')) {
+              proxyReq.setHeader('origin', apiProxyTarget);
+            }
+          });
+        },
       },
     },
   },
@@ -88,4 +102,5 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     css: true,
   },
+  };
 })

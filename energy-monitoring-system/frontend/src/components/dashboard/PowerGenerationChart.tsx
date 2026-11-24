@@ -3,7 +3,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { usePowerGeneration } from '@/features/dashboard/hooks/usePowerGeneration';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
-import { transformToChartData, isDatasetEmpty, formatChartTimestamp, limitDataPoints } from './chartUtils';
+import {
+  transformToChartData,
+  isDatasetEmpty,
+  hasDuplicateFormattedDates,
+  formatSmartChartTimestamp,
+  computeNiceYAxis,
+  limitDataPoints,
+} from './chartUtils';
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
 import type { TimeFilter, PowerGenerationChartProps } from './chartTypes';
@@ -49,21 +56,21 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
 }: PowerGenerationChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  
+
   // Use defaultTimeFilter unless overridden by unified Analytics page period
   const timeFilter: TimeFilter = defaultTimeFilter;
-  
+
   // Subscribe to real-time WebSocket updates for chart data
   // This hook invalidates TanStack Query cache when new sensor readings arrive,
   // triggering automatic refetch of chart data for live updates
   useChartRealTimeUpdates();
-  
+
   // Fetch power generation data based on current time filter or unified page period
   const { data: timeSeries, isLoading, error, refetch } = usePowerGeneration(
     timeFilter,
     startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
   );
-  
+
   // Transform API data to chart format and apply data point limiting for performance
   // Limit to max 100 points for 7-day view to prevent performance degradation (Requirement 9.8)
   const chartData = useMemo(() => {
@@ -71,7 +78,7 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
     // Always limit since we're using 7-day view
     return limitDataPoints(transformed, 100);
   }, [timeSeries]);
-  
+
   // Determine if dataset is empty or sparse (< 2 points)
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
   const isSparse = chartData.length > 0 && chartData.length < 2;
@@ -80,6 +87,16 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
   // Determine granularity from prop or timeFilter
   const granularity = propGranularity ?? (timeFilter === 'today' ? 'hour' : 'day');
 
+  const showTimeOnXAxis = useMemo(
+    () => hasDuplicateFormattedDates(chartData, granularity),
+    [chartData, granularity]
+  );
+
+  const yAxisScale = useMemo(() => {
+    const maxVal = chartData.reduce((m, pt) => Math.max(m, pt.value || 0), 0);
+    return computeNiceYAxis(maxVal, { minMax: 0.1, multiplier: 1000, targetSteps: 4 });
+  }, [chartData]);
+
   // Color system based on theme
   const colors = {
     line: theme === 'dark' ? '#19D46A' : '#13B95C',
@@ -87,16 +104,24 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
     textColor: theme === 'dark' ? '#93A89C' : '#5B6B62',
   };
 
-  /**
-   * Filter button configuration - REMOVED
-   * Charts now controlled by unified Analytics page period selector
-   */
-
   const chartMargin = {
-    top: 8,
-    right: isMobile ? 8 : 16,
-    left: isMobile ? -12 : 0,
-    bottom: isMobile ? 8 : 0,
+    top: 12,
+    right: isMobile ? 12 : 20,
+    left: isMobile ? 4 : 12,
+    bottom: isMobile ? 12 : 4,
+  };
+
+  const yAxisWidth = isMobile ? 54 : 66;
+  const yAxisLabel = {
+    value: 'Power (mW)',
+    angle: -90,
+    position: 'insideLeft' as const,
+    offset: isMobile ? 2 : 0,
+    style: {
+      fill: colors.textColor,
+      fontSize: isMobile ? '11px' : '12px',
+      textAnchor: 'middle' as const,
+    },
   };
 
   const subtitle = periodLabel
@@ -125,24 +150,20 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
-              label={{
-                value: 'Power (mW)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : 0.0001)]}
-              tickFormatter={(value) => (value * 1000).toFixed(3)}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
+              tickFormatter={(value) => (value * 1000).toFixed(yAxisScale.decimals)}
             />
             <Tooltip
               content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}
@@ -165,7 +186,7 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               angle={isMobile ? -45 : 0}
@@ -173,18 +194,14 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
               style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
-              label={{
-                value: 'Power (mW)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : 0.0001)]}
-              tickFormatter={(value) => (value * 1000).toFixed(3)}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
+              tickFormatter={(value) => (value * 1000).toFixed(yAxisScale.decimals)}
             />
             <Tooltip
               content={<CustomChartTooltip unit="mW" valueMultiplier={1000} />}

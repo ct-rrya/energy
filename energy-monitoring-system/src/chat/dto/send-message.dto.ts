@@ -22,7 +22,7 @@ export class SendMessageDto {
   @IsString()
   @IsNotEmpty({ message: 'Message cannot be empty' })
   @MaxLength(2000, { message: 'Message too long (max 2000 characters)' })
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   message: string;
 
   @ApiPropertyOptional({

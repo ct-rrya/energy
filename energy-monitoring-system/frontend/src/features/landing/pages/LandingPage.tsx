@@ -22,13 +22,13 @@ const DEMO_LABELS = [
   '7:00 PM',
 ];
 
-const SECTIONS = [
+const SECTIONS: ReadonlyArray<{ id: string; label: string; to?: string }> = [
   { id: 'home', label: 'Home' },
   { id: 'how', label: 'How it works' },
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'dashboard', label: 'Dashboard', to: ROUTES.DASHBOARD },
   { id: 'ecoguide', label: 'EcoGuide' },
   { id: 'about', label: 'About' },
-] as const;
+];
 
 /**
  * Replace 'YOUR_YOUTUBE_VIDEO_ID' with your YouTube advertisement video ID
@@ -45,8 +45,23 @@ const RESEARCH_TEAM = [
   { name: 'Francis Keith Banan', role: 'Documentation · Hardware Worker', initials: 'FB', lead: false },
 ] as const;
 
+const HOME_FAQS = [
+  {
+    q: 'How does a footstep generate electricity?',
+    a: 'Each step presses smart energy-harvesting pads inside the floor tile, turning everyday walking pressure into a small burst of clean electrical energy.',
+  },
+  {
+    q: 'How much energy does EcoStep collect?',
+    a: 'Every footstep adds a tiny fraction of a milliwatt-hour (mWh) to onboard storage. Around 50 footsteps can power a small indicator LED light for about a second—and steps add up all day.',
+  },
+  {
+    q: 'Do I need an account to view live energy data?',
+    a: 'No account needed! Any student or guest can open the Dashboard, Analytics, Milestones, and EcoGuide assistant directly.',
+  },
+] as const;
+
 export function LandingPage() {
-  const { toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -87,10 +102,9 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Active section observer (threshold: 0.55) + entrance blur-fade reveal observer (threshold: 0.16)
+  // Active section observer (threshold: 0.45) to highlight current nav link
   useEffect(() => {
     if (!('IntersectionObserver' in window)) {
-      sectionRefs.current.forEach((sec) => sec?.classList.add('in-view'));
       return;
     }
 
@@ -105,32 +119,17 @@ export function LandingPage() {
           }
         });
       },
-      { threshold: 0.55 }
-    );
-
-    const revealIo = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('in-view');
-          } else if (entry.intersectionRatio === 0) {
-            entry.target.classList.remove('in-view');
-          }
-        });
-      },
-      { threshold: [0, 0.04], rootMargin: '60px 0px' }
+      { threshold: 0.45 }
     );
 
     sectionRefs.current.forEach((sec) => {
       if (sec) {
         activeIo.observe(sec);
-        revealIo.observe(sec);
       }
     });
 
     return () => {
       activeIo.disconnect();
-      revealIo.disconnect();
     };
   }, []);
 
@@ -149,15 +148,21 @@ export function LandingPage() {
         />
 
         <nav className="es-nv" aria-label="Primary">
-          {SECTIONS.map((sec, idx) => (
-            <a
-              key={sec.id}
-              href={`#${sec.id}`}
-              className={activeIdx === idx ? 'on' : ''}
-            >
-              {sec.label}
-            </a>
-          ))}
+          {SECTIONS.map((sec, idx) =>
+            sec.to ? (
+              <Link key={sec.id} to={sec.to}>
+                {sec.label}
+              </Link>
+            ) : (
+              <a
+                key={sec.id}
+                href={`#${sec.id}`}
+                className={activeIdx === idx ? 'on' : ''}
+              >
+                {sec.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div className="es-rt">
@@ -168,20 +173,40 @@ export function LandingPage() {
             type="button"
             className="es-ic"
             id="th"
-            aria-label="Toggle theme"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             onClick={toggleTheme}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
-            </svg>
+            {theme === 'dark' ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
+              </svg>
+            )}
           </button>
           <button
             type="button"
@@ -241,15 +266,21 @@ export function LandingPage() {
           />
         </div>
         <div className="es-pn-links">
-          {SECTIONS.map((sec, idx) => (
-            <a
-              key={sec.id}
-              href={`#${sec.id}`}
-              className={activeIdx === idx ? 'on' : ''}
-            >
-              {sec.label}
-            </a>
-          ))}
+          {SECTIONS.map((sec, idx) =>
+            sec.to ? (
+              <Link key={sec.id} to={sec.to}>
+                {sec.label}
+              </Link>
+            ) : (
+              <a
+                key={sec.id}
+                href={`#${sec.id}`}
+                className={activeIdx === idx ? 'on' : ''}
+              >
+                {sec.label}
+              </a>
+            )
+          )}
         </div>
         <Link className="es-pn-adm" to={ROUTES.ADMIN_LOGIN}>
           Admin login
@@ -297,31 +328,31 @@ export function LandingPage() {
         >
           <h2>From footstep to dashboard in four moves</h2>
           <p className="lead">
-            A piezoelectric tile captures the pressure of each step. An ESP32
-            sends the readings online.
+            A smart floor tile captures the pressure of each step, and built-in
+            sensors send the readings live online.
           </p>
           <div className="cards">
             <div className="es-cd">
               <div className="es-n">1</div>
               <h3>Step</h3>
-              <p>Students walk across the piezoelectric tile.</p>
+              <p>Students walk across the smart floor tile.</p>
             </div>
             <div className="es-cd">
               <div className="es-n">2</div>
               <h3>Harvest</h3>
               <p>
-                The tile converts mechanical energy into electrical energy.
+                The tile turns footstep pressure into usable electrical energy.
               </p>
             </div>
             <div className="es-cd">
               <div className="es-n">3</div>
               <h3>Measure</h3>
-              <p>Sensors read the voltage, current, and power generated.</p>
+              <p>Built-in sensors measure voltage, current, and power.</p>
             </div>
             <div className="es-cd">
               <div className="es-n">4</div>
               <h3>Monitor</h3>
-              <p>The ESP32 sends the data to the EcoStep web dashboard.</p>
+              <p>Live updates appear right away on the EcoStep dashboard.</p>
             </div>
           </div>
         </section>
@@ -345,8 +376,8 @@ export function LandingPage() {
                 <i style={{ background: '#febc2e' }} />
                 <i style={{ background: '#28c840' }} />
                 <b>EcoStep Central</b>
-                <span>&middot; 100 Hz Piezoelectric Tile</span>
-                <div className="live">&#9679; LIVE PREVIEW</div>
+                <span>&middot; Smart Footstep Tile</span>
+                <div className="live">&#9679; DEMO PREVIEW</div>
               </div>
               <div className="kp">
                 <div>
@@ -355,11 +386,11 @@ export function LandingPage() {
                 </div>
                 <div>
                   <small>Current</small>
-                  <b>14.20 mA</b>
+                  <b>14.2 mA</b>
                 </div>
                 <div>
                   <small>Power</small>
-                  <b>68.90 mW</b>
+                  <b>68.9 mW</b>
                 </div>
                 <div>
                   <small>System</small>
@@ -368,7 +399,7 @@ export function LandingPage() {
               </div>
               <div className="ch">
                 <b>Energy Generation Over Time</b>{' '}
-                <span style={{ opacity: 0.6 }}>(mJ)</span>
+                <span style={{ opacity: 0.6 }}>(mWh)</span>
                 <div className="bars" id="bars">
                   {DEMO_VALUES.map((v, i) => (
                     <i key={i} style={{ height: `${(v / 32) * 100}%` }} />
@@ -381,7 +412,7 @@ export function LandingPage() {
                 </div>
                 <div className="ft">
                   <span>Illustrative Demo Data &mdash; Not Live Readings</span>
-                  <span>Sample: 243 mJ</span>
+                  <span>Sample: 0.24 mWh</span>
                 </div>
               </div>
             </div>
@@ -393,7 +424,7 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="cap" style={{ maxWidth: 'none' }}>
-            Click to access live database readings &amp; diagnostics
+            Open the live footstep energy dashboard
           </p>
         </section>
 
@@ -437,11 +468,11 @@ export function LandingPage() {
           <div className="es-abt-wrap">
             <h2>About EcoStep</h2>
             <p className="lead">
-              Built for CTU Daanbantayan — EcoStep is a smart piezoelectric footstep
-              kinetic energy harvesting and IoT monitoring system. Each step on the
-              tile generates electrical energy measured by an ESP32 microcontroller and
-              streamed in real time to this platform for live telemetry, analytics,
-              milestone tracking, and hardware diagnostics.
+              EcoStep is a smart footstep energy harvesting and monitoring
+              system. Each step on the floor tile creates clean electrical
+              energy that is measured by built-in sensors and shared live on
+              this platform for real-time tracking, analytics, milestone goals,
+              and tile health checks.
             </p>
 
             <div className="es-row" style={{ justifyContent: 'center' }}>
@@ -467,10 +498,9 @@ export function LandingPage() {
                 ) : (
                   <div className="es-abt-video-placeholder">
                     <div className="es-abt-play" aria-hidden="true">&#9654;</div>
-                    <strong>YouTube Advertisement Video Template</strong>
+                    <strong>Video Coming Soon</strong>
                     <span>
-                      Set <code>YOUTUBE_VIDEO_ID</code> in{' '}
-                      <code>LandingPage.tsx</code> to embed your YouTube video here.
+                      Our EcoStep overview and hardware demonstration video is currently in production. Check back soon!
                     </span>
                   </div>
                 )}
@@ -493,6 +523,29 @@ export function LandingPage() {
                 ))}
               </div>
             </div>
+            <div className="es-abt-block" id="faq">
+              <h3 className="es-abt-sub">Frequently Asked Questions</h3>
+              <div style={{ display: 'grid', gap: '10px', textAlign: 'left', maxWidth: '720px', width: '100%', margin: '0 auto' }}>
+                {HOME_FAQS.map((item) => (
+                  <details
+                    key={item.q}
+                    style={{
+                      borderRadius: '14px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--card)',
+                      padding: '12px 16px',
+                    }}
+                  >
+                    <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.92rem', color: 'var(--t)' }}>
+                      {item.q}
+                    </summary>
+                    <p style={{ marginTop: '8px', fontSize: '0.84rem', lineHeight: 1.5, color: 'var(--mu)' }}>
+                      {item.a}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
           </div>
 
           <footer className="es-footer">
@@ -504,7 +557,14 @@ export function LandingPage() {
                 className="es-logo"
               />
             </div>
-            <span>EcoStep Energy Monitoring System, Cebu Technological University</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', fontSize: '0.85rem' }}>
+              <Link to={ROUTES.DASHBOARD} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Dashboard</Link>
+              <Link to={ROUTES.ANALYTICS} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Analytics</Link>
+              <Link to={ROUTES.MILESTONES} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Milestones</Link>
+              <Link to={ROUTES.ABOUT} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>About &amp; Team</Link>
+              <a href="#faq" style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>FAQ</a>
+            </div>
+            <span>Questions or feedback? Reach out to the EcoStep Research Team or ask EcoGuide inside the dashboard.</span>
           </footer>
         </section>
       </main>

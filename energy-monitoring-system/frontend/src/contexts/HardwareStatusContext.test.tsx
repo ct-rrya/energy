@@ -54,7 +54,7 @@ describe('HardwareStatusContext', () => {
     sessionStorage.clear();
   });
 
-  it('initializes in waiting state when no hardware has ever connected', async () => {
+  it('initializes in Standby state when no recent footsteps have arrived', async () => {
     render(
       <HardwareStatusProvider>
         <TestConsumer />
@@ -62,10 +62,10 @@ describe('HardwareStatusContext', () => {
     );
 
     expect(screen.getByTestId('status').textContent).toBe('waiting');
-    expect(screen.getByTestId('statusLabel').textContent).toBe('Waiting for hardware connection');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Standby');
   });
 
-  it('transitions to Connected when telemetry arrives', async () => {
+  it('transitions to Live when telemetry arrives', async () => {
     render(
       <HardwareStatusProvider>
         <TestConsumer />
@@ -77,7 +77,7 @@ describe('HardwareStatusContext', () => {
     });
 
     expect(screen.getByTestId('status').textContent).toBe('connected');
-    expect(screen.getByTestId('statusLabel').textContent).toBe('Connected');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Live');
   });
 
   it('transitions to Connection Lost when connection is lost', async () => {
@@ -99,7 +99,7 @@ describe('HardwareStatusContext', () => {
     expect(screen.getByTestId('statusLabel').textContent).toBe('Connection Lost');
   });
 
-  it('sets Connected status if initial reading from API is fresh (< 60s)', async () => {
+  it('sets Live status if initial reading from API is fresh (< 60s)', async () => {
     const recentDate = new Date(Date.now() - 5000).toISOString();
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: [{
@@ -124,7 +124,35 @@ describe('HardwareStatusContext', () => {
     });
 
     expect(screen.getByTestId('status').textContent).toBe('connected');
-    expect(screen.getByTestId('statusLabel').textContent).toBe('Connected');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Live');
+  });
+
+  it('stays in Standby when initial reading from API is older than 60s', async () => {
+    const oldDate = new Date(Date.now() - 120_000).toISOString();
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      data: [{
+        sensorId: 'sensor-1',
+        voltage: 3.3,
+        current: 12.5,
+        power: 41.25,
+        energy: 0.15,
+        stepCount: 10,
+        timestamp: oldDate,
+      }],
+    });
+
+    render(
+      <HardwareStatusProvider>
+        <TestConsumer />
+      </HardwareStatusProvider>
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('status').textContent).toBe('waiting');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Standby');
   });
 });
 

@@ -42,7 +42,7 @@ const ECOSTEP_BRAIN_KNOWLEDGE: Array<{
       source: 'ecostep_brain',
       section: 'Public Website Pages & Navigation',
       content:
-        'Public visitors need no login to explore: Landing Page (/) with How it works, EcoStepMat animation, Dashboard preview, EcoGuide preview, and About section (YouTube promo video + Research Team); Central Dashboard (/dashboard) showing live POWER OUTPUT (mW, Live vs Standby), STEPS TODAY, ENERGY TODAY (mWh), Voltage, Current, hardware status pill, and a Refresh button; Trends (/analytics) for historical charts with zero-record filtering; Milestone (/milestones) for monthly & weekly energy goals; About (/about); and EcoGuide AI assistant.',
+        'Public visitors need no login to explore: Landing Page (/) with How it works, EcoStepMat animation, Dashboard preview, EcoGuide preview, and About section (YouTube promo video + Research Team); Central Dashboard (/dashboard) showing live POWER OUTPUT (mW, Live vs Standby), STEPS TODAY, ENERGY TODAY (mWh), Voltage, Current, hardware status pill, and a Refresh button; Analytics (/analytics) for historical charts and records with zero-record filtering; Milestone (/milestones) for monthly & weekly energy goals; About (/about); and EcoGuide AI assistant.',
     },
     {
       source: 'ecostep_brain',
@@ -60,7 +60,7 @@ const ECOSTEP_BRAIN_KNOWLEDGE: Array<{
       source: 'ecostep_brain',
       section: 'Dashboard Logical Rules & Timezone',
       content:
-        'All daily totals (STEPS TODAY, ENERGY TODAY, todayTotalPower) use Asia/Manila (UTC+8) midnight-to-midnight boundaries converted to UTC via fromZonedTime. Central shows Live when a valid reading from today arrives and Standby (0.0000 mW) when idle. STEPS TODAY computes per-sensor step deltas and handles ESP32 counter resets without double-counting. The hardware status badge shows Waiting, Connected (active telemetry within 60s or active BLE), or Connection Lost (>60s without telemetry when not on BLE).',
+        'All daily totals (STEPS TODAY, ENERGY TODAY, todayTotalPower) use Asia/Manila (UTC+8) midnight-to-midnight boundaries converted to UTC via fromZonedTime. Central shows Live when a valid reading from today arrives and Standby (0.00 mW) when idle. STEPS TODAY sums per-upload step counts directly across all sensors. The top status badge shows Standby (connected to EcoStep and waiting for footsteps, since the tile only sends data when stepped on), Live (active footstep reading within 60s or active BLE), or Connection Lost (live server connection dropped).',
     },
     {
       source: 'ecostep_brain',

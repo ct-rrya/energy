@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/lib/theme';
-import { 
-  Plus, 
-  FileText, 
-  Download, 
+import {
+  Plus,
+  FileText,
+  Download,
   ChevronRight,
   ChevronDown,
   Filter
@@ -35,7 +35,7 @@ import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader
 export function ReportsPage() {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  
+
   // State
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<ReportType | 'all'>('all');
@@ -116,10 +116,10 @@ export function ReportsPage() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -151,14 +151,14 @@ export function ReportsPage() {
     return (
       <div className="w-full p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1600px] mx-auto">
-          <div 
+          <div
             className="rounded-lg p-8 text-center"
             style={{
               backgroundColor: colors.cardBackground,
               border: `1px solid ${colors.border}`,
             }}
           >
-            <div 
+            <div
               className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
               style={{
                 backgroundColor: theme === 'light' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.2)'
@@ -166,13 +166,13 @@ export function ReportsPage() {
             >
               <FileText className="w-6 h-6 text-red-500" />
             </div>
-            <h3 
+            <h3
               className="text-base font-semibold mb-2"
               style={{ color: colors.textPrimary }}
             >
               Unable to Load Reports
             </h3>
-            <p 
+            <p
               className="text-sm mb-6"
               style={{ color: colors.textSecondary }}
             >
@@ -202,7 +202,7 @@ export function ReportsPage() {
 
   const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (formatFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0);
 
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   return (
     <div className="page">
@@ -210,9 +210,8 @@ export function ReportsPage() {
       <DashboardHeader
         greeting="Documentation & Records"
         title="Reports"
-        subtitle="Generate, view, and export reports from EcoStep monitoring, analytics, and diagnostic data"
+        subtitle="Generate and export EcoStep energy reports"
         systemStatus={hardwareConnectionStatus}
-        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Reports Section with Integrated Compact Filter Toolbar */}
@@ -221,13 +220,13 @@ export function ReportsPage() {
         <div className="px-5 sm:px-6 py-4 border-b border-[var(--line)] flex flex-col min-[900px]:flex-row min-[900px]:items-center justify-between gap-3.5 min-[900px]:gap-4">
           {/* Left: Title & Count Badge */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <h2 
+            <h2
               className="text-[16px] sm:text-[18px] font-[600] tracking-tight text-[var(--t)] m-0"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               Generated Reports
             </h2>
-            <span 
+            <span
               className="text-[11px] font-[600] px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)] whitespace-nowrap"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -255,9 +254,8 @@ export function ReportsPage() {
                   )}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-[var(--mu)] transition-transform duration-200 shrink-0 ${
-                    mobileFiltersOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`w-4 h-4 text-[var(--mu)] transition-transform duration-200 shrink-0 ${mobileFiltersOpen ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 
@@ -381,7 +379,7 @@ export function ReportsPage() {
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)]">
               <FileText className="w-6 h-6" />
             </div>
-            <h3 
+            <h3
               className="text-base font-semibold mb-2 text-[var(--t)]"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -389,7 +387,7 @@ export function ReportsPage() {
                 ? 'No Reports Match Filters'
                 : 'No Reports Yet'}
             </h3>
-            <p 
+            <p
               className="text-sm mb-6 max-w-md mx-auto text-[var(--mu)]"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
@@ -409,224 +407,224 @@ export function ReportsPage() {
         ) : (
           <>
             {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full" style={{ minWidth: '650px' }}>
-                  <thead>
-                    <tr className="bg-[var(--soft)] border-b border-[var(--line)]">
-                      <th 
-                        className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Report Name
-                      </th>
-                      <th 
-                        className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Format
-                      </th>
-                      <th 
-                        className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Generated On
-                      </th>
-                      <th 
-                        className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Generated By
-                      </th>
-                      <th 
-                        className="text-right text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reports.map((report) => (
-                      <tr 
-                        key={report.id}
-                        className="border-b border-[var(--line)] hover:bg-[var(--soft)] transition-colors duration-150"
-                      >
-                        {/* Report Name */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)]"
-                            >
-                              <FileText className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div 
-                                className="text-sm font-medium mb-0.5 text-[var(--t)]"
-                                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                              >
-                                {getReportTypeLabel(report.type)}
-                              </div>
-                              <div 
-                                className="text-xs text-[var(--mu)]"
-                                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                              >
-                                {formatFileSize(report.fileSize)}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Format */}
-                        <td className="px-6 py-4">
-                          <span 
-                            className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]"
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                          >
-                            {report.format.toUpperCase()}
-                          </span>
-                        </td>
-
-                        {/* Generated On */}
-                        <td className="px-6 py-4">
-                          <span 
-                            className="text-[13px] text-[var(--t)] tabular-nums"
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                          >
-                            {formatDate(report.createdAt)}
-                          </span>
-                        </td>
-
-                        {/* Generated By */}
-                        <td className="px-6 py-4">
-                          <span 
-                            className="text-[13px] text-[var(--t)]"
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                          >
-                            {report.generatedByName}
-                          </span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleViewDetails(report)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] hover:bg-[var(--mint)] text-[var(--t)] transition-colors flex items-center gap-1 cursor-pointer"
-                              style={{ fontFamily: "'DM Sans', sans-serif" }}
-                            >
-                              View Details
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDownload(report.id, report.fileName)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:bg-[var(--bar)] shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
-                              style={{ fontFamily: "'DM Sans', sans-serif" }}
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              Download
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden divide-y" style={{ borderColor: colors.border }}>
-                {reports.map((report) => (
-                  <div key={report.id} className="p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div 
-                        className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{
-                          backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
-                        }}
-                      >
-                        <FileText 
-                          className="w-6 h-6"
-                          style={{ color: colors.accent }}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div 
-                          className="text-sm font-medium mb-1"
-                          style={{ color: colors.textPrimary }}
-                        >
-                          {getReportTypeLabel(report.type)}
-                        </div>
-                        <div 
-                          className="text-xs mb-1"
-                          style={{ color: colors.textSecondary }}
-                        >
-                          Generated on {formatDate(report.createdAt)}
-                        </div>
-                        <div 
-                          className="text-xs"
-                          style={{ color: colors.textSecondary }}
-                        >
-                          By {report.generatedByName}
-                        </div>
-                      </div>
-                      <span 
-                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {report.format.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-3">
-                      <button
-                        onClick={() => handleViewDetails(report)}
-                        className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--mint)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        View Details
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDownload(report.id, report.fileName)}
-                        className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:bg-[var(--bar)] shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Integrated Card Pagination */}
-              {meta && meta.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-[var(--line)] flex items-center justify-between">
-                  <div 
-                    className="text-xs sm:text-sm text-[var(--mu)] tabular-nums"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    Page {meta.page} of {meta.totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPage(page - 1)}
-                      disabled={page === 1 || reportsLoading}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full" style={{ minWidth: '650px' }}>
+                <thead>
+                  <tr className="bg-[var(--soft)] border-b border-[var(--line)]">
+                    <th
+                      className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      Previous
+                      Report Name
+                    </th>
+                    <th
+                      className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Format
+                    </th>
+                    <th
+                      className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Generated On
+                    </th>
+                    <th
+                      className="text-left text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Generated By
+                    </th>
+                    <th
+                      className="text-right text-[11px] font-[600] uppercase tracking-[0.08em] px-6 py-3.5 text-[var(--mu)]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr
+                      key={report.id}
+                      className="border-b border-[var(--line)] hover:bg-[var(--soft)] transition-colors duration-150"
+                    >
+                      {/* Report Name */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)]"
+                          >
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div
+                              className="text-sm font-medium mb-0.5 text-[var(--t)]"
+                              style={{ fontFamily: "'DM Sans', sans-serif" }}
+                            >
+                              {getReportTypeLabel(report.type)}
+                            </div>
+                            <div
+                              className="text-xs text-[var(--mu)]"
+                              style={{ fontFamily: "'DM Sans', sans-serif" }}
+                            >
+                              {formatFileSize(report.fileSize)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Format */}
+                      <td className="px-6 py-4">
+                        <span
+                          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]"
+                          style={{ fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {report.format.toUpperCase()}
+                        </span>
+                      </td>
+
+                      {/* Generated On */}
+                      <td className="px-6 py-4">
+                        <span
+                          className="text-[13px] text-[var(--t)] tabular-nums"
+                          style={{ fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {formatDate(report.createdAt)}
+                        </span>
+                      </td>
+
+                      {/* Generated By */}
+                      <td className="px-6 py-4">
+                        <span
+                          className="text-[13px] text-[var(--t)]"
+                          style={{ fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {report.generatedByName}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleViewDetails(report)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] hover:bg-[var(--mint)] text-[var(--t)] transition-colors flex items-center gap-1 cursor-pointer"
+                            style={{ fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            View Details
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(report.id, report.fileName)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:bg-[var(--bar)] shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+                            style={{ fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Download
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y" style={{ borderColor: colors.border }}>
+              {reports.map((report) => (
+                <div key={report.id} className="p-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div
+                      className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
+                      }}
+                    >
+                      <FileText
+                        className="w-6 h-6"
+                        style={{ color: colors.accent }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div
+                        className="text-sm font-medium mb-1"
+                        style={{ color: colors.textPrimary }}
+                      >
+                        {getReportTypeLabel(report.type)}
+                      </div>
+                      <div
+                        className="text-xs mb-1"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        Generated on {formatDate(report.createdAt)}
+                      </div>
+                      <div
+                        className="text-xs"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        By {report.generatedByName}
+                      </div>
+                    </div>
+                    <span
+                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {report.format.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => handleViewDetails(report)}
+                      className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--mint)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      View Details
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setPage(page + 1)}
-                      disabled={page === meta.totalPages || reportsLoading}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      onClick={() => handleDownload(report.id, report.fileName)}
+                      className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:bg-[var(--bar)] shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      Next
+                      <Download className="w-3.5 h-3.5" />
+                      Download
                     </button>
                   </div>
                 </div>
-              )}
+              ))}
+            </div>
+
+            {/* Integrated Card Pagination */}
+            {meta && meta.totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-[var(--line)] flex items-center justify-between">
+                <div
+                  className="text-xs sm:text-sm text-[var(--mu)] tabular-nums"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Page {meta.page} of {meta.totalPages}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1 || reportsLoading}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === meta.totalPages || reportsLoading}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

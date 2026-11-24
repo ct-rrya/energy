@@ -36,7 +36,7 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--left-w, 224px);
+  width: var(--left-panel-w, var(--left-w, 224px));
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -49,12 +49,35 @@
   box-sizing: border-box;
   z-index: 30;
   contain: layout paint;
-  transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.24s ease,
+              background-color 0.24s ease,
+              border-color 0.24s ease;
+}
+
+.es-side.is-floating,
+.sidebar.is-floating {
+  width: var(--left-panel-w, 224px);
+  z-index: 45;
+  background: rgba(232, 244, 236, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(13, 27, 20, 0.10);
+  box-shadow: 12px 0 34px rgba(13, 27, 20, 0.15);
+}
+
+[data-theme="dark"] .es-side.is-floating,
+[data-theme="dark"] .sidebar.is-floating,
+.dark .es-side.is-floating,
+.dark .sidebar.is-floating {
+  background: rgba(13, 26, 19, 0.94);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 14px 0 38px rgba(0, 0, 0, 0.48);
 }
 
 .es-side.collapsed,
 .sidebar.collapsed {
-  width: var(--left-w, 72px);
+  width: var(--left-panel-w, 72px);
   padding: clamp(16px, 2.5vh, 28px) 0;
   align-items: center;
 }
@@ -651,7 +674,7 @@
 /* Collapsed Sidebar strict layout (72px) */
 .es-side.collapsed,
 .sidebar.collapsed {
-  width: var(--left-w, 72px) !important;
+  width: var(--left-panel-w, 72px) !important;
   max-width: 72px !important;
   min-width: 0 !important;
   padding: clamp(16px, 2.5vh, 28px) 0 !important;

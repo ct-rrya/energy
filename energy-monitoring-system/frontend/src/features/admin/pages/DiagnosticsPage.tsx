@@ -66,7 +66,7 @@ export function DiagnosticsPage() {
     };
   }, [socket, isConnected, queryClient]);
 
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   return (
     <div className="page" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -74,9 +74,8 @@ export function DiagnosticsPage() {
       <DashboardHeader
         greeting="Tile health"
         title="Tile Performance Diagnostics"
-        subtitle="Health check for your piezoelectric footstep tile"
+        subtitle="Piezoelectric tile health checks"
         systemStatus={hardwareConnectionStatus}
-        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* Main Content Stack: Today Card + History Card + Bottom Note */}

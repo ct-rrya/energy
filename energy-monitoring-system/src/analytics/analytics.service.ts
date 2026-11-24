@@ -1054,37 +1054,39 @@ export class AnalyticsService {
   /**
    * Build Group ID for Aggregation
    *
-   * Constructs the MongoDB group _id object based on granularity.
+   * Constructs the MongoDB group _id object based on granularity in project timezone (Asia/Manila)
+   * so daily buckets align with local midnight boundaries rather than splitting a local day across UTC dates.
    */
   private buildGroupId(granularity: Granularity): any {
+    const tz = this.timezone || 'Asia/Manila';
     const base = {
-      year: { $year: '$timestamp' },
-      month: { $month: '$timestamp' },
+      year: { $year: { date: '$timestamp', timezone: tz } },
+      month: { $month: { date: '$timestamp', timezone: tz } },
     };
 
     switch (granularity) {
       case Granularity.HOUR:
         return {
           ...base,
-          day: { $dayOfMonth: '$timestamp' },
-          hour: { $hour: '$timestamp' },
+          day: { $dayOfMonth: { date: '$timestamp', timezone: tz } },
+          hour: { $hour: { date: '$timestamp', timezone: tz } },
         };
       case Granularity.DAY:
         return {
           ...base,
-          day: { $dayOfMonth: '$timestamp' },
+          day: { $dayOfMonth: { date: '$timestamp', timezone: tz } },
         };
       case Granularity.WEEK:
         return {
           ...base,
-          week: { $week: '$timestamp' },
+          week: { $week: { date: '$timestamp', timezone: tz } },
         };
       case Granularity.MONTH:
         return base;
       default:
         return {
           ...base,
-          day: { $dayOfMonth: '$timestamp' },
+          day: { $dayOfMonth: { date: '$timestamp', timezone: tz } },
         };
     }
   }

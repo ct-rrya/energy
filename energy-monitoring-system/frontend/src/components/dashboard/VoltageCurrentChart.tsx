@@ -3,7 +3,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
 import { useChartRealTimeUpdates } from '@/features/dashboard/hooks/useChartRealTimeUpdates';
-import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from './chartUtils';
+import {
+  transformToChartData,
+  isDatasetEmpty,
+  hasDuplicateFormattedDates,
+  formatSmartChartTimestamp,
+  computeNiceYAxis,
+} from './chartUtils';
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
 import type { VoltageCurrentChartProps } from './chartTypes';
@@ -112,15 +118,35 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   const isCurrentSparse = currentData.length > 0 && currentData.length < 2;
   const chartHeight = isMobile ? 240 : 270;
 
-  // Determine appropriate current unit & scale (µA for sub-mA piezo currents, mA otherwise)
+  // Standardize Current to mA everywhere (matching Central Dashboard and Historical Records)
   const maxCurrentA = useMemo(
     () => currentData.reduce((max, pt) => Math.max(max, Math.abs(pt.value || 0)), 0),
     [currentData]
   );
-  const useMicroAmps = maxCurrentA < 0.001;
-  const currentUnit = useMicroAmps ? 'µA' : 'mA';
-  const currentMultiplier = useMicroAmps ? 1_000_000 : 1_000;
-  const currentFallbackMaxA = useMicroAmps ? 0.000012 : 0.0012;
+  const currentUnit = 'mA';
+  const currentMultiplier = 1_000;
+
+  const showVoltageTimeOnXAxis = useMemo(
+    () => hasDuplicateFormattedDates(voltageData, granularity),
+    [voltageData, granularity]
+  );
+  const showCurrentTimeOnXAxis = useMemo(
+    () => hasDuplicateFormattedDates(currentData, granularity),
+    [currentData, granularity]
+  );
+
+  const voltageYAxisScale = useMemo(() => {
+    const maxVal = voltageData.reduce((m, pt) => Math.max(m, pt.value || 0), 0);
+    return computeNiceYAxis(maxVal, { minMax: 5, targetSteps: 4 });
+  }, [voltageData]);
+
+  const currentYAxisScale = useMemo(() => {
+    return computeNiceYAxis(maxCurrentA, {
+      minMax: 0.01,
+      multiplier: currentMultiplier,
+      targetSteps: 4,
+    });
+  }, [maxCurrentA, currentMultiplier]);
 
   // Theme-aware colors
   const colors = {
@@ -131,19 +157,46 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   };
 
   const chartMargin = {
-    top: 8,
-    right: isMobile ? 8 : 16,
-    left: isMobile ? -12 : 0,
-    bottom: isMobile ? 8 : 0,
+    top: 12,
+    right: isMobile ? 12 : 20,
+    left: isMobile ? 4 : 12,
+    bottom: isMobile ? 12 : 4,
+  };
+
+  const voltageYAxisWidth = isMobile ? 52 : 62;
+  const currentYAxisWidth = isMobile ? 58 : 70;
+
+  const voltageYAxisLabel = {
+    value: 'Voltage (V)',
+    angle: -90,
+    position: 'insideLeft' as const,
+    offset: isMobile ? 2 : 0,
+    style: {
+      fill: colors.textColor,
+      fontSize: isMobile ? '11px' : '12px',
+      textAnchor: 'middle' as const,
+    },
+  };
+
+  const currentYAxisLabel = {
+    value: `Current (${currentUnit})`,
+    angle: -90,
+    position: 'insideLeft' as const,
+    offset: isMobile ? 2 : 0,
+    style: {
+      fill: colors.textColor,
+      fontSize: isMobile ? '11px' : '12px',
+      textAnchor: 'middle' as const,
+    },
   };
 
   const voltageSubtitle = periodLabel
-    ? `Electrical potential (V) produced during compressions (${periodLabel})`
-    : 'Electrical potential (V) produced during compressions';
+    ? `Electrical push (V) produced by footsteps (${periodLabel})`
+    : 'Electrical push (V) produced by footsteps';
 
   const currentSubtitle = periodLabel
-    ? `Electrical charge flow rate (${currentUnit}) (${periodLabel})`
-    : `Electrical charge flow rate (${currentUnit})`;
+    ? `Electrical charge flow (${currentUnit}) (${periodLabel})`
+    : `Electrical charge flow (${currentUnit})`;
 
   return (
     <div className={`analytics-charts-grid ${className}`}>
@@ -168,23 +221,20 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+                tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showVoltageTimeOnXAxis)}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
               />
               <YAxis
-                label={{
-                  value: 'Voltage (V)',
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-                }}
+                width={voltageYAxisWidth}
+                label={voltageYAxisLabel}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
-                tickCount={4}
-                domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toFixed(2)) : 5)]}
+                domain={voltageYAxisScale.domain}
+                ticks={voltageYAxisScale.ticks}
+                tickFormatter={(v) => Number(v).toFixed(voltageYAxisScale.decimals)}
               />
               <Tooltip
                 content={<CustomChartTooltip unit="V" />}
@@ -208,7 +258,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+                tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showVoltageTimeOnXAxis)}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 angle={isMobile ? -45 : 0}
@@ -216,17 +266,14 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
               />
               <YAxis
-                label={{
-                  value: 'Voltage (V)',
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-                }}
+                width={voltageYAxisWidth}
+                label={voltageYAxisLabel}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
-                tickCount={4}
-                domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toFixed(2)) : 5)]}
+                domain={voltageYAxisScale.domain}
+                ticks={voltageYAxisScale.ticks}
+                tickFormatter={(v) => Number(v).toFixed(voltageYAxisScale.decimals)}
               />
               <Tooltip
                 content={<CustomChartTooltip unit="V" />}
@@ -257,7 +304,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
         subtitle={currentSubtitle}
         tooltip={{
           title: `Current Trend (${currentUnit})`,
-          description: "Maps how swiftly harvested charge flows into storage capacitors across each hour.",
+          description: "Shows how quickly harvested electrical charge flows into onboard storage over time.",
         }}
         isLoading={currentLoading}
         error={currentError}
@@ -272,25 +319,21 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+                tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showCurrentTimeOnXAxis)}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
               />
               <YAxis
-                label={{
-                  value: `Equiv. Current (${currentUnit})`,
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-                }}
+                width={currentYAxisWidth}
+                label={currentYAxisLabel}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
-                tickCount={4}
-                domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : currentFallbackMaxA)]}
+                domain={currentYAxisScale.domain}
+                ticks={currentYAxisScale.ticks}
                 tickFormatter={(value) =>
-                  (value * currentMultiplier).toFixed(useMicroAmps ? 1 : 2)
+                  (value * currentMultiplier).toFixed(currentYAxisScale.decimals)
                 }
               />
               <Tooltip
@@ -304,7 +347,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
               <Bar
                 dataKey="value"
                 fill={colors.current}
-                name="Equiv. Current"
+                name="Current"
                 maxBarSize={48}
                 radius={[8, 8, 0, 0]}
                 isAnimationActive={false}
@@ -315,7 +358,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+                tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showCurrentTimeOnXAxis)}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 angle={isMobile ? -45 : 0}
@@ -323,19 +366,15 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
               />
               <YAxis
-                label={{
-                  value: `Equiv. Current (${currentUnit})`,
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-                }}
+                width={currentYAxisWidth}
+                label={currentYAxisLabel}
                 stroke={colors.textColor}
                 tick={{ fontSize: isMobile ? 11 : 12 }}
                 style={{ fontSize: isMobile ? '11px' : '12px' }}
-                tickCount={4}
-                domain={[0, (dataMax: number) => (dataMax > 0 ? dataMax * 1.15 : currentFallbackMaxA)]}
+                domain={currentYAxisScale.domain}
+                ticks={currentYAxisScale.ticks}
                 tickFormatter={(value) =>
-                  (value * currentMultiplier).toFixed(useMicroAmps ? 1 : 2)
+                  (value * currentMultiplier).toFixed(currentYAxisScale.decimals)
                 }
               />
               <Tooltip
@@ -353,7 +392,7 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
                 strokeWidth={isMobile ? 2 : 2.5}
                 dot={false}
                 activeDot={{ r: 4 }}
-                name="Equiv. Current"
+                name="Current"
                 isAnimationActive={false}
               />
             </LineChart>

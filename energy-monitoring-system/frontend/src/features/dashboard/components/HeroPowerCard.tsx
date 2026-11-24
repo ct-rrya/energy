@@ -33,6 +33,7 @@ import { AIInsightSection } from './AIInsightSection';
 import { HeroCardSkeleton } from './HeroCardSkeleton';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
 import { getPowerTooltip } from '../utils/metricTooltips';
+import { useHardwareStatus, type HardwareConnectionStatus } from '@/contexts/HardwareStatusContext';
 
 /**
  * Hero Power Card Props
@@ -48,6 +49,8 @@ export interface HeroPowerCardProps {
   isLoading: boolean;
   /** Today's total steps count (used to determine if there's any activity today) */
   todaySteps?: number | undefined;
+  /** Optional override for connection status (defaults to unified HardwareStatusContext) */
+  connectionStatus?: HardwareConnectionStatus;
 }
 
 /**
@@ -63,13 +66,17 @@ export const HeroPowerCard = React.memo(
     aiInsight,
     isLoading,
     todaySteps,
+    connectionStatus,
   }: HeroPowerCardProps) {
-    // Memoize formatted value to prevent unnecessary recalculations
+    const hardwareStatus = useHardwareStatus();
+    const effectiveConnectionStatus = connectionStatus ?? hardwareStatus.status;
+    const isDisconnected = effectiveConnectionStatus === 'disconnected';
+
+    // Memoize formatted value with clean, reader-friendly decimals (2 decimals, or 3 for tiny live nonzero spikes)
     const formattedPower = useMemo(() => {
-      // Show "0.0000" when undefined
-      if (powerValue === undefined) return '0.0000';
-      // Format to 4 decimal places to show small mW values
-      return powerValue.toFixed(4);
+      if (powerValue === undefined || powerValue === 0) return '0.00';
+      if (Math.abs(powerValue) < 0.01) return powerValue.toFixed(3);
+      return powerValue.toFixed(2);
     }, [powerValue]);
 
     // Show loading skeleton when isLoading is true
@@ -79,6 +86,7 @@ export const HeroPowerCard = React.memo(
 
     // Determine if there is no activity today
     const hasNoActivityToday = todaySteps === undefined || todaySteps === 0;
+    const isLive = !isDisconnected && !hasNoActivityToday;
 
     return (
       <div className="cd flex flex-col justify-between">
@@ -90,12 +98,16 @@ export const HeroPowerCard = React.memo(
               <span>Power Output</span>
               <InfoTooltip
                 title="Power Output"
-                description={getPowerTooltip(powerValue, !hasNoActivityToday)}
+                description={
+                  isDisconnected
+                    ? 'Unable to reach the live EcoStep server. Trying to reconnect automatically.'
+                    : getPowerTooltip(powerValue, isLive)
+                }
                 ariaLabel="More info: Power Output"
               />
             </div>
             <span className="pill">
-              ● {hasNoActivityToday ? 'Standby' : 'Live'}
+              ● {isDisconnected ? 'Offline' : isLive ? 'Live' : 'Standby'}
             </span>
           </div>
 
@@ -109,8 +121,10 @@ export const HeroPowerCard = React.memo(
 
           {/* Subtitle state: 13px muted */}
           <div className="sub text-[13px] text-[var(--mu)] mt-1.5">
-            {hasNoActivityToday
-              ? 'System at rest. Waiting for footsteps.'
+            {isDisconnected
+              ? 'Connection lost — trying to reconnect to live feed.'
+              : hasNoActivityToday
+              ? 'Standby — Waiting for footsteps.'
               : 'Instantaneous rate of electricity generation'}
           </div>
         </div>

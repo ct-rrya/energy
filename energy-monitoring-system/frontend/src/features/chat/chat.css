@@ -25,7 +25,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: var(--right-w, 330px);
+  width: var(--right-panel-w, var(--right-w, 330px));
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -39,7 +39,10 @@
   box-sizing: border-box;
   z-index: 30;
   contain: layout paint;
-  transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.24s ease,
+              background-color 0.24s ease,
+              border-color 0.24s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -51,13 +54,34 @@
 /* Expanded state (330px width) */
 .docked-chat-panel.expanded,
 .guide.expanded {
-  width: var(--right-w, 330px);
+  width: var(--right-panel-w, var(--right-w, 330px));
+}
+
+/* Hover/focus floating overlay state (floats over middle content without shifting layout) */
+.docked-chat-panel.is-floating,
+.guide.is-floating {
+  width: var(--right-panel-w, 330px);
+  z-index: 45;
+  background: rgba(242, 249, 244, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-left: 1px solid rgba(13, 27, 20, 0.10);
+  box-shadow: -12px 0 34px rgba(13, 27, 20, 0.15);
+}
+
+[data-theme="dark"] .docked-chat-panel.is-floating,
+[data-theme="dark"] .guide.is-floating,
+.dark .docked-chat-panel.is-floating,
+.dark .guide.is-floating {
+  background: rgba(13, 26, 19, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -14px 0 38px rgba(0, 0, 0, 0.48);
 }
 
 /* Collapsed state (56px rail) */
 .docked-chat-panel.collapsed,
 .guide.collapsed {
-  width: var(--right-w, 56px) !important;
+  width: var(--right-panel-w, 56px) !important;
   max-width: 56px !important;
   min-width: 0 !important;
   padding: clamp(16px, 2.5vh, 28px) 10px !important;

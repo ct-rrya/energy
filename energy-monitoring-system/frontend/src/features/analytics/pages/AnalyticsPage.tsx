@@ -168,7 +168,7 @@ export function AnalyticsPage() {
     return PERIOD_OPTIONS.find((opt) => opt.value === selectedPeriod)?.label ?? 'All Time';
   }, [selectedPeriod]);
 
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   return (
     <div className="page">
@@ -179,7 +179,6 @@ export function AnalyticsPage() {
         subtitle="Energy trends and historical data."
         systemStatus={hardwareConnectionStatus}
         isPublicUser={isPublicUser}
-        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* View Toggle and Period Filter */}

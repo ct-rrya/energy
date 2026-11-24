@@ -27,8 +27,8 @@ describe('ChartEmptyState', () => {
     it('renders with default message and suggestion', () => {
       renderWithTheme(<ChartEmptyState />);
 
-      expect(screen.getByText('No data available')).toBeInTheDocument();
-      expect(screen.getByText('Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.')).toBeInTheDocument();
+      expect(screen.getByText('No footsteps recorded yet')).toBeInTheDocument();
+      expect(screen.getByText('Walk across the EcoStep tile to start generating and viewing live energy charts.')).toBeInTheDocument();
     });
 
     it('renders with custom message', () => {
@@ -117,7 +117,7 @@ describe('ChartEmptyState', () => {
       );
 
       // Screen reader text should be present but visually hidden
-      const srText = screen.getByText(/No data available\. Try again later/i);
+      const srText = screen.getByText(/No data\. Try again later/i);
       expect(srText).toHaveClass('sr-only');
     });
 
@@ -147,8 +147,8 @@ describe('ChartEmptyState', () => {
     it('applies theme-aware colors in light mode', () => {
       renderWithTheme(<ChartEmptyState />);
 
-      const message = screen.getByText('No data available');
-      const suggestion = screen.getByText('Waiting for sensor data. Connect ESP32 sensors to begin monitoring energy metrics.');
+      const message = screen.getByText('No footsteps recorded yet');
+      const suggestion = screen.getByText('Walk across the EcoStep tile to start generating and viewing live energy charts.');
 
       // Check that styles are applied (we can't easily test computed styles without more setup)
       expect(message).toBeInTheDocument();

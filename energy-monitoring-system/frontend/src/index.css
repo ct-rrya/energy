@@ -350,7 +350,7 @@ body::before {
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--left-w, 200px);
+  width: var(--left-panel-w, var(--left-w, 200px));
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -363,7 +363,7 @@ body::before {
   top: 0;
   right: 0;
   bottom: 0;
-  width: var(--right-w, 330px);
+  width: var(--right-panel-w, var(--right-w, 330px));
   height: 100vh;
   height: 100dvh;
   overflow: hidden;

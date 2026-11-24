@@ -381,49 +381,10 @@ export class EnergyService {
           },
         },
         {
-          $sort: { sensorId: 1, receivedAt: 1 },
-        },
-        {
-          // Calculate previous stepCount for delta
-          $setWindowFields: {
-            partitionBy: '$sensorId',
-            sortBy: { receivedAt: 1 },
-            output: {
-              previousStepCount: {
-                $shift: {
-                  output: '$stepCount',
-                  by: -1,
-                },
-              },
-            },
-          },
-        },
-        {
-          // Calculate step delta, handling resets
-          $addFields: {
-            stepDelta: {
-              $cond: {
-                if: {
-                  $or: [
-                    { $eq: ['$previousStepCount', null] },  // First reading: use its value directly
-                  ],
-                },
-                then: '$stepCount',  // ✅ FIX: Include first reading's steps
-                else: {
-                  $cond: {
-                    if: { $lt: ['$stepCount', '$previousStepCount'] }, // Reset detected
-                    then: '$stepCount',  // After reset, current value is the increment
-                    else: { $subtract: ['$stepCount', '$previousStepCount'] }, // Normal delta
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
+          // ESP32 resets stepCount to 0 after each upload, so sum batch stepCounts directly
           $group: {
             _id: null,
-            totalSteps: { $sum: '$stepDelta' },
+            totalSteps: { $sum: { $ifNull: ['$stepCount', 0] } },
             maxVoltage: { $max: '$voltage' },
             peakPower: { $max: '$power' },
             peakCurrent: { $max: '$current' },
@@ -490,7 +451,7 @@ export class EnergyService {
         };
       }
 
-      // Calculate in memory
+      // Calculate in memory (sum per-upload stepCount batches directly)
       let totalSteps = 0;
       let maxVoltage = 0;
       let peakPower = 0;
@@ -498,26 +459,9 @@ export class EnergyService {
       let totalVoltage = 0;
       let totalPower = 0;
       let totalCurrent = 0;
-      const sensorPreviousSteps = new Map<string, number>();
 
       for (const reading of readings) {
-        const sensorIdStr = reading.sensorId.toString();
-        const previousSteps = sensorPreviousSteps.get(sensorIdStr);
-        const currentSteps = reading.stepCount || 0;
-
-        // Calculate step delta
-        if (previousSteps === undefined) {
-          // First reading for this sensor: use its value directly
-          totalSteps += currentSteps;
-        } else if (currentSteps < previousSteps) {
-          // Reset detected: current value is the increment since reset
-          totalSteps += currentSteps;
-        } else {
-          // Normal case: delta between consecutive readings
-          totalSteps += currentSteps - previousSteps;
-        }
-
-        sensorPreviousSteps.set(sensorIdStr, currentSteps);
+        totalSteps += reading.stepCount || 0;
 
         // Track max values
         maxVoltage = Math.max(maxVoltage, reading.voltage || 0);
@@ -584,44 +528,11 @@ export class EnergyService {
           },
         },
         {
-          $sort: { sensorId: 1, receivedAt: 1 },
-        },
-        {
-          $setWindowFields: {
-            partitionBy: '$sensorId',
-            sortBy: { receivedAt: 1 },
-            output: {
-              previousStepCount: {
-                $shift: {
-                  output: '$stepCount',
-                  by: -1,
-                },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            stepDelta: {
-              $cond: {
-                if: { $eq: ['$previousStepCount', null] },
-                then: { $ifNull: ['$stepCount', 0] },
-                else: {
-                  $cond: {
-                    if: { $lt: ['$stepCount', '$previousStepCount'] },
-                    then: { $ifNull: ['$stepCount', 0] },
-                    else: { $subtract: ['$stepCount', '$previousStepCount'] },
-                  },
-                },
-              },
-            },
-          },
-        },
-        {
+          // ESP32 resets stepCount to 0 after each upload, so sum batch stepCounts directly
           $group: {
             _id: null,
             totalEnergyMWh: { $sum: { $ifNull: ['$energy', 0] } },
-            totalSteps: { $sum: '$stepDelta' },
+            totalSteps: { $sum: { $ifNull: ['$stepCount', 0] } },
             peakPowerW: { $max: '$power' },
             avgPowerW: { $avg: '$power' },
             minPowerW: { $min: '$power' },
@@ -693,18 +604,9 @@ export class EnergyService {
       let sumCurrentA = 0;
       let firstTs = Infinity;
       let lastTs = -Infinity;
-      const sensorPrevSteps = new Map<string, number>();
 
       for (const r of readings as any[]) {
-        const sid = String(r.sensorId);
-        const prev = sensorPrevSteps.get(sid);
-        const curr = r.stepCount || 0;
-        if (prev === undefined || curr < prev) {
-          totalSteps += curr;
-        } else {
-          totalSteps += curr - prev;
-        }
-        sensorPrevSteps.set(sid, curr);
+        totalSteps += r.stepCount || 0;
 
         const p = r.power || 0;
         const v = r.voltage || 0;

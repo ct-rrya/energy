@@ -101,15 +101,15 @@ export function getEnergyTodayTooltip(energyWh?: number): string {
 export function getVoltageTooltip(voltage?: number): string {
   const v = voltage ?? 0;
   if (v < 0.2) {
-    return '0.0 V at rest. The piezoelectric ceramic crystals are waiting for mechanical compression to generate electric charge.';
+    return '0.0 V at rest. The smart tile pads are ready and waiting for footsteps to create an electrical push.';
   }
   if (v < 2.5) {
-    return `${v.toFixed(2)} V detected. Gentle pressure on the tile is pushing electrons through the rectifier bridge.`;
+    return `${v.toFixed(2)} V detected. Gentle footstep pressure is creating a steady electrical push inside the tile.`;
   }
   if (v < 6.0) {
-    return `${v.toFixed(2)} V generated. That's comparable to a standard USB power rail, produced by footsteps alone.`;
+    return `${v.toFixed(2)} V generated. That's comparable to a standard USB power level, produced by footsteps alone.`;
   }
-  return `${v.toFixed(2)} V peak! Strong impact force is creating a robust voltage spike across the crystal lattice.`;
+  return `${v.toFixed(2)} V peak! A strong footstep is creating a high electrical burst inside the tile.`;
 }
 
 /**
@@ -121,12 +121,12 @@ export function getVoltageTooltip(voltage?: number): string {
 export function getCurrentTooltip(currentMa?: number): string {
   const ma = currentMa ?? 0;
   if (ma < 0.1) {
-    return '0.0 mA at rest. No electrical charge is currently flowing through the conditioning circuit.';
+    return '0.0 mA at rest. No electrical charge is flowing right now—step on the tile to start generating.';
   }
   if (ma < 5.0) {
-    return `${ma.toFixed(1)} mA flowing. A subtle trickle of electrons moving from the tile into the capacitor bank.`;
+    return `${ma.toFixed(1)} mA flowing. A gentle trickle of electrical charge moving from the tile into onboard storage.`;
   }
-  return `${ma.toFixed(1)} mA discharge rate. A lively burst of electron flow transferring harvested energy into storage.`;
+  return `${ma.toFixed(1)} mA flowing. A lively burst of electrical charge transferring harvested energy into storage.`;
 }
 
 /**

@@ -40,35 +40,35 @@ export function HowHarvestingWorksCard() {
       num: 1,
       icon: Footprints,
       title: '1. Footstep Pressure',
-      subtitle: 'Mechanical Force',
-      desc: 'When a person walks across the floor tile, their body weight applies mechanical pressure to piezoelectric ceramic discs inside.',
+      subtitle: 'Every Step Counts',
+      desc: 'When someone walks across the smart floor tile, their step gently presses special energy-harvesting pads built inside.',
       color: '#3ED98A',
       bgColor: isDark ? 'rgba(62, 217, 138, 0.12)' : 'rgba(47, 191, 113, 0.1)',
     },
     {
       num: 2,
       icon: Zap,
-      title: '2. Piezoelectric Effect',
-      subtitle: 'Energy Conversion',
-      desc: 'The mechanical stress deforms the crystal lattice inside each disc, generating an electrical potential difference (voltage pulse).',
+      title: '2. Instant Electric Charge',
+      subtitle: 'Pressure to Power',
+      desc: 'Squeezing those built-in pads turns the motion of each footstep directly into a small burst of clean electricity.',
       color: '#F59E0B',
       bgColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.1)',
     },
     {
       num: 3,
       icon: Cpu,
-      title: '3. Charge Conditioning',
-      subtitle: 'Rectification & Storage',
-      desc: 'A rectifier circuit converts raw AC pulses into stable DC power and stores the energy in an onboard capacitor bank.',
+      title: '3. Clean Energy Storage',
+      subtitle: 'Smooth & Save',
+      desc: 'A built-in power module smooths out each electrical burst and saves the harvested energy safely inside onboard storage.',
       color: '#3B82F6',
       bgColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.1)',
     },
     {
       num: 4,
       icon: Activity,
-      title: '4. IoT Live Stream',
-      subtitle: 'Telemetry to Screen',
-      desc: 'Sensors and an ESP32 microcontroller calculate voltage, current, and power, streaming live updates directly to this dashboard.',
+      title: '4. Live on Your Screen',
+      subtitle: 'Real-Time Updates',
+      desc: 'Built-in smart sensors count footsteps and measure power output, sending live updates straight to this dashboard.',
       color: '#EC4899',
       bgColor: isDark ? 'rgba(236, 72, 153, 0.12)' : 'rgba(236, 72, 153, 0.1)',
     },
@@ -101,8 +101,8 @@ export function HowHarvestingWorksCard() {
         <div className="how-harvesting-actions flex items-center gap-2 shrink-0">
           <span className="how-harvesting-tooltip">
             <InfoTooltip
-              title="Piezoelectric Harvesting"
-              description="Step down, squeeze the crystals, harvest the charge. Mechanical force converted into electricity without burning a drop of fuel."
+              title="How Footstep Power Works"
+              description="Step down, press the smart pads, and store clean electricity—powered purely by everyday walking."
               size={16}
               align="right"
             />

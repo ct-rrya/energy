@@ -103,10 +103,8 @@ export const MetricCard = React.memo(function MetricCard({
     return value.toFixed(precision);
   }, [value, precision]);
 
-  // Memoize empty state checks
-  const isEmptyState = value === undefined;
-  const isZeroValue = value === 0 || value === undefined;
-  const valueOpacity = isEmptyState ? 'opacity-50' : 'opacity-100';
+  // Keep full opacity & crisp primary text contrast on all metric numbers (even when 0.00 / idle)
+  const valueOpacity = 'opacity-100';
 
   return (
     <article
@@ -174,7 +172,7 @@ export const MetricCard = React.memo(function MetricCard({
             fontSize: '34px',
             fontWeight: 500,
             letterSpacing: '-.02em',
-            color: isZeroValue ? 'var(--mu)' : 'var(--t)',
+            color: 'var(--t)',
             lineHeight: 1,
           }}
         >

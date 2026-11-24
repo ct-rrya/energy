@@ -141,7 +141,8 @@ export const milestonesService = {
     const isPastMonth = year < currYear || (year === currYear && month < currMonth);
     const isFutureMonth = year > currYear || (year === currYear && month > currMonth);
 
-    // Build weekly milestones
+    // Build weekly milestones (monthly target split evenly across calendar weeks)
+    const evenWeeklyTargetMWh = round6(DEFAULT_MONTHLY_TARGET_MWH / Math.max(1, blocks.length));
     const weeklyMilestones: MilestoneItem[] = blocks.map((b) => {
       let state: 'COMPLETED' | 'CURRENT' | 'UPCOMING' = 'UPCOMING';
       if (isPastMonth) {
@@ -154,7 +155,7 @@ export const milestonesService = {
         else state = 'UPCOMING';
       }
 
-      const targetMWh = b.weekNumber === 5 ? round6(DEFAULT_WEEKLY_TARGET_MWH * 0.5) : DEFAULT_WEEKLY_TARGET_MWH;
+      const targetMWh = evenWeeklyTargetMWh;
       // Simulated fallback energy
       const currentMWh = state === 'COMPLETED' ? targetMWh * 0.85 : state === 'CURRENT' ? targetMWh * 0.42 : 0;
       const isAchieved = currentMWh >= targetMWh;
@@ -190,7 +191,12 @@ export const milestonesService = {
             : `Kinetic energy harvested: ~${Math.round(((currentMWh / MWH_PER_PHONE_CHARGE) * 100))}% of a phone recharge.`,
           explanation: 'Estimate based on 13,475 mWh battery with 85% circuit efficiency (~15,853 mWh per full charge).',
         },
-        aiComment: `Tracking Week ${b.weekNumber} (${b.startDay}–${b.endDay}). Keep walking to feed the battery!`,
+        aiComment:
+          state === 'UPCOMING'
+            ? `Not started yet — Week ${b.weekNumber} is scheduled for ${monthLabel}.`
+            : state === 'COMPLETED'
+            ? `Week ${b.weekNumber} (${b.startDay}–${b.endDay}) has ended.`
+            : `Tracking Week ${b.weekNumber} (${b.startDay}–${b.endDay}). Keep walking to feed the battery!`,
       };
     });
 

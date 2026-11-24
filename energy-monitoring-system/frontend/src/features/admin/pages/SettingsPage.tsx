@@ -205,9 +205,8 @@ export function SettingsPage() {
       <DashboardHeader
         greeting="System Administration"
         title="Settings"
-        subtitle="Configure EcoStep system behavior and application preferences"
+        subtitle="System preferences and hardware pairing"
         systemStatus={hardwareStatus.status}
-        isWebSocketConnected={hardwareStatus.isHardwareConnected}
       />
 
       {/* EcoStep Harvester Web Bluetooth Provisioning (Hardware Pairing at the top) */}
@@ -779,9 +778,9 @@ export function SettingsPage() {
                     }}
                   >
                     {hardwareStatus.status === 'connected'
-                      ? 'Connected'
+                      ? 'Live'
                       : hardwareStatus.status === 'waiting'
-                        ? 'Waiting'
+                        ? 'Standby'
                         : 'Connection Lost'}
                   </span>
                 </div>

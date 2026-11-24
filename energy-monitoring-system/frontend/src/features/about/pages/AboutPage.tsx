@@ -55,21 +55,21 @@ const RESEARCH_TEAM: TeamMember[] = [
 const SYSTEM_HIGHLIGHTS = [
   {
     icon: Zap,
-    title: 'Piezoelectric Energy Harvesting',
+    title: 'Smart Footstep Power',
     description:
-      'Converts mechanical pressure from everyday footsteps into usable electrical energy stored in a capacitor bank.',
+      'Turns the pressure of everyday footsteps into clean electrical energy stored safely inside the tile.',
   },
   {
     icon: Cpu,
-    title: 'ESP32 IoT Telemetry',
+    title: 'Live Smart Sensing',
     description:
-      'Captures voltage, current, power, step count, and capacitor levels in real time and transmits packets securely to the cloud.',
+      'Measures voltage, current, power, and footsteps in real time and sends readings straight to this dashboard.',
   },
   {
     icon: Activity,
-    title: 'Live Monitoring & Diagnostics',
+    title: 'Live Monitoring & Goals',
     description:
-      'Streams live updates over Socket.IO and Firestore with historical trends, milestone tracking, and tile health checks.',
+      'Shows instant updates on the web dashboard with history charts, energy goals, and tile health checks.',
   },
 ];
 
@@ -77,7 +77,7 @@ export function AboutPage() {
   const { user, isAuthenticated } = useAuth();
   const isAdminUser = isAdmin(isAuthenticated, user);
   const isPublicUser = !isAdminUser;
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   const hasVideoId = YOUTUBE_VIDEO_ID && YOUTUBE_VIDEO_ID !== 'YOUR_YOUTUBE_VIDEO_ID';
 
@@ -86,10 +86,9 @@ export function AboutPage() {
       <DashboardHeader
         greeting="Project & Team"
         title="About EcoStep"
-        subtitle="Smart piezoelectric footstep kinetic energy harvesting and real-time IoT monitoring."
+        subtitle="Footstep energy harvesting & live monitoring"
         systemStatus={hardwareConnectionStatus}
         isPublicUser={isPublicUser}
-        isWebSocketConnected={isHardwareConnected}
       />
 
       {/* System Overview */}
@@ -104,12 +103,12 @@ export function AboutPage() {
         </div>
 
         <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-          <strong>EcoStep</strong> is a smart piezoelectric footstep energy harvesting and
-          monitoring system designed to capture kinetic energy from human footsteps and
-          visualize power generation in real time. Each step on the piezoelectric tile
-          generates an electrical charge that is conditioned, measured by an ESP32
-          microcontroller, and streamed to this web platform for live telemetry, historical
-          analytics, energy milestone tracking, and hardware health diagnostics.
+          <strong>EcoStep</strong> is a smart footstep energy harvesting and
+          monitoring system that turns everyday walking into measurable clean
+          electricity. Each step on the floor tile creates a small electrical
+          charge that is safely stored, measured by built-in smart sensors, and
+          shared live on this web platform for real-time tracking, history
+          charts, energy milestones, and tile health checks.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
@@ -167,18 +166,10 @@ export function AboutPage() {
               </div>
               <div className="space-y-1 max-w-md">
                 <p className="text-base font-semibold">
-                  YouTube Advertisement Video Template
+                  Video Coming Soon
                 </p>
                 <p className="text-xs text-gray-300 leading-relaxed">
-                  To embed your YouTube video here, set{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-white/10 text-[#2FBF71]">
-                    YOUTUBE_VIDEO_ID
-                  </code>{' '}
-                  in{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-white/10 text-gray-200">
-                    src/features/about/pages/AboutPage.tsx
-                  </code>{' '}
-                  to your YouTube video ID.
+                  Our EcoStep overview and hardware demonstration video is currently in production. Check back soon!
                 </p>
               </div>
             </div>

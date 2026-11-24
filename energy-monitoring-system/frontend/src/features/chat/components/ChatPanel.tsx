@@ -17,31 +17,51 @@ import '../chat.css';
 
 interface ChatPanelProps {
   isCollapsed?: boolean;
+  isFloating?: boolean;
+  isPinned?: boolean;
   onToggleCollapse?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocusCapture?: () => void;
+  onBlurCapture?: (e: React.FocusEvent<HTMLElement>) => void;
+  onEscapeFloating?: () => void;
 }
 
-export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }: ChatPanelProps) {
+export function ChatPanel({
+  isCollapsed: controlledCollapsed,
+  isFloating = false,
+  isPinned,
+  onToggleCollapse,
+  onMouseEnter,
+  onMouseLeave,
+  onFocusCapture,
+  onBlurCapture,
+  onEscapeFloating,
+}: ChatPanelProps) {
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Uncontrolled fallback state if not controlled by parent
+  // Uncontrolled fallback state if not controlled by parent (default collapsed)
   const [internalCollapsed, setInternalCollapsed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     try {
+      const pinned = localStorage.getItem('ecostep.rightPinned');
+      if (pinned !== null) return pinned !== 'true';
       const stored = localStorage.getItem('ecostep.rightCollapsed');
       if (stored !== null) return stored === 'true';
       const legacyExpanded = localStorage.getItem('ecostep_chat_docked_expanded');
       if (legacyExpanded !== null) return legacyExpanded === 'false';
-      return window.innerWidth < 1280;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   });
 
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+  const resolvedPinned = isPinned !== undefined ? isPinned : !isCollapsed;
 
   const panelRef = useRef<HTMLElement>(null);
   const { messages, isLoading, error, sendMessage, retryLastMessage, clearChat } = useChat();
@@ -74,9 +94,14 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
     }
   };
 
-  // Keyboard shortcut listener for standalone mode (] or Ctrl+J)
+  // Keyboard shortcut listener (Ctrl+J always; ] only in standalone mode since EcoSidebar handles ])
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFloating && onEscapeFloating) {
+        onEscapeFloating();
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -88,7 +113,9 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
         return;
       }
 
-      if (e.key === ']' || ((e.key === 'j' || e.key === 'J') && (e.ctrlKey || e.metaKey))) {
+      const isCtrlJ = (e.key === 'j' || e.key === 'J') && (e.ctrlKey || e.metaKey);
+      const isBracket = !onToggleCollapse && e.key === ']';
+      if (isCtrlJ || isBracket) {
         e.preventDefault();
         handleToggle();
       }
@@ -96,7 +123,7 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [controlledCollapsed, onToggleCollapse]);
+  }, [controlledCollapsed, onToggleCollapse, isFloating, onEscapeFloating]);
 
   const handleCloseMobile = () => {
     setIsMobileOpen(false);
@@ -142,6 +169,7 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
     'guide',
     'docked-chat-panel',
     isCollapsed ? 'collapsed' : 'expanded',
+    isFloating && !isMobile ? 'is-floating' : '',
     isMobile ? (isMobileOpen ? 'mobile-open' : 'mobile-closed') : '',
   ]
     .filter(Boolean)
@@ -162,6 +190,10 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
         role="complementary"
         aria-label="EcoGuide"
         id="ecoguide-panel"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onFocusCapture={onFocusCapture}
+        onBlurCapture={onBlurCapture}
       >
         {/* Collapsed Slim Rail (56px) */}
         <div 
@@ -172,10 +204,10 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
             type="button"
             className="ib es-toggle-btn"
             onClick={handleToggle}
-            aria-expanded={false}
+            aria-expanded={resolvedPinned}
             aria-controls="ecoguide-panel"
             aria-label="Expand EcoGuide"
-            title="Expand EcoGuide ( ] )"
+            title="Pin EcoGuide open ( ] )"
           >
             <ChevronLeft size={16} strokeWidth={2} />
           </button>
@@ -198,7 +230,8 @@ export function ChatPanel({ isCollapsed: controlledCollapsed, onToggleCollapse }
             onClose={isMobile ? handleCloseMobile : handleToggle}
             onCollapse={handleToggle}
             onNewChat={clearChat}
-            isExpanded={!isCollapsed}
+            isExpanded={resolvedPinned}
+            isFloating={isFloating && !isMobile}
             isMobile={isMobile}
           />
 

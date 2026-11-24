@@ -1,10 +1,25 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Settings2, X, Check, Save, AlertCircle, Calendar, Zap, Footprints, Lock, ShieldAlert } from 'lucide-react';
+import { eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UpdateMonthTargetsPayload, WeeklyTargetsMWh, MonthlyConfigurationPolicy } from '../types/milestone.types';
-import { formatWhFromMWh, parsePositiveDecimal, formatMonthLabel } from '../utils/milestone.utils';
+import { formatMWh, formatWhFromMWh, parsePositiveDecimal, formatMonthLabel } from '../utils/milestone.utils';
+
+function getCalendarWeekCount(yearMonth: string): number {
+  const [yStr, mStr] = yearMonth.split('-');
+  const year = parseInt(yStr, 10);
+  const month = parseInt(mStr, 10);
+  if (isNaN(year) || isNaN(month)) return 4;
+  const base = new Date(year, month - 1, 1);
+  return eachWeekOfInterval(
+    { start: startOfMonth(base), end: endOfMonth(base) },
+    { weekStartsOn: 0 },
+  ).length;
+}
+
+const round6 = (v: number) => Math.round(v * 1000000) / 1000000;
 
 interface AdminMilestonesModalProps {
   isOpen: boolean;
@@ -24,8 +39,6 @@ export function AdminMilestonesModal({
   activeMonth = '2026-11',
   availableMonths = ['2026-10', '2026-11'],
   currentMonthTargetMWh = 0.1,
-  currentWeeklyTargetMWh,
-  currentWeeklyTargetsMWh,
   configurationPolicy,
   onSave,
 }: AdminMilestonesModalProps) {
@@ -34,19 +47,17 @@ export function AdminMilestonesModal({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  const initialWeekly =
-    currentWeeklyTargetMWh ??
-    currentWeeklyTargetsMWh?.week1MWh ??
-    0.025;
-
   const [selectedMonth, setSelectedMonth] = useState(activeMonth);
   const [monthlyTarget, setMonthlyTarget] = useState(String(currentMonthTargetMWh ?? 0.1));
-  const [weeklyTarget, setWeeklyTarget] = useState(String(initialWeekly));
   const [correctionReason, setCorrectionReason] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState(false);
+
+  const weekCount = useMemo(() => getCalendarWeekCount(selectedMonth), [selectedMonth]);
+  const parsedMonthlyTarget = parsePositiveDecimal(monthlyTarget);
+  const autoWeeklyTargetMWh = parsedMonthlyTarget !== null ? round6(parsedMonthlyTarget / weekCount) : 0;
 
   // Month-locking evaluation
   const isMonthSelectedActive = selectedMonth === activeMonth;
@@ -82,12 +93,10 @@ export function AdminMilestonesModal({
     if (isOpen) {
       setSelectedMonth(activeMonth);
       setMonthlyTarget(String(currentMonthTargetMWh ?? 0.1));
-      const wTarget = currentWeeklyTargetMWh ?? currentWeeklyTargetsMWh?.week1MWh ?? 0.025;
-      setWeeklyTarget(String(wTarget));
       setErrorMessage(null);
       setSuccessMessage(false);
     }
-  }, [isOpen, activeMonth, currentMonthTargetMWh, currentWeeklyTargetMWh, currentWeeklyTargetsMWh]);
+  }, [isOpen, activeMonth, currentMonthTargetMWh]);
 
   if (!isOpen) return null;
 
@@ -96,21 +105,18 @@ export function AdminMilestonesModal({
     {
       name: 'Pilot / Micro Harvest (Default)',
       monthly: 0.1,
-      weekly: 0.025,
       isDefault: true,
       description: 'Single-tile bench testing & prototype validation (~100–400 footsteps)',
     },
     {
       name: 'Active Walkway (Moderate Traffic)',
       monthly: 0.5,
-      weekly: 0.1,
       isDefault: false,
       description: 'Regular prototype hallway pedestrian testing (~400–2,000 footsteps)',
     },
     {
       name: 'Corridor Array (High Traffic)',
       monthly: 2.0,
-      weekly: 0.5,
       isDefault: false,
       description: 'Multi-tile corridor or busy entrance array (~2,000–8,000 footsteps)',
     },
@@ -119,7 +125,6 @@ export function AdminMilestonesModal({
   const handleApplyPreset = (p: typeof presets[0]) => {
     if (isReadOnly) return;
     setMonthlyTarget(String(p.monthly));
-    setWeeklyTarget(String(p.weekly));
     setErrorMessage(null);
   };
 
@@ -137,11 +142,10 @@ export function AdminMilestonesModal({
     }
 
     const mTarget = parsePositiveDecimal(monthlyTarget);
-    const wTarget = parsePositiveDecimal(weeklyTarget);
 
-    if (mTarget === null || wTarget === null) {
+    if (mTarget === null) {
       setErrorMessage(
-        'Please enter valid positive decimal numbers (e.g. 0.025, 0.1, 0.5 mWh) for both monthly and weekly targets.'
+        'Please enter a valid positive decimal number (e.g. 0.1, 0.5, 2.0 mWh) for the monthly target.'
       );
       return;
     }
@@ -151,7 +155,6 @@ export function AdminMilestonesModal({
       await onSave({
         month: selectedMonth,
         monthlyTargetMWh: mTarget,
-        weeklyTargetMWh: wTarget,
         ...(isLocked && isSuperAdmin ? { reason: correctionReason.trim() } : {}),
       });
 
@@ -300,8 +303,8 @@ export function AdminMilestonesModal({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {presets.map((p) => {
-                const isSelected =
-                  parseFloat(monthlyTarget) === p.monthly && parseFloat(weeklyTarget) === p.weekly;
+                const isSelected = parseFloat(monthlyTarget) === p.monthly;
+                const presetWeekly = round6(p.monthly / weekCount);
 
                 return (
                   <button
@@ -334,7 +337,7 @@ export function AdminMilestonesModal({
                       className="text-[10px] text-[var(--acc)] font-[500] tracking-[-0.02em] tabular-nums mt-2 pt-1 border-t border-[var(--line)]"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      Month: <strong>{p.monthly}</strong> mWh • Week: <strong>{p.weekly}</strong> mWh
+                      Month: <strong>{p.monthly}</strong> mWh • Week: <strong>{formatMWh(presetWeekly)}</strong> mWh
                     </div>
                   </button>
                 );
@@ -378,39 +381,29 @@ export function AdminMilestonesModal({
             </span>
           </div>
 
-          {/* 2. Weekly Energy Target Input */}
+          {/* 2. Auto-Split Weekly Energy Target Preview */}
           <div className="p-4 rounded-xl bg-[var(--soft)] border border-[var(--line)]">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-[var(--t)] uppercase tracking-wider flex items-center gap-1.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-[var(--t)] uppercase tracking-wider flex items-center gap-1.5">
                 <Footprints className="w-3.5 h-3.5 text-cyan-500" />
-                Weekly Energy Target (Applies to All Weeks)
-              </label>
+                Auto-Split Weekly Goal ({weekCount} weeks)
+              </span>
               <span
                 className="text-[11px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--mu)]"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                ≈ {formatWhFromMWh(parseFloat(weeklyTarget) || 0)} Wh
+                ≈ {formatWhFromMWh(autoWeeklyTargetMWh)} Wh
               </span>
             </div>
-            <div className="relative">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                disabled={isReadOnly}
-                value={weeklyTarget}
-                onChange={(e) => setWeeklyTarget(e.target.value)}
-                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-cyan-500 rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                placeholder="0.025"
-              />
-              <span className="absolute right-3.5 top-2.5 text-xs font-bold text-[var(--mu)]">
-                mWh
-              </span>
+            <div
+              className="flex items-baseline gap-1.5 text-base font-semibold text-[var(--t)] tabular-nums"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              <span>{formatMWh(autoWeeklyTargetMWh)}</span>
+              <span className="text-xs font-bold text-[var(--acc)]">mWh / week</span>
             </div>
-            <span className="text-[11px] text-[var(--mu)] mt-1.5 block">
-              Shared target automatically applied to each calendar week in {formatMonthLabel(selectedMonth)}.
+            <span className="text-[11px] text-[var(--mu)] mt-1 block">
+              Automatically calculated by splitting the monthly goal evenly across all {weekCount} calendar weeks in {formatMonthLabel(selectedMonth)}.
             </span>
           </div>
 

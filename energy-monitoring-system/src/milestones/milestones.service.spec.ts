@@ -57,13 +57,13 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
   });
 
   describe('Aggregation Pipeline Structure', () => {
-    it('uses $setWindowFields with sensor partitioning and receivedAt filtering', async () => {
+    it('sums per-upload stepCount and energy directly with receivedAt filtering', async () => {
       mockEnergyReadingModel.aggregate.mockResolvedValue([
         {
           _id: null,
           totalEnergyMWh: 12.345678,
-          totalSteps: 250,
-          readingCount: 10,
+          totalSteps: 60,
+          readingCount: 3,
         },
       ]);
 
@@ -84,25 +84,12 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
       ]);
       expect(matchStage.$and[1]).toEqual({ source: { $ne: 'mock' } });
 
-      // Stage 2: $sort by sensorId, receivedAt, timestamp
-      expect(pipeline[1].$sort).toEqual({ sensorId: 1, receivedAt: 1, timestamp: 1 });
-
-      // Stage 3: $setWindowFields partitioned by sensorId
-      expect(pipeline[2].$setWindowFields).toBeDefined();
-      expect(pipeline[2].$setWindowFields.partitionBy).toBe('$sensorId');
-      expect(pipeline[2].$setWindowFields.output.previousStepCount).toEqual({
-        $shift: { output: '$stepCount', by: -1 },
-      });
-
-      // Stage 4: $addFields with stepDelta handling resets & initial reading
-      expect(pipeline[3].$addFields.stepDelta).toBeDefined();
-
-      // Stage 5: $group summing energy directly without continuous power fallback
-      expect(pipeline[4].$group.totalEnergyMWh).toEqual({ $sum: '$energy' });
-      expect(pipeline[4].$group.totalSteps).toEqual({ $sum: '$stepDelta' });
+      // Stage 2: $group summing energy and per-upload stepCount directly
+      expect(pipeline[1].$group.totalEnergyMWh).toEqual({ $sum: { $ifNull: ['$energy', 0] } });
+      expect(pipeline[1].$group.totalSteps).toEqual({ $sum: { $ifNull: ['$stepCount', 0] } });
 
       expect(result.energyMWh).toBe(12.345678);
-      expect(result.steps).toBe(250);
+      expect(result.steps).toBe(60);
     });
 
     it('returns 0 energy and 0 steps when no readings match', async () => {
@@ -221,7 +208,8 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
         status: 'CONFIGURED',
       };
 
-      // Target is 0.025 mWh. Current is 0.3 mWh (1200% progress)
+      // Nov 2026 has 5 calendar weeks, so 0.1 mWh splits evenly to 0.02 mWh per week.
+      // Current is 0.3 mWh (1500% progress)
       mockEnergyReadingModel.aggregate.mockResolvedValue([
         {
           _id: null,
@@ -233,8 +221,9 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
       const progress = await service.getMonthlyMilestones('2026-11');
       const week1 = progress.weeklyMilestones[0];
 
+      expect(week1.targetMWh).toBe(0.02);
       expect(week1.isAchieved).toBe(true);
-      expect(week1.progressPercentage).toBe(1200); // Not capped at 999%
+      expect(week1.progressPercentage).toBe(1500); // Not capped at 999%
     });
 
     it('isolates AI commentary errors so milestone data delivery is not interrupted', async () => {
@@ -416,8 +405,22 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
         comp,
         'CURRENT',
       );
-      expect(comment).toMatch(/Zero footsteps|quiet|silence|Not a single step/);
+      expect(comment).toMatch(/Zero footsteps|No footsteps yet|Quiet on the floor/);
       expect(comment).not.toContain('% of a phone charge');
+    });
+
+    it('uses Not started yet copy for unconfigured future months instead of claiming active logging', async () => {
+      mockTargetDoc.monthlyConfigurations = {};
+      mockEnergyReadingModel.aggregate.mockResolvedValue([]);
+
+      const decProgress = await service.getMonthlyMilestones('2026-12');
+
+      expect(decProgress.monthlyMilestone.state).toBe('UPCOMING');
+      expect(decProgress.monthlyMilestone.aiComment).toContain('Not started yet');
+      expect(decProgress.monthlyMilestone.aiComment).not.toContain('actively recording');
+      expect(decProgress.weeklyMilestones[0].state).toBe('UPCOMING');
+      expect(decProgress.weeklyMilestones[0].aiComment).toContain('Not started yet');
+      expect(decProgress.weeklyMilestones[0].aiComment).not.toContain('actively logging');
     });
 
     it('recognizes record high and target exceeded achievements with witty commentary', () => {
@@ -465,24 +468,21 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
   });
 
   describe('Month-Specific Target Configuration', () => {
-    it('preserves fractional decimal precision up to 6 decimal places', async () => {
+    it('preserves fractional decimal precision up to 6 decimal places and splits evenly across weeks', async () => {
+      // Nov 2026 has 5 calendar weeks: 0.054325 / 5 = 0.010865 mWh per week
       const updated = await service.updateTargets(
         {
           month: '2026-11',
-          monthlyTargetMWh: 0.054321,
-          weeklyTargetsMWh: {
-            week1MWh: 0.000123,
-            week2MWh: 0.000456,
-          },
+          monthlyTargetMWh: 0.054325,
         },
         'admin-user',
       );
 
       expect(updated.save).toHaveBeenCalled();
       const novConfig = updated.monthlyConfigurations['2026-11'];
-      expect(novConfig.monthlyTargetMWh).toBe(0.054321);
-      expect(novConfig.weeklyTargetsMWh.week1MWh).toBe(0.000123);
-      expect(novConfig.weeklyTargetsMWh.week2MWh).toBe(0.000456);
+      expect(novConfig.monthlyTargetMWh).toBe(0.054325);
+      expect(novConfig.weeklyTargetsMWh.week1MWh).toBe(0.010865);
+      expect(novConfig.weeklyTargetsMWh.week5MWh).toBe(0.010865);
     });
 
     it('stores targets per month without overwriting previous months', async () => {
@@ -505,29 +505,22 @@ describe('MilestonesService (Calendar Monthly & Weekly)', () => {
         {
           month: '2026-11',
           monthlyTargetMWh: 100.0,
-          weeklyTargetsMWh: {
-            week1MWh: 20,
-            week2MWh: 20,
-            week3MWh: 20,
-            week4MWh: 20,
-            week5MWh: 20,
-          },
         },
         'admin-2',
       );
 
       // October remains intact
       expect(mockTargetDoc.monthlyConfigurations['2026-10'].monthlyTargetMWh).toBe(50.0);
-      // November is saved
+      // November is saved and split evenly across 5 calendar weeks (100 / 5 = 20)
       expect(mockTargetDoc.monthlyConfigurations['2026-11'].monthlyTargetMWh).toBe(100.0);
+      expect(mockTargetDoc.monthlyConfigurations['2026-11'].weeklyTargetsMWh.week4MWh).toBe(20);
     });
 
-    it('automatically applies a single weeklyTargetMWh to all weeks within the selected month', async () => {
+    it('automatically splits monthlyTargetMWh evenly across all calendar weeks of the selected month', async () => {
       const updated = await service.updateTargets(
         {
           month: '2026-11',
           monthlyTargetMWh: 20000,
-          weeklyTargetMWh: 4000,
         },
         'admin-user',
       );

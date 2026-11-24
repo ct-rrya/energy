@@ -5,7 +5,7 @@
  * and 32x32 circular icon buttons (.ib style).
  */
 
-import { RotateCcw, ChevronRight, ChevronDown } from 'lucide-react';
+import { RotateCcw, ChevronRight, ChevronDown, Pin } from 'lucide-react';
 import '../chat.css';
 
 interface ChatHeaderProps {
@@ -13,6 +13,7 @@ interface ChatHeaderProps {
   onCollapse?: () => void;
   onNewChat: () => void;
   isExpanded?: boolean;
+  isFloating?: boolean;
   isMobile?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function ChatHeader({
   onCollapse,
   onNewChat,
   isExpanded = true,
+  isFloating = false,
   isMobile = false,
 }: ChatHeaderProps) {
   const handleToggleOrClose = () => {
@@ -32,6 +34,18 @@ export function ChatHeader({
       onClose();
     }
   };
+
+  const toggleAriaLabel = isMobile
+    ? 'Close chat'
+    : isFloating
+      ? 'Pin EcoGuide open'
+      : 'Collapse EcoGuide';
+
+  const toggleTitle = isMobile
+    ? 'Close'
+    : isFloating
+      ? 'Pin EcoGuide open ( ] )'
+      : 'Collapse EcoGuide ( ] )';
 
   return (
     <div className="chat-header row">
@@ -53,13 +67,15 @@ export function ChatHeader({
         <button
           className="ib"
           onClick={handleToggleOrClose}
-          aria-label={isMobile ? 'Close chat' : 'Collapse EcoGuide'}
+          aria-label={toggleAriaLabel}
           aria-expanded={isExpanded}
           type="button"
-          title={isMobile ? 'Close' : 'Collapse EcoGuide ( ] )'}
+          title={toggleTitle}
         >
           {isMobile ? (
             <ChevronDown size={18} strokeWidth={2} />
+          ) : isFloating ? (
+            <Pin size={14} strokeWidth={2} />
           ) : (
             <ChevronRight size={16} strokeWidth={1.8} />
           )}

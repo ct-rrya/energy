@@ -141,8 +141,8 @@ export function HistoricalAnalytics() {
       <EcoCard>
         <EcoEmptyState
           icon={BarChart3}
-          title="No Historical Data Available"
-          description="No historical sensor data has been collected yet. Connect your ESP32 and start collecting data to view analytics."
+          title="No Footsteps Recorded Yet"
+          description="No footsteps have been recorded for this period yet. Walk on the EcoStep tile or try a different time range."
         />
       </EcoCard>
     );

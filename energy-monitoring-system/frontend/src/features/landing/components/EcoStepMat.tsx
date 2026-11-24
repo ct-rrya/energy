@@ -89,7 +89,7 @@ export function EcoStepMat({ className, showLabels = true }: EcoStepMatProps) {
 
       {showLabels && (
         <>
-          <text x="50" y="488" fontFamily="'JetBrains Mono', ui-monospace, Menlo, monospace" fontSize="12" letterSpacing="2" fill="var(--mu, #9DB2A5)">FLOOR MAT · PIEZO ELEMENTS</text>
+          <text x="50" y="488" fontFamily="'JetBrains Mono', ui-monospace, Menlo, monospace" fontSize="12" letterSpacing="2" fill="var(--mu, #9DB2A5)">SMART FLOOR MAT · FOOTSTEP PADS</text>
           <text x="490" y="78" fontFamily="'JetBrains Mono', ui-monospace, Menlo, monospace" fontSize="12" letterSpacing="2" fill="var(--mu, #9DB2A5)">DASHBOARD</text>
         </>
       )}

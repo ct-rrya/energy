@@ -138,6 +138,123 @@ export function formatChartTimestamp(
 }
 
 /**
+ * Checks whether two or more data points collapse to the same day label
+ * (e.g. two points both displaying "Nov 19").
+ */
+export function hasDuplicateFormattedDates(
+  data: ChartDataPoint[],
+  granularity: Granularity
+): boolean {
+  if (!Array.isArray(data) || data.length < 2) return false;
+  if (granularity !== 'day' && granularity !== 'week') return false;
+
+  const seen = new Set<string>();
+  for (const pt of data) {
+    const lbl = formatChartTimestamp(pt.timestamp, granularity);
+    if (seen.has(lbl)) return true;
+    seen.add(lbl);
+  }
+  return false;
+}
+
+/**
+ * Smart X-axis tick formatter: appends short time (e.g. "Nov 19, 12:24 AM")
+ * whenever multiple points share the same formatted day so users can tell them apart.
+ */
+export function formatSmartChartTimestamp(
+  timestamp: string,
+  granularity: Granularity,
+  includeTimeOnSameDay: boolean
+): string {
+  if (includeTimeOnSameDay && (granularity === 'day' || granularity === 'week')) {
+    try {
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        return format(date, 'MMM d, h:mm a');
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return formatChartTimestamp(timestamp, granularity);
+}
+
+/**
+ * Computes clean, human-friendly Y-axis domain and evenly spaced tick values
+ * using 1 / 2 / 5 × 10^n intervals (e.g. 0, 10, 20, 30 or 0, 0.2, 0.4, 0.6).
+ */
+export function computeNiceYAxis(
+  dataMax: number,
+  options: {
+    minMax?: number;
+    integerOnly?: boolean;
+    targetSteps?: number;
+    multiplier?: number;
+  } = {}
+): {
+  domain: [number, number];
+  ticks: number[];
+  decimals: number;
+} {
+  const {
+    minMax = 1,
+    integerOnly = false,
+    targetSteps = 4,
+    multiplier = 1,
+  } = options;
+
+  const scaledMax = Number.isFinite(dataMax) && dataMax > 0 ? dataMax * multiplier : minMax;
+  const effectiveMax = Math.max(scaledMax, minMax > 0 ? minMax * 0.001 : 0.0001);
+  const rawStep = effectiveMax / Math.max(1, targetSteps);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+
+  let niceMult = 10;
+  if (normalized <= 1) niceMult = 1;
+  else if (normalized <= 2) niceMult = 2;
+  else if (normalized <= 5) niceMult = 5;
+
+  let niceDisplayStep = niceMult * magnitude;
+  if (integerOnly) {
+    niceDisplayStep = Math.max(1, Math.ceil(niceDisplayStep));
+  }
+
+  const numIntervals = Math.max(2, Math.ceil((effectiveMax * 1.05) / niceDisplayStep));
+  const decimals = integerOnly
+    ? 0
+    : Math.max(0, Math.min(4, -Math.floor(Math.log10(niceDisplayStep) + 1e-10)));
+
+  const roundDisplay = (v: number) => Number(v.toFixed(decimals));
+  const displayTicks: number[] = [];
+  for (let i = 0; i <= numIntervals; i++) {
+    displayTicks.push(roundDisplay(i * niceDisplayStep));
+  }
+
+  const niceDisplayMax = displayTicks[displayTicks.length - 1];
+  const ticks = displayTicks.map((t) => t / multiplier);
+
+  return {
+    domain: [0, niceDisplayMax / multiplier],
+    ticks,
+    decimals,
+  };
+}
+
+/**
+ * Formats micro-scale energy values with adaptive precision so headers match plotted curves
+ * (e.g. 0.0632 mWh -> "0.063 mWh", 45 -> "45.00 mWh").
+ */
+export function formatAdaptiveEnergy(value: number, unit: string): string {
+  if (typeof value !== 'number' || isNaN(value)) {
+    return `0.00 ${unit}`;
+  }
+  if (value === 0) return `0.00 ${unit}`;
+  if (Math.abs(value) < 0.001) return `${value.toFixed(4)} ${unit}`;
+  if (Math.abs(value) < 1) return `${value.toFixed(3)} ${unit}`;
+  return `${value.toFixed(2)} ${unit}`;
+}
+
+/**
  * Limit data points for performance optimization
  * 
  * Reduces the number of data points by taking evenly spaced samples

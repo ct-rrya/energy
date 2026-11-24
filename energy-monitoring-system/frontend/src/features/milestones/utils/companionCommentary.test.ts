@@ -82,8 +82,42 @@ describe('EcoStep Campus Companion Commentary Engine', () => {
       },
     });
 
-    expect(obs.subtext).toBe('Tile in standby · Waiting for pedestrian steps');
+    expect(obs.subtext).toBe('Tile in standby · Waiting for footsteps');
     expect(obs.headline).not.toContain('% of a phone charge');
+  });
+
+  it('uses past-tense copy for completed weeks with zero activity', () => {
+    const obs = getCompanionCommentary({
+      id: 'week_1',
+      label: 'Week 1',
+      weekNumber: 1,
+      state: 'COMPLETED',
+      isAchieved: false,
+      progressPercentage: 0,
+      currentMWh: 0,
+      targetMWh: 0.02,
+      stepCount: 0,
+    });
+
+    expect(obs.subtext).toBe('Period ended · No footsteps recorded');
+    expect(obs.headline).toContain('No footsteps were recorded');
+  });
+
+  it('uses Not started yet copy for upcoming weeks', () => {
+    const obs = getCompanionCommentary({
+      id: 'week_1',
+      label: 'Week 1',
+      weekNumber: 1,
+      state: 'UPCOMING',
+      isAchieved: false,
+      progressPercentage: 0,
+      currentMWh: 0,
+      targetMWh: 0.02,
+      stepCount: 0,
+    });
+
+    expect(obs.subtext).toBe('Not started yet · 0 footsteps recorded');
+    expect(obs.headline).toContain('Not started yet');
   });
 
   it('handles record high category accurately in subtext', () => {

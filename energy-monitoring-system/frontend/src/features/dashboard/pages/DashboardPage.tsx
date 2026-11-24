@@ -139,18 +139,17 @@ function DashboardPageContent() {
     : lastGoodMetrics;
 
   // Single source of truth for hardware connection status
-  const { status: hardwareConnectionStatus, isHardwareConnected } = useHardwareStatus();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   return (
     <div className="page">
       {/* Dashboard Header with date/time and standardized hardware status */}
       <DashboardHeader
-          title="EcoStep Central"
-          subtitle="Real-time monitoring of piezoelectric energy harvesting system"
-          systemStatus={hardwareConnectionStatus}
-          isPublicUser={isPublicUser}
-          isWebSocketConnected={isHardwareConnected}
-        />
+        title="EcoStep Central"
+        subtitle="Live footstep energy monitoring"
+        systemStatus={hardwareConnectionStatus}
+        isPublicUser={isPublicUser}
+      />
 
       {/* Admin-only persistent reminder banner when monthly milestone targets are overdue */}
       {!isPublicUser && hasOverdue && overdueMonths.length > 0 && (
@@ -178,8 +177,8 @@ function DashboardPageContent() {
         </div>
       )}
 
-        {/* Main Metrics Grid - Container Query Driven */}
-        <style>{`
+      {/* Main Metrics Grid - Container Query Driven */}
+      <style>{`
           .dashboard-metrics-grid {
             display: flex;
             flex-direction: column;
@@ -215,123 +214,126 @@ function DashboardPageContent() {
           }
         `}</style>
 
-        <div className="dashboard-metrics-grid">
+      <div className="dashboard-metrics-grid">
 
-          {/* Hero Power Card - Prominent display with AI analysis */}
-          <div className="metric-hero-power">
-            <HeroPowerCard
-              powerValue={displayReading?.power}
-              previousPower={undefined}
-              aiInsight={displayMetrics?.aiInsight}
-              isLoading={false}
-              todaySteps={displayMetrics?.todayTotalSteps}
+        {/* Hero Power Card - Prominent display with AI analysis */}
+        <div className="metric-hero-power">
+          <HeroPowerCard
+            powerValue={displayReading?.power}
+            previousPower={undefined}
+            aiInsight={displayMetrics?.aiInsight}
+            isLoading={false}
+            todaySteps={displayMetrics?.todayTotalSteps}
+            connectionStatus={hardwareConnectionStatus}
+          />
+        </div>
+
+        {/* Secondary Metrics - Steps, Energy Today, Voltage, Current */}
+        <div className="dashboard-secondary-metrics">
+
+          {/* Step Count */}
+          <div className="metric-steps min-w-0">
+            <MetricCard
+              label="Steps Today"
+              plainDescription="Footsteps on Tile"
+              tooltip={{
+                title: "Steps Today",
+                description: getStepsTooltip(displayMetrics?.todayTotalSteps),
+              }}
+              value={displayMetrics?.todayTotalSteps}
+              unit=""
+              precision={0}
+              color="accent"
+              dotColor="#19D46A"
+              subtitle={
+                displayMetrics?.todayTotalSteps === undefined || displayMetrics?.todayTotalSteps === 0
+                  ? "No steps yet today"
+                  : undefined
+              }
             />
           </div>
 
-          {/* Secondary Metrics - Steps, Energy Today, Voltage, Current */}
-          <div className="dashboard-secondary-metrics">
+          {/* Daily Harvested Energy -> Explicitly "Energy Today" */}
+          <div className="metric-energy min-w-0">
+            {(() => {
+              const rawEnergyWh = displayMetrics?.dailyEnergy ?? 0;
+              const energyMWh = rawEnergyWh * 1000;
+              const ledSeconds = Math.round(energyMWh * 180); // ~20 mW indicator LED = 180 sec per mWh
+              const ledSubtitle =
+                energyMWh <= 0
+                  ? '~50 steps lights a small LED (1s)'
+                  : ledSeconds >= 60
+                  ? `≈ ${(ledSeconds / 60).toFixed(1)} min of a small LED`
+                  : `≈ ${Math.max(1, ledSeconds)} sec of a small LED`;
+              return (
+                <MetricCard
+                  label="Energy Today"
+                  plainDescription="Total Stored Clean Energy"
+                  tooltip={{
+                    title: 'Energy Today (mWh)',
+                    description: getEnergyTodayTooltip(rawEnergyWh),
+                  }}
+                  value={displayMetrics?.dailyEnergy !== undefined ? energyMWh : undefined}
+                  unit="mWh"
+                  precision={energyMWh > 0 && energyMWh < 1 ? 3 : 2}
+                  color="amber"
+                  dotColor="#A6DC3C"
+                  subtitle={ledSubtitle}
+                />
+              );
+            })()}
+          </div>
 
-            {/* Step Count */}
-            <div className="metric-steps min-w-0">
-              <MetricCard
-                label="Steps Today"
-                plainDescription="Footsteps on Tile"
-                tooltip={{
-                  title: "Steps Today",
-                  description: getStepsTooltip(displayMetrics?.todayTotalSteps),
-                }}
-                value={displayMetrics?.todayTotalSteps}
-                unit=""
-                precision={0}
-                color="accent"
-                dotColor="#19D46A"
-                subtitle={
-                  displayMetrics?.todayTotalSteps === undefined || displayMetrics?.todayTotalSteps === 0
-                    ? "No steps yet today"
-                    : undefined
-                }
-              />
-            </div>
+          {/* Voltage */}
+          <div className="metric-voltage min-w-0">
+            <MetricCard
+              label="Voltage"
+              plainDescription="Electrical Push"
+              tooltip={{
+                title: "Voltage (Volts)",
+                description: getVoltageTooltip(displayReading?.voltage),
+              }}
+              value={displayReading?.voltage}
+              unit="V"
+              precision={2}
+              color="accent"
+              dotColor="#13B95C"
+              subtitle={
+                displayReading?.voltage === undefined
+                  ? "Waiting for footsteps"
+                  : undefined
+              }
+            />
+          </div>
 
-            {/* Daily Harvested Energy -> Explicitly "Energy Today" */}
-            <div className="metric-energy min-w-0">
-              {(() => {
-                const rawEnergy = displayMetrics?.dailyEnergy ?? 0;
-                const isMilliWh = rawEnergy < 1;
-                const displayVal = isMilliWh ? rawEnergy * 1000 : rawEnergy;
-                return (
-                  <MetricCard
-                    label="Energy Today"
-                    plainDescription="Total Stored Clean Energy"
-                    tooltip={{
-                      title: isMilliWh ? "Energy Today (mWh)" : "Energy Today (Wh)",
-                      description: getEnergyTodayTooltip(rawEnergy),
-                    }}
-                    value={displayMetrics?.dailyEnergy !== undefined ? displayVal : undefined}
-                    unit={isMilliWh ? "mWh" : "Wh"}
-                    precision={isMilliWh ? 2 : 3}
-                    color="amber"
-                    dotColor="#A6DC3C"
-                    subtitle={
-                      displayMetrics?.dailyEnergy === undefined || displayMetrics?.dailyEnergy === 0
-                        ? "Awaiting footsteps"
-                        : undefined
-                    }
-                  />
-                );
-              })()}
-            </div>
-
-            {/* Voltage */}
-            <div className="metric-voltage min-w-0">
-              <MetricCard
-                label="Voltage"
-                plainDescription="Electrical Push"
-                tooltip={{
-                  title: "Voltage (Volts)",
-                  description: getVoltageTooltip(displayReading?.voltage),
-                }}
-                value={displayReading?.voltage}
-                unit="V"
-                precision={2}
-                color="accent"
-                dotColor="#13B95C"
-                subtitle={
-                  displayReading?.voltage === undefined
-                    ? "Waiting for data"
-                    : undefined
-                }
-              />
-            </div>
-
-            {/* Current */}
-            <div className="metric-current min-w-0">
-              <MetricCard
-                label="Current"
-                plainDescription="Charge Flow Rate"
-                tooltip={{
-                  title: "Current (Milliamps)",
-                  description: getCurrentTooltip(displayReading?.current ? displayReading.current * 1000 : undefined),
-                }}
-                value={displayReading?.current ? displayReading.current * 1000 : undefined}
-                unit="mA"
-                precision={1}
-                color="blue"
-                dotColor="#7FE0A8"
-                subtitle={
-                  displayReading?.current === undefined || displayReading?.current === 0
-                    ? "Discharge at rest"
-                    : undefined
-                }
-              />
-            </div>
-
+          {/* Current */}
+          <div className="metric-current min-w-0">
+            <MetricCard
+              label="Current"
+              plainDescription="Charge Flow Rate"
+              tooltip={{
+                title: "Current (Milliamps)",
+                description: getCurrentTooltip(displayReading?.current ? displayReading.current * 1000 : undefined),
+              }}
+              value={displayReading?.current ? displayReading.current * 1000 : undefined}
+              unit="mA"
+              precision={1}
+              color="blue"
+              dotColor="#7FE0A8"
+              subtitle={
+                displayReading?.current === undefined || displayReading?.current === 0
+                  ? "No current flowing"
+                  : undefined
+              }
+            />
           </div>
 
         </div>
 
-        {/* Educational Process: How EcoStep Footstep Harvesting Works */}
-        <HowHarvestingWorksCard />
+      </div>
+
+      {/* Educational Process: How EcoStep Footstep Harvesting Works */}
+      <HowHarvestingWorksCard />
 
     </div>
   );

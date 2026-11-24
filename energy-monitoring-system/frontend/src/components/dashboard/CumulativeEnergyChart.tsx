@@ -35,8 +35,10 @@ import {
   transformToChartData,
   calculateCumulative,
   isDatasetEmpty,
-  formatChartTimestamp,
-  formatValueWithUnit,
+  hasDuplicateFormattedDates,
+  formatSmartChartTimestamp,
+  computeNiceYAxis,
+  formatAdaptiveEnergy,
 } from './chartUtils';
 import { ChartContainer } from './ChartContainer';
 import { CustomChartTooltip } from './CustomChartTooltip';
@@ -128,14 +130,24 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
   const isSparse = cumulativeData.length > 0 && cumulativeData.length < 2;
   const chartHeight = isMobile ? 240 : 270;
 
-  // Subtitle with total cumulative value
+  // Subtitle with total cumulative value (adaptive precision so 0.063 mWh isn't rounded down to 0.06)
   const subtitle = useMemo(() => {
     const rangeDescription = periodLabel ? `(${periodLabel})` : `over the last ${daysToShow} days`;
     if (isEmpty || isLoading) {
       return `Total energy harvested ${rangeDescription}`;
     }
-    return `Total: ${formatValueWithUnit(totalCumulativeEnergy, 'mWh')} ${rangeDescription}`;
+    return `Total: ${formatAdaptiveEnergy(totalCumulativeEnergy, 'mWh')} ${rangeDescription}`;
   }, [totalCumulativeEnergy, isEmpty, isLoading, daysToShow, periodLabel]);
+
+  const showTimeOnXAxis = useMemo(
+    () => hasDuplicateFormattedDates(cumulativeData, granularity),
+    [cumulativeData, granularity]
+  );
+
+  const yAxisScale = useMemo(() => {
+    const maxVal = cumulativeData.reduce((m, pt) => Math.max(m, pt.value || 0), 0);
+    return computeNiceYAxis(maxVal, { minMax: 0.1, targetSteps: 4 });
+  }, [cumulativeData]);
 
   // Color system based on theme
   const colors = {
@@ -145,10 +157,23 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
   };
 
   const chartMargin = {
-    top: 8,
-    right: isMobile ? 8 : 16,
-    left: isMobile ? -12 : 0,
-    bottom: isMobile ? 8 : 0,
+    top: 12,
+    right: isMobile ? 12 : 20,
+    left: isMobile ? 4 : 12,
+    bottom: isMobile ? 12 : 4,
+  };
+
+  const yAxisWidth = isMobile ? 56 : 70;
+  const yAxisLabel = {
+    value: 'Cumulative Energy (mWh)',
+    angle: -90,
+    position: 'insideLeft' as const,
+    offset: isMobile ? 2 : 0,
+    style: {
+      fill: colors.textColor,
+      fontSize: isMobile ? '11px' : '12px',
+      textAnchor: 'middle' as const,
+    },
   };
 
   return (
@@ -173,23 +198,20 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={colors.gridColor} />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
             />
             <YAxis
-              label={{
-                value: 'Cumulative Energy (mWh)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toPrecision(3)) : 1)]}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
+              tickFormatter={(v) => Number(v).toFixed(yAxisScale.decimals)}
             />
             <Tooltip
               content={<CustomChartTooltip unit="mWh" />}
@@ -223,7 +245,7 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
             {/* X-axis: Dates */}
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(timestamp) => formatChartTimestamp(timestamp, granularity)}
+              tickFormatter={(timestamp) => formatSmartChartTimestamp(timestamp, granularity, showTimeOnXAxis)}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               angle={isMobile ? -45 : 0}
@@ -233,17 +255,14 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
 
             {/* Y-axis: Cumulative Energy in mWh */}
             <YAxis
-              label={{
-                value: 'Cumulative Energy (mWh)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { fill: colors.textColor, fontSize: isMobile ? '11px' : '12px' },
-              }}
+              width={yAxisWidth}
+              label={yAxisLabel}
               stroke={colors.textColor}
               tick={{ fontSize: isMobile ? 11 : 12 }}
               style={{ fontSize: isMobile ? '11px' : '12px' }}
-              tickCount={4}
-              domain={[0, (dataMax: number) => (dataMax > 0 ? Number((dataMax * 1.15).toPrecision(3)) : 1)]}
+              domain={yAxisScale.domain}
+              ticks={yAxisScale.ticks}
+              tickFormatter={(v) => Number(v).toFixed(yAxisScale.decimals)}
             />
 
             {/* Tooltip with custom formatting and viewport-aware positioning */}
