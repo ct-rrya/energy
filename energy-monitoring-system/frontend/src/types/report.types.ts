@@ -37,8 +37,11 @@ export type ReportFormat = typeof ReportFormat[keyof typeof ReportFormat];
  */
 export interface ReportSummary {
   totalEnergyKWh: number;
+  totalEnergyMWh?: number;
   avgPowerW: number;
+  avgPowerMW?: number;
   peakPowerW: number;
+  peakPowerMW?: number;
   co2AvoidedKg: number;
   costSavingsUSD: number;
   readingCount: number;

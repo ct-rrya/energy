@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { EcoCard } from '@/components/common';
 import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
-import { Clock, Calendar, RefreshCw, Bluetooth, Award } from 'lucide-react';
+import { Clock, Calendar, RefreshCw, Bluetooth, Award, ArrowRight } from 'lucide-react';
 import { EcoStepBleButton } from '@/features/ble';
-import { useMilestones } from '@/features/milestones';
-import { formatWhFromMWh, parsePositiveDecimal } from '@/features/milestones/utils/milestone.utils';
+import { ROUTES } from '@/routes/routes.config';
 
 interface SystemPreferences {
   timezone: string;
@@ -44,63 +44,6 @@ export function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
-
-  // EcoStep Milestones targets state
-  const { milestones, updateTargets: saveMilestoneTargets } = useMilestones();
-  const [milestoneInputs, setMilestoneInputs] = useState({
-    target1WeekMWh: '0.025',
-    target1MonthMWh: '0.1',
-    target3MonthsMWh: '0.3',
-    target6MonthsMWh: '0.6',
-    target1YearMWh: '1.2',
-  });
-  const [isSavingMilestones, setIsSavingMilestones] = useState(false);
-
-  useEffect(() => {
-    if (milestones.length > 0) {
-      const getVal = (key: string, defMWh: number) => {
-        const item = milestones.find((m) => m.periodKey === key);
-        return item?.targetMWh ?? (item?.targetWh ? item.targetWh * 1000 : defMWh);
-      };
-      setMilestoneInputs({
-        target1WeekMWh: String(getVal('1_week', 0.025)),
-        target1MonthMWh: String(getVal('1_month', 0.1)),
-        target3MonthsMWh: String(getVal('3_months', 0.3)),
-        target6MonthsMWh: String(getVal('6_months', 0.6)),
-        target1YearMWh: String(getVal('1_year', 1.2)),
-      });
-    }
-  }, [milestones]);
-
-  const handleSaveMilestones = async () => {
-    const t1W = parsePositiveDecimal(milestoneInputs.target1WeekMWh);
-    const t1M = parsePositiveDecimal(milestoneInputs.target1MonthMWh);
-    const t3M = parsePositiveDecimal(milestoneInputs.target3MonthsMWh);
-    const t6M = parsePositiveDecimal(milestoneInputs.target6MonthsMWh);
-    const t1Y = parsePositiveDecimal(milestoneInputs.target1YearMWh);
-
-    if (t1W === null || t1M === null || t3M === null || t6M === null || t1Y === null) {
-      showToast('Please enter valid positive targets up to 6 decimal places (min 0.000001 mWh)', 'error');
-      return;
-    }
-
-    setIsSavingMilestones(true);
-    try {
-      await saveMilestoneTargets({
-        target1WeekMWh: t1W,
-        target1MonthMWh: t1M,
-        target3MonthsMWh: t3M,
-        target6MonthsMWh: t6M,
-        target1YearMWh: t1Y,
-      });
-      showToast('EcoStep milestone energy targets updated successfully', 'success');
-    } catch (error) {
-      console.error('Failed to save milestone targets:', error);
-      showToast('Failed to save milestone targets', 'error');
-    } finally {
-      setIsSavingMilestones(false);
-    }
-  };
 
   // Refined colors using EcoStep design system tokens
   const colors = {
@@ -146,10 +89,16 @@ export function SettingsPage() {
   const loadHealthStatus = async () => {
     try {
       const response = await healthService.check();
-      setHealthStatus(response.data as any);
+      const raw = response as any;
+      const payload: HealthStatus | null =
+        raw && typeof raw === 'object' && 'data' in raw && raw.data
+          ? (raw.data as HealthStatus)
+          : (raw as HealthStatus);
+      setHealthStatus(payload);
       setIsLoadingHealth(false);
     } catch (error) {
       console.error('Failed to load health status:', error);
+      setHealthStatus(null);
       setIsLoadingHealth(false);
     }
   };
@@ -168,9 +117,16 @@ export function SettingsPage() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status === 'healthy' || status === 'up' || status === 'connected' || status === 'receiving') {
+    const normalized = (status || '').toLowerCase();
+    if (
+      normalized === 'healthy' ||
+      normalized === 'ok' ||
+      normalized === 'up' ||
+      normalized === 'connected' ||
+      normalized === 'receiving'
+    ) {
       return colors.success;
-    } else if (status === 'degraded' || status === 'waiting') {
+    } else if (normalized === 'degraded' || normalized === 'waiting') {
       return colors.warning;
     } else {
       return colors.error;
@@ -178,14 +134,25 @@ export function SettingsPage() {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'healthy': return 'Healthy';
-      case 'up': return 'Connected';
-      case 'connected': return 'Connected';
-      case 'receiving': return 'Receiving';
-      case 'waiting': return 'Standby';
-      case 'unavailable': return 'Offline';
-      default: return 'Standby';
+    switch ((status || '').toLowerCase()) {
+      case 'healthy':
+      case 'ok':
+        return 'Online';
+      case 'up':
+      case 'connected':
+        return 'Connected';
+      case 'receiving':
+        return 'Receiving';
+      case 'waiting':
+        return 'Standby';
+      case 'degraded':
+        return 'Degraded';
+      case 'down':
+      case 'unhealthy':
+      case 'unavailable':
+        return 'Offline';
+      default:
+        return 'Standby';
     }
   };
 
@@ -203,13 +170,13 @@ export function SettingsPage() {
     <div className="page space-y-6" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
       {/* Dashboard Header matching EcoStep Central exactly */}
       <DashboardHeader
-        greeting="System Administration"
+        greeting="Admin Settings"
         title="Settings"
-        subtitle="System preferences and hardware pairing"
+        subtitle="Display preferences, tile Wi-Fi setup, and system status"
         systemStatus={hardwareStatus.status}
       />
 
-      {/* EcoStep Harvester Web Bluetooth Provisioning (Hardware Pairing at the top) */}
+      {/* Floor Tile Wi-Fi Setup */}
       <EcoCard>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
@@ -221,28 +188,28 @@ export function SettingsPage() {
             <div>
               <div className="lb flex items-center gap-1.5 mb-1">
                 <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
-                <span>HARDWARE PAIRING</span>
+                <span>TILE WI-FI SETUP</span>
               </div>
               <h3 
                 className="text-base font-semibold text-[var(--t)]"
                 style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
               >
-                EcoStep Harvester Wi-Fi Provisioning
+                Connect Floor Tile to Wi-Fi
               </h3>
               <p 
                 className="text-xs sm:text-sm text-[var(--mu)] mt-0.5"
                 style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
               >
-                Directly pair with your EcoStep Harvester ESP32 over Web Bluetooth Low Energy to configure local Wi-Fi credentials in-browser.
+                Pair your EcoStep floor tile over Bluetooth right from your browser to connect it to campus or local Wi-Fi.
               </p>
               <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--mu)] tabular-nums" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
                 <span className="inline-block w-2 h-2 rounded-full bg-[#19D46A]"></span>
-                <span>GATT Service: EcoStep-Harvester (0x4FAFC201)</span>
+                <span>Bluetooth Device: EcoStep-Harvester</span>
               </div>
             </div>
           </div>
           <div className="shrink-0 sm:self-center">
-            <EcoStepBleButton label="Setup Harvester Wi-Fi" />
+            <EcoStepBleButton label="Connect Tile Wi-Fi" />
           </div>
         </div>
       </EcoCard>
@@ -252,16 +219,19 @@ export function SettingsPage() {
         <div className="mb-6">
           <div className="lb flex items-center gap-1.5 mb-1.5">
             <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
-            <span>SYSTEM PREFERENCES</span>
+            <span>DISPLAY PREFERENCES</span>
           </div>
           <h2 
             className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]"
             style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
           >
-            General Display & Refresh Preferences
+            General Display &amp; Refresh Preferences
           </h2>
           <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
-            Configure general preferences for how EcoStep displays and operates
+            Choose how dates, clocks, and live updates appear on your screen.
+          </p>
+          <p className="text-[11px] text-[var(--mu)] mt-1.5 italic" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+            Note: These preferences apply only to this browser on your device and do not change the view for other visitors.
           </p>
         </div>
 
@@ -423,232 +393,40 @@ export function SettingsPage() {
 
       {/* EcoStep Milestones Energy Targets with Central KPI Typography */}
       <EcoCard>
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <div className="lb flex items-center gap-1.5 mb-1.5">
-              <Award className="w-3.5 h-3.5 text-[#19D46A]" />
-              <span>ENERGY ROADMAP</span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#19D46A]/15 border border-[#19D46A]/30 flex items-center justify-center shrink-0 text-[#19D46A]">
+              <Award className="w-5 h-5" />
             </div>
-            <h2 
-              className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]" 
-              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-            >
-              EcoStep Milestone Energy Targets
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
-              Configure accumulated energy targets in milliwatt-hours (mWh) across five milestone intervals.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setMilestoneInputs({
-                  target1WeekMWh: '0.025',
-                  target1MonthMWh: '0.1',
-                  target3MonthsMWh: '0.3',
-                  target6MonthsMWh: '0.6',
-                  target1YearMWh: '1.2',
-                })
-              }
-              className="text-xs px-3 py-1 rounded-full border border-[#19D46A]/40 bg-[#19D46A]/10 text-[#19D46A] hover:bg-[#19D46A]/20 transition-all font-semibold cursor-pointer"
-              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-            >
-              Pilot (Default)
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setMilestoneInputs({
-                  target1WeekMWh: '0.1',
-                  target1MonthMWh: '0.5',
-                  target3MonthsMWh: '1.5',
-                  target6MonthsMWh: '3.0',
-                  target1YearMWh: '6.0',
-                })
-              }
-              className="text-xs px-3 py-1 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--line)] transition-all font-medium cursor-pointer"
-              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-            >
-              Active Walkway
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setMilestoneInputs({
-                  target1WeekMWh: '0.5',
-                  target1MonthMWh: '2.0',
-                  target3MonthsMWh: '6.0',
-                  target6MonthsMWh: '12.0',
-                  target1YearMWh: '24.0',
-                })
-              }
-              className="text-xs px-3 py-1 rounded-full border border-[var(--line)] bg-[var(--soft)] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--line)] transition-all font-medium cursor-pointer"
-              style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-            >
-              Corridor Array
-            </button>
-          </div>
-        </div>
-
-        {/* 5 Milestone Cards formatted with the exact Central KPI style */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {/* 1 Week */}
-          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <div className="lb flex items-center gap-1.5">
+            <div>
+              <div className="lb flex items-center gap-1.5 mb-1">
                 <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
-                <span>1 WEEK GOAL</span>
+                <span>ENERGY GOALS</span>
               </div>
-              <span className="text-[11px] text-[var(--mu)] font-medium">7 Days</span>
-            </div>
-            <div className="v val flex items-baseline mt-3">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                placeholder="0.025"
-                value={milestoneInputs.target1WeekMWh}
-                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1WeekMWh: e.target.value })}
-                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
+              <h2
+                className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]"
                 style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-              />
-              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
-            </div>
-            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
-              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1WeekMWh) || 0)} Wh
+              >
+                Monthly &amp; Weekly Milestone Goals
+              </h2>
+              <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5 max-w-xl" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+                Energy goals are configured and locked per calendar month on the Milestones page so all weekly and monthly targets stay in sync.
+              </p>
             </div>
           </div>
-
-          {/* 1 Month */}
-          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <div className="lb flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#A6DC3C]"></span>
-                <span>1 MONTH GOAL</span>
-              </div>
-              <span className="text-[11px] text-[var(--mu)] font-medium">30 Days</span>
-            </div>
-            <div className="v val flex items-baseline mt-3">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                placeholder="0.1"
-                value={milestoneInputs.target1MonthMWh}
-                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1MonthMWh: e.target.value })}
-                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
-                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-              />
-              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
-            </div>
-            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
-              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1MonthMWh) || 0)} Wh
-            </div>
-          </div>
-
-          {/* 3 Months */}
-          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <div className="lb flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#13B95C]"></span>
-                <span>3 MONTHS GOAL</span>
-              </div>
-              <span className="text-[11px] text-[var(--mu)] font-medium">90 Days</span>
-            </div>
-            <div className="v val flex items-baseline mt-3">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                placeholder="0.3"
-                value={milestoneInputs.target3MonthsMWh}
-                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target3MonthsMWh: e.target.value })}
-                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
-                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-              />
-              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
-            </div>
-            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
-              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target3MonthsMWh) || 0)} Wh
-            </div>
-          </div>
-
-          {/* 6 Months */}
-          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <div className="lb flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#7FE0A8]"></span>
-                <span>6 MONTHS GOAL</span>
-              </div>
-              <span className="text-[11px] text-[var(--mu)] font-medium">180 Days</span>
-            </div>
-            <div className="v val flex items-baseline mt-3">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                placeholder="0.6"
-                value={milestoneInputs.target6MonthsMWh}
-                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target6MonthsMWh: e.target.value })}
-                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
-                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-              />
-              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
-            </div>
-            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
-              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target6MonthsMWh) || 0)} Wh
-            </div>
-          </div>
-
-          {/* 1 Year */}
-          <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center justify-between">
-              <div className="lb flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
-                <span>1 YEAR GOAL</span>
-              </div>
-              <span className="text-[11px] text-[var(--mu)] font-medium">365 Days</span>
-            </div>
-            <div className="v val flex items-baseline mt-3">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                placeholder="1.2"
-                value={milestoneInputs.target1YearMWh}
-                onChange={(e) => setMilestoneInputs({ ...milestoneInputs, target1YearMWh: e.target.value })}
-                className="w-full bg-transparent border-b border-[var(--line)] focus:border-[#19D46A] text-[28px] sm:text-[34px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--t)] outline-none transition-colors"
-                style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}
-              />
-              <small className="text-[15px] font-normal text-[var(--mu)] ml-2 shrink-0">mWh</small>
-            </div>
-            <div className="name sub text-[13px] text-[var(--mu)] mt-2 tabular-nums">
-              Goal: {formatWhFromMWh(parseFloat(milestoneInputs.target1YearMWh) || 0)} Wh
-            </div>
-          </div>
-        </div>
-
-        {/* Save Milestones Button */}
-        <div className="pt-4 border-t border-[var(--line)] mt-4 flex justify-end">
-          <button
-            type="button"
-            onClick={handleSaveMilestones}
-            disabled={isSavingMilestones}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all cursor-pointer shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+          <Link
+            to={ROUTES.MILESTONES}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-xs hover:opacity-90 active:scale-95 shrink-0 w-full sm:w-auto"
             style={{
               backgroundColor: '#19D46A',
               color: '#0D1B14',
               fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
+              textDecoration: 'none',
             }}
           >
-            {isSavingMilestones ? 'Saving Targets...' : 'Save Milestone Targets'}
-          </button>
+            <span>Open Milestones</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </EcoCard>
 
@@ -657,7 +435,7 @@ export function SettingsPage() {
         <div className="mb-6">
           <div className="lb flex items-center gap-1.5 mb-1.5">
             <span className="w-2 h-2 rounded-full bg-[#19D46A]"></span>
-            <span>SYSTEM TELEMETRY & STATUS</span>
+            <span>SYSTEM STATUS</span>
           </div>
           <h2 
             className="text-base sm:text-lg font-semibold tracking-tight text-[var(--t)]" 
@@ -666,7 +444,7 @@ export function SettingsPage() {
             System Information
           </h2>
           <p className="text-xs sm:text-sm text-[var(--mu)] mt-0.5" style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
-            Real-time status of EcoStep backend services, database, and telemetry pipeline
+            Live health check of the EcoStep website server, database, and floor tile feed
           </p>
         </div>
 
@@ -702,11 +480,11 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              {/* Card 2: Backend Status */}
+              {/* Card 2: Website Server Status */}
               <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
                 <div className="lb flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getStatusColor(healthStatus?.status || 'unavailable') }}></span>
-                  <span>BACKEND CORE</span>
+                  <span>WEBSITE SERVER</span>
                 </div>
                 <div className="v val flex items-baseline mt-3">
                   <span 
@@ -720,18 +498,20 @@ export function SettingsPage() {
                   </span>
                 </div>
                 <div className="name sub text-[13px] text-[var(--t)] mt-2">
-                  NestJS API Gateway
+                  EcoStep Server
                 </div>
                 <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
-                  Services operational
+                  {getStatusText(healthStatus?.status || 'unavailable') === 'Online'
+                    ? 'All services running normally'
+                    : 'Trying to reconnect'}
                 </div>
               </div>
 
-              {/* Card 3: Database Latency */}
+              {/* Card 3: Database Speed */}
               <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
                 <div className="lb flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getStatusColor(healthStatus?.database?.status || 'unavailable') }}></span>
-                  <span>MONGODB ATLAS</span>
+                  <span>DATABASE</span>
                 </div>
                 <div className="v val flex items-baseline mt-3">
                   <span 
@@ -746,11 +526,11 @@ export function SettingsPage() {
                   {getStatusText(healthStatus?.database?.state || healthStatus?.database?.status || 'unavailable')}
                 </div>
                 <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
-                  Latency to cluster
+                  Database response speed
                 </div>
               </div>
 
-              {/* Card 4: IoT Data Stream */}
+              {/* Card 4: Floor Tile Live Feed */}
               <div className="rounded-2xl bg-[var(--soft)] border border-[var(--line)] p-4 flex flex-col justify-between">
                 <div className="lb flex items-center gap-1.5">
                   <span 
@@ -763,7 +543,7 @@ export function SettingsPage() {
                           : '#EF4444' 
                     }}
                   />
-                  <span>IOT TELEMETRY</span>
+                  <span>FLOOR TILE FEED</span>
                 </div>
                 <div className="v val flex items-baseline mt-3">
                   <span 
@@ -785,10 +565,10 @@ export function SettingsPage() {
                   </span>
                 </div>
                 <div className="name sub text-[13px] text-[var(--t)] mt-2">
-                  Harvester Tile Stream
+                  Smart Tile Stream
                 </div>
                 <div className="hint text-[12px] italic text-[var(--mu)] mt-0.5">
-                  Live footstep packets
+                  Real-time footstep updates
                 </div>
               </div>
             </div>

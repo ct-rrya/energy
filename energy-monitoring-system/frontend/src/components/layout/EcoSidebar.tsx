@@ -47,6 +47,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, systemAdminOnly: true },
   { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText, systemAdminOnly: true },
+  { to: ROUTES.SETTINGS, label: 'Settings', Icon: Settings, systemAdminOnly: true },
   // SUPER_ADMIN only routes
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admins', Icon: Users, superAdminOnly: true },
   { to: ROUTES.ADMIN_LOGS, label: 'Logs', Icon: ScrollText, superAdminOnly: true },
@@ -604,6 +605,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
   const userName = isSuperAdmin ? 'Ecostep Super' : (user?.name || 'Guest');
   const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
+  const cardUserRole = isSuperAdmin ? 'Super Admin' : isSystemAdmin ? 'System Admin' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
   const avatarInitial = isSuperAdmin
     ? 'E'
@@ -665,23 +667,37 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
         {/* Navigation Items */}
         <div className="es-nav-list">
-          {navItems.map(({ to, label, Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) => `es-nav-item nav-link ${isActive ? 'active on' : ''}`}
-              title={leftVisuallyCollapsed ? label : undefined}
-              aria-label={label}
-            >
-              <span className="es-nav-icon">
-                <Icon size={18} strokeWidth={1.8} />
-              </span>
-              <span className="es-nav-label">
-                {label}
-              </span>
-            </NavLink>
-          ))}
+          {navItems.map((item, idx) => {
+            const { to, label, Icon, end } = item;
+            const prevItem = idx > 0 ? navItems[idx - 1] : null;
+            const isFirstAdminItem =
+              Boolean(item.systemAdminOnly || item.superAdminOnly) &&
+              Boolean(prevItem && !prevItem.systemAdminOnly && !prevItem.superAdminOnly);
+
+            return (
+              <div key={to} className="contents">
+                {isFirstAdminItem && (
+                  <div className="es-nav-divider" role="separator" aria-label="Admin section">
+                    <span className="es-nav-divider-label">Admin</span>
+                  </div>
+                )}
+                <NavLink
+                  to={to}
+                  end={end}
+                  className={({ isActive }) => `es-nav-item nav-link ${isActive ? 'active on' : ''}`}
+                  title={leftVisuallyCollapsed ? label : undefined}
+                  aria-label={label}
+                >
+                  <span className="es-nav-icon">
+                    <Icon size={18} strokeWidth={1.8} />
+                  </span>
+                  <span className="es-nav-label">
+                    {label}
+                  </span>
+                </NavLink>
+              </div>
+            );
+          })}
         </div>
 
         {/* Pinned Bottom User Card */}
@@ -706,7 +722,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             </div>
             <div className="es-user-info info">
               <div className="es-user-name">{userName}</div>
-              <div className="es-user-sub">{userRole}</div>
+              <div className="es-user-sub">{cardUserRole}</div>
             </div>
             <ChevronUp 
               size={16} 
@@ -783,7 +799,10 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 type="button"
                 role="menuitem"
                 className="um-item es-popover-item it"
-                onClick={toggleTheme}
+                onClick={() => {
+                  toggleTheme();
+                  setUserMenuOpen(false);
+                }}
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {theme === 'dark' ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}

@@ -48,7 +48,7 @@ const ECOSTEP_BRAIN_KNOWLEDGE: Array<{
       source: 'ecostep_brain',
       section: 'User Roles, Security & Admin Pages',
       content:
-        'EcoStep has 3 access levels: (1) Public Visitors get read-only access and live read-only Socket.IO updates without logging in. (2) SYSTEM_ADMIN logs in via Access Code at /admin/login (no inactivity auto-logout; stays signed in until manual logout) and unlocks Health (/admin/diagnostics), Ledger (/reports), and Settings (/settings). (3) SUPER_ADMIN is restricted to Admins (/admin-management) and Logs (/admin/logs) audit trails. Hardware ESP32 units authenticate via X-API-Key header and must have status active.',
+        'EcoStep has 3 access levels (explain these in plain everyday English without raw code labels like SYSTEM_ADMIN): (1) Public Visitors can browse live energy, Analytics, Milestones, About, and EcoGuide with no login needed. (2) System Administrators sign in with a 12-character access code and can do 5 main tasks: run daily tile checks on Health, create and download PDF or Excel reports on Ledger, export historical readings to CSV on Analytics, set monthly and weekly energy goals on Milestone, and adjust display preferences or connect the floor tile to Wi-Fi over Bluetooth in Settings. (3) Super Administrators manage administrator accounts, view audit logs, and make exceptional edits to locked monthly Milestone goals.',
     },
     {
       source: 'ecostep_brain',
@@ -64,9 +64,9 @@ const ECOSTEP_BRAIN_KNOWLEDGE: Array<{
     },
     {
       source: 'ecostep_brain',
-      section: 'Web Bluetooth (BLE) Wi-Fi Provisioning',
+      section: 'Bluetooth Tile Wi-Fi Setup',
       content:
-        'In Settings (/settings), admins can pair directly from Chrome or Edge over HTTPS with the ESP32 (EcoStep-Harvester) via Web Bluetooth without a native mobile app. On connect, EcoStep displays "ESP32 Connection Successful", requests a 2.4 GHz Wi-Fi scan ({"cmd":"scan"} -> wifi_list) with manual SSID fallback, stays connected when the modal closes, auto-retries GATT reconnection up to 3 times on brief drops, and warns "ESP32 Is Already Connected" if reopened while paired.',
+        'In Settings, System Administrators can connect the EcoStep floor tile to campus or local Wi-Fi directly from Chrome or Edge over Bluetooth—no extra mobile app needed. They can also try Demo Mode to practice the setup without physical hardware nearby.',
     },
     {
       source: 'ecostep_brain',

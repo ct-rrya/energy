@@ -188,7 +188,7 @@ export function AdminMilestonesModal({
         aria-hidden="true"
       />
 
-      <div className="w-full max-w-xl rounded-[22px] border p-6 relative overflow-hidden shadow-2xl max-h-[92vh] flex flex-col my-auto bg-[var(--panel)] border-[var(--line)] text-[var(--t)]">
+      <div className="w-full max-w-2xl rounded-[22px] border p-6 relative overflow-hidden shadow-2xl max-h-[92vh] flex flex-col my-auto bg-[var(--panel)] border-[var(--line)] text-[var(--t)]">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[var(--line)] shrink-0">
           <div className="flex items-center gap-3">
@@ -205,8 +205,10 @@ export function AdminMilestonesModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors"
+            aria-label="Close dialog"
+            className="p-1.5 rounded-lg text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -221,12 +223,15 @@ export function AdminMilestonesModal({
               <div>
                 <div className="font-bold">Targets Locked for {formatMonthLabel(selectedMonth)}</div>
                 <div className="text-[11px] opacity-90 mt-0.5">
-                  Target configuration was submitted by {configurationPolicy?.configuredBy || 'an administrator'}{' '}
+                  Target configuration was submitted by{' '}
+                  {configurationPolicy?.configuredBy && !/^[a-f\d]{24}$/i.test(configurationPolicy.configuredBy.trim())
+                    ? configurationPolicy.configuredBy
+                    : 'an administrator'}{' '}
                   {configurationPolicy?.configuredAt ? `on ${new Date(configurationPolicy.configuredAt).toLocaleDateString()}` : ''}.
                   Under the Monthly Goal Configuration Policy, ordinary modifications are locked.
                 </div>
                 <div className="text-[11px] font-semibold mt-1 text-amber-800 dark:text-amber-200">
-                  Only authorized Super Administrators can perform exceptional corrections.
+                  System Admins cannot change locked months — only a Super Admin (project lead) can adjust them.
                 </div>
               </div>
             </div>
@@ -321,15 +326,15 @@ export function AdminMilestonesModal({
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-semibold block truncate text-[11px]">{p.name}</span>
+                      <div className="flex items-start justify-between gap-1.5 flex-wrap">
+                        <span className="font-semibold text-[11px] leading-snug">{p.name}</span>
                         {p.isDefault && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-[var(--acc)] border border-emerald-500/30">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/20 text-[var(--acc)] border border-emerald-500/30 shrink-0">
                             DEFAULT
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-[var(--mu)] mt-1 leading-snug line-clamp-2">
+                      <p className="text-[11px] text-[var(--mu)] mt-1 leading-snug">
                         {p.description}
                       </p>
                     </div>
@@ -440,6 +445,19 @@ export function AdminMilestonesModal({
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
               <Check className="w-4 h-4 shrink-0" />
               <span>Milestone targets updated successfully for {formatMonthLabel(selectedMonth)}!</span>
+            </div>
+          )}
+
+          {/* Clear Lock Warning Before Saving an Unlocked Month */}
+          {!isLocked && !isReadOnly && !isSuperAdmin && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5">
+              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <div className="font-bold">Heads up: Saving locks {formatMonthLabel(selectedMonth)}</div>
+                <p className="text-[11px] opacity-90 mt-0.5 leading-relaxed">
+                  Once you save these goals, regular System Admins cannot edit {formatMonthLabel(selectedMonth)} again. Only a Super Admin (project lead) can unlock or change it later.
+                </p>
+              </div>
             </div>
           )}
 

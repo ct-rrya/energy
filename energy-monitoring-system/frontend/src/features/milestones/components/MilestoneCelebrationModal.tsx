@@ -176,10 +176,11 @@ export function MilestoneCelebrationModal({
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
 
-        {/* Close Button */}
+        {/* Close Button (z-30 sits cleanly above z-20 header content) */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-3.5 right-3.5 z-20 p-1.5 rounded-full text-[var(--mu)] hover:text-[var(--t)] bg-[var(--soft)] hover:bg-[var(--mint)] transition-colors"
+          className="absolute top-3.5 right-3.5 z-30 p-1.5 rounded-full text-[var(--mu)] hover:text-[var(--t)] bg-[var(--soft)] hover:bg-[var(--mint)] transition-colors cursor-pointer"
           aria-label="Close dialog"
         >
           <X className="w-4 h-4" />

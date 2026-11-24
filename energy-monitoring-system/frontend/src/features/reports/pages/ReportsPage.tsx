@@ -309,7 +309,7 @@ export function ReportsPage() {
             {/* Tablet & Desktop Width: 3 Inline Filter Dropdowns (>= sm) */}
             <div className="hidden sm:flex flex-wrap min-[900px]:flex-nowrap items-center gap-2 sm:gap-2.5">
               {/* Type Filter */}
-              <div className="w-[140px] shrink-0">
+              <div className="w-[152px] shrink-0">
                 <CustomDropdown
                   value={typeFilter}
                   onChange={(value) => {
@@ -327,7 +327,7 @@ export function ReportsPage() {
               </div>
 
               {/* Format Filter */}
-              <div className="w-[120px] shrink-0">
+              <div className="w-[144px] shrink-0">
                 <CustomDropdown
                   value={formatFilter}
                   onChange={(value) => {
@@ -343,7 +343,7 @@ export function ReportsPage() {
               </div>
 
               {/* Date Filter */}
-              <div className="w-[125px] shrink-0">
+              <div className="w-[136px] shrink-0">
                 <CustomDropdown
                   value={dateFilter}
                   onChange={(value) => {

@@ -10,12 +10,14 @@ import {
   EnergyReading,
   EnergyReadingSchema,
 } from '../iot/schemas/energy-reading.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: MilestoneTarget.name, schema: MilestoneTargetSchema },
       { name: EnergyReading.name, schema: EnergyReadingSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [MilestonesController],

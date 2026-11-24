@@ -11,6 +11,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { useDiagnosticHistory, useDailyTaskHistory } from '../hooks/useDiagnostics';
 import { DiagnosticResultStatus, DailyDiagnosticTaskStatus } from '@/types/diagnostic.types';
 import type { DiagnosticTest, DailyDiagnosticTask } from '@/types/diagnostic.types';
+import { formatPrefDateString, formatPrefDateTime } from '@/lib/displayPreferences';
 
 interface GroupedDailyTask {
   isGrouped: boolean;
@@ -65,8 +66,8 @@ export function DiagnosticHistoryTable() {
 
         const count = j - i;
         if (count >= 3) {
-          const startShort = dailyTasks[j - 1].taskDate.slice(5);
-          const endShort = task.taskDate.slice(5);
+          const startShort = formatPrefDateString(dailyTasks[j - 1].taskDate, false);
+          const endShort = formatPrefDateString(task.taskDate, false);
           result.push({
             isGrouped: true,
             dateLabel: `${startShort} → ${endShort}`,
@@ -82,7 +83,7 @@ export function DiagnosticHistoryTable() {
       // Single standard row
       result.push({
         isGrouped: false,
-        dateLabel: task.taskDate.slice(5),
+        dateLabel: formatPrefDateString(task.taskDate, false),
         status: task.status,
         task,
       });
@@ -224,18 +225,26 @@ export function DiagnosticHistoryTable() {
         </div>
       </div>
 
+      {/* Plain-English status guide for non-technical admins */}
+      <div className="rounded-xl bg-[var(--soft)] border border-[var(--line)] px-3.5 py-2.5 text-[12px] leading-relaxed text-[var(--mu)]">
+        <strong className="text-[var(--t)] font-semibold">How to read results:</strong>{' '}
+        <span className="text-emerald-600 dark:text-[#4ade80] font-medium">Completed / Within Normal Range</span> means the tile matches normal footsteps.{' '}
+        <span className="text-amber-600 dark:text-[#fbbf24] font-medium">Above Expected</span> (shown as <em>Needs attention</em> in Daily tasks) can happen from a very firm stomp or a sudden spike — re-test with a normal step to confirm.{' '}
+        <span className="text-rose-500 dark:text-[#f87171] font-medium">Below Expected</span> may mean loose wiring or tile wear.
+      </div>
+
       {/* ─────────────────────────────────────────────────────────────
           TAB 1: DAILY DIAGNOSTIC TASKS VIEW (SPEC GRID)
           ───────────────────────────────────────────────────────────── */}
       {activeTab === 'daily' && (
         <div className="overflow-x-auto">
-          <div className="min-w-[640px]">
+          <div className="min-w-[660px]">
             {/* Table Column Headers */}
-            <div className="grid grid-cols-[110px_170px_minmax(0,1fr)_100px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
+            <div className="grid grid-cols-[110px_170px_minmax(0,1fr)_125px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
               <span>Date</span>
               <span>Status</span>
               <span>Verified by</span>
-              <span className="text-right">Measured</span>
+              <span className="text-right">Measured (mWh)</span>
               <span className="text-right">Deviation</span>
             </div>
 
@@ -268,17 +277,28 @@ export function DiagnosticHistoryTable() {
 
                 if (!task) return null;
 
-                const isTaskCompleted = task.status === DailyDiagnosticTaskStatus.COMPLETED;
-                const isTaskPending = task.status === DailyDiagnosticTaskStatus.PENDING;
-                const isTaskNeedsAttention = 
-                  task.status === DailyDiagnosticTaskStatus.NEEDS_ATTENTION || 
-                  task.status === DailyDiagnosticTaskStatus.FAILED;
-                const isTaskOverdue = task.status === DailyDiagnosticTaskStatus.OVERDUE;
+                // Defense-in-depth: if a test was already recorded on that day, never show Overdue
+                const hasRecordedTest =
+                  (task.actualEnergyMWh !== undefined && task.actualEnergyMWh !== null) ||
+                  Boolean(task.completedAt);
+                const resolvedStatus =
+                  task.status === DailyDiagnosticTaskStatus.OVERDUE && hasRecordedTest
+                    ? task.result === DiagnosticResultStatus.WITHIN_RANGE
+                      ? DailyDiagnosticTaskStatus.COMPLETED
+                      : DailyDiagnosticTaskStatus.NEEDS_ATTENTION
+                    : task.status;
+
+                const isTaskCompleted = resolvedStatus === DailyDiagnosticTaskStatus.COMPLETED;
+                const isTaskPending = resolvedStatus === DailyDiagnosticTaskStatus.PENDING;
+                const isTaskNeedsAttention =
+                  resolvedStatus === DailyDiagnosticTaskStatus.NEEDS_ATTENTION ||
+                  resolvedStatus === DailyDiagnosticTaskStatus.FAILED;
+                const isTaskOverdue = resolvedStatus === DailyDiagnosticTaskStatus.OVERDUE;
 
                 return (
                   <div
                     key={task.taskDate}
-                    className="grid grid-cols-[110px_170px_minmax(0,1fr)_100px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors"
+                    className="grid grid-cols-[110px_170px_minmax(0,1fr)_125px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors"
                   >
                     {/* Date */}
                     <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--t)] tabular-nums">
@@ -363,28 +383,27 @@ export function DiagnosticHistoryTable() {
         <div className="overflow-x-auto">
           <div className="min-w-[640px]">
             {/* Table Column Headers */}
-            <div className="grid grid-cols-[130px_160px_minmax(0,1fr)_100px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
+            <div className="grid grid-cols-[165px_150px_minmax(0,1fr)_125px_100px] gap-3 pb-2 border-b border-[var(--line)] dark:border-[#1d3326] text-[11px] font-[600] tracking-[0.08em] uppercase text-[var(--mu)]">
               <span>Timestamp</span>
               <span>Result</span>
               <span>Performed by</span>
-              <span className="text-right">Measured</span>
+              <span className="text-right">Measured (mWh)</span>
               <span className="text-right">Deviation</span>
             </div>
 
             {data?.tests && data.tests.length > 0 ? (
               data.tests.map((test) => {
                 const isWithin = test.result === DiagnosticResultStatus.WITHIN_RANGE;
-                const dateStr = new Date(test.testDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
-                const timeStr = new Date(test.testDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                const formattedTimestamp = formatPrefDateTime(test.testDate, false);
 
                 return (
                   <div
                     key={test.id}
                     onClick={() => setSelectedTest(test)}
-                    className="grid grid-cols-[130px_160px_minmax(0,1fr)_100px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors cursor-pointer"
+                    className="grid grid-cols-[165px_150px_minmax(0,1fr)_125px_100px] gap-3 items-center py-2.5 sm:py-3 border-b border-[var(--line)] dark:border-[#1d3326] hover:bg-[var(--soft)]/50 transition-colors cursor-pointer"
                   >
-                    <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--t)] tabular-nums">
-                      {dateStr} {timeStr}
+                    <span className="font-['DM_Sans',sans-serif] text-[13px] sm:text-[14px] font-[500] text-[var(--t)] tabular-nums whitespace-nowrap">
+                      {formattedTimestamp}
                     </span>
 
                     <span>

@@ -77,8 +77,10 @@ export function ReportDetailsModal({
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
+            aria-label="Close dialog"
+            className="p-2 rounded-lg transition-colors cursor-pointer"
             style={{ color: colors.textSecondary }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = colors.hoverBackground;
@@ -264,108 +266,114 @@ export function ReportDetailsModal({
           </div>
 
           {/* Summary Metrics */}
-          {report.summary && (
-            <div>
-              <h3 
-                className="text-sm font-semibold mb-3 uppercase tracking-wide"
-                style={{ color: colors.textSecondary }}
-              >
-                Summary Metrics
-              </h3>
-              <div 
-                className="grid grid-cols-2 gap-4 p-4 rounded-lg"
-                style={{
-                  backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
-                  border: `1px solid ${colors.border}`,
-                }}
-              >
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Total Energy
+          {report.summary && (() => {
+            const energyMWh =
+              report.summary.totalEnergyMWh ?? report.summary.totalEnergyKWh * 1_000_000;
+            const avgPowerMW =
+              report.summary.avgPowerMW ?? report.summary.avgPowerW * 1000;
+            const peakPowerMW =
+              report.summary.peakPowerMW ?? report.summary.peakPowerW * 1000;
+            const energyText =
+              energyMWh > 0 && energyMWh < 1
+                ? `${energyMWh.toFixed(3)} mWh`
+                : `${energyMWh.toFixed(2)} mWh`;
+            const ledSeconds = energyMWh > 0 ? Math.max(1, Math.round(energyMWh * 180)) : 0;
+            const ledText =
+              ledSeconds === 0
+                ? '0 sec'
+                : ledSeconds >= 60
+                ? `~${(ledSeconds / 60).toFixed(1)} min`
+                : `~${ledSeconds} sec`;
+
+            return (
+              <div>
+                <h3
+                  className="text-sm font-semibold mb-3 uppercase tracking-wide"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Summary Metrics
+                </h3>
+                <div
+                  className="grid grid-cols-2 gap-4 p-4 rounded-lg"
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${colors.border}`,
+                  }}
+                >
+                  <div>
+                    <div
+                      className="text-xs mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Total Energy
+                    </div>
+                    <div
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {energyText}
+                    </div>
                   </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {report.summary.totalEnergyKWh.toFixed(2)} kWh
+                  <div>
+                    <div
+                      className="text-xs mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Avg Power
+                    </div>
+                    <div
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {avgPowerMW.toFixed(2)} mW
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Avg Power
+                  <div>
+                    <div
+                      className="text-xs mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Peak Power
+                    </div>
+                    <div
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {peakPowerMW.toFixed(2)} mW
+                    </div>
                   </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {report.summary.avgPowerW.toFixed(2)} W
+                  <div>
+                    <div
+                      className="text-xs mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Small LED Light Time
+                    </div>
+                    <div
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {ledText}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Peak Power
-                  </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {report.summary.peakPowerW.toFixed(2)} W
-                  </div>
-                </div>
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    CO₂ Avoided
-                  </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {report.summary.co2AvoidedKg.toFixed(2)} kg
-                  </div>
-                </div>
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Cost Savings
-                  </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    ${report.summary.costSavingsUSD.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div 
-                    className="text-xs mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Readings
-                  </div>
-                  <div 
-                    className="text-sm font-semibold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {report.summary.readingCount.toLocaleString()}
+                  <div>
+                    <div
+                      className="text-xs mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Readings Recorded
+                    </div>
+                    <div
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {report.summary.readingCount.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Footer Actions */}

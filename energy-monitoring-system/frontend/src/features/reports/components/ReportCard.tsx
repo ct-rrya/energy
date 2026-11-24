@@ -46,13 +46,6 @@ function getReportTypeLabel(type: ReportType): string {
  * Report Card Component
  * 
  * Displays an individual report in a card format.
- * 
- * Features:
- * - Report metadata
- * - File format badge
- * - Download button
- * - Delete button
- * - Summary metrics
  */
 export function ReportCard({
   report,
@@ -62,6 +55,15 @@ export function ReportCard({
   isDeleting,
 }: ReportCardProps) {
   const isPDF = report.format === ReportFormat.PDF;
+  const energyMWh =
+    report.summary.totalEnergyMWh ?? report.summary.totalEnergyKWh * 1_000_000;
+  const ledSeconds = energyMWh > 0 ? Math.max(1, Math.round(energyMWh * 180)) : 0;
+  const ledText =
+    ledSeconds === 0
+      ? '0 sec'
+      : ledSeconds >= 60
+      ? `~${(ledSeconds / 60).toFixed(1)} min`
+      : `~${ledSeconds} sec`;
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
@@ -96,13 +98,13 @@ export function ReportCard({
         <div className="rounded-lg bg-neutral-50 p-3">
           <div className="text-xs text-neutral-600">Total Energy</div>
           <div className="text-lg font-bold text-neutral-900">
-            {formatNumber(report.summary.totalEnergyKWh, 2)} kWh
+            {formatNumber(energyMWh, energyMWh > 0 && energyMWh < 1 ? 3 : 2)} mWh
           </div>
         </div>
         <div className="rounded-lg bg-neutral-50 p-3">
-          <div className="text-xs text-neutral-600">Cost Savings</div>
+          <div className="text-xs text-neutral-600">Small LED Light Time</div>
           <div className="text-lg font-bold text-green-600">
-            ${formatNumber(report.summary.costSavingsUSD, 2)}
+            {ledText}
           </div>
         </div>
       </div>

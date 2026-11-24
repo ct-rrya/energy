@@ -671,6 +671,54 @@
   height: 0 !important;
 }
 
+/* Admin section divider inside sidebar nav list */
+.es-nav-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 4px;
+  margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.es-nav-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.es-nav-divider-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mu);
+  white-space: nowrap;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.es-side.collapsed .es-nav-divider,
+.sidebar.collapsed .es-nav-divider {
+  padding: 6px 0;
+  margin: 4px 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.es-side.collapsed .es-nav-divider::after,
+.sidebar.collapsed .es-nav-divider::after {
+  flex: none;
+  width: 28px;
+}
+
+.es-side.collapsed .es-nav-divider-label,
+.sidebar.collapsed .es-nav-divider-label {
+  display: none;
+}
+
 /* Collapsed Sidebar strict layout (72px) */
 .es-side.collapsed,
 .sidebar.collapsed {

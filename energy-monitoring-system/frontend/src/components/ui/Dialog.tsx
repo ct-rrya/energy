@@ -97,7 +97,7 @@ export function Dialog({
       {/* Dialog */}
       <div
         className={cn(
-          'relative z-10 w-full rounded-2xl flex flex-col my-auto max-h-[calc(100dvh-32px)] sm:max-h-[85vh]',
+          'relative z-10 w-full rounded-2xl flex flex-col my-auto max-h-[min(88vh,calc(100dvh-32px))] overflow-hidden',
           sizeClasses[size],
           className
         )}
@@ -172,9 +172,10 @@ export function Dialog({
 interface DialogFooterProps {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function DialogFooter({ children, className }: DialogFooterProps) {
+export function DialogFooter({ children, className, style }: DialogFooterProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   
@@ -184,7 +185,7 @@ export function DialogFooter({ children, className }: DialogFooterProps) {
         'flex items-center justify-end gap-3 px-6 py-4',
         className
       )}
-      style={{ borderTop: `1px solid ${colors.border}` }}
+      style={{ borderTop: `1px solid ${colors.border}`, ...style }}
     >
       {children}
     </div>

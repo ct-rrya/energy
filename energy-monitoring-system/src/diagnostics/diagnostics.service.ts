@@ -561,7 +561,57 @@ export class DiagnosticsService {
   async getOrCreateTodayTask(): Promise<DailyDiagnosticTaskDocument> {
     const today = this.getTodayDateString();
 
-    // 1. Mark previous pending/in-progress tasks as OVERDUE
+    // 1a. Repair any past task that ALREADY has a recorded test result (e.g., if a second test session
+    // was started later that day and closed, never leave that day falsely marked as OVERDUE/IN_PROGRESS)
+    await this.dailyTaskModel.updateMany(
+      {
+        taskDate: { $lt: today },
+        status: {
+          $in: [
+            DailyDiagnosticTaskStatus.OVERDUE,
+            DailyDiagnosticTaskStatus.IN_PROGRESS,
+            DailyDiagnosticTaskStatus.PENDING,
+          ],
+        },
+        $or: [
+          { actualEnergyMWh: { $ne: null } },
+          { completedAt: { $ne: null } },
+        ],
+        result: DiagnosticResultStatus.WITHIN_RANGE,
+      },
+      {
+        $set: {
+          status: DailyDiagnosticTaskStatus.COMPLETED,
+          activeSession: null,
+        },
+      },
+    );
+
+    await this.dailyTaskModel.updateMany(
+      {
+        taskDate: { $lt: today },
+        status: {
+          $in: [
+            DailyDiagnosticTaskStatus.OVERDUE,
+            DailyDiagnosticTaskStatus.IN_PROGRESS,
+            DailyDiagnosticTaskStatus.PENDING,
+          ],
+        },
+        $or: [
+          { actualEnergyMWh: { $ne: null } },
+          { completedAt: { $ne: null } },
+        ],
+        result: { $ne: DiagnosticResultStatus.WITHIN_RANGE },
+      },
+      {
+        $set: {
+          status: DailyDiagnosticTaskStatus.NEEDS_ATTENTION,
+          activeSession: null,
+        },
+      },
+    );
+
+    // 1b. Mark previous genuinely uncompleted daily tasks (with NO recorded test) as OVERDUE
     await this.dailyTaskModel.updateMany(
       {
         taskDate: { $lt: today },
@@ -571,6 +621,8 @@ export class DiagnosticsService {
             DailyDiagnosticTaskStatus.IN_PROGRESS,
           ],
         },
+        actualEnergyMWh: null,
+        completedAt: null,
       },
       {
         $set: {
@@ -616,7 +668,14 @@ export class DiagnosticsService {
       this.logger.warn(
         `Active session on task ${today} by ${task.activeSession.adminEmail} expired. Reverting to Pending.`,
       );
-      task.status = DailyDiagnosticTaskStatus.PENDING;
+      const hasPriorTest =
+        task.actualEnergyMWh !== undefined && task.actualEnergyMWh !== null ||
+        Boolean(task.completedAt);
+      task.status = hasPriorTest
+        ? task.result === DiagnosticResultStatus.WITHIN_RANGE
+          ? DailyDiagnosticTaskStatus.COMPLETED
+          : DailyDiagnosticTaskStatus.NEEDS_ATTENTION
+        : DailyDiagnosticTaskStatus.PENDING;
       task.activeSession = undefined;
       await task.save();
 
@@ -693,7 +752,14 @@ export class DiagnosticsService {
       ) {
         task.activeSession = undefined;
         if (task.status === DailyDiagnosticTaskStatus.IN_PROGRESS) {
-          task.status = DailyDiagnosticTaskStatus.PENDING;
+          const hasPriorTest =
+            (task.actualEnergyMWh !== undefined && task.actualEnergyMWh !== null) ||
+            Boolean(task.completedAt);
+          task.status = hasPriorTest
+            ? task.result === DiagnosticResultStatus.WITHIN_RANGE
+              ? DailyDiagnosticTaskStatus.COMPLETED
+              : DailyDiagnosticTaskStatus.NEEDS_ATTENTION
+            : DailyDiagnosticTaskStatus.PENDING;
         }
         await task.save();
 
@@ -805,11 +871,26 @@ export class DiagnosticsService {
    * Retrieves past daily diagnostic tasks sorted by taskDate descending.
    */
   async getDailyTaskHistory(limit: number = 30): Promise<DailyDiagnosticTask[]> {
-    return this.dailyTaskModel
+    const tasks = await this.dailyTaskModel
       .find()
       .sort({ taskDate: -1 })
       .limit(Math.min(limit, 90))
       .exec();
+
+    // Never report a day as Overdue if a physical test was already recorded on that date
+    for (const task of tasks) {
+      const hasRecordedTest =
+        (task.actualEnergyMWh !== undefined && task.actualEnergyMWh !== null) ||
+        Boolean(task.completedAt);
+      if (hasRecordedTest && task.status === DailyDiagnosticTaskStatus.OVERDUE) {
+        task.status =
+          task.result === DiagnosticResultStatus.WITHIN_RANGE
+            ? DailyDiagnosticTaskStatus.COMPLETED
+            : DailyDiagnosticTaskStatus.NEEDS_ATTENTION;
+      }
+    }
+
+    return tasks;
   }
 
   /**

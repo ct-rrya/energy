@@ -158,124 +158,136 @@ export function ReportPreviewModal({
               Summary
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              {report.summary.totalEnergyKWh !== undefined && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
-                  <div 
-                    className="text-xs font-medium mb-1"
-                    style={{ color: colors.textSecondary }}
+              {report.summary.totalEnergyKWh !== undefined && (() => {
+                const energyMWh =
+                  report.summary.totalEnergyMWh ?? report.summary.totalEnergyKWh * 1_000_000;
+                return (
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{
+                      backgroundColor: theme === 'light'
+                        ? '#FFFFFF'
+                        : '#1C1F28',
+                      border: theme === 'light'
+                        ? '1px solid rgba(26, 49, 44, 0.08)'
+                        : '1px solid rgba(137, 215, 183, 0.12)'
+                    }}
                   >
-                    Total Energy
-                  </div>
-                  <div 
-                    className="text-lg font-bold font-[tabular-nums]"
-                    style={{ color: colors.accent }}
-                  >
-                    {report.summary.totalEnergyKWh.toFixed(2)}
-                    <span 
-                      className="text-sm font-normal ml-1"
+                    <div
+                      className="text-xs font-medium mb-1"
                       style={{ color: colors.textSecondary }}
                     >
-                      kWh
-                    </span>
+                      Total Energy
+                    </div>
+                    <div
+                      className="text-lg font-bold font-[tabular-nums]"
+                      style={{ color: colors.accent }}
+                    >
+                      {energyMWh > 0 && energyMWh < 1 ? energyMWh.toFixed(3) : energyMWh.toFixed(2)}
+                      <span
+                        className="text-sm font-normal ml-1"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        mWh
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
-              {report.summary.avgPowerW !== undefined && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
-                  <div 
-                    className="text-xs font-medium mb-1"
-                    style={{ color: colors.textSecondary }}
+              {report.summary.avgPowerW !== undefined && (() => {
+                const avgPowerMW =
+                  report.summary.avgPowerMW ?? report.summary.avgPowerW * 1000;
+                return (
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{
+                      backgroundColor: theme === 'light'
+                        ? '#FFFFFF'
+                        : '#1C1F28',
+                      border: theme === 'light'
+                        ? '1px solid rgba(26, 49, 44, 0.08)'
+                        : '1px solid rgba(137, 215, 183, 0.12)'
+                    }}
                   >
-                    Average Power
-                  </div>
-                  <div 
-                    className="text-lg font-bold font-[tabular-nums]"
-                    style={{ color: colors.accent }}
-                  >
-                    {report.summary.avgPowerW.toFixed(1)}
-                    <span 
-                      className="text-sm font-normal ml-1"
+                    <div
+                      className="text-xs font-medium mb-1"
                       style={{ color: colors.textSecondary }}
                     >
-                      W
-                    </span>
+                      Average Power
+                    </div>
+                    <div
+                      className="text-lg font-bold font-[tabular-nums]"
+                      style={{ color: colors.accent }}
+                    >
+                      {avgPowerMW.toFixed(2)}
+                      <span
+                        className="text-sm font-normal ml-1"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        mW
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
-              {report.summary.peakPowerW !== undefined && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
-                  <div 
-                    className="text-xs font-medium mb-1"
-                    style={{ color: colors.textSecondary }}
+              {report.summary.peakPowerW !== undefined && (() => {
+                const peakPowerMW =
+                  report.summary.peakPowerMW ?? report.summary.peakPowerW * 1000;
+                return (
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{
+                      backgroundColor: theme === 'light'
+                        ? '#FFFFFF'
+                        : '#1C1F28',
+                      border: theme === 'light'
+                        ? '1px solid rgba(26, 49, 44, 0.08)'
+                        : '1px solid rgba(137, 215, 183, 0.12)'
+                    }}
                   >
-                    Peak Power
-                  </div>
-                  <div 
-                    className="text-lg font-bold font-[tabular-nums]"
-                    style={{ color: colors.accent }}
-                  >
-                    {report.summary.peakPowerW.toFixed(1)}
-                    <span 
-                      className="text-sm font-normal ml-1"
+                    <div
+                      className="text-xs font-medium mb-1"
                       style={{ color: colors.textSecondary }}
                     >
-                      W
-                    </span>
+                      Peak Power
+                    </div>
+                    <div
+                      className="text-lg font-bold font-[tabular-nums]"
+                      style={{ color: colors.accent }}
+                    >
+                      {peakPowerMW.toFixed(2)}
+                      <span
+                        className="text-sm font-normal ml-1"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        mW
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {report.summary.readingCount !== undefined && (
-                <div 
+                <div
                   className="p-4 rounded-lg"
                   style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
+                    backgroundColor: theme === 'light'
+                      ? '#FFFFFF'
                       : '#1C1F28',
                     border: theme === 'light'
                       ? '1px solid rgba(26, 49, 44, 0.08)'
                       : '1px solid rgba(137, 215, 183, 0.12)'
                   }}
                 >
-                  <div 
+                  <div
                     className="text-xs font-medium mb-1"
                     style={{ color: colors.textSecondary }}
                   >
-                    Data Points
+                    Readings Recorded
                   </div>
-                  <div 
+                  <div
                     className="text-lg font-bold font-[tabular-nums]"
                     style={{ color: colors.accent }}
                   >
@@ -284,65 +296,43 @@ export function ReportPreviewModal({
                 </div>
               )}
 
-              {report.summary.co2AvoidedKg !== undefined && report.summary.co2AvoidedKg > 0 && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
-                  <div 
-                    className="text-xs font-medium mb-1"
-                    style={{ color: colors.textSecondary }}
+              {(() => {
+                const energyMWh =
+                  report.summary.totalEnergyMWh ?? (report.summary.totalEnergyKWh ?? 0) * 1_000_000;
+                const ledSeconds = energyMWh > 0 ? Math.max(1, Math.round(energyMWh * 180)) : 0;
+                const ledText =
+                  ledSeconds === 0
+                    ? '0 sec'
+                    : ledSeconds >= 60
+                    ? `~${(ledSeconds / 60).toFixed(1)} min`
+                    : `~${ledSeconds} sec`;
+                return (
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{
+                      backgroundColor: theme === 'light'
+                        ? '#FFFFFF'
+                        : '#1C1F28',
+                      border: theme === 'light'
+                        ? '1px solid rgba(26, 49, 44, 0.08)'
+                        : '1px solid rgba(137, 215, 183, 0.12)'
+                    }}
                   >
-                    CO₂ Avoided
-                  </div>
-                  <div 
-                    className="text-lg font-bold font-[tabular-nums]"
-                    style={{ color: colors.accent }}
-                  >
-                    {report.summary.co2AvoidedKg.toFixed(2)}
-                    <span 
-                      className="text-sm font-normal ml-1"
+                    <div
+                      className="text-xs font-medium mb-1"
                       style={{ color: colors.textSecondary }}
                     >
-                      kg
-                    </span>
+                      Small LED Light Time
+                    </div>
+                    <div
+                      className="text-lg font-bold font-[tabular-nums]"
+                      style={{ color: colors.accent }}
+                    >
+                      {ledText}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {report.summary.costSavingsUSD !== undefined && report.summary.costSavingsUSD > 0 && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' 
-                      ? '#FFFFFF' 
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
-                  <div 
-                    className="text-xs font-medium mb-1"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Cost Savings
-                  </div>
-                  <div 
-                    className="text-lg font-bold font-[tabular-nums]"
-                    style={{ color: colors.accent }}
-                  >
-                    ${report.summary.costSavingsUSD.toFixed(2)}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         )}

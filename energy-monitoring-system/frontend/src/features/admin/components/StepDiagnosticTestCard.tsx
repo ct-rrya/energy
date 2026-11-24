@@ -21,6 +21,7 @@ import {
   DailyDiagnosticTaskStatus 
 } from '@/types/diagnostic.types';
 import type { StepTestResult } from '@/types/diagnostic.types';
+import { formatPrefDateString } from '@/lib/displayPreferences';
 
 type TestModeState = 'IDLE' | 'LISTENING' | 'RESULT';
 
@@ -174,7 +175,8 @@ export function StepDiagnosticTestCard() {
   const isCompleted = todayTask?.status === DailyDiagnosticTaskStatus.COMPLETED;
   const isNeedsAttention = todayTask?.status === DailyDiagnosticTaskStatus.NEEDS_ATTENTION || todayTask?.status === DailyDiagnosticTaskStatus.FAILED;
   const isOverdue = todayTask?.status === DailyDiagnosticTaskStatus.OVERDUE;
-  const taskDate = todayTask?.taskDate || new Date().toISOString().split('T')[0];
+  const rawTaskDate = todayTask?.taskDate || new Date().toISOString().split('T')[0];
+  const taskDate = formatPrefDateString(rawTaskDate, true);
 
   return (
     <section 

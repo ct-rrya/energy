@@ -155,9 +155,13 @@ export default function AdminAccessCodePage() {
         err.response?.data?.message ||
           'Invalid access code. Please try again.',
       );
-      // Clear code on error
+      // Clear code on error and re-focus Box 1 after inputs are re-enabled
       setCodeParts(['', '', '', '']);
-      inputRefs[0].current?.focus();
+      setIsLoading(false);
+      requestAnimationFrame(() => {
+        inputRefs[0].current?.focus();
+      });
+      return;
     } finally {
       setIsLoading(false);
     }
@@ -249,6 +253,12 @@ export default function AdminAccessCodePage() {
                   />
                 ))}
               </div>
+              <p
+                className="text-xs text-center mt-2.5"
+                style={{ color: theme === 'light' ? '#6B7280' : '#9CA3AF' }}
+              >
+                Case-sensitive · Type or paste all 12 characters (dashes optional)
+              </p>
             </div>
 
             {/* Error Message */}

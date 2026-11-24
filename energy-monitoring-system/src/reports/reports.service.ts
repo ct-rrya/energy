@@ -579,8 +579,11 @@ export class ReportsService {
       aggregation: aggregation || 'daily',
       summary: {
         totalEnergyKWh: energySummary.totalEnergyKWh,
+        totalEnergyMWh: Math.round(energySummary.totalEnergyKWh * 1_000_000 * 1000) / 1000,
         avgPowerW: energySummary.avgPowerW,
+        avgPowerMW: Math.round(energySummary.avgPowerW * 1000 * 100) / 100,
         peakPowerW: energySummary.peakPowerW,
+        peakPowerMW: Math.round(energySummary.peakPowerW * 1000 * 100) / 100,
         co2AvoidedKg: environmentalImpact.co2AvoidedKg,
         costSavingsUSD: costSavings.totalSavings,
         readingCount: energySummary.readingCount,

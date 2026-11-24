@@ -582,15 +582,15 @@ export function MilestonesRoadmap({
               )}
             </div>
 
-            {/* Preview Celebration Action Button - ONLY rendered for Admin users, hidden on Public UI */}
-            {isAdmin && (
+            {/* Replay Celebration Button - only shown to Admins when the week has actually reached its goal */}
+            {isAdmin && activeMilestone.isAchieved && (
               <button
                 type="button"
                 onClick={() => setCelebratingMilestone(activeMilestone)}
-                className="min-h-[30px] px-3 rounded-full border border-[var(--acc)] text-xs font-semibold text-[var(--acc)] hover:bg-[var(--mint)] transition-colors flex items-center gap-1.5 shadow-sm"
+                className="min-h-[30px] px-3 rounded-full border border-[var(--acc)] text-xs font-semibold text-[var(--acc)] hover:bg-[var(--mint)] transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{activeMilestone.isAchieved ? 'Replay celebration' : 'Preview celebration'}</span>
+                <span>Replay celebration</span>
               </button>
             )}
           </div>

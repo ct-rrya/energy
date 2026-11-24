@@ -5,21 +5,18 @@ import { Input } from '@/components/ui/Input';
 import { CustomDropdown } from '@/components/common';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/lib/theme';
-import { 
-  ReportType, 
-  ReportFormat, 
-  type GenerateReportDto 
+import {
+  ReportType,
+  ReportFormat,
+  type GenerateReportDto,
 } from '@/types/report.types';
-import { 
-  FileText, 
-  TrendingUp, 
-  Activity, 
-  FileBarChart 
+import {
+  FileText,
+  TrendingUp,
+  Activity,
+  FileBarChart,
 } from 'lucide-react';
 
-/**
- * Generate Report Dialog Props
- */
 interface GenerateReportDialogProps {
   open: boolean;
   onClose: () => void;
@@ -27,9 +24,6 @@ interface GenerateReportDialogProps {
   isGenerating?: boolean;
 }
 
-/**
- * Report Type Option with Icon and Description
- */
 interface ReportTypeOption {
   value: ReportType;
   label: string;
@@ -64,23 +58,13 @@ const REPORT_TYPE_OPTIONS: ReportTypeOption[] = [
   },
 ];
 
-/**
- * Generate Report Dialog Component
- * 
- * Multi-step workflow for generating EcoStep reports:
- * 
- * Step 1: Select Report Type
- * - Energy Monitoring
- * - Historical Analytics
- * - System Diagnostics
- * - System Summary
- * 
- * Step 2: Configure Report
- * - Date range
- * - Sections to include
- * - Aggregation (for analytics)
- * - Format (PDF/CSV)
- */
+function toYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function GenerateReportDialog({
   open,
   onClose,
@@ -90,20 +74,15 @@ export function GenerateReportDialog({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
-  // Step management
   const [step, setStep] = useState<1 | 2>(1);
-
-  // Step 1: Report Type Selection
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
 
-  // Step 2: Configuration
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [format, setFormat] = useState<ReportFormat>(ReportFormat.PDF);
   const [aggregation, setAggregation] = useState<'hourly' | 'daily' | 'weekly'>('daily');
   const [includeAI, setIncludeAI] = useState(false);
-  
-  // Sections for different report types
+
   const [energySections, setEnergySections] = useState({
     energySummary: true,
     voltage: true,
@@ -132,7 +111,6 @@ export function GenerateReportDialog({
     stepActivity: true,
   });
 
-  // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setTimeout(() => {
@@ -143,9 +121,29 @@ export function GenerateReportDialog({
         setFormat(ReportFormat.PDF);
         setAggregation('daily');
         setIncludeAI(false);
-      }, 300); // Wait for dialog close animation
+      }, 300);
     }
   }, [open]);
+
+  const applyDatePreset = (preset: 'last7' | 'last30' | 'thisMonth') => {
+    const today = new Date();
+    const end = toYmd(today);
+    if (preset === 'last7') {
+      const start = new Date(today);
+      start.setDate(today.getDate() - 6);
+      setStartDate(toYmd(start));
+      setEndDate(end);
+    } else if (preset === 'last30') {
+      const start = new Date(today);
+      start.setDate(today.getDate() - 29);
+      setStartDate(toYmd(start));
+      setEndDate(end);
+    } else {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      setStartDate(toYmd(start));
+      setEndDate(end);
+    }
+  };
 
   const handleContinue = () => {
     if (step === 1 && selectedType) {
@@ -166,9 +164,8 @@ export function GenerateReportDialog({
       return;
     }
 
-    // Build included sections array based on report type
     let includeSections: string[] = [];
-    
+
     if (selectedType === ReportType.ENERGY_MONITORING) {
       includeSections = Object.entries(energySections)
         .filter(([_, enabled]) => enabled)
@@ -195,12 +192,10 @@ export function GenerateReportDialog({
       includeAIAnalysis: includeAI,
     };
 
-    // Only include sections if there are any selected
     if (includeSections.length > 0) {
       dto.includeSections = includeSections;
     }
 
-    // Add aggregation for historical analytics
     if (selectedType === ReportType.HISTORICAL_ANALYTICS) {
       dto.aggregation = aggregation;
     }
@@ -215,28 +210,30 @@ export function GenerateReportDialog({
   };
 
   const canContinue = selectedType !== null;
+  const dateInputColorScheme: React.CSSProperties = {
+    colorScheme: theme === 'dark' ? 'dark' : 'light',
+  };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      title="Generate Report" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title="Generate Report"
       size="lg"
     >
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          
+      <form onSubmit={handleSubmit} className="flex flex-col">
+        <div className="space-y-5 pb-4">
           {/* STEP 1: SELECT REPORT TYPE */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <h3 
+                <h3
                   className="text-base font-semibold mb-1"
                   style={{ color: colors.textPrimary }}
                 >
                   Choose a report type
                 </h3>
-                <p 
+                <p
                   className="text-sm"
                   style={{ color: colors.textSecondary }}
                 >
@@ -248,17 +245,19 @@ export function GenerateReportDialog({
                 {REPORT_TYPE_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const isSelected = selectedType === option.value;
-                  
+
                   return (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => setSelectedType(option.value)}
-                      className="w-full p-4 rounded-lg border-2 transition-all duration-200 text-left"
+                      className="w-full p-4 rounded-lg border-2 transition-all duration-200 text-left cursor-pointer"
                       style={{
                         borderColor: isSelected ? colors.accent : colors.border,
-                        backgroundColor: isSelected 
-                          ? (theme === 'light' ? 'rgba(66, 132, 117, 0.05)' : 'rgba(137, 215, 183, 0.05)')
+                        backgroundColor: isSelected
+                          ? theme === 'light'
+                            ? 'rgba(66, 132, 117, 0.05)'
+                            : 'rgba(137, 215, 183, 0.05)'
                           : colors.cardBackground,
                       }}
                     >
@@ -267,30 +266,34 @@ export function GenerateReportDialog({
                           className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{
                             backgroundColor: isSelected
-                              ? (theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)')
-                              : (theme === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)'),
+                              ? theme === 'light'
+                                ? 'rgba(66, 132, 117, 0.1)'
+                                : 'rgba(137, 215, 183, 0.1)'
+                              : theme === 'light'
+                              ? 'rgba(0, 0, 0, 0.03)'
+                              : 'rgba(255, 255, 255, 0.03)',
                           }}
                         >
-                          <Icon 
-                            className="w-5 h-5" 
+                          <Icon
+                            className="w-5 h-5"
                             style={{ color: isSelected ? colors.accent : colors.textSecondary }}
                           />
                         </div>
                         <div className="flex-1">
-                          <div 
+                          <div
                             className="font-semibold text-sm mb-1"
                             style={{ color: colors.textPrimary }}
                           >
                             {option.label}
                           </div>
-                          <div 
+                          <div
                             className="text-xs leading-relaxed"
                             style={{ color: colors.textSecondary }}
                           >
                             {option.description}
                           </div>
                         </div>
-                        <div 
+                        <div
                           className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1"
                           style={{
                             borderColor: isSelected ? colors.accent : colors.border,
@@ -311,75 +314,125 @@ export function GenerateReportDialog({
 
           {/* STEP 2: CONFIGURE REPORT */}
           {step === 2 && selectedType && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div>
-                <h3 
-                  className="text-base font-semibold mb-1"
+                <h3
+                  className="text-base font-semibold mb-0.5"
                   style={{ color: colors.textPrimary }}
                 >
                   Configure Report
                 </h3>
-                <p 
+                <p
                   className="text-sm"
                   style={{ color: colors.textSecondary }}
                 >
-                  {REPORT_TYPE_OPTIONS.find(opt => opt.value === selectedType)?.label}
+                  {REPORT_TYPE_OPTIONS.find((opt) => opt.value === selectedType)?.label}
                 </p>
               </div>
 
-              {/* Date Range */}
+              {/* Date Range with Quick Presets & Explicit Labels */}
               <div>
-                <label 
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  Date Range
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    placeholder="Start Date"
-                    required
-                    disabled={isGenerating}
-                  />
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    placeholder="End Date"
-                    required
-                    disabled={isGenerating}
-                  />
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Date Range
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'last7' as const, label: 'Last 7 Days' },
+                      { id: 'last30' as const, label: 'Last 30 Days' },
+                      { id: 'thisMonth' as const, label: 'This Month' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => applyDatePreset(preset.id)}
+                        disabled={isGenerating}
+                        className="text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer hover:opacity-85"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)',
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label
+                      htmlFor="report-start-date"
+                      className="block text-xs font-medium mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Start Date
+                    </label>
+                    <Input
+                      id="report-start-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      required
+                      disabled={isGenerating}
+                      style={dateInputColorScheme}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="report-end-date"
+                      className="block text-xs font-medium mb-1"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      End Date
+                    </label>
+                    <Input
+                      id="report-end-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      required
+                      disabled={isGenerating}
+                      style={dateInputColorScheme}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Energy Monitoring Sections */}
               {selectedType === ReportType.ENERGY_MONITORING && (
                 <div>
-                  <label 
-                    className="block text-sm font-medium mb-3"
+                  <label
+                    className="block text-sm font-medium mb-2"
                     style={{ color: colors.textSecondary }}
                   >
                     Include
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(energySections).map(([key, checked]) => (
                       <label key={key} className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={(e) => setEnergySections(prev => ({ ...prev, [key]: e.target.checked }))}
+                          onChange={(e) =>
+                            setEnergySections((prev) => ({ ...prev, [key]: e.target.checked }))
+                          }
                           className="w-4 h-4 rounded accent-[#428475]"
                           disabled={isGenerating}
                         />
                         <span className="text-sm" style={{ color: colors.textPrimary }}>
-                          {key === 'energySummary' ? 'Energy Summary' :
-                           key === 'voltage' ? 'Voltage' :
-                           key === 'current' ? 'Current' :
-                           key === 'stepActivity' ? 'Step Activity' :
-                           'Energy Chart'}
+                          {key === 'energySummary'
+                            ? 'Energy Summary'
+                            : key === 'voltage'
+                            ? 'Voltage'
+                            : key === 'current'
+                            ? 'Current'
+                            : key === 'stepActivity'
+                            ? 'Step Activity'
+                            : 'Energy Chart'}
                         </span>
                       </label>
                     ))}
@@ -391,19 +444,21 @@ export function GenerateReportDialog({
               {selectedType === ReportType.HISTORICAL_ANALYTICS && (
                 <>
                   <div>
-                    <label 
-                      className="block text-sm font-medium mb-3"
+                    <label
+                      className="block text-sm font-medium mb-2"
                       style={{ color: colors.textSecondary }}
                     >
                       Metrics
                     </label>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {Object.entries(analyticsSections).map(([key, checked]) => (
                         <label key={key} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={checked}
-                            onChange={(e) => setAnalyticsSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                            onChange={(e) =>
+                              setAnalyticsSections((prev) => ({ ...prev, [key]: e.target.checked }))
+                            }
                             className="w-4 h-4 rounded accent-[#428475]"
                             disabled={isGenerating}
                           />
@@ -416,11 +471,11 @@ export function GenerateReportDialog({
                   </div>
 
                   <div>
-                    <label 
+                    <label
                       className="block text-sm font-medium mb-2"
                       style={{ color: colors.textSecondary }}
                     >
-                      Aggregation
+                      Summary Grouping
                     </label>
                     <CustomDropdown
                       value={aggregation}
@@ -438,8 +493,8 @@ export function GenerateReportDialog({
               {/* System Diagnostics Sections */}
               {selectedType === ReportType.SYSTEM_DIAGNOSTICS && (
                 <div>
-                  <label 
-                    className="block text-sm font-medium mb-3"
+                  <label
+                    className="block text-sm font-medium mb-2"
                     style={{ color: colors.textSecondary }}
                   >
                     Include
@@ -450,14 +505,18 @@ export function GenerateReportDialog({
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={(e) => setDiagnosticSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                          onChange={(e) =>
+                            setDiagnosticSections((prev) => ({ ...prev, [key]: e.target.checked }))
+                          }
                           className="w-4 h-4 rounded accent-[#428475]"
                           disabled={isGenerating}
                         />
                         <span className="text-sm" style={{ color: colors.textPrimary }}>
-                          {key === 'diagnosticHistory' ? 'Diagnostic History' :
-                           key === 'expectedVsActual' ? 'Expected vs Actual Energy' :
-                           'Performance Results'}
+                          {key === 'diagnosticHistory'
+                            ? 'Diagnostic History'
+                            : key === 'expectedVsActual'
+                            ? 'Expected vs Actual Energy'
+                            : 'Performance Results'}
                         </span>
                       </label>
                     ))}
@@ -468,28 +527,34 @@ export function GenerateReportDialog({
               {/* System Summary Sections */}
               {selectedType === ReportType.SYSTEM_SUMMARY && (
                 <div>
-                  <label 
-                    className="block text-sm font-medium mb-3"
+                  <label
+                    className="block text-sm font-medium mb-2"
                     style={{ color: colors.textSecondary }}
                   >
                     Sections
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(summarySections).map(([key, checked]) => (
                       <label key={key} className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={(e) => setSummarySections(prev => ({ ...prev, [key]: e.target.checked }))}
+                          onChange={(e) =>
+                            setSummarySections((prev) => ({ ...prev, [key]: e.target.checked }))
+                          }
                           className="w-4 h-4 rounded accent-[#428475]"
                           disabled={isGenerating}
                         />
                         <span className="text-sm" style={{ color: colors.textPrimary }}>
-                          {key === 'energySummary' ? 'Energy Summary' :
-                           key === 'electricalMeasurements' ? 'Electrical Measurements' :
-                           key === 'historicalAnalytics' ? 'Historical Analytics' :
-                           key === 'diagnosticSummary' ? 'Diagnostic Summary' :
-                           'Step Activity'}
+                          {key === 'energySummary'
+                            ? 'Energy Summary'
+                            : key === 'electricalMeasurements'
+                            ? 'Electrical Measurements'
+                            : key === 'historicalAnalytics'
+                            ? 'Historical Analytics'
+                            : key === 'diagnosticSummary'
+                            ? 'Diagnostic Summary'
+                            : 'Step Activity'}
                         </span>
                       </label>
                     ))}
@@ -499,7 +564,7 @@ export function GenerateReportDialog({
 
               {/* Format */}
               <div>
-                <label 
+                <label
                   className="block text-sm font-medium mb-2"
                   style={{ color: colors.textSecondary }}
                 >
@@ -516,11 +581,14 @@ export function GenerateReportDialog({
               </div>
 
               {/* AI Analysis Option */}
-              <div 
-                className="p-4 rounded-lg"
+              <div
+                className="p-3.5 rounded-lg"
                 style={{
-                  backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.05)' : 'rgba(137, 215, 183, 0.05)',
-                  border: `1px solid ${theme === 'light' ? 'rgba(66, 132, 117, 0.2)' : 'rgba(137, 215, 183, 0.2)'}`,
+                  backgroundColor:
+                    theme === 'light' ? 'rgba(66, 132, 117, 0.05)' : 'rgba(137, 215, 183, 0.05)',
+                  border: `1px solid ${
+                    theme === 'light' ? 'rgba(66, 132, 117, 0.2)' : 'rgba(137, 215, 183, 0.2)'
+                  }`,
                 }}
               >
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -532,13 +600,13 @@ export function GenerateReportDialog({
                     disabled={isGenerating}
                   />
                   <div className="flex-1">
-                    <div 
-                      className="font-medium text-sm mb-1"
+                    <div
+                      className="font-medium text-sm mb-0.5"
                       style={{ color: colors.textPrimary }}
                     >
                       Include AI-generated analysis
                     </div>
-                    <div 
+                    <div
                       className="text-xs leading-relaxed"
                       style={{ color: colors.textSecondary }}
                     >
@@ -551,7 +619,11 @@ export function GenerateReportDialog({
           )}
         </div>
 
-        <DialogFooter>
+        {/* Sticky Footer so Back & Generate Report are always visible and never clipped */}
+        <DialogFooter
+          className="sticky bottom-0 -mx-5 sm:-mx-6 -mb-4 px-5 sm:px-6"
+          style={{ backgroundColor: colors.cardBackground }}
+        >
           {step === 1 ? (
             <>
               <Button
@@ -562,10 +634,10 @@ export function GenerateReportDialog({
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="button"
                 onClick={handleContinue}
-                variant="primary" 
+                variant="primary"
                 disabled={!canContinue || isGenerating}
               >
                 Continue
@@ -581,9 +653,9 @@ export function GenerateReportDialog({
               >
                 Back
               </Button>
-              <Button 
-                type="submit" 
-                variant="primary" 
+              <Button
+                type="submit"
+                variant="primary"
                 disabled={isGenerating || !startDate || !endDate}
               >
                 {isGenerating ? 'Generating...' : 'Generate Report'}

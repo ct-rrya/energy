@@ -324,7 +324,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     >
       <div 
         ref={modalRef}
-        className="relative z-10 w-full max-w-lg rounded-2xl border p-5 sm:p-6 shadow-2xl my-auto max-h-[calc(100dvh-32px)] overflow-y-auto transition-all duration-300"
+        className="relative z-10 w-full max-w-lg rounded-2xl border p-5 sm:p-6 shadow-2xl my-auto max-h-[min(88vh,calc(100dvh-32px))] flex flex-col overflow-hidden transition-all duration-300"
         style={{
           fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
           backgroundColor: isDark ? '#0D1B14' : '#FFFFFF',
@@ -337,20 +337,20 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-[var(--line)]">
+        <div className="flex items-start justify-between pb-4 border-b border-[var(--line)] shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[#19D46A]">
               <Bluetooth className="h-5 w-5 animate-pulse" />
             </div>
             <div>
               <h2 id="ble-modal-title" className="text-base sm:text-lg font-bold tracking-tight text-[var(--t)] flex items-center gap-2">
-                EcoStep Wi-Fi Provisioning
+                Connect Tile to Wi-Fi
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#19D46A] border border-emerald-500/30">
-                  Web BLE
+                  Bluetooth
                 </span>
               </h2>
               <p className="text-xs text-[var(--mu)] mt-0.5">
-                Direct browser pairing with the EcoStep Harvester device
+                Pair your EcoStep floor tile over Bluetooth to connect it to Wi-Fi
               </p>
             </div>
           </div>
@@ -419,7 +419,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
         )}
 
         {/* Modal Body */}
-        <div className="mt-5 space-y-5">
+        <div className="mt-4 space-y-4 overflow-y-auto flex-1 min-h-0 pr-1">
           {/* Progress Indicator */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
@@ -429,7 +429,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 1
               </span>
               <span className={`text-xs font-semibold ${step === 1 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}>
-                Pair BLE Device
+                Pair Tile
               </span>
             </div>
             <div className="h-[1px] flex-1 mx-3 bg-[var(--line)]" />
@@ -440,7 +440,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 2
               </span>
               <span className={`text-xs font-semibold ${step === 2 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}>
-                Configure Wi-Fi
+                Connect Wi-Fi
               </span>
             </div>
           </div>
@@ -461,7 +461,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 Pair with {BLE_CONFIG.deviceName}
               </h3>
               <p className="text-xs text-[var(--mu)] mt-1.5 max-w-sm mx-auto leading-relaxed">
-                Make sure your EcoStep Harvester ESP32 is powered on and within Bluetooth range of this computer or mobile device.
+                Make sure your EcoStep floor tile is powered on and nearby so this browser can connect over Bluetooth.
               </p>
 
               <div className="mt-5 space-y-2.5">
@@ -802,10 +802,10 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-[var(--line)] flex items-center justify-between">
+        <div className="mt-4 pt-3.5 border-t border-[var(--line)] flex items-center justify-between shrink-0">
           <div className="text-[11px] text-[var(--mu)] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            ESP32 GATT Client v1.0
+            EcoStep Bluetooth Setup
           </div>
           <button
             type="button"

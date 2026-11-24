@@ -1,6 +1,6 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   startOfMonth,
   endOfMonth,
@@ -21,6 +21,7 @@ import {
   EnergyReading,
   EnergyReadingDocument,
 } from '../iot/schemas/energy-reading.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { UpdateMilestoneTargetsDto } from './dto/update-milestone-targets.dto';
 
 const TIMEZONE_MANILA = 'Asia/Manila';
@@ -139,7 +140,39 @@ export class MilestonesService {
     private readonly milestoneTargetModel: Model<MilestoneTargetDocument>,
     @InjectModel(EnergyReading.name)
     private readonly energyReadingModel: Model<EnergyReadingDocument>,
+    @Optional()
+    @InjectModel(User.name)
+    private readonly userModel?: Model<UserDocument>,
   ) {}
+
+  /**
+   * Resolves a stored admin identifier (MongoDB ObjectId or display name) to a friendly human name.
+   * Never leaks a raw 24-hex database ID to the UI.
+   */
+  private async resolveAdminDisplayName(rawValue?: string): Promise<string | undefined> {
+    if (!rawValue) return undefined;
+    const trimmed = rawValue.trim();
+    if (!trimmed) return undefined;
+
+    if (/^[a-f\d]{24}$/i.test(trimmed) && Types.ObjectId.isValid(trimmed)) {
+      if (this.userModel) {
+        try {
+          const found = await this.userModel
+            .findById(trimmed)
+            .select('name email')
+            .lean()
+            .exec();
+          if (found?.name) return found.name;
+          if (found?.email) return found.email;
+        } catch (err) {
+          this.logger.warn(`Failed to resolve admin name for ${trimmed}: ${err}`);
+        }
+      }
+      return 'an administrator';
+    }
+
+    return trimmed;
+  }
 
   /**
    * Helper to get current date/time in Asia/Manila (UTC+8)
@@ -343,6 +376,10 @@ export class MilestonesService {
     const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'super_admin';
     const canEdit = !isLocked || isSuperAdmin;
 
+    const resolvedConfiguredBy = await this.resolveAdminDisplayName(
+      existingConfig?.configuredBy || existingConfig?.updatedBy,
+    );
+
     return {
       yearMonth: targetMonth,
       status,
@@ -350,7 +387,7 @@ export class MilestonesService {
       isLocked,
       deadlineDate: deadlineUtc.toISOString(),
       deadlineLabel,
-      configuredBy: existingConfig?.configuredBy || existingConfig?.updatedBy,
+      configuredBy: resolvedConfiguredBy,
       configuredAt: existingConfig?.configuredAt || existingConfig?.updatedAt,
       canEdit,
       requiresSuperAdmin: isLocked,
@@ -416,6 +453,9 @@ export class MilestonesService {
 
     if (stored) {
       const monthlyMWh = round6(stored.monthlyTargetMWh);
+      const resolvedConfiguredBy = await this.resolveAdminDisplayName(
+        stored.configuredBy || stored.updatedBy,
+      );
       return {
         yearMonth: effectiveMonth,
         monthlyTargetMWh: monthlyMWh,
@@ -425,7 +465,7 @@ export class MilestonesService {
         isLocked: stored.isLocked ?? true,
         deadlineDate: stored.deadlineDate || deadlineUtc.toISOString(),
         deadlineLabel,
-        configuredBy: stored.configuredBy || stored.updatedBy,
+        configuredBy: resolvedConfiguredBy,
         configuredAt: stored.configuredAt || stored.updatedAt,
         correctionLogs: stored.correctionLogs || [],
       };
@@ -502,11 +542,12 @@ export class MilestonesService {
     }
 
     const nowIso = new Date().toISOString();
+    const actorDisplayName = (await this.resolveAdminDisplayName(userId)) || 'an administrator';
 
     if (isAlreadyLocked && isSuperAdmin) {
       // Exceptional Super Administrator correction: audit logging
       const correctionLogEntry: MilestoneCorrectionLog = {
-        correctedBy: userId || 'super_admin',
+        correctedBy: actorDisplayName,
         correctedAt: nowIso,
         previousTargets: {
           monthlyTargetMWh: existingConfig.monthlyTargetMWh,
@@ -521,14 +562,14 @@ export class MilestonesService {
 
       existingConfig.monthlyTargetMWh = updatedMonthMWh;
       existingConfig.weeklyTargetsMWh = weeklyConfig;
-      existingConfig.updatedBy = userId || 'super_admin';
+      existingConfig.updatedBy = actorDisplayName;
       existingConfig.updatedAt = nowIso;
       existingConfig.isLocked = true;
       existingConfig.status = 'CONFIGURED';
       existingConfig.correctionLogs = [...(existingConfig.correctionLogs || []), correctionLogEntry];
 
       this.logger.warn(
-        `[AUDIT] Milestone targets exceptionally corrected for ${targetMonth} by Super Admin ${userId}. Reason: ${correctionLogEntry.reason}`
+        `[AUDIT] Milestone targets exceptionally corrected for ${targetMonth} by Super Admin ${actorDisplayName}. Reason: ${correctionLogEntry.reason}`
       );
     } else {
       // First normal configuration submission for this month (locks targets)
@@ -537,14 +578,14 @@ export class MilestonesService {
         weeklyTargetsMWh: weeklyConfig,
         status: 'CONFIGURED',
         isLocked: true,
-        configuredBy: userId || 'admin',
+        configuredBy: actorDisplayName,
         configuredAt: nowIso,
         deadlineDate: deadlineUtc.toISOString(),
-        updatedBy: userId || 'admin',
+        updatedBy: actorDisplayName,
         updatedAt: nowIso,
         correctionLogs: [],
       };
-      this.logger.log(`Milestone targets configured and locked for ${targetMonth} by ${userId || 'admin'}`);
+      this.logger.log(`Milestone targets configured and locked for ${targetMonth} by ${actorDisplayName}`);
     }
 
     if (typeof existing.markModified === 'function') {

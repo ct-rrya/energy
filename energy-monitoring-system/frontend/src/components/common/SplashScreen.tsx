@@ -167,18 +167,23 @@ export function SplashScreen({
     if (standalone || !shouldShow) return;
     if (minTimeElapsed && effectiveIsReady && !isExiting && !isDismissed) {
       setIsExiting(true);
-      const exitTimer = setTimeout(() => {
-        setIsDismissed(true);
-        try {
-          sessionStorage.setItem(sessionKey, 'true');
-        } catch {
-          // ignore storage error
-        }
-        if (onComplete) onComplete();
-      }, 500); // 500ms smooth fade-out
-      return () => clearTimeout(exitTimer);
     }
-  }, [minTimeElapsed, effectiveIsReady, isExiting, isDismissed, standalone, shouldShow, sessionKey, onComplete]);
+  }, [minTimeElapsed, effectiveIsReady, isExiting, isDismissed, standalone, shouldShow]);
+
+  // Unmount completely after 500ms fade-out so the splash dialog never lingers for screen readers
+  useEffect(() => {
+    if (!isExiting || isDismissed || standalone) return;
+    const exitTimer = setTimeout(() => {
+      setIsDismissed(true);
+      try {
+        sessionStorage.setItem(sessionKey, 'true');
+      } catch {
+        // ignore storage error
+      }
+      if (onComplete) onComplete();
+    }, 500);
+    return () => clearTimeout(exitTimer);
+  }, [isExiting, isDismissed, standalone, sessionKey, onComplete]);
 
   // Replay handler
   const handleReplay = useCallback((e?: React.MouseEvent) => {
