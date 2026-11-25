@@ -33,6 +33,7 @@ import {
   DiagnosticHistoryQueryDto,
   DiagnosticHistoryResponseDto,
   DiagnosticBaselineResponseDto,
+  DiagnosticInsightsResponseDto,
   RecordStepTestDto,
   StepTestResponseDto,
   CompleteDailyDiagnosticDto,
@@ -481,6 +482,27 @@ export class DiagnosticsController {
   })
   async getBaseline(): Promise<DiagnosticBaselineResponseDto> {
     return this.diagnosticsService.getAutomaticBaseline(30);
+  }
+
+  /**
+   * Get Comprehensive Diagnostic Insights
+   *
+   * Returns 5-stage hardware pipeline health, electrical fault-signature diagnosis,
+   * passive 7-day vs 30-day fatigue & drift radar, and composite 0-100 health score.
+   */
+  @Get('insights')
+  @ApiOperation({
+    summary: 'Get hardware pipeline health, fault-signature diagnosis, and fatigue radar (admin only)',
+    description:
+      'Analyzes live and historical telemetry to produce stage-by-stage pipeline health, probable fault signatures, and 7d vs 30d efficiency drift.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Diagnostic insights retrieved successfully',
+    type: DiagnosticInsightsResponseDto,
+  })
+  async getInsights(): Promise<DiagnosticInsightsResponseDto> {
+    return this.diagnosticsService.getDiagnosticInsights();
   }
 
   /**

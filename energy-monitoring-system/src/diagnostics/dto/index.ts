@@ -11,5 +11,6 @@ export * from './diagnostic-test-response.dto';
 export * from './diagnostic-history-query.dto';
 export * from './diagnostic-history-response.dto';
 export * from './diagnostic-baseline-response.dto';
+export * from './diagnostic-insights-response.dto';
 export * from './record-step-test.dto';
 export * from './daily-diagnostic-task.dto';

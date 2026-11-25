@@ -26,8 +26,16 @@ import {
 import {
   EnergyReading,
   EnergyReadingDocument,
+  ReadingSource,
 } from '../iot/schemas/energy-reading.schema';
-import { StepTestResponseDto, CompleteDailyDiagnosticDto } from './dto';
+import {
+  StepTestResponseDto,
+  CompleteDailyDiagnosticDto,
+  DiagnosticInsightsResponseDto,
+  PipelineStageDto,
+  FaultDiagnosisDto,
+  DailyFatiguePointDto,
+} from './dto';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertSeverity, AlertType } from '../alerts/schemas/alert.schema';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -451,6 +459,496 @@ export class DiagnosticsService {
       minAcceptableMWh: minAcceptable,
       maxAcceptableMWh: maxAcceptable,
       readingCount: readings.length > 0 ? readings.length : 120,
+    };
+  }
+
+  /**
+   * Get Comprehensive Diagnostic Insights
+   *
+   * Pure-software hardware health engine using existing ESP32 telemetry:
+   * - 5-Stage Hardware Pipeline Status (Piezo -> Electrical -> Energy -> ESP32 -> Cloud)
+   * - Electrical Fault-Signature Fingerprinting (identifies probable hardware/wiring/Wi-Fi root cause)
+   * - Passive 7-Day vs 30-Day Fatigue & Drift Radar
+   * - Composite 0-100 Tile Health Score
+   */
+  async getDiagnosticInsights(): Promise<DiagnosticInsightsResponseDto> {
+    const baseline = await this.getAutomaticBaseline(30);
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [recentReadings, latestReading, lifetimeStepsAgg] = await Promise.all([
+      this.readingModel
+        .find({
+          source: ReadingSource.HARDWARE,
+          timestamp: { $gte: thirtyDaysAgo },
+        })
+        .sort({ timestamp: -1 })
+        .limit(3000)
+        .select('voltage current power energy stepCount timestamp receivedAt')
+        .lean()
+        .exec(),
+      this.readingModel
+        .findOne({ source: ReadingSource.HARDWARE })
+        .sort({ timestamp: -1 })
+        .select('voltage current power energy stepCount timestamp receivedAt')
+        .lean()
+        .exec(),
+      this.readingModel
+        .aggregate([
+          { $match: { source: ReadingSource.HARDWARE } },
+          { $group: { _id: null, totalSteps: { $sum: { $ifNull: ['$stepCount', 0] } } } },
+        ])
+        .exec(),
+    ]);
+
+    const totalLifetimeSteps = lifetimeStepsAgg?.[0]?.totalSteps ?? baseline.totalSteps;
+    const activeReadings = recentReadings.filter(
+      (r) =>
+        (r.voltage ?? 0) > 0 ||
+        (r.current ?? 0) > 0 ||
+        (r.power ?? 0) > 0 ||
+        (r.energy ?? 0) > 0 ||
+        (r.stepCount ?? 0) > 0,
+    );
+
+    const last7dActive = activeReadings.filter(
+      (r) => new Date(r.timestamp).getTime() >= sevenDaysAgo.getTime(),
+    );
+    const last24hReadings = recentReadings.filter(
+      (r) => new Date(r.timestamp).getTime() >= oneDayAgo.getTime(),
+    );
+
+    // 7-day electrical & yield averages
+    let stepsLast7d = 0;
+    let energyLast7d = 0;
+    let voltageSum7d = 0;
+    let voltageCount7d = 0;
+    let currentSum7d = 0;
+    let currentCount7d = 0;
+    const perStepSamples7d: number[] = [];
+
+    for (const r of last7dActive) {
+      const steps = r.stepCount ?? 0;
+      const energy = r.energy ?? 0;
+      stepsLast7d += steps;
+      energyLast7d += energy;
+      if ((r.voltage ?? 0) > 0) {
+        voltageSum7d += r.voltage;
+        voltageCount7d += 1;
+      }
+      if ((r.current ?? 0) > 0) {
+        currentSum7d += r.current;
+        currentCount7d += 1;
+      }
+      if (steps > 0 && energy > 0) {
+        perStepSamples7d.push(energy / steps);
+      }
+    }
+
+    const avgVoltage7dV = voltageCount7d > 0 ? voltageSum7d / voltageCount7d : 0;
+    const avgCurrent7dMA = currentCount7d > 0 ? (currentSum7d / currentCount7d) * 1000 : 0;
+    const recent7dMWhPerStep =
+      stepsLast7d > 0 ? energyLast7d / stepsLast7d : baseline.normalStepMWh;
+
+    // 30-day vs 7-day drift
+    const baseline30dMWhPerStep = baseline.normalStepMWh;
+    const has7dYield = stepsLast7d > 0 && energyLast7d > 0 && baseline30dMWhPerStep > 0;
+    const driftPercent = has7dYield
+      ? Number((((recent7dMWhPerStep - baseline30dMWhPerStep) / baseline30dMWhPerStep) * 100).toFixed(1))
+      : 0;
+
+    let driftStatus: 'stable' | 'improving' | 'watch' | 'degrading' | 'insufficient_data' =
+      'insufficient_data';
+    if (has7dYield) {
+      if (driftPercent <= -20) driftStatus = 'degrading';
+      else if (driftPercent <= -10) driftStatus = 'watch';
+      else if (driftPercent >= 10) driftStatus = 'improving';
+      else driftStatus = 'stable';
+    }
+
+    // Consistency score from coefficient of variation on recent 7d per-step yields
+    let consistencyScore = 88;
+    if (perStepSamples7d.length >= 3) {
+      const mean =
+        perStepSamples7d.reduce((acc, v) => acc + v, 0) / perStepSamples7d.length;
+      if (mean > 0) {
+        const variance =
+          perStepSamples7d.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) /
+          perStepSamples7d.length;
+        const cv = Math.sqrt(variance) / mean;
+        consistencyScore = Math.max(25, Math.min(100, Math.round(100 - cv * 85)));
+      }
+    } else if (activeReadings.length === 0) {
+      consistencyScore = 0;
+    }
+
+    // Latency & signal quality stats (matching SignalQuality thresholds: >3s fair/poor)
+    const latencySampleSet = recentReadings.slice(0, 60);
+    let latencySumMs = 0;
+    let latencyCount = 0;
+    let poorSignalCount = 0;
+    for (const r of latencySampleSet) {
+      if (r.receivedAt && r.timestamp) {
+        const delta = Math.abs(
+          new Date(r.receivedAt).getTime() - new Date(r.timestamp).getTime(),
+        );
+        // Ignore obviously unsynced epoch clocks (> 10 minutes)
+        if (delta < 10 * 60 * 1000) {
+          latencySumMs += delta;
+          latencyCount += 1;
+          if (delta > 3000) {
+            poorSignalCount += 1;
+          }
+        }
+      }
+    }
+    const avgLatencyMs = latencyCount > 0 ? Math.round(latencySumMs / latencyCount) : 0;
+    const poorSignalRatioPercent =
+      latencyCount > 0
+        ? Math.round((poorSignalCount / latencyCount) * 100)
+        : 0;
+
+    // Last reading age
+    const lastReadingDate = latestReading?.receivedAt || latestReading?.timestamp || null;
+    const lastReadingAt = lastReadingDate ? new Date(lastReadingDate).toISOString() : null;
+    const minutesSinceLast = lastReadingDate
+      ? (now.getTime() - new Date(lastReadingDate).getTime()) / 60000
+      : Number.POSITIVE_INFINITY;
+
+    const latestVoltageV = Number((latestReading?.voltage ?? 0).toFixed(2));
+    const latestCurrentMA = Number(((latestReading?.current ?? 0) * 1000).toFixed(3));
+    const latestPowerMW = Number(((latestReading?.power ?? 0) * 1000).toFixed(2));
+    const latestEnergyMWh = Number((latestReading?.energy ?? 0).toFixed(4));
+    const latestSteps = latestReading?.stepCount ?? 0;
+
+    // Recent window (last 10 active readings) for fault signature detection
+    const recentWindow = activeReadings.slice(0, 10);
+    const recentStepsSum = recentWindow.reduce((s, r) => s + (r.stepCount ?? 0), 0);
+    const recentMaxVoltage = recentWindow.reduce((m, r) => Math.max(m, r.voltage ?? 0), 0);
+    const recentMaxCurrentMA = recentWindow.reduce(
+      (m, r) => Math.max(m, (r.current ?? 0) * 1000),
+      0,
+    );
+    const recentMaxPowerMW = recentWindow.reduce(
+      (m, r) => Math.max(m, (r.power ?? 0) * 1000),
+      0,
+    );
+
+    // Fault-Signature Fingerprinting Engine
+    let faultDiagnosis: FaultDiagnosisDto;
+
+    if (!latestReading || minutesSinceLast > 24 * 60) {
+      faultDiagnosis = {
+        code: 'NO_RECENT_TELEMETRY',
+        severity: 'info',
+        title: 'Tile Standby / No Recent Uploads',
+        summary: lastReadingAt
+          ? `No ESP32 telemetry has arrived in the past ${Math.round(minutesSinceLast / 60)} hours.`
+          : 'No hardware telemetry readings have been recorded yet.',
+        probableCause:
+          'Tile has had no foot traffic, ESP32 is powered down, or Wi-Fi credentials need updating via BLE.',
+        recommendedChecks: [
+          'Step on the tile a few times to trigger a batch upload or run a Bench Test below.',
+          'Check ESP32 power LED and USB/battery supply rail.',
+          'Use the BLE Field Check card to verify local ESP32 reachability and Wi-Fi SSID.',
+        ],
+      };
+    } else if (recentStepsSum > 0 && recentMaxVoltage < 0.05 && recentMaxCurrentMA < 0.01) {
+      faultDiagnosis = {
+        code: 'WEAK_PIEZO_OUTPUT',
+        severity: 'critical',
+        title: 'Steps Detected with Near-Zero Electrical Output',
+        summary:
+          'Footsteps are registering, but measured voltage and current remain near 0 V / 0 mA.',
+        probableCause:
+          'Loose or broken piezo-to-bridge-rectifier wire, detached piezo disc, or blown diode leg.',
+        recommendedChecks: [
+          'Inspect solder joints between the piezoelectric array and full-wave bridge rectifier.',
+          'Check ADC / INA219 input wiring and shared GND reference with the ESP32.',
+          'Run a 3-sample Bench Test while pressing firmly on different tile zones.',
+        ],
+      };
+    } else if (recentMaxVoltage >= 1.5 && recentMaxCurrentMA < 0.05) {
+      faultDiagnosis = {
+        code: 'OPEN_LOAD_LOW_CURRENT',
+        severity: 'warning',
+        title: 'Healthy Voltage Spike, Minimal Current Flow',
+        summary: `Peak voltage reached ${recentMaxVoltage.toFixed(2)} V, but current stayed below 0.05 mA.`,
+        probableCause:
+          'Open load path, loose INA219 shunt terminal, or high series resistance into the storage capacitor.',
+        recommendedChecks: [
+          'Verify INA219 Vin+ / Vin- terminals and I2C SDA/SCL connections.',
+          'Confirm the storage capacitor / load resistor is firmly seated across the output rails.',
+          'Check for cold solder joints on the rectifier output bus.',
+        ],
+      };
+    } else if (
+      recentWindow.length >= 3 &&
+      recentStepsSum === 0 &&
+      (recentMaxVoltage >= 0.5 || recentMaxPowerMW > 0.1)
+    ) {
+      faultDiagnosis = {
+        code: 'STEP_COUNTER_MISMATCH',
+        severity: 'warning',
+        title: 'Electrical Spikes Detected Without Step Counts',
+        summary:
+          'Voltage/power activity is uploading, but stepCount stayed at 0 across recent readings.',
+        probableCause:
+          'ESP32 step-detection voltage threshold is set too high or debounce window is filtering valid steps.',
+        recommendedChecks: [
+          'Verify the step trigger threshold in ESP32 firmware against your measured peak voltage.',
+          'Check that step increments are being included in the JSON upload payload.',
+        ],
+      };
+    } else if (driftStatus === 'degrading') {
+      faultDiagnosis = {
+        code: 'EFFICIENCY_DRIFT',
+        severity: 'warning',
+        title: `Efficiency Drift Detected (${driftPercent}% vs 30-Day Baseline)`,
+        summary: `7-day yield (${recent7dMWhPerStep.toFixed(4)} mWh/step) dropped significantly below the 30-day average (${baseline30dMWhPerStep.toFixed(4)} mWh/step).`,
+        probableCause:
+          'Gradual mechanical fatigue (foam/spring rebound wear), cracked piezo disc, or aging storage capacitor.',
+        recommendedChecks: [
+          'Run a 5-sample Bench Test to verify peak output and step-to-step consistency.',
+          'Inspect tile top-plate rebound pads and mechanical alignment over piezo discs.',
+          'Check storage capacitor for leakage or swelling.',
+        ],
+      };
+    } else if (poorSignalRatioPercent >= 35 || avgLatencyMs > 5000) {
+      faultDiagnosis = {
+        code: 'UNSTABLE_TELEMETRY',
+        severity: 'warning',
+        title: 'Telemetry Latency / Wi-Fi Instability',
+        summary: `${poorSignalRatioPercent}% of recent uploads had degraded signal quality (avg latency ${avgLatencyMs} ms).`,
+        probableCause:
+          'Weak Wi-Fi RSSI at tile location or intermittent ESP32 brownout during Wi-Fi transmit bursts.',
+        recommendedChecks: [
+          'Check Wi-Fi signal strength near the tile or switch to a closer access point via BLE.',
+          'Inspect ESP32 3.3V/5V supply capacitor to prevent brownouts during Wi-Fi uploads.',
+        ],
+      };
+    } else {
+      faultDiagnosis = {
+        code: 'NOMINAL',
+        severity: 'healthy',
+        title: 'All Hardware & Telemetry Signatures Nominal',
+        summary:
+          'Piezo harvesting, electrical output, energy yield, and cloud telemetry all align with your 30-day baseline.',
+        probableCause: 'No hardware, wiring, or telemetry faults detected.',
+        recommendedChecks: [
+          'Run a quick Bench Test whenever you want an official calibration sign-off.',
+          'Monitor the 14-day Fatigue Radar below to catch gradual wear early.',
+        ],
+      };
+    }
+
+    // Sub-scores (0-100)
+    let harvestingScore = 92;
+    if (!has7dYield) {
+      harvestingScore = latestReading ? 80 : 0;
+    } else {
+      const ratio = recent7dMWhPerStep / baseline30dMWhPerStep;
+      if (ratio >= 0.85 && ratio <= 1.35) {
+        harvestingScore = Math.min(100, Math.round(90 + (ratio - 0.85) * 20));
+      } else if (ratio < 0.85) {
+        harvestingScore = Math.max(15, Math.round(ratio * 100));
+      } else {
+        harvestingScore = Math.max(65, Math.round(100 - (ratio - 1.35) * 25));
+      }
+    }
+    if (faultDiagnosis.code === 'WEAK_PIEZO_OUTPUT') harvestingScore = 20;
+    if (faultDiagnosis.code === 'OPEN_LOAD_LOW_CURRENT') harvestingScore = Math.min(harvestingScore, 55);
+
+    let telemetryScore = 95;
+    if (!latestReading || minutesSinceLast > 24 * 60) {
+      telemetryScore = 35;
+    } else {
+      telemetryScore = Math.max(
+        30,
+        Math.min(100, Math.round(100 - poorSignalRatioPercent * 0.6 - Math.min(30, avgLatencyMs / 400))),
+      );
+    }
+
+    const healthScore = latestReading
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(harvestingScore * 0.45 + consistencyScore * 0.25 + telemetryScore * 0.3),
+          ),
+        )
+      : 0;
+
+    let status: 'healthy' | 'degraded' | 'attention' | 'offline' = 'healthy';
+    if (!latestReading || minutesSinceLast > 24 * 60) {
+      status = 'offline';
+    } else if (faultDiagnosis.severity === 'critical' || healthScore < 55) {
+      status = 'attention';
+    } else if (faultDiagnosis.severity === 'warning' || healthScore < 80) {
+      status = 'degraded';
+    }
+
+    // 5-Stage Hardware Pipeline Status
+    const pipelineStages: PipelineStageDto[] = [
+      {
+        id: 'piezo',
+        label: 'Piezo Impact',
+        shortLabel: 'Piezo Tile',
+        status:
+          !latestReading || minutesSinceLast > 24 * 60
+            ? 'idle'
+            : faultDiagnosis.code === 'STEP_COUNTER_MISMATCH'
+              ? 'warn'
+              : faultDiagnosis.code === 'WEAK_PIEZO_OUTPUT'
+                ? 'fail'
+                : 'ok',
+        primaryValue: `${stepsLast7d > 0 ? stepsLast7d : latestSteps} steps`,
+        detail:
+          stepsLast7d > 0
+            ? `${stepsLast7d.toLocaleString()} steps in last 7d (${totalLifetimeSteps.toLocaleString()} total)`
+            : 'Waiting for footsteps on the tile',
+      },
+      {
+        id: 'electrical',
+        label: 'Rectifier & Sensor',
+        shortLabel: 'V / I Sensor',
+        status:
+          !latestReading || minutesSinceLast > 24 * 60
+            ? 'idle'
+            : faultDiagnosis.code === 'WEAK_PIEZO_OUTPUT'
+              ? 'fail'
+              : faultDiagnosis.code === 'OPEN_LOAD_LOW_CURRENT'
+                ? 'warn'
+                : 'ok',
+        primaryValue: `${(avgVoltage7dV || latestVoltageV).toFixed(1)}V • ${(avgCurrent7dMA || latestCurrentMA).toFixed(1)}mA`,
+        detail: `Latest reading: ${latestVoltageV.toFixed(2)} V, ${latestCurrentMA.toFixed(2)} mA, ${latestPowerMW.toFixed(2)} mW`,
+      },
+      {
+        id: 'energy',
+        label: 'Energy Yield',
+        shortLabel: 'Storage / Yield',
+        status:
+          !latestReading || minutesSinceLast > 24 * 60
+            ? 'idle'
+            : driftStatus === 'degrading' || faultDiagnosis.code === 'WEAK_PIEZO_OUTPUT'
+              ? 'warn'
+              : 'ok',
+        primaryValue: `${recent7dMWhPerStep.toFixed(4)} mWh`,
+        detail: `Per-step yield vs ${baseline30dMWhPerStep.toFixed(4)} mWh 30d baseline (${driftPercent >= 0 ? '+' : ''}${driftPercent}%)`,
+      },
+      {
+        id: 'esp32',
+        label: 'ESP32 Controller',
+        shortLabel: 'ESP32 Link',
+        status:
+          !latestReading || minutesSinceLast > 24 * 60
+            ? 'idle'
+            : faultDiagnosis.code === 'UNSTABLE_TELEMETRY'
+              ? 'warn'
+              : 'ok',
+        primaryValue:
+          minutesSinceLast < 2
+            ? 'Live now'
+            : minutesSinceLast < 60
+              ? `${Math.round(minutesSinceLast)}m ago`
+              : minutesSinceLast < 24 * 60
+                ? `${Math.round(minutesSinceLast / 60)}h ago`
+                : 'Standby',
+        detail: `${last24hReadings.length} uploads in last 24h`,
+      },
+      {
+        id: 'cloud',
+        label: 'Cloud & Live Sync',
+        shortLabel: 'Cloud Sync',
+        status:
+          !latestReading || minutesSinceLast > 24 * 60
+            ? 'idle'
+            : avgLatencyMs > 5000 || poorSignalRatioPercent >= 35
+              ? 'warn'
+              : 'ok',
+        primaryValue: avgLatencyMs > 0 ? `${avgLatencyMs} ms` : 'Ready',
+        detail:
+          latencySampleSet.length > 0
+            ? `${100 - poorSignalRatioPercent}% strong signal quality across recent packets`
+            : 'Real-time WebSocket stream listening',
+      },
+    ];
+
+    // 14-day daily fatigue & drift trend (Asia/Manila date keys)
+    const tz = this.configService.get<string>('NOTIFICATION_TIMEZONE') || 'Asia/Manila';
+    const dayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz });
+    const buckets = new Map<
+      string,
+      { energy: number; steps: number; voltageSum: number; currentSum: number; count: number }
+    >();
+
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    for (const r of activeReadings) {
+      const ts = new Date(r.timestamp);
+      if (ts.getTime() < fourteenDaysAgo.getTime()) continue;
+      const dateKey = dayFormatter.format(ts);
+      const curr = buckets.get(dateKey) || {
+        energy: 0,
+        steps: 0,
+        voltageSum: 0,
+        currentSum: 0,
+        count: 0,
+      };
+      curr.energy += r.energy ?? 0;
+      curr.steps += r.stepCount ?? 0;
+      curr.voltageSum += r.voltage ?? 0;
+      curr.currentSum += (r.current ?? 0) * 1000;
+      curr.count += 1;
+      buckets.set(dateKey, curr);
+    }
+
+    const dailyTrend: DailyFatiguePointDto[] = Array.from(buckets.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, agg]) => ({
+        date,
+        mWhPerStep:
+          agg.steps > 0 ? Number((agg.energy / agg.steps).toFixed(5)) : Number(agg.energy.toFixed(5)),
+        steps: agg.steps,
+        avgVoltageV: agg.count > 0 ? Number((agg.voltageSum / agg.count).toFixed(2)) : 0,
+        avgCurrentMA: agg.count > 0 ? Number((agg.currentSum / agg.count).toFixed(2)) : 0,
+        readingCount: agg.count,
+      }));
+
+    return {
+      healthScore,
+      status,
+      scoreBreakdown: {
+        harvesting: harvestingScore,
+        consistency: consistencyScore,
+        telemetry: telemetryScore,
+      },
+      pipelineStages,
+      faultDiagnosis,
+      fatigueRadar: {
+        baseline30dMWhPerStep,
+        recent7dMWhPerStep: Number(recent7dMWhPerStep.toFixed(5)),
+        driftPercent,
+        driftStatus,
+        totalLifetimeSteps,
+        stepsLast7d,
+        readingsLast24h: last24hReadings.length,
+        avgLatencyMs,
+        poorSignalRatioPercent,
+        lastReadingAt,
+        dailyTrend,
+        electricalSnapshot: {
+          latestVoltageV,
+          latestCurrentMA,
+          latestPowerMW,
+          latestEnergyMWh,
+          latestSteps,
+          avgVoltage7dV: Number(avgVoltage7dV.toFixed(2)),
+          avgCurrent7dMA: Number(avgCurrent7dMA.toFixed(2)),
+        },
+      },
+      generatedAt: now.toISOString(),
     };
   }
 

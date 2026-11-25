@@ -10,6 +10,7 @@ import type {
   DailyDiagnosticTask,
   CompleteDailyDiagnosticRequest,
   CompleteDailyDiagnosticResponse,
+  DiagnosticInsights,
 } from '@/types/diagnostic.types';
 
 /**
@@ -26,6 +27,16 @@ import type {
  */
 export const getBaseline = async (): Promise<DiagnosticBaseline> => {
   const response = await apiClient.get<DiagnosticBaseline>('/diagnostics/baseline');
+  return response.data;
+};
+
+/**
+ * Get Comprehensive Diagnostic Insights
+ * 
+ * Fetches 5-stage pipeline health, fault-signature diagnosis, and 7d vs 30d fatigue radar.
+ */
+export const getInsights = async (): Promise<DiagnosticInsights> => {
+  const response = await apiClient.get<DiagnosticInsights>('/diagnostics/insights');
   return response.data;
 };
 
@@ -155,6 +166,7 @@ export const getDailyTaskHistory = async (
  */
 export const diagnosticsService = {
   getBaseline,
+  getInsights,
   recordStepTest,
   createOrUpdateReference,
   getReferenceConfig,

@@ -2,60 +2,65 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/contexts/SocketContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
+import { useDiagnosticInsights } from '../hooks/useDiagnostics';
+import { HardwarePipelineCard } from '../components/HardwarePipelineCard';
+import { DiagnosticWorkbenchCard } from '../components/DiagnosticWorkbenchCard';
+import { FatigueDriftRadarCard } from '../components/FatigueDriftRadarCard';
 import { DiagnosticHistoryTable } from '../components/DiagnosticHistoryTable';
-import { StepDiagnosticTestCard } from '../components/StepDiagnosticTestCard';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 
 /**
- * Diagnostics Page Component
+ * Diagnostics Page Component (EcoStep Tile Health Workbench)
  * 
- * Main page for piezoelectric tile diagnostics and health verification.
- * Clean, modern layout matching the design reference:
- * - Header with Tile health category, real-time date/time, and online status
- * - Today's on-demand physical step verification & baseline distribution scale
- * - Diagnostic verification history with grouped overdue logs and CSV export
- * - Bottom explanation of 30-day statistical baseline protection
+ * Admin-only hardware diagnostics suite powered purely by existing ESP32 telemetry:
+ * 1. Live Hardware Pipeline Schematic + Electrical Fault-Signature Diagnosis + 0-100 Health Score
+ * 2. Guided Multi-Sample Bench Test (WebSocket + BLE + Manual/Sim) & BLE Field Check
+ * 3. Passive 7-Day vs 30-Day Fatigue & Drift Radar
+ * 4. Verification History Logs & CSV Export
  */
 export function DiagnosticsPage() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
+  const { data: insights, isLoading: insightsLoading } = useDiagnosticInsights();
 
-  // Listen for WebSocket events
+  // Listen for WebSocket events to keep all diagnostic cards live
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    // Handle reference config / baseline updates
     const handleConfigUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'baseline'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'referenceConfig'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'insights'] });
     };
 
-    // Handle diagnostic test completion
     const handleTestCompleted = () => {
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'history'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'baseline'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'insights'] });
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
-    // Handle daily task updates (status changes, lock acquisition/release)
     const handleDailyTaskUpdated = () => {
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
-    // Handle daily reminder received
     const handleDailyReminder = () => {
       queryClient.invalidateQueries({ queryKey: ['diagnostics', 'dailyTask'] });
     };
 
-    // Subscribe to events
+    const handleNewReading = () => {
+      queryClient.invalidateQueries({ queryKey: ['diagnostics', 'insights'] });
+    };
+
     socket.on('diagnostic:config-updated', handleConfigUpdate);
     socket.on('diagnostic:test-completed', handleTestCompleted);
     socket.on('diagnostic:step-tested', handleTestCompleted);
     socket.on('diagnostic:daily-task-updated', handleDailyTaskUpdated);
     socket.on('diagnostic:daily-task-completed', handleTestCompleted);
     socket.on('diagnostic:daily-reminder', handleDailyReminder);
+    socket.on('reading:new', handleNewReading);
 
-    // Cleanup
     return () => {
       socket.off('diagnostic:config-updated', handleConfigUpdate);
       socket.off('diagnostic:test-completed', handleTestCompleted);
@@ -63,33 +68,45 @@ export function DiagnosticsPage() {
       socket.off('diagnostic:daily-task-updated', handleDailyTaskUpdated);
       socket.off('diagnostic:daily-task-completed', handleTestCompleted);
       socket.off('diagnostic:daily-reminder', handleDailyReminder);
+      socket.off('reading:new', handleNewReading);
     };
   }, [socket, isConnected, queryClient]);
 
-  const { status: hardwareConnectionStatus } = useHardwareStatus();
+  const handleJumpToBench = () => {
+    const el = document.getElementById('diagnostic-workbench');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div className="page" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Page Header matching mockup */}
       <DashboardHeader
         greeting="Tile health"
         title="Tile Performance Diagnostics"
-        subtitle="Piezoelectric tile health checks"
+        subtitle="Pipeline health, fault fingerprinting, multi-sample bench testing & fatigue radar"
         systemStatus={hardwareConnectionStatus}
       />
 
-      {/* Main Content Stack: Today Card + History Card + Bottom Note */}
       <div className="flex flex-col gap-6">
-        {/* Section 1: Today's Daily Verification & Baseline Card */}
-        <StepDiagnosticTestCard />
+        {/* Section 1: Hardware Pipeline Schematic + Fault-Signature Diagnosis + Health Score */}
+        <HardwarePipelineCard
+          insights={insights}
+          isLoading={insightsLoading}
+          onJumpToBench={handleJumpToBench}
+        />
 
-        {/* Section 2: History & Verification Logs Card */}
+        {/* Section 2: Guided Multi-Sample Bench Test + Baseline Band + BLE Field Check */}
+        <DiagnosticWorkbenchCard />
+
+        {/* Section 3: Passive 7-Day vs 30-Day Fatigue & Drift Radar */}
+        <FatigueDriftRadarCard
+          radar={insights?.fatigueRadar}
+          isLoading={insightsLoading}
+        />
+
+        {/* Section 4: Verification History & CSV Export */}
         <DiagnosticHistoryTable />
-
-        {/* Section 3: Clean Footnote */}
-        <p className="m-0 px-2 text-[14px] leading-[1.6] text-[var(--mu)] max-w-[740px]">
-          Each test compares one step’s output with your 30-day baseline to catch hardware degradation, loose wiring or tile fatigue. There is one shared task per day, and any authorized administrator can run it.
-        </p>
       </div>
     </div>
   );

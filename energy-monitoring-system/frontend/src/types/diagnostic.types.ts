@@ -134,3 +134,83 @@ export interface CompleteDailyDiagnosticResponse {
   task: DailyDiagnosticTask;
   stepResult: StepTestResult;
 }
+
+export type PipelineStageStatus = 'ok' | 'warn' | 'fail' | 'idle';
+
+export type FaultSignatureCode =
+  | 'NOMINAL'
+  | 'NO_RECENT_TELEMETRY'
+  | 'WEAK_PIEZO_OUTPUT'
+  | 'OPEN_LOAD_LOW_CURRENT'
+  | 'STEP_COUNTER_MISMATCH'
+  | 'EFFICIENCY_DRIFT'
+  | 'UNSTABLE_TELEMETRY'
+  | 'ELEVATED_SPIKE';
+
+export type FaultSeverity = 'healthy' | 'warning' | 'critical' | 'info';
+
+export interface PipelineStage {
+  id: 'piezo' | 'electrical' | 'energy' | 'esp32' | 'cloud';
+  label: string;
+  shortLabel: string;
+  status: PipelineStageStatus;
+  primaryValue: string;
+  detail: string;
+}
+
+export interface FaultDiagnosis {
+  code: FaultSignatureCode;
+  severity: FaultSeverity;
+  title: string;
+  summary: string;
+  probableCause: string;
+  recommendedChecks: string[];
+}
+
+export interface DailyFatiguePoint {
+  date: string;
+  mWhPerStep: number;
+  steps: number;
+  avgVoltageV: number;
+  avgCurrentMA: number;
+  readingCount: number;
+}
+
+export interface ElectricalSnapshot {
+  latestVoltageV: number;
+  latestCurrentMA: number;
+  latestPowerMW: number;
+  latestEnergyMWh: number;
+  latestSteps: number;
+  avgVoltage7dV: number;
+  avgCurrent7dMA: number;
+}
+
+export interface FatigueRadar {
+  baseline30dMWhPerStep: number;
+  recent7dMWhPerStep: number;
+  driftPercent: number;
+  driftStatus: 'stable' | 'improving' | 'watch' | 'degrading' | 'insufficient_data';
+  totalLifetimeSteps: number;
+  stepsLast7d: number;
+  readingsLast24h: number;
+  avgLatencyMs: number;
+  poorSignalRatioPercent: number;
+  lastReadingAt: string | null;
+  dailyTrend: DailyFatiguePoint[];
+  electricalSnapshot: ElectricalSnapshot;
+}
+
+export interface DiagnosticInsights {
+  healthScore: number;
+  status: 'healthy' | 'degraded' | 'attention' | 'offline';
+  scoreBreakdown: {
+    harvesting: number;
+    consistency: number;
+    telemetry: number;
+  };
+  pipelineStages: PipelineStage[];
+  faultDiagnosis: FaultDiagnosis;
+  fatigueRadar: FatigueRadar;
+  generatedAt: string;
+}
