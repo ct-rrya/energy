@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/api/client';
 import { useSocket } from '@/contexts/SocketContext';
+import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { SensorReading } from '../types/dashboard.types';
@@ -26,12 +27,13 @@ import type { SensorReading } from '../types/dashboard.types';
  */
 export function useLiveSensorData() {
   const { socket, isConnected: isSocketConnected } = useSocket();
+  const { lastReading: globalLastReading } = useHardwareStatus();
   const queryClient = useQueryClient();
   const initialSnapshotHandledRef = useRef(false);
   const [lastReading, setLastReading] = useState<SensorReading | undefined>(undefined);
-  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [hasLiveFirebasePush, setHasLiveFirebasePush] = useState(false);
 
-  // Fetch initial/fallback data from REST API
+  // Fetch initial/fallback data from REST API (keep lightweight 8s safety poll unless live push is active)
   const { data: apiData } = useQuery<SensorReading | null>({
     queryKey: ['sensor', 'latest'],
     queryFn: async () => {
@@ -60,10 +62,24 @@ export function useLiveSensorData() {
         return null;
       }
     },
-    refetchInterval: (isFirebaseConnected || isSocketConnected) ? false : 10000, // Only poll if both Firebase + Socket.IO down
+    refetchInterval: (hasLiveFirebasePush || isSocketConnected) ? false : 8000,
     staleTime: 5000,
     retry: 2,
   });
+
+  // Mirror newer global readings discovered by HardwareStatusContext (Socket.IO, Firestore, BLE, or safety poll)
+  useEffect(() => {
+    if (!globalLastReading) return;
+    setLastReading((prev) => {
+      if (!prev) return globalLastReading;
+      const prevMs = new Date(prev.timestamp).getTime();
+      const nextMs = new Date(globalLastReading.timestamp).getTime();
+      if (!Number.isFinite(prevMs) || (Number.isFinite(nextMs) && nextMs >= prevMs)) {
+        return globalLastReading;
+      }
+      return prev;
+    });
+  }, [globalLastReading]);
 
   // Sync initial and polled REST API readings whenever a newer reading arrives
   useEffect(() => {
@@ -106,9 +122,9 @@ export function useLiveSensorData() {
             stepCount: data.stepCount || 0,
             timestamp: data.timestamp, // Already ISO string from backend
           });
-          setIsFirebaseConnected(true);
 
           if (initialSnapshotHandledRef.current) {
+            setHasLiveFirebasePush(true);
             void queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
             void queryClient.invalidateQueries({ queryKey: ['milestones'] });
           } else {
@@ -118,7 +134,7 @@ export function useLiveSensorData() {
       },
       (error) => {
         console.error('[useLiveSensorData] Firestore listener error:', error);
-        setIsFirebaseConnected(false);
+        setHasLiveFirebasePush(false);
       }
     );
 
@@ -162,6 +178,6 @@ export function useLiveSensorData() {
 
   return {
     lastReading,
-    isConnected: isFirebaseConnected || isSocketConnected, // Connected if either Firebase or Socket.IO active
+    isConnected: hasLiveFirebasePush || isSocketConnected,
   };
 }

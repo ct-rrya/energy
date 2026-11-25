@@ -162,6 +162,7 @@ export class EnergyService {
           avgPower: 0,
           maxPower: 0,
           minPower: 0,
+          totalEnergyMWh: 0,
           estimatedEnergyKWh: 0,
         };
       }
@@ -199,12 +200,13 @@ export class EnergyService {
 
       return {
         date: todayStart.toISOString().split('T')[0],
-        totalPower: Math.round(stats.totalPower * 100) / 100,
+        totalPower: Math.round(stats.totalPower * 10000) / 10000,
         count: stats.count,
-        avgPower: Math.round(stats.avgPower * 100) / 100,
-        maxPower: Math.round(stats.maxPower * 100) / 100,
-        minPower: Math.round(stats.minPower * 100) / 100,
-        estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 10000) / 10000, // 4 decimals for kWh
+        avgPower: Math.round(stats.avgPower * 10000) / 10000,
+        maxPower: Math.round(stats.maxPower * 10000) / 10000,
+        minPower: Math.round(stats.minPower * 10000) / 10000,
+        totalEnergyMWh,
+        estimatedEnergyKWh,
       };
     } catch (error) {
       // Fallback for MongoDB errors
@@ -272,12 +274,13 @@ export class EnergyService {
 
     return {
       date: todayStart.toISOString().split('T')[0],
-      totalPower: Math.round(totalPower * 100) / 100,
+      totalPower: Math.round(totalPower * 10000) / 10000,
       count: readings.length,
-      avgPower: Math.round(avgPower * 100) / 100,
-      maxPower: Math.round(maxPower * 100) / 100,
-      minPower: Math.round((minPower === Infinity ? 0 : minPower) * 100) / 100,
-      estimatedEnergyKWh: Math.round(estimatedEnergyKWh * 10000) / 10000, // 4 decimals for kWh
+      avgPower: Math.round(avgPower * 10000) / 10000,
+      maxPower: Math.round(maxPower * 10000) / 10000,
+      minPower: Math.round((minPower === Infinity ? 0 : minPower) * 10000) / 10000,
+      totalEnergyMWh: totalEnergy,
+      estimatedEnergyKWh,
     };
   }
 

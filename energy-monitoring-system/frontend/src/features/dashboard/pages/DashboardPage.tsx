@@ -219,11 +219,15 @@ function DashboardPageContent() {
         {/* Hero Power Card - Prominent display with AI analysis */}
         <div className="metric-hero-power">
           <HeroPowerCard
-            powerValue={displayReading?.power}
+            powerValue={
+              displayReading?.power !== undefined
+                ? displayReading.power * 1000
+                : undefined
+            }
             previousPower={undefined}
             aiInsight={displayMetrics?.aiInsight}
             isLoading={false}
-            todaySteps={displayMetrics?.todayTotalSteps}
+            todaySteps={displayMetrics?.todayTotalSteps ?? displayReading?.stepCount}
             connectionStatus={hardwareConnectionStatus}
           />
         </div>
@@ -240,13 +244,13 @@ function DashboardPageContent() {
                 title: "Steps Today",
                 description: getStepsTooltip(displayMetrics?.todayTotalSteps),
               }}
-              value={displayMetrics?.todayTotalSteps}
+              value={displayMetrics?.todayTotalSteps ?? displayReading?.stepCount}
               unit=""
               precision={0}
               color="accent"
               dotColor="#19D46A"
               subtitle={
-                displayMetrics?.todayTotalSteps === undefined || displayMetrics?.todayTotalSteps === 0
+                (displayMetrics?.todayTotalSteps ?? displayReading?.stepCount ?? 0) === 0
                   ? "No steps yet today"
                   : undefined
               }
@@ -256,8 +260,19 @@ function DashboardPageContent() {
           {/* Daily Harvested Energy -> Explicitly "Energy Today" */}
           <div className="metric-energy min-w-0">
             {(() => {
-              const rawEnergyWh = displayMetrics?.dailyEnergy ?? 0;
-              const energyMWh = rawEnergyWh * 1000;
+              const energyFromMetricsMWh =
+                displayMetrics?.todayEnergyMWh !== undefined
+                  ? displayMetrics.todayEnergyMWh
+                  : displayMetrics?.dailyEnergy !== undefined
+                  ? displayMetrics.dailyEnergy * 1_000_000
+                  : undefined;
+              const energyMWh =
+                energyFromMetricsMWh !== undefined && energyFromMetricsMWh > 0
+                  ? energyFromMetricsMWh
+                  : displayReading?.energy && displayReading.energy > 0
+                  ? displayReading.energy
+                  : energyFromMetricsMWh ?? 0;
+              const energyWh = energyMWh / 1000;
               const ledSeconds = Math.round(energyMWh * 180); // ~20 mW indicator LED = 180 sec per mWh
               const ledSubtitle =
                 energyMWh <= 0
@@ -265,17 +280,27 @@ function DashboardPageContent() {
                   : ledSeconds >= 60
                   ? `≈ ${(ledSeconds / 60).toFixed(1)} min of a small LED`
                   : `≈ ${Math.max(1, ledSeconds)} sec of a small LED`;
+              const energyPrecision =
+                energyMWh > 0 && energyMWh < 0.01
+                  ? 4
+                  : energyMWh > 0 && energyMWh < 1
+                  ? 3
+                  : 2;
               return (
                 <MetricCard
                   label="Energy Today"
                   plainDescription="Total Stored Clean Energy"
                   tooltip={{
                     title: 'Energy Today (mWh)',
-                    description: getEnergyTodayTooltip(rawEnergyWh),
+                    description: getEnergyTodayTooltip(energyWh),
                   }}
-                  value={displayMetrics?.dailyEnergy !== undefined ? energyMWh : undefined}
+                  value={
+                    energyFromMetricsMWh !== undefined || displayReading?.energy !== undefined
+                      ? energyMWh
+                      : undefined
+                  }
                   unit="mWh"
-                  precision={energyMWh > 0 && energyMWh < 1 ? 3 : 2}
+                  precision={energyPrecision}
                   color="amber"
                   dotColor="#A6DC3C"
                   subtitle={ledSubtitle}

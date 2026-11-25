@@ -358,12 +358,16 @@ Examples for NORMAL_GENERATION:
     const aiInsight =
       this.lastAiInsight || this.getDefaultInsight(rawStats, detailedStats);
 
+    const exactEnergyMWh = rawStats.totalEnergyMWh ?? 0;
+    const exactEnergyKWh = exactEnergyMWh / 1_000_000;
+
     return {
-      dailyEnergy: stats.todayStats.estimatedEnergyKWh,
+      dailyEnergy: exactEnergyKWh,
+      todayEnergyMWh: exactEnergyMWh,
       totalReadings: stats.totalReadings,
       todayTotalPower: stats.todayStats.totalPower,
       todayAvgPower: stats.todayStats.avgPower,
-      todayEstimatedEnergyKWh: stats.todayStats.estimatedEnergyKWh,
+      todayEstimatedEnergyKWh: exactEnergyKWh,
       todayTotalSteps: detailedStats.totalSteps,
       todayMaxVoltage: detailedStats.maxVoltage,
       todayPeakPower: detailedStats.peakPower,

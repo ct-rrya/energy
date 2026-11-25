@@ -41,7 +41,7 @@ export function useChartRealTimeUpdates(): void {
   // Track last invalidation timestamp for throttling (Requirement 9.3, 9.4)
   // Prevents invalidation more than once every 5 seconds to optimize performance
   const lastInvalidationRef = useRef<number>(0);
-  const THROTTLE_INTERVAL = 5000; // 5 seconds in milliseconds
+  const THROTTLE_INTERVAL = 2000; // 2 seconds in milliseconds
 
   useEffect(() => {
     // Only subscribe if socket is available and connected
@@ -66,13 +66,10 @@ export function useChartRealTimeUpdates(): void {
       // Update last invalidation timestamp
       lastInvalidationRef.current = now;
 
-      // Invalidate all time-series cache entries for all metrics
-      // This ensures all charts refetch their data with the latest readings
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'power'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'voltage'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'current'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'energy'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'steps'] });
+      // Invalidate all analytics charts, historical tables, and dashboard metrics
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['timeSeries'] });
+      queryClient.invalidateQueries({ queryKey: ['rawReadings'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
     };
 

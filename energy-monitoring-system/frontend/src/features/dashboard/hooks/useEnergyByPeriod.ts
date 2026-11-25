@@ -49,7 +49,7 @@ export function useEnergyByPeriod(
       case 'hourly':
         return {
           startDate: subHours(now, 24).toISOString(),
-          endDate: now.toISOString(),
+          endDate: endOfDay(now).toISOString(),
           granularity: customGranularity ?? ('hour' as const),
         };
       case 'daily':

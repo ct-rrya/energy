@@ -21,6 +21,7 @@ export interface DashboardMetrics {
   connectedDevices: number;
   
   // Daily aggregates (NEW - from backend /dashboard/metrics)
+  todayEnergyMWh?: number;       // Exact unrounded energy harvested today in mWh
   todayTotalSteps?: number;      // Total steps accumulated today (delta-based)
   todayMaxVoltage?: number;      // Maximum voltage reading today
   todayPeakPower?: number;       // Peak power reading today

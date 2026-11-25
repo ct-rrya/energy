@@ -72,10 +72,11 @@ export const HeroPowerCard = React.memo(
     const effectiveConnectionStatus = connectionStatus ?? hardwareStatus.status;
     const isDisconnected = effectiveConnectionStatus === 'disconnected';
 
-    // Memoize formatted value with clean, reader-friendly decimals (2 decimals, or 3 for tiny live nonzero spikes)
+    // Memoize formatted value with clean, reader-friendly decimals
     const formattedPower = useMemo(() => {
       if (powerValue === undefined || powerValue === 0) return '0.00';
-      if (Math.abs(powerValue) < 0.01) return powerValue.toFixed(3);
+      if (Math.abs(powerValue) < 0.01) return powerValue.toFixed(4);
+      if (Math.abs(powerValue) < 1) return powerValue.toFixed(3);
       return powerValue.toFixed(2);
     }, [powerValue]);
 
@@ -84,8 +85,9 @@ export const HeroPowerCard = React.memo(
       return <HeroCardSkeleton />;
     }
 
-    // Determine if there is no activity today
-    const hasNoActivityToday = todaySteps === undefined || todaySteps === 0;
+    // Determine if there is activity today (steps OR live power reading)
+    const hasLivePower = powerValue !== undefined && powerValue > 0;
+    const hasNoActivityToday = (todaySteps === undefined || todaySteps === 0) && !hasLivePower;
     const isLive = !isDisconnected && !hasNoActivityToday;
 
     return (

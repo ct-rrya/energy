@@ -1,9 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { QueryClientContext } from '@tanstack/react-query';
 import apiClient from '@/api/client';
 import { useSocket } from './SocketContext';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { SensorReading } from '@/features/dashboard/types/dashboard.types';
+
+const LIVE_SYNC_QUERY_KEYS = [
+  ['dashboard'],
+  ['analytics'],
+  ['timeSeries'],
+  ['rawReadings'],
+  ['milestones'],
+  ['sensor'],
+  ['sensors'],
+  ['energy'],
+  ['reports'],
+  ['logs'],
+] as const;
+
+const LIVE_SYNC_THROTTLE_MS = 1500;
+const SAFETY_POLL_INTERVAL_MS = 8000;
 
 export type HardwareConnectionStatus = 'waiting' | 'connected' | 'disconnected';
 
@@ -76,6 +93,7 @@ const SESSION_STORAGE_KEY = 'ecostep_hardware_has_connected';
 
 export function HardwareStatusProvider({ children }: { children: React.ReactNode }) {
   const { socket, isConnected: isSocketConnected } = useSocket();
+  const queryClient = useContext(QueryClientContext);
   const [hasEverConnected, setHasEverConnected] = useState<boolean>(() => {
     try {
       return typeof window !== 'undefined' && sessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
@@ -89,12 +107,51 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
   const [lastSeenAt, setLastSeenAt] = useState<Date | null>(null);
 
   const lastSeenMsRef = useRef<number | null>(null);
+  const latestReadingTsRef = useRef<number>(0);
+  const lastRealtimePushMsRef = useRef<number>(0);
+  const lastSyncMsRef = useRef<number>(0);
+  const pendingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBleConnectedRef = useRef<boolean>(false);
   const hadSocketConnectionRef = useRef<boolean>(false);
   const statusRef = useRef<HardwareConnectionStatus>(status);
   statusRef.current = status;
   const hasEverConnectedRef = useRef<boolean>(hasEverConnected);
   hasEverConnectedRef.current = hasEverConnected;
+
+  // Global app-wide cache invalidator (leading + trailing throttle) so ALL pages auto-update
+  const scheduleLiveSync = useCallback(() => {
+    if (!queryClient) return;
+
+    const runInvalidation = () => {
+      lastSyncMsRef.current = Date.now();
+      for (const queryKey of LIVE_SYNC_QUERY_KEYS) {
+        void queryClient.invalidateQueries({ queryKey: [...queryKey] });
+      }
+    };
+
+    const elapsed = Date.now() - lastSyncMsRef.current;
+    if (elapsed >= LIVE_SYNC_THROTTLE_MS) {
+      if (pendingSyncTimerRef.current) {
+        clearTimeout(pendingSyncTimerRef.current);
+        pendingSyncTimerRef.current = null;
+      }
+      runInvalidation();
+    } else if (!pendingSyncTimerRef.current) {
+      pendingSyncTimerRef.current = setTimeout(() => {
+        pendingSyncTimerRef.current = null;
+        runInvalidation();
+      }, LIVE_SYNC_THROTTLE_MS - elapsed);
+    }
+  }, [queryClient]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingSyncTimerRef.current) {
+        clearTimeout(pendingSyncTimerRef.current);
+        pendingSyncTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const markHardwareConnected = useCallback((readingData?: Partial<SensorReading>) => {
     const now = Date.now();
@@ -137,6 +194,9 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
         const latest = readings[0];
         const timestamp = new Date(latest.timestamp).getTime();
         const ageMs = Date.now() - timestamp;
+        if (Number.isFinite(timestamp) && timestamp > latestReadingTsRef.current) {
+          latestReadingTsRef.current = timestamp;
+        }
 
         const formattedReading: SensorReading = {
           sensorId: latest.sensorId || '',
@@ -181,6 +241,7 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
   // Firebase Firestore real-time listener
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let initialSnapshotSeen = false;
 
     try {
       const unsubscribe = onSnapshot(
@@ -191,6 +252,8 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
             const rawTs = data.timestamp;
             const parsedMs = rawTs ? new Date(rawTs).getTime() : NaN;
             const isFresh = Number.isFinite(parsedMs) && Date.now() - parsedMs <= TIMEOUT_MS;
+            const isNewerReading =
+              Number.isFinite(parsedMs) && parsedMs > latestReadingTsRef.current;
 
             const reading: SensorReading = {
               sensorId: data.sensorId || '',
@@ -202,12 +265,22 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
               timestamp: Number.isFinite(parsedMs) ? new Date(parsedMs).toISOString() : new Date().toISOString(),
             };
 
+            if (isNewerReading) {
+              latestReadingTsRef.current = parsedMs;
+            }
+
             if (isFresh) {
               markHardwareConnected(reading);
             } else {
               // Historical Firestore snapshot (>60s old): keep latest reading cached without marking Live
               setLastReading(reading);
             }
+
+            if (initialSnapshotSeen && isNewerReading) {
+              lastRealtimePushMsRef.current = Date.now();
+              scheduleLiveSync();
+            }
+            initialSnapshotSeen = true;
           }
         },
         (error) => {
@@ -219,13 +292,20 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     } catch (e) {
       console.warn('[HardwareStatus] Firestore setup skipped:', e);
     }
-  }, [markHardwareConnected]);
+  }, [markHardwareConnected, scheduleLiveSync]);
 
   // Socket.IO real-time telemetry listeners
   useEffect(() => {
     if (!socket) return;
 
     const handleNewReading = (data: any) => {
+      const tsStr = data.timestamp || new Date().toISOString();
+      const parsedMs = new Date(tsStr).getTime();
+      if (Number.isFinite(parsedMs) && parsedMs > latestReadingTsRef.current) {
+        latestReadingTsRef.current = parsedMs;
+      }
+      lastRealtimePushMsRef.current = Date.now();
+
       markHardwareConnected({
         sensorId: data.sensorId,
         voltage: data.voltage,
@@ -233,12 +313,15 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
         power: data.power,
         energy: data.energy,
         stepCount: data.stepCount,
-        timestamp: data.timestamp || new Date().toISOString(),
+        timestamp: tsStr,
       });
+      scheduleLiveSync();
     };
 
     const handleHardwareActivity = () => {
+      lastRealtimePushMsRef.current = Date.now();
       markHardwareConnected();
+      scheduleLiveSync();
     };
 
     socket.on('reading:new', handleNewReading);
@@ -252,7 +335,61 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
       socket.off('piezo:milestone', handleHardwareActivity);
       socket.off('capacitor:full', handleHardwareActivity);
     };
-  }, [socket, markHardwareConnected]);
+  }, [socket, markHardwareConnected, scheduleLiveSync]);
+
+  // Lightweight 8-second safety poll: catches new cloud readings automatically even if Socket.IO or Firestore is idle/stale
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const pollLatestReading = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
+      if (Date.now() - lastRealtimePushMsRef.current < SAFETY_POLL_INTERVAL_MS) {
+        return;
+      }
+
+      try {
+        const response = await apiClient.get<any[]>('/energy/recent', {
+          params: { limit: 1 },
+        });
+        const readings = response.data;
+        if (!readings || readings.length === 0) return;
+
+        const latest = readings[0];
+        const parsedMs = new Date(latest.timestamp).getTime();
+        if (!Number.isFinite(parsedMs)) return;
+
+        if (parsedMs > latestReadingTsRef.current) {
+          latestReadingTsRef.current = parsedMs;
+          const formattedReading: SensorReading = {
+            sensorId: latest.sensorId || '',
+            voltage: latest.voltage || 0,
+            current: latest.current || 0,
+            power: latest.power || 0,
+            energy: latest.energy || 0,
+            stepCount: latest.stepCount || 0,
+            timestamp: new Date(parsedMs).toISOString(),
+          };
+
+          if (Date.now() - parsedMs <= TIMEOUT_MS) {
+            markHardwareConnected(formattedReading);
+          } else {
+            setLastReading(formattedReading);
+          }
+          scheduleLiveSync();
+        }
+      } catch {
+        // Ignore transient safety poll errors
+      }
+    };
+
+    const interval = setInterval(() => {
+      void pollLatestReading();
+    }, SAFETY_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [markHardwareConnected, scheduleLiveSync]);
 
   // Listen for custom hardware events (e.g. from Web BLE client or simulator)
   useEffect(() => {

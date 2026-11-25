@@ -73,9 +73,11 @@ export const StepsChart = React.memo(function StepsChart({
     const now = new Date();
     const start = new Date(now);
     start.setDate(now.getDate() - 7);
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
     return {
       startDate: start.toISOString(),
-      endDate: now.toISOString(),
+      endDate: end.toISOString(),
     };
   }, [propStartDate, propEndDate]);
 
