@@ -299,6 +299,7 @@ export class ReportsController {
     @Query('limit') limit: number = 10,
     @Query('type') type?: ReportType,
     @Query('format') format?: ReportFormat,
+    @Query('startDate') startDate?: string,
   ) {
     // Validate pagination
     const validPage = Math.max(1, Number(page));
@@ -310,6 +311,7 @@ export class ReportsController {
       validLimit,
       type,
       format,
+      startDate,
     );
 
     // Add fileUrl to each report

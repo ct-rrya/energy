@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { subDays, startOfDay, endOfDay } from 'date-fns';
+import { subDays, subHours, startOfDay, endOfDay } from 'date-fns';
 import { useTimeSeriesData } from './useTimeSeriesData';
 import type { UseTimeSeriesDataReturn } from './useTimeSeriesData';
 import type { Granularity } from '@/features/analytics/types';
@@ -7,7 +7,7 @@ import type { Granularity } from '@/features/analytics/types';
 /**
  * Time Filter Options for Power Generation Chart
  */
-export type TimeFilter = 'today' | '7days' | '30days';
+export type TimeFilter = 'hourly' | 'today' | '7days' | '30days';
 
 export interface PowerRangeOverride {
   startDate?: string;
@@ -22,7 +22,7 @@ export interface PowerRangeOverride {
  * the selected time filter, or uses the unified page period override when provided.
  * Fetches power metric data from the Analytics API.
  * 
- * @param timeFilter - Selected time range: 'today', '7days', or '30days'
+ * @param timeFilter - Selected time range: 'hourly', 'today', '7days', or '30days'
  * @param customRange - Optional start/end/granularity override from page-level period filter
  * @returns Time-series data with loading state, error state, and refetch function
  */
@@ -46,6 +46,12 @@ export function usePowerGeneration(
     const now = new Date();
 
     switch (timeFilter) {
+      case 'hourly':
+        return {
+          startDate: subHours(now, 24).toISOString(),
+          endDate: endOfDay(now).toISOString(),
+          granularity: customGranularity ?? ('hour' as const),
+        };
       case 'today':
         return {
           startDate: startOfDay(now).toISOString(),

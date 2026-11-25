@@ -1,6 +1,6 @@
 import { useState, useMemo, lazy, Suspense, useTransition } from 'react';
 import { BarChart3, Table } from 'lucide-react';
-import { subDays, startOfDay, endOfDay, format } from 'date-fns';
+import { subDays, subHours, startOfDay, endOfDay, format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { getUserRole } from '@/lib/permissions';
@@ -24,14 +24,22 @@ type ViewType = 'charts' | 'historical';
 /**
  * Period Type for date filtering
  */
-type Period = 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
+type Period = 'hourly' | 'today' | 'last7days' | 'last30days' | 'last90days' | 'all';
+
+type TrackingInterval = 'hour' | 'day';
 
 const PERIOD_OPTIONS: Array<{ value: Period; label: string }> = [
   { value: 'all', label: 'All Time' },
+  { value: 'hourly', label: 'Hourly' },
   { value: 'today', label: 'Today' },
   { value: 'last7days', label: 'Last 7 Days' },
   { value: 'last30days', label: 'Last 30 Days' },
   { value: 'last90days', label: '3 Months' },
+];
+
+const INTERVAL_OPTIONS: Array<{ value: TrackingInterval; label: string }> = [
+  { value: 'hour', label: 'By Hour' },
+  { value: 'day', label: 'By Day' },
 ];
 
 /**
@@ -41,12 +49,13 @@ const PERIOD_OPTIONS: Array<{ value: Period; label: string }> = [
  * - Chart View: Real-time and historical analytics with all desktop charts
  * - Historical View: Tabular & mobile card data display with MongoDB raw data
  * - Fully responsive across mobile, tablet, and desktop viewports (using the exact same charts)
- * - Date range filtering including All Time
+ * - Date range filtering including Hourly (24h) and All Time, plus By Hour / By Day grouping
  */
 export function AnalyticsPage() {
   const { isAuthenticated, user } = useAuth();
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
+  const [trackingInterval, setTrackingInterval] = useState<TrackingInterval>('day');
   const [, startTransition] = useTransition();
 
   const handleViewChange = (view: ViewType) => {
@@ -58,6 +67,13 @@ export function AnalyticsPage() {
   const handlePeriodChange = (period: Period) => {
     startTransition(() => {
       setSelectedPeriod(period);
+      setTrackingInterval(period === 'hourly' || period === 'today' ? 'hour' : 'day');
+    });
+  };
+
+  const handleIntervalChange = (interval: TrackingInterval) => {
+    startTransition(() => {
+      setTrackingInterval(interval);
     });
   };
 
@@ -65,7 +81,7 @@ export function AnalyticsPage() {
   const userRole = getUserRole(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
 
-  // Calculate date range for Historical View (YYYY-MM-DD in local time, undefined for All Time)
+  // Calculate date range for Historical View (ISO for hourly, YYYY-MM-DD in local time for day ranges, undefined for All Time)
   const dateRange = useMemo(() => {
     if (selectedPeriod === 'all') {
       return {
@@ -75,6 +91,13 @@ export function AnalyticsPage() {
     }
 
     const now = new Date();
+    if (selectedPeriod === 'hourly') {
+      return {
+        startDate: subHours(now, 24).toISOString(),
+        endDate: now.toISOString(),
+      };
+    }
+
     let start = startOfDay(now);
 
     switch (selectedPeriod) {
@@ -104,6 +127,11 @@ export function AnalyticsPage() {
     const endIso = endOfDay(now).toISOString();
 
     switch (selectedPeriod) {
+      case 'hourly':
+        return {
+          startDate: subHours(now, 24).toISOString(),
+          endDate: endIso,
+        };
       case 'today':
         return {
           startDate: startOfDay(now).toISOString(),
@@ -133,40 +161,27 @@ export function AnalyticsPage() {
     }
   }, [selectedPeriod]);
 
-  // Map period to granularity for Historical View
+  // Granularity for Historical View respects user's By Hour / By Day choice
   const granularity: Granularity = useMemo(() => {
-    switch (selectedPeriod) {
-      case 'today':
-        return 'hour';
-      case 'last7days':
-        return 'hour';
-      case 'last30days':
-        return 'day';
-      case 'last90days':
-        return 'week';
-      case 'all':
-      default:
-        return 'day';
+    if (trackingInterval === 'hour') {
+      return 'hour';
     }
-  }, [selectedPeriod]);
+    if (selectedPeriod === 'last90days') {
+      return 'week';
+    }
+    return 'day';
+  }, [selectedPeriod, trackingInterval]);
 
-  // Map period to chart aggregation granularity
-  const chartGranularity: Granularity = useMemo(() => {
-    switch (selectedPeriod) {
-      case 'today':
-        return 'hour';
-      case 'last7days':
-      case 'last30days':
-      case 'last90days':
-      case 'all':
-      default:
-        return 'day';
-    }
-  }, [selectedPeriod]);
+  // Granularity for Chart View respects user's By Hour / By Day choice
+  const chartGranularity: Granularity = trackingInterval;
 
   const periodLabel = useMemo(() => {
-    return PERIOD_OPTIONS.find((opt) => opt.value === selectedPeriod)?.label ?? 'All Time';
-  }, [selectedPeriod]);
+    const base =
+      selectedPeriod === 'hourly'
+        ? 'Last 24 Hours'
+        : PERIOD_OPTIONS.find((opt) => opt.value === selectedPeriod)?.label ?? 'All Time';
+    return `${base} • ${trackingInterval === 'hour' ? 'Hourly' : 'Daily'}`;
+  }, [selectedPeriod, trackingInterval]);
 
   const { status: hardwareConnectionStatus } = useHardwareStatus();
 
@@ -208,8 +223,8 @@ export function AnalyticsPage() {
           </button>
         </div>
 
-        {/* Period Filter */}
-        <div className="analytics-period-bar flex items-center gap-2 overflow-x-auto no-scrollbar">
+        {/* Period & Interval Filters */}
+        <div className="analytics-period-bar flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar">
           <span
             style={{
               color: 'var(--mu)',
@@ -230,6 +245,20 @@ export function AnalyticsPage() {
                 onClick={() => handlePeriodChange(option.value)}
                 className={`shrink-0 whitespace-nowrap ${selectedPeriod === option.value ? 'on' : ''}`}
                 aria-pressed={selectedPeriod === option.value}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="sgc flex shrink-0" role="group" aria-label="Tracking interval">
+            {INTERVAL_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleIntervalChange(option.value)}
+                className={`shrink-0 whitespace-nowrap ${trackingInterval === option.value ? 'on' : ''}`}
+                aria-pressed={trackingInterval === option.value}
               >
                 {option.label}
               </button>
@@ -273,7 +302,7 @@ export function AnalyticsPage() {
               <VoltageCurrentChart
                 startDate={chartDateRange.startDate}
                 endDate={chartDateRange.endDate}
-                granularity={selectedPeriod === 'today' || selectedPeriod === 'last7days' ? 'hour' : chartGranularity}
+                granularity={chartGranularity}
                 periodLabel={periodLabel}
               />
             </Suspense>

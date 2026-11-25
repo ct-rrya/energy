@@ -210,7 +210,7 @@ export function LogsPage() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'Authentication' | 'Reports' | 'Milestones' | 'Diagnostics'>('all');
   const [adminFilter, setAdminFilter] = useState<string>('all');
   const [resultFilter, setResultFilter] = useState<'all' | 'SUCCESS' | 'FAILED' | 'DENIED'>('all');
-  const [dateRange, setDateRange] = useState<'all' | 'today' | '7days' | '30days' | 'custom'>('all');
+  const [dateRange, setDateRange] = useState<'all' | 'hourly' | 'today' | '7days' | '30days' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
@@ -259,6 +259,10 @@ export function LogsPage() {
   // Calculate start & end ISO strings based on date range
   const { startDateISO, endDateISO } = useMemo(() => {
     const now = new Date();
+    if (dateRange === 'hourly') {
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      return { startDateISO: oneHourAgo.toISOString(), endDateISO: now.toISOString() };
+    }
     if (dateRange === 'today') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -403,6 +407,7 @@ export function LogsPage() {
   // Date Range Options
   const dateOptions: CustomSelectOption[] = [
     { value: 'all', label: 'All Time' },
+    { value: 'hourly', label: 'Past Hour (Hourly)' },
     { value: 'today', label: 'Today' },
     { value: '7days', label: 'Past 7 Days' },
     { value: '30days', label: 'Past 30 Days' },

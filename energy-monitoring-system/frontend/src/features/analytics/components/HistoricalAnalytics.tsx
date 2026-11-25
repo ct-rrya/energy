@@ -10,7 +10,7 @@ import type { TimeSeries, MetricType, Granularity } from '@/features/analytics/t
 /**
  * Period Type
  */
-type Period = 'last7days' | 'last30days' | 'last90days';
+type Period = 'hourly' | 'today' | 'last7days' | 'last30days' | 'last90days';
 
 /**
  * Aggregation Type
@@ -40,6 +40,18 @@ export function HistoricalAnalytics() {
     let start = new Date();
     
     switch (period) {
+      case 'hourly':
+        start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        return {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+        };
+      case 'today':
+        start.setHours(0, 0, 0, 0);
+        return {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+        };
       case 'last7days':
         start.setDate(end.getDate() - 7);
         break;
@@ -60,6 +72,8 @@ export function HistoricalAnalytics() {
   // Auto-select aggregation based on period
   const getDefaultAggregation = (period: Period): Aggregation => {
     switch (period) {
+      case 'hourly':
+      case 'today':
       case 'last7days':
         return 'hour';
       case 'last30days':
@@ -113,8 +127,11 @@ export function HistoricalAnalytics() {
   });
 
   const handleAnalyze = () => {
+    const analysisPeriod =
+      selectedPeriod === 'hourly' || selectedPeriod === 'today' ? 'last7days' : selectedPeriod;
     analysisMutation.mutate({
-      period: selectedPeriod,
+      period: analysisPeriod,
+      ...(selectedPeriod === 'hourly' || selectedPeriod === 'today' ? dateRange : {}),
     });
   };
 
@@ -160,6 +177,8 @@ export function HistoricalAnalytics() {
             </label>
             <div className="flex flex-wrap gap-2">
               {[
+                { value: 'hourly' as Period, label: 'Hourly (24h)' },
+                { value: 'today' as Period, label: 'Today' },
                 { value: 'last7days' as Period, label: '7 Days' },
                 { value: 'last30days' as Period, label: '30 Days' },
                 { value: 'last90days' as Period, label: '3 Months' },

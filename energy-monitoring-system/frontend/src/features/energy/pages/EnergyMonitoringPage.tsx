@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { subDays, subHours, startOfDay, endOfDay } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserRole } from '@/lib/permissions';
@@ -6,6 +7,7 @@ import { useLiveSensorData } from '@/features/dashboard/hooks/useLiveSensorData'
 import { PublicUserBanner } from '@/components/common/PublicUserBanner';
 import { Activity, Zap } from 'lucide-react';
 import { HistoricalAnalyticsGrid } from '../components/HistoricalAnalyticsGrid';
+import type { Granularity } from '@/features/analytics/types';
 
 /**
  * Energy Monitoring Page
@@ -33,8 +35,43 @@ export function EnergyMonitoringPage() {
   // Get live sensor data
   const { lastReading } = useLiveSensorData();
 
-  // Time range state (for future enhancement)
-  const [timeRange] = useState<'today' | 'last7days' | 'last30days' | 'custom'>('today');
+  // Time range state
+  const [timeRange, setTimeRange] = useState<'hourly' | 'today' | 'last7days' | 'last30days'>('hourly');
+
+  const chartRange = useMemo(() => {
+    const now = new Date();
+    const endIso = endOfDay(now).toISOString();
+    switch (timeRange) {
+      case 'hourly':
+        return {
+          startDate: subHours(now, 24).toISOString(),
+          endDate: endIso,
+          granularity: 'hour' as Granularity,
+          periodLabel: 'Last 24 Hours • Hourly',
+        };
+      case 'today':
+        return {
+          startDate: startOfDay(now).toISOString(),
+          endDate: endIso,
+          granularity: 'hour' as Granularity,
+          periodLabel: 'Today • Hourly',
+        };
+      case 'last7days':
+        return {
+          startDate: subDays(startOfDay(now), 7).toISOString(),
+          endDate: endIso,
+          granularity: 'day' as Granularity,
+          periodLabel: 'Last 7 Days',
+        };
+      case 'last30days':
+        return {
+          startDate: subDays(startOfDay(now), 30).toISOString(),
+          endDate: endIso,
+          granularity: 'day' as Granularity,
+          periodLabel: 'Last 30 Days',
+        };
+    }
+  }, [timeRange]);
 
   // Color system based on theme
   const colors = {
@@ -260,25 +297,30 @@ export function EnergyMonitoringPage() {
           }}
         >
           <div className="flex flex-wrap gap-2">
-            {['today', 'last7days', 'last30days'].map((range) => (
+            {(
+              [
+                { value: 'hourly', label: 'Hourly' },
+                { value: 'today', label: 'Today' },
+                { value: 'last7days', label: 'Last 7 Days' },
+                { value: 'last30days', label: 'Last 30 Days' },
+              ] as const
+            ).map((range) => (
               <button
-                key={range}
-                onClick={() => {
-                  // Future enhancement: implement time range filtering
-                  console.log('Time range:', range);
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                key={range.value}
+                type="button"
+                onClick={() => setTimeRange(range.value)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer"
                 style={{
-                  backgroundColor: timeRange === range 
-                    ? (theme === 'light' ? colors.accent : colors.accent)
+                  backgroundColor: timeRange === range.value 
+                    ? colors.accent
                     : 'transparent',
-                  color: timeRange === range 
+                  color: timeRange === range.value 
                     ? '#FFFFFF'
                     : colors.text,
                   border: `1px solid ${colors.border}`,
                 }}
               >
-                {range === 'today' ? 'Today' : range === 'last7days' ? 'Last 7 Days' : 'Last 30 Days'}
+                {range.label}
               </button>
             ))}
           </div>
@@ -294,7 +336,12 @@ export function EnergyMonitoringPage() {
           </h2>
 
           {/* 2×2 Grid Layout: Voltage Trend, Current Trend, Energy Period, Cumulative Energy */}
-          <HistoricalAnalyticsGrid />
+          <HistoricalAnalyticsGrid
+            startDate={chartRange.startDate}
+            endDate={chartRange.endDate}
+            granularity={chartRange.granularity}
+            periodLabel={chartRange.periodLabel}
+          />
         </div>
       </div>
   );

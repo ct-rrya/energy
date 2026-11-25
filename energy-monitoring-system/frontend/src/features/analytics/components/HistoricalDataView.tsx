@@ -302,7 +302,10 @@ export function HistoricalDataView({
                 className="text-sm mt-0.5"
                 style={{ color: 'var(--mu)' }}
               >
-                {totalRecords} {viewMode === 'raw' ? 'individual readings' : 'summary records'}
+                {totalRecords}{' '}
+                {viewMode === 'raw'
+                  ? 'individual readings'
+                  : `${granularity === 'hour' ? 'hourly' : granularity === 'day' ? 'daily' : granularity === 'week' ? 'weekly' : 'monthly'} summary records`}
                 {!includeInactive && ' • Active only'}
               </p>
             </div>

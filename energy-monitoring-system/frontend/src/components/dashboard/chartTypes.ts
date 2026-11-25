@@ -39,11 +39,12 @@ export interface ChartDataPoint {
  * 
  * Used by: PowerGenerationChart
  * 
- * - 'today': Last 24 hours with hourly granularity
+ * - 'hourly': Rolling last 24 hours with hourly granularity
+ * - 'today': Today (since midnight) with hourly granularity
  * - '7days': Last 7 days with daily granularity
  * - '30days': Last 30 days with daily granularity
  */
-export type TimeFilter = 'today' | '7days' | '30days';
+export type TimeFilter = 'hourly' | 'today' | '7days' | '30days';
 
 /**
  * Period aggregation filter options for bar charts showing energy by period.

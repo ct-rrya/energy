@@ -111,6 +111,7 @@ export interface AnalyticsQuery {
 // ============================================================================
 
 export type DateRangePreset =
+  | 'hourly'
   | 'today'
   | 'yesterday'
   | 'last7days'

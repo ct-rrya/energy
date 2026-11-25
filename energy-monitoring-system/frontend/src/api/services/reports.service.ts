@@ -42,11 +42,13 @@ export const getReports = async (
   page: number = 1,
   limit: number = 10,
   type?: ReportType,
-  format?: ReportFormat
+  format?: ReportFormat,
+  startDate?: string
 ): Promise<ReportsListResponse> => {
   const params: any = { page, limit };
   if (type) params.type = type;
   if (format) params.format = format;
+  if (startDate) params.startDate = startDate;
 
   const response = await apiClient.get<ReportsListResponse>('/reports', { params });
   return response.data;

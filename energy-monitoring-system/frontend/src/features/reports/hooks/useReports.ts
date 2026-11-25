@@ -17,11 +17,12 @@ export function useReports(
   page: number = 1,
   limit: number = 10,
   type?: ReportType,
-  format?: ReportFormat
+  format?: ReportFormat,
+  startDate?: string
 ) {
   return useQuery({
-    queryKey: ['reports', page, limit, type, format],
-    queryFn: () => reportsService.getReports(page, limit, type, format),
+    queryKey: ['reports', page, limit, type, format, startDate],
+    queryFn: () => reportsService.getReports(page, limit, type, format, startDate),
     staleTime: 60 * 1000, // 1 minute
   });
 }

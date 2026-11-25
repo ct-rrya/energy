@@ -30,6 +30,10 @@ export function useDateRange() {
     let start = new Date();
 
     switch (preset) {
+      case 'hourly':
+        start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        break;
+
       case 'today':
         start = new Date();
         start.setHours(0, 0, 0, 0);

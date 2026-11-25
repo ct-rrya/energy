@@ -134,18 +134,27 @@ describe('AnalyticsPage - Mobile Clutter Reduction & Layout', () => {
       expect(scrollRow).toBeInTheDocument();
       expect(scrollRow).toHaveClass('no-scrollbar');
 
-      // Verify all 5 period buttons exist and have shrink-0 whitespace-nowrap
-      const buttons = ['All Time', 'Today', 'Last 7 Days', 'Last 30 Days', '3 Months'];
+      // Verify all 6 period buttons exist and have shrink-0 whitespace-nowrap
+      const buttons = ['All Time', 'Hourly', 'Today', 'Last 7 Days', 'Last 30 Days', '3 Months'];
       buttons.forEach((label) => {
         const btn = screen.getByRole('button', { name: label });
         expect(btn).toBeInTheDocument();
         expect(btn).toHaveClass('shrink-0', 'whitespace-nowrap');
       });
+
+      // Verify tracking interval toggle (By Hour / By Day)
+      expect(screen.getByRole('button', { name: 'By Hour' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'By Day' })).toBeInTheDocument();
     });
 
-    it('changes selected period filter when clicked', async () => {
+    it('changes selected period filter when clicked and activates By Hour for Hourly', async () => {
       const user = userEvent.setup();
       render(<AnalyticsPage />);
+
+      const hourlyBtn = screen.getByRole('button', { name: 'Hourly' });
+      await user.click(hourlyBtn);
+      expect(hourlyBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'By Hour' })).toHaveAttribute('aria-pressed', 'true');
 
       const todayBtn = screen.getByRole('button', { name: 'Today' });
       await user.click(todayBtn);

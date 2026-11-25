@@ -7,7 +7,7 @@ import { energyService, type EnergyReading } from '@/api/services/energy.service
 import type { MetricType, Granularity } from '../types';
 import { format } from 'date-fns';
 
-export type MobileAnalyticsPeriod = 'today' | 'last7days' | 'last30days' | 'last90days';
+export type MobileAnalyticsPeriod = 'hourly' | 'today' | 'last7days' | 'last30days' | 'last90days';
 
 interface MobileAnalyticsDashboardProps {
   isPublicUser?: boolean;
@@ -74,6 +74,14 @@ export function MobileAnalyticsDashboard({
     const start = new Date();
 
     switch (selectedPeriod) {
+      case 'hourly':
+        start.setTime(end.getTime() - 24 * 60 * 60 * 1000);
+        return {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          startObj: start,
+          endObj: end,
+        };
       case 'today':
         start.setHours(0, 0, 0, 0);
         break;
@@ -99,6 +107,7 @@ export function MobileAnalyticsDashboard({
   // Granularity mapping
   const granularity: Granularity = useMemo(() => {
     switch (selectedPeriod) {
+      case 'hourly':
       case 'today':
       case 'last7days':
         return 'hour';
@@ -455,6 +464,7 @@ export function MobileAnalyticsDashboard({
       {/* 3. Time Period Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
         {[
+          { key: 'hourly' as MobileAnalyticsPeriod, label: 'Hourly' },
           { key: 'today' as MobileAnalyticsPeriod, label: 'Today' },
           { key: 'last7days' as MobileAnalyticsPeriod, label: '7 days' },
           { key: 'last30days' as MobileAnalyticsPeriod, label: '30 days' },

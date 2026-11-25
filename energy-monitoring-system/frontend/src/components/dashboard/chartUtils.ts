@@ -138,14 +138,27 @@ export function formatChartTimestamp(
 }
 
 /**
- * Checks whether two or more data points collapse to the same day label
- * (e.g. two points both displaying "Nov 19").
+ * Checks whether two or more data points collapse to the same formatted tick label
+ * (e.g. two day points both displaying "Nov 19", or hourly points spanning multiple days).
  */
 export function hasDuplicateFormattedDates(
   data: ChartDataPoint[],
   granularity: Granularity
 ): boolean {
   if (!Array.isArray(data) || data.length < 2) return false;
+
+  if (granularity === 'hour') {
+    const dates = new Set<string>();
+    for (const pt of data) {
+      const d = new Date(pt.timestamp);
+      if (!isNaN(d.getTime())) {
+        dates.add(format(d, 'yyyy-MM-dd'));
+        if (dates.size > 1) return true;
+      }
+    }
+    return false;
+  }
+
   if (granularity !== 'day' && granularity !== 'week') return false;
 
   const seen = new Set<string>();
@@ -158,19 +171,25 @@ export function hasDuplicateFormattedDates(
 }
 
 /**
- * Smart X-axis tick formatter: appends short time (e.g. "Nov 19, 12:24 AM")
- * whenever multiple points share the same formatted day so users can tell them apart.
+ * Smart X-axis tick formatter:
+ * - For hourly granularity spanning multiple days: returns "Nov 25, 2PM"
+ * - For day/week granularity with duplicate day labels: returns "Nov 19, 12:24 AM"
  */
 export function formatSmartChartTimestamp(
   timestamp: string,
   granularity: Granularity,
   includeTimeOnSameDay: boolean
 ): string {
-  if (includeTimeOnSameDay && (granularity === 'day' || granularity === 'week')) {
+  if (includeTimeOnSameDay) {
     try {
       const date = new Date(timestamp);
       if (!isNaN(date.getTime())) {
-        return format(date, 'MMM d, h:mm a');
+        if (granularity === 'hour') {
+          return format(date, 'MMM d, ha');
+        }
+        if (granularity === 'day' || granularity === 'week') {
+          return format(date, 'MMM d, h:mm a');
+        }
       }
     } catch {
       // fall through

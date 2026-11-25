@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/lib/theme';
 import {
@@ -46,6 +46,27 @@ export function ReportsPage() {
   const [previewReport, setPreviewReport] = useState<Report | null>(null);
   const [detailsReport, setDetailsReport] = useState<Report | null>(null);
 
+  // Compute startDate cutoff for the date filter (Hourly, Today, Last 7 Days, Last 30 Days)
+  const dateFilterStartISO = useMemo(() => {
+    if (dateFilter === 'all') return undefined;
+    const now = new Date();
+    switch (dateFilter) {
+      case 'hourly':
+        return new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+      case 'today': {
+        const start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        return start.toISOString();
+      }
+      case 'last7':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      case 'last30':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      default:
+        return undefined;
+    }
+  }, [dateFilter]);
+
   // Hooks
   const {
     data: reportsData,
@@ -56,7 +77,8 @@ export function ReportsPage() {
     page,
     10,
     typeFilter === 'all' ? undefined : typeFilter,
-    formatFilter === 'all' ? undefined : formatFilter
+    formatFilter === 'all' ? undefined : formatFilter,
+    dateFilterStartISO
   );
 
   const {
@@ -129,9 +151,17 @@ export function ReportsPage() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const reports = reportsData?.data || [];
+  const rawReports = reportsData?.data || [];
+  const reports = useMemo(() => {
+    if (!dateFilterStartISO) return rawReports;
+    const cutoff = new Date(dateFilterStartISO).getTime();
+    return rawReports.filter((r) => {
+      const created = new Date(r.createdAt).getTime();
+      return !isNaN(created) && created >= cutoff;
+    });
+  }, [rawReports, dateFilterStartISO]);
   const meta = reportsData?.meta;
-  const reportCount = meta?.total || 0;
+  const reportCount = dateFilterStartISO ? reports.length : (meta?.total || 0);
 
   // Loading state
   if (reportsLoading && !reportsData) {
@@ -297,6 +327,7 @@ export function ReportsPage() {
                     }}
                     options={[
                       { value: 'all', label: 'All Dates' },
+                      { value: 'hourly', label: 'Hourly (Last Hour)' },
                       { value: 'today', label: 'Today' },
                       { value: 'last7', label: 'Last 7 Days' },
                       { value: 'last30', label: 'Last 30 Days' },
@@ -343,7 +374,7 @@ export function ReportsPage() {
               </div>
 
               {/* Date Filter */}
-              <div className="w-[136px] shrink-0">
+              <div className="w-[164px] shrink-0">
                 <CustomDropdown
                   value={dateFilter}
                   onChange={(value) => {
@@ -352,6 +383,7 @@ export function ReportsPage() {
                   }}
                   options={[
                     { value: 'all', label: 'All Dates' },
+                    { value: 'hourly', label: 'Hourly (Last Hour)' },
                     { value: 'today', label: 'Today' },
                     { value: 'last7', label: 'Last 7 Days' },
                     { value: 'last30', label: 'Last 30 Days' },

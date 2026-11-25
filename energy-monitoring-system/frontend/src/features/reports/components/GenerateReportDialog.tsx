@@ -125,10 +125,14 @@ export function GenerateReportDialog({
     }
   }, [open]);
 
-  const applyDatePreset = (preset: 'last7' | 'last30' | 'thisMonth') => {
+  const applyDatePreset = (preset: 'hourly' | 'last7' | 'last30' | 'thisMonth') => {
     const today = new Date();
     const end = toYmd(today);
-    if (preset === 'last7') {
+    if (preset === 'hourly') {
+      setStartDate(end);
+      setEndDate(end);
+      setAggregation('hourly');
+    } else if (preset === 'last7') {
       const start = new Date(today);
       start.setDate(today.getDate() - 6);
       setStartDate(toYmd(start));
@@ -196,7 +200,11 @@ export function GenerateReportDialog({
       dto.includeSections = includeSections;
     }
 
-    if (selectedType === ReportType.HISTORICAL_ANALYTICS) {
+    if (
+      selectedType === ReportType.HISTORICAL_ANALYTICS ||
+      selectedType === ReportType.ENERGY_MONITORING ||
+      selectedType === ReportType.SYSTEM_SUMMARY
+    ) {
       dto.aggregation = aggregation;
     }
 
@@ -341,6 +349,7 @@ export function GenerateReportDialog({
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {[
+                      { id: 'hourly' as const, label: 'Today (Hourly)' },
                       { id: 'last7' as const, label: 'Last 7 Days' },
                       { id: 'last30' as const, label: 'Last 30 Days' },
                       { id: 'thisMonth' as const, label: 'This Month' },
@@ -442,52 +451,55 @@ export function GenerateReportDialog({
 
               {/* Historical Analytics Configuration */}
               {selectedType === ReportType.HISTORICAL_ANALYTICS && (
-                <>
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-2"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Metrics
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      {Object.entries(analyticsSections).map(([key, checked]) => (
-                        <label key={key} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) =>
-                              setAnalyticsSections((prev) => ({ ...prev, [key]: e.target.checked }))
-                            }
-                            className="w-4 h-4 rounded accent-[#428475]"
-                            disabled={isGenerating}
-                          />
-                          <span className="text-sm" style={{ color: colors.textPrimary }}>
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-2"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Metrics
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {Object.entries(analyticsSections).map(([key, checked]) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setAnalyticsSections((prev) => ({ ...prev, [key]: e.target.checked }))
+                          }
+                          className="w-4 h-4 rounded accent-[#428475]"
+                          disabled={isGenerating}
+                        />
+                        <span className="text-sm" style={{ color: colors.textPrimary }}>
+                          {key.charAt(0).toUpperCase() + key.slice(1)}
+                        </span>
+                      </label>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  <div>
-                    <label
-                      className="block text-sm font-medium mb-2"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Summary Grouping
-                    </label>
-                    <CustomDropdown
-                      value={aggregation}
-                      onChange={(value) => setAggregation(value as 'hourly' | 'daily' | 'weekly')}
-                      options={[
-                        { value: 'hourly', label: 'Hourly' },
-                        { value: 'daily', label: 'Daily' },
-                        { value: 'weekly', label: 'Weekly' },
-                      ]}
-                    />
-                  </div>
-                </>
+              {/* Summary Grouping (Hourly / Daily / Weekly) for energy & overview reports */}
+              {(selectedType === ReportType.ENERGY_MONITORING ||
+                selectedType === ReportType.HISTORICAL_ANALYTICS ||
+                selectedType === ReportType.SYSTEM_SUMMARY) && (
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-2"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Summary Grouping
+                  </label>
+                  <CustomDropdown
+                    value={aggregation}
+                    onChange={(value) => setAggregation(value as 'hourly' | 'daily' | 'weekly')}
+                    options={[
+                      { value: 'hourly', label: 'Hourly' },
+                      { value: 'daily', label: 'Daily' },
+                      { value: 'weekly', label: 'Weekly' },
+                    ]}
+                  />
+                </div>
               )}
 
               {/* System Diagnostics Sections */}

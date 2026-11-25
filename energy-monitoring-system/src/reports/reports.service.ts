@@ -205,6 +205,7 @@ export class ReportsService {
     limit: number = 10,
     type?: ReportType,
     format?: ReportFormat,
+    startDate?: string,
   ): Promise<{ data: ReportDocument[]; meta: any }> {
     const query: any = {};
 
@@ -214,6 +215,12 @@ export class ReportsService {
     }
     if (format) {
       query.format = format;
+    }
+    if (startDate) {
+      const parsedStart = new Date(startDate);
+      if (!isNaN(parsedStart.getTime())) {
+        query.createdAt = { $gte: parsedStart };
+      }
     }
 
     const total = await this.reportModel.countDocuments(query);

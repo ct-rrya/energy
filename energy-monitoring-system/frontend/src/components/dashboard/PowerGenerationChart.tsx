@@ -71,21 +71,19 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
     startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
   );
 
+  // Determine granularity from prop or timeFilter
+  const granularity = propGranularity ?? (timeFilter === 'today' || timeFilter === 'hourly' ? 'hour' : 'day');
+
   // Transform API data to chart format and apply data point limiting for performance
-  // Limit to max 100 points for 7-day view to prevent performance degradation (Requirement 9.8)
   const chartData = useMemo(() => {
     const transformed = transformToChartData(timeSeries);
-    // Always limit since we're using 7-day view
-    return limitDataPoints(transformed, 100);
-  }, [timeSeries]);
+    return limitDataPoints(transformed, granularity === 'hour' ? 200 : 100);
+  }, [timeSeries, granularity]);
 
   // Determine if dataset is empty or sparse (< 2 points)
   const isEmpty = useMemo(() => isDatasetEmpty(chartData), [chartData]);
   const isSparse = chartData.length > 0 && chartData.length < 2;
   const chartHeight = isMobile ? 240 : 270;
-
-  // Determine granularity from prop or timeFilter
-  const granularity = propGranularity ?? (timeFilter === 'today' ? 'hour' : 'day');
 
   const showTimeOnXAxis = useMemo(
     () => hasDuplicateFormattedDates(chartData, granularity),
