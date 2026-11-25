@@ -16,8 +16,8 @@ interface AdminRouteProps {
  * Ensures user is authenticated (redirects to admin login if not)
  * If requireSuperAdmin is true, ensures user has SUPER_ADMIN role (redirects non-SUPER_ADMIN to dashboard)
  */
-export function AdminRoute({ children, requireSuperAdmin = true }: AdminRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+export function AdminRoute({ children }: AdminRouteProps) {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking auth state
@@ -30,11 +30,6 @@ export function AdminRoute({ children, requireSuperAdmin = true }: AdminRoutePro
     return <Navigate to={ROUTES.ADMIN_LOGIN} state={{ from: location }} replace />;
   }
 
-  // Redirect to dashboard if authenticated but not SUPER_ADMIN
-  if (requireSuperAdmin && user?.role !== 'SUPER_ADMIN') {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
-  }
-
-  // User is authenticated and authorized, render children
+  // User is authenticated as an Admin, render children
   return <>{children}</>;
 }

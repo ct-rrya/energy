@@ -199,8 +199,8 @@ export function LogsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Strict role verification: Super Admin only
-  if (user && user.role !== 'SUPER_ADMIN') {
+  // Admin-only verification (any authenticated admin may view audit logs)
+  if (!user) {
     navigate('/dashboard');
     return null;
   }
@@ -357,16 +357,15 @@ export function LogsPage() {
     if (metaData?.administrators) {
       metaData.administrators.forEach((a) => {
         const id = a.administratorId || a.id;
-        const role = (a.administratorRole || a.role || 'ADMIN').trim();
         const rawName = (a.administratorName || a.name || 'Administrator').trim();
-        const name = role === 'SUPER_ADMIN' ? 'Ecostep Super' : rawName;
-        const key = `${name.toLowerCase()}::${role.toUpperCase()}`;
+        const name = rawName || 'Administrator';
+        const key = `${name.toLowerCase()}::ADMIN`;
         if (id && !seen.has(key)) {
           seen.add(key);
           list.push({
             value: id,
             label: name,
-            badge: role === 'SUPER_ADMIN' ? 'SUPER' : 'ADMIN',
+            badge: 'ADMIN',
           });
         }
       });
@@ -375,17 +374,16 @@ export function LogsPage() {
     // Fallback: also include administrators present in the currently loaded logs if not already listed
     logs.forEach((l) => {
       const id = l.administratorId;
-      const role = (l.administratorRole || 'ADMIN').trim();
       const rawName = (l.administratorName || '').trim();
-      const name = role === 'SUPER_ADMIN' ? 'Ecostep Super' : rawName;
+      const name = rawName || 'Administrator';
       if (id && name) {
-        const key = `${name.toLowerCase()}::${role.toUpperCase()}`;
+        const key = `${name.toLowerCase()}::ADMIN`;
         if (!seen.has(key)) {
           seen.add(key);
           list.push({
             value: id,
             label: name,
-            badge: role === 'SUPER_ADMIN' ? 'SUPER' : 'ADMIN',
+            badge: 'ADMIN',
           });
         }
       }
@@ -457,8 +455,8 @@ export function LogsPage() {
             All times are shown in <strong className="text-[var(--t,#E4F7EA)]">Asia/Manila (PHT, UTC+8)</strong>
           </span>
         </div>
-        <div className="flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/15 text-amber-500 border border-amber-400/25">
-          Viewing as super admin
+        <div className="flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-[#19D46A] border border-emerald-500/25">
+          Viewing as admin
         </div>
       </div>
 
@@ -666,9 +664,8 @@ export function LogsPage() {
                   const eventTitle = formatEventTitle(log);
                   const categorySubtitle = formatCategorySubtitle(log);
 
-                  const isSuper = log.administratorRole === 'SUPER_ADMIN';
-                  const adminDisplayName = isSuper ? 'Ecostep Super' : (log.administratorName || 'Unknown Admin');
-                  const initial = (adminDisplayName?.[0] || 'E').toUpperCase();
+                  const adminDisplayName = log.administratorName || 'Admin';
+                  const initial = (adminDisplayName?.[0] || 'A').toUpperCase();
 
                   return (
                     <tr
@@ -690,11 +687,7 @@ export function LogsPage() {
                       <td className="py-3.5 px-5 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                              isSuper
-                                ? 'bg-amber-400/20 text-amber-500 border border-amber-400/30'
-                                : 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30'
-                            }`}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30"
                           >
                             {initial}
                           </div>
@@ -703,7 +696,7 @@ export function LogsPage() {
                               {adminDisplayName}
                             </div>
                             <div className="text-[11px] text-[var(--mu,#87A993)]">
-                              {isSuper ? 'Super admin' : 'System admin'}
+                              Admin
                             </div>
                           </div>
                         </div>
@@ -896,9 +889,7 @@ export function LogsPage() {
                     <span>Who Performed</span>
                   </div>
                   <div className="font-semibold text-xs text-[var(--t,#E4F7EA)] mt-1">
-                    {selectedLog.administratorRole === 'SUPER_ADMIN'
-                      ? 'Ecostep Super'
-                      : (selectedLog.administratorName || 'Unknown Admin')}
+                    {selectedLog.administratorName || 'Admin'}
                   </div>
                   <div className="text-[10px] font-bold text-[#10B981] uppercase">
                     {selectedLog.administratorRole || 'ADMIN'}

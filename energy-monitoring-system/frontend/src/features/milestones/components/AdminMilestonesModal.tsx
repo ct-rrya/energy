@@ -44,8 +44,8 @@ export function AdminMilestonesModal({
 }: AdminMilestonesModalProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { user, isAuthenticated } = useAuth();
+  const isSuperAdmin = Boolean(isAuthenticated && user);
 
   const [selectedMonth, setSelectedMonth] = useState(activeMonth);
   const [monthlyTarget, setMonthlyTarget] = useState(String(currentMonthTargetMWh ?? 0.1));

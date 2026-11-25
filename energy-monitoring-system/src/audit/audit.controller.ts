@@ -33,7 +33,7 @@ export class AuditController {
    * Access: SUPER_ADMIN only
    */
   @Get('logs')
-  @Roles('SUPER_ADMIN')
+  @Roles('SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin')
   async queryLogs(
     @Query('administratorId') administratorId?: string,
     @Query('adminId') adminId?: string,
@@ -123,7 +123,7 @@ export class AuditController {
    * Access: SUPER_ADMIN only
    */
   @Get('export')
-  @Roles('SUPER_ADMIN')
+  @Roles('SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin')
   async exportCsv(
     @Query('administratorId') administratorId?: string,
     @Query('administratorRole') administratorRole?: string,
@@ -214,7 +214,7 @@ export class AuditController {
    * Returns metadata for UI filters: distinct administrators, categories, and counts
    */
   @Get('meta')
-  @Roles('SUPER_ADMIN')
+  @Roles('SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin')
   async getAuditMetadata() {
     const [administrators, modules, counts] = await Promise.all([
       this.auditService.getDistinctAdministrators(),
@@ -242,7 +242,7 @@ export class AuditController {
    * Get failed actions for immediate security inspection
    */
   @Get('logs/failures')
-  @Roles('SUPER_ADMIN')
+  @Roles('SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin')
   async getFailures(@Query('limit') limit?: string) {
     const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10), 1), 1000) : 50;
     const logs = await this.auditService.getFailures(parsedLimit);
@@ -279,7 +279,7 @@ export class LogsController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get()
-  @Roles('SUPER_ADMIN')
+  @Roles('SYSTEM_ADMIN', 'SUPER_ADMIN', 'admin')
   async getLogs(
     @Query('administratorId') administratorId?: string,
     @Query('adminId') adminId?: string,

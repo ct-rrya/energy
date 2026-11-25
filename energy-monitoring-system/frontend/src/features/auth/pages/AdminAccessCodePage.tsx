@@ -143,12 +143,8 @@ export default function AdminAccessCodePage() {
     setError('');
 
     try {
-      const loggedInUser = await loginWithAccessCode({ accessCode });
-      if (loggedInUser?.role === 'SUPER_ADMIN') {
-        navigate(ROUTES.ADMIN_MANAGEMENT, { replace: true });
-      } else {
-        navigate(ROUTES.DASHBOARD, { replace: true });
-      }
+      await loginWithAccessCode({ accessCode });
+      navigate(ROUTES.DASHBOARD, { replace: true });
     } catch (err: any) {
       console.error('Access code login failed:', err);
       setError(

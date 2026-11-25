@@ -625,7 +625,7 @@ export function MobileEnergyHarvestingDashboard({
               </span>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#39FF88] border border-emerald-500/25">
-              {isSuperAdmin ? 'Super Admin' : 'System Admin'}
+              Admin
             </span>
           </div>
 
@@ -697,40 +697,38 @@ export function MobileEnergyHarvestingDashboard({
               </div>
             </button>
 
-            {/* Admin Management (if Super Admin) */}
-            {isSuperAdmin && (
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.ADMIN_MANAGEMENT)}
-                className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
-                style={{
-                  backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
-                  borderColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(147, 51, 234, 0.2)',
-                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
-                }}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                      <Users size={18} strokeWidth={2.2} />
-                    </div>
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                      Manage
-                    </span>
+            {/* Audit Logs (Unified Admin) */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.ADMIN_LOGS)}
+              className="flex flex-col justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.98] group cursor-pointer"
+              style={{
+                backgroundColor: theme === 'dark' ? '#111B30' : '#FFFFFF',
+                borderColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(147, 51, 234, 0.2)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <Users size={18} strokeWidth={2.2} />
                   </div>
-                  <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-purple-500 transition-colors">
-                    Admin Accounts
-                  </div>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
-                    Access codes & security privileges
-                  </p>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    Audit
+                  </span>
                 </div>
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-3">
-                  <span>Configure</span>
-                  <ChevronRight size={13} strokeWidth={2.4} />
+                <div className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover:text-purple-500 transition-colors">
+                  Audit Logs
                 </div>
-              </button>
-            )}
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-tight">
+                  Activity trail & security records
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-3">
+                <span>View</span>
+                <ChevronRight size={13} strokeWidth={2.4} />
+              </div>
+            </button>
 
             {/* System Settings Action */}
             <button

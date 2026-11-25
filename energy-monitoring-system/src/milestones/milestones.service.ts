@@ -373,8 +373,12 @@ export class MilestonesService {
     }
 
     const overdueMonths = await this.getOverdueMonths(targets);
-    const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'super_admin';
-    const canEdit = !isLocked || isSuperAdmin;
+    const isAdminRole =
+      userRole === 'SYSTEM_ADMIN' ||
+      userRole === 'SUPER_ADMIN' ||
+      userRole === 'admin' ||
+      userRole === 'super_admin';
+    const canEdit = !isLocked || isAdminRole;
 
     const resolvedConfiguredBy = await this.resolveAdminDisplayName(
       existingConfig?.configuredBy || existingConfig?.updatedBy,
@@ -511,10 +515,14 @@ export class MilestonesService {
 
     const existingConfig = existing.monthlyConfigurations[targetMonth];
     const isAlreadyLocked = Boolean(existingConfig && (existingConfig.isLocked || existingConfig.status === 'CONFIGURED'));
-    const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'super_admin';
+    const isAdminRole =
+      userRole === 'SYSTEM_ADMIN' ||
+      userRole === 'SUPER_ADMIN' ||
+      userRole === 'admin' ||
+      userRole === 'super_admin';
 
-    // Enforcement: If already locked, only Super Administrator can perform exceptional correction
-    if (isAlreadyLocked && !isSuperAdmin) {
+    // Enforcement: If already locked, only an authenticated Administrator can perform audited correction
+    if (isAlreadyLocked && !isAdminRole) {
       throw new ForbiddenException(
         `Milestone targets for ${targetMonth} are locked against ordinary modifications. Exceptional corrections require Super Administrator authorization.`
       );
@@ -544,7 +552,7 @@ export class MilestonesService {
     const nowIso = new Date().toISOString();
     const actorDisplayName = (await this.resolveAdminDisplayName(userId)) || 'an administrator';
 
-    if (isAlreadyLocked && isSuperAdmin) {
+    if (isAlreadyLocked && isAdminRole) {
       // Exceptional Super Administrator correction: audit logging
       const correctionLogEntry: MilestoneCorrectionLog = {
         correctedBy: actorDisplayName,

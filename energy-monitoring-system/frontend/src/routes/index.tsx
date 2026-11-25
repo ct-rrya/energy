@@ -12,7 +12,6 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { LandingPage } from '@/features/landing/pages/LandingPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import AdminAccessCodePage from '@/features/auth/pages/AdminAccessCodePage';
-import AdminManagementPage from '@/features/admin-management/pages/AdminManagementPage';
 import { HealthCheckPage } from '@/features/dashboard/pages/HealthCheckPage';
 import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 
@@ -224,7 +223,7 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // Sensors Management (SYSTEM_ADMIN only)
+      // Sensors Management (Admin only)
       {
         path: ROUTES.SENSORS,
         element: (
@@ -236,24 +235,14 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // Admin Management (SUPER_ADMIN only)
-      {
-        path: ROUTES.ADMIN_MANAGEMENT,
-        element: (
-          <AdminRoute requireSuperAdmin={true}>
-            <AdminManagementPage />
-          </AdminRoute>
-        ),
-      },
-
-      // Audit & System Logs (SUPER_ADMIN only)
+      // Audit & System Logs (Admin only)
       {
         path: ROUTES.ADMIN_LOGS,
         element: (
           <LazyRoute>
-            <AdminRoute requireSuperAdmin={true}>
+            <ProtectedRoute>
               <LogsPage />
-            </AdminRoute>
+            </ProtectedRoute>
           </LazyRoute>
         ),
       },

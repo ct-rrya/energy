@@ -12,7 +12,6 @@ import {
   Stethoscope, 
   FileText, 
   Settings, 
-  Users, 
   ChevronUp, 
   ChevronLeft,
   Pin,
@@ -35,8 +34,7 @@ interface NavItem {
   Icon: React.ElementType;
   end?: boolean;
   publicOnly?: boolean;
-  systemAdminOnly?: boolean;
-  superAdminOnly?: boolean;
+  adminOnly?: boolean;
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
@@ -47,12 +45,10 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText },
   { to: ROUTES.FEEDBACK, label: 'Feedback', Icon: MessageSquareHeart },
   { to: ROUTES.ABOUT, label: 'About', Icon: Info },
-  // Operational features for all admins
-  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, systemAdminOnly: true },
-  { to: ROUTES.SETTINGS, label: 'Settings', Icon: Settings, systemAdminOnly: true },
-  // SUPER_ADMIN only routes
-  { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admins', Icon: Users, superAdminOnly: true },
-  { to: ROUTES.ADMIN_LOGS, label: 'Logs', Icon: ScrollText, superAdminOnly: true },
+  // Unified Admin routes
+  { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, adminOnly: true },
+  { to: ROUTES.ADMIN_LOGS, label: 'Logs', Icon: ScrollText, adminOnly: true },
+  { to: ROUTES.SETTINGS, label: 'Settings', Icon: Settings, adminOnly: true },
 ];
 
 const HOVER_ENTER_DELAY_MS = 140;
@@ -571,30 +567,21 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     };
   }, [location.pathname]);
 
-  // Determine user role
-  const isSuperAdmin = isAuthenticated && user && (user.role === 'SUPER_ADMIN' || user.role === 'admin');
-  const isSystemAdmin = isAuthenticated && user && user.role === 'SYSTEM_ADMIN';
-  const isAnyAdmin = isSuperAdmin || isSystemAdmin;
+  // Unified Admin role (all authenticated admin accounts get identical admin access)
+  const isAnyAdmin = Boolean(isAuthenticated && user);
 
   // Filter nav items based on role
   const navItems = useMemo(() => {
-    if (isSuperAdmin) {
-      // Super Admin account ONLY has Admins and Logs
-      return ALL_NAV_ITEMS.filter((item) => item.superAdminOnly);
-    }
     return ALL_NAV_ITEMS.filter((item) => {
       if (item.publicOnly && isAnyAdmin) {
         return false;
       }
-      if (item.superAdminOnly) {
-        return false;
-      }
-      if (item.systemAdminOnly) {
-        return isSystemAdmin;
+      if (item.adminOnly) {
+        return isAnyAdmin;
       }
       return true;
     });
-  }, [isAnyAdmin, isSuperAdmin, isSystemAdmin]);
+  }, [isAnyAdmin]);
 
   const handleLogout = async () => {
     try {
@@ -605,15 +592,14 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   };
 
-  const userName = isSuperAdmin ? 'Ecostep Super' : (user?.name || 'Guest');
-  const userRole = isSuperAdmin ? 'Super Administrator' : isSystemAdmin ? 'System Administrator' : 'Read-only access';
-  const cardUserRole = isSuperAdmin ? 'Super Admin' : isSystemAdmin ? 'System Admin' : 'Read-only access';
+  const userName = isAnyAdmin ? (user?.name || 'Admin') : 'Guest';
+  const userRole = isAnyAdmin ? 'Administrator' : 'Read-only access';
+  const cardUserRole = isAnyAdmin ? 'Admin' : 'Read-only access';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
-  const avatarInitial = isSuperAdmin
-    ? 'E'
-    : isAuthenticated && (user?.name || user?.email)
-    ? (user.name || user.email || 'A')[0].toUpperCase()
-    : 'G';
+  const avatarInitial =
+    isAuthenticated && (user?.name || user?.email)
+      ? (user.name || user.email || 'A')[0].toUpperCase()
+      : 'G';
 
   const handleOpenMobileEcoGuide = useCallback(() => {
     setMobileUserSheetOpen(false);
@@ -673,8 +659,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             const { to, label, Icon, end } = item;
             const prevItem = idx > 0 ? navItems[idx - 1] : null;
             const isFirstAdminItem =
-              Boolean(item.systemAdminOnly || item.superAdminOnly) &&
-              Boolean(prevItem && !prevItem.systemAdminOnly && !prevItem.superAdminOnly);
+              Boolean(item.adminOnly) &&
+              Boolean(prevItem && !prevItem.adminOnly);
 
             return (
               <div key={to} className="contents">
@@ -777,8 +763,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             {/* Flat Menu Body (single buttons, no second dividers) */}
             <div className="um-body es-popover-body">
-              {/* Settings Navigation (System Admin only - Super Admin has Admins and Logs only) */}
-              {isSystemAdmin && (
+              {/* Settings Navigation (Admin only) */}
+              {isAnyAdmin && (
                 <button
                   type="button"
                   role="menuitem"
@@ -1089,25 +1075,14 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               )}
 
               {isAnyAdmin && (
-                <NavLink
-                  to={ROUTES.ADMIN_DIAGNOSTICS}
-                  className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                  onClick={() => setMobileUserSheetOpen(false)}
-                >
-                  <Stethoscope size={20} strokeWidth={1.8} />
-                  <span>Health</span>
-                </NavLink>
-              )}
-
-              {isSuperAdmin && (
                 <>
                   <NavLink
-                    to={ROUTES.ADMIN_MANAGEMENT}
+                    to={ROUTES.ADMIN_DIAGNOSTICS}
                     className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
                     onClick={() => setMobileUserSheetOpen(false)}
                   >
-                    <Users size={20} strokeWidth={1.8} />
-                    <span>Admins</span>
+                    <Stethoscope size={20} strokeWidth={1.8} />
+                    <span>Health</span>
                   </NavLink>
 
                   <NavLink
@@ -1123,8 +1098,8 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
               <div className="my-1 border-t border-[var(--line)] opacity-60" />
 
-              {/* Settings Navigation (System Admin only - Super Admin has Admins and Logs only) */}
-              {isSystemAdmin && (
+              {/* Settings Navigation (Admin only) */}
+              {isAnyAdmin && (
                 <button
                   type="button"
                   className="es-sheet-item"

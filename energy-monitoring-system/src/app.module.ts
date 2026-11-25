@@ -19,7 +19,6 @@ import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
-import { AdminManagementModule } from './admin-management/admin-management.module';
 import { EmailModule } from './email/email.module';
 import { SensorsModule } from './sensors/sensors.module';
 import { IotModule } from './iot/iot.module';
@@ -125,7 +124,6 @@ import { FeedbackModule } from './feedback/feedback.module';
     UsersModule,
     AuthModule,
     AuditModule, // Audit logging for administrator actions
-    AdminManagementModule, // SUPER_ADMIN account management
     EmailModule, // Email service for access code delivery
     SensorsModule,
     IotModule,
