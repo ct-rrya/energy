@@ -65,12 +65,26 @@ export function useLiveSensorData() {
     retry: 2,
   });
 
-  // Set initial reading from API
+  // Sync initial and polled REST API readings whenever a newer reading arrives
   useEffect(() => {
-    if (apiData && !lastReading) {
-      setLastReading(apiData);
-    }
-  }, [apiData]);
+    if (!apiData) return;
+
+    setLastReading((prev) => {
+      if (!prev) {
+        return apiData;
+      }
+
+      const prevMs = new Date(prev.timestamp).getTime();
+      const nextMs = new Date(apiData.timestamp).getTime();
+      if (!Number.isFinite(prevMs) || (Number.isFinite(nextMs) && nextMs > prevMs)) {
+        void queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+        void queryClient.invalidateQueries({ queryKey: ['milestones'] });
+        return apiData;
+      }
+
+      return prev;
+    });
+  }, [apiData, queryClient]);
 
   // PRIMARY: Subscribe to Firebase Firestore for real-time updates
   useEffect(() => {

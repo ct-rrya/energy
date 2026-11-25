@@ -72,13 +72,17 @@ export function useChartRealTimeUpdates(): void {
       queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'voltage'] });
       queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'current'] });
       queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'energy'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'time-series', 'steps'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
     };
 
-    // Subscribe to sensor reading events
+    // Subscribe to backend 'reading:new' event (plus legacy 'sensor:reading' alias)
+    socket.on('reading:new', handleSensorReading);
     socket.on('sensor:reading', handleSensorReading);
 
     // Cleanup: unsubscribe on unmount or when dependencies change
     return () => {
+      socket.off('reading:new', handleSensorReading);
       socket.off('sensor:reading', handleSensorReading);
     };
   }, [socket, isConnected, queryClient]);

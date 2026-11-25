@@ -50,9 +50,42 @@ import {
  * - CORS configured
  * - Only authenticated users can connect
  */
+const resolveSocketCorsOrigin = (
+  requestOrigin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+): void => {
+  if (!requestOrigin || process.env.NODE_ENV === 'development') {
+    callback(null, true);
+    return;
+  }
+
+  const normalizedRequestOrigin = requestOrigin.replace(/\/+$/, '');
+  const allowedOrigins = [
+    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []),
+    process.env.FRONTEND_URL,
+    process.env.PRODUCTION_URL,
+  ]
+    .map((origin) => origin?.trim().replace(/\/+$/, ''))
+    .filter(
+      (origin): origin is string =>
+        Boolean(origin && origin !== 'https://ecostep.example.com'),
+    );
+
+  if (
+    allowedOrigins.length === 0 ||
+    allowedOrigins.includes('*') ||
+    allowedOrigins.includes(normalizedRequestOrigin)
+  ) {
+    callback(null, true);
+    return;
+  }
+
+  callback(null, false);
+};
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    origin: resolveSocketCorsOrigin,
     credentials: true,
   },
 })

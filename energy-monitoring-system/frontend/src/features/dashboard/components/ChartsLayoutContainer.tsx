@@ -3,8 +3,9 @@ import { EnergyPeriodChart } from '@/components/dashboard/EnergyPeriodChart';
 import { CumulativeEnergyChart } from '@/components/dashboard/CumulativeEnergyChart';
 import { StepsChart } from '@/components/dashboard/StepsChart';
 import { useChartRealTimeUpdates } from '../hooks/useChartRealTimeUpdates';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTimeSeriesData } from '@/features/dashboard/hooks/useTimeSeriesData';
 import { transformToChartData, isDatasetEmpty, formatChartTimestamp } from '@/components/dashboard/chartUtils';
@@ -47,16 +48,44 @@ export function ChartsLayoutContainer() {
   
   // Subscribe to real-time updates for all charts
   useChartRealTimeUpdates();
+  const { socket } = useSocket();
 
-  // Calculate last 24 hours date range for electrical measurements
-  const { startDate, endDate } = useMemo(() => {
+  // Rolling last-24-hours date range so refetches always include newly arrived readings
+  const [dateRange, setDateRange] = useState(() => {
     const now = new Date();
-    const start = subHours(now, 24);
     return {
-      startDate: start.toISOString(),
+      startDate: subHours(now, 24).toISOString(),
       endDate: now.toISOString(),
     };
-  }, []);
+  });
+  const lastRangeUpdateRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    const refreshRange = () => {
+      const now = new Date();
+      lastRangeUpdateRef.current = now.getTime();
+      setDateRange({
+        startDate: subHours(now, 24).toISOString(),
+        endDate: now.toISOString(),
+      });
+    };
+
+    const interval = setInterval(refreshRange, 60_000);
+
+    const handleNewReading = () => {
+      if (Date.now() - lastRangeUpdateRef.current >= 5_000) {
+        refreshRange();
+      }
+    };
+
+    socket?.on('reading:new', handleNewReading);
+    return () => {
+      clearInterval(interval);
+      socket?.off('reading:new', handleNewReading);
+    };
+  }, [socket]);
+
+  const { startDate, endDate } = dateRange;
 
   // Fetch voltage data
   const {

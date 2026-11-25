@@ -44,8 +44,30 @@ export function SocketProvider({ children }: SocketProviderProps) {
     // Get JWT token if authenticated; otherwise connect as public read-only viewer
     const token = isAuthenticated ? localStorage.getItem('auth_token') : null;
 
-    // Get socket URL from environment
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+    // Resolve socket URL: prefer explicit VITE_SOCKET_URL, else derive origin from VITE_API_BASE_URL
+    const resolveSocketUrl = (): string => {
+      const explicitUrl = import.meta.env.VITE_SOCKET_URL?.trim();
+      if (explicitUrl) {
+        return explicitUrl;
+      }
+
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+      if (apiBaseUrl && /^https?:\/\//i.test(apiBaseUrl)) {
+        try {
+          return new URL(apiBaseUrl).origin;
+        } catch {
+          // Fall through to default
+        }
+      }
+
+      if (typeof window !== 'undefined' && !import.meta.env.DEV) {
+        return window.location.origin;
+      }
+
+      return 'http://localhost:3000';
+    };
+
+    const socketUrl = resolveSocketUrl();
 
     console.log('[Socket] Connecting to:', socketUrl);
 
@@ -56,7 +78,8 @@ export function SocketProvider({ children }: SocketProviderProps) {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionDelayMax: 10000,
+      reconnectionAttempts: Infinity,
     });
 
     // Connection established
