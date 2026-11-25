@@ -87,19 +87,19 @@ export function getPermissions(role: UserRole): FeaturePermissions {
 
     case 'public':
       return {
-        // Navigation - public users can view basic analytics and dashboard
+        // Navigation - public users can view dashboard, analytics, and reports
         canAccessDashboard: true,
         canAccessAnalytics: true,
-        canAccessReports: false,
+        canAccessReports: true,
         canAccessAlerts: false,
         canAccessSensors: false,
         canAccessSettings: false,
         canAccessProfile: false,
 
-        // Actions - public users have read-only access
+        // Actions - public users can generate/export reports, read-only for admin settings
         canManageDevices: false,
         canConfigureAlerts: false,
-        canExportReports: false,
+        canExportReports: true,
         canModifySettings: false,
         canConfigureMilestones: false,
       };

@@ -13,3 +13,4 @@ export * from './user.service';
 export * from './diagnostics.service';
 export * from './energy.service';
 export * from './milestones.service';
+export * from './feedback.service';

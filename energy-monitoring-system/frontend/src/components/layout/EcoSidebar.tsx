@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Pin,
   MessageSquare,
+  MessageSquareHeart,
   Award,
   ScrollText,
   Info,
@@ -43,10 +44,11 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.DASHBOARD, label: 'Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Analytics', Icon: TrendingUp },
   { to: ROUTES.MILESTONES, label: 'Milestone', Icon: Award },
+  { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText },
+  { to: ROUTES.FEEDBACK, label: 'Feedback', Icon: MessageSquareHeart },
   { to: ROUTES.ABOUT, label: 'About', Icon: Info },
   // Operational features for all admins
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, systemAdminOnly: true },
-  { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText, systemAdminOnly: true },
   { to: ROUTES.SETTINGS, label: 'Settings', Icon: Settings, systemAdminOnly: true },
   // SUPER_ADMIN only routes
   { to: ROUTES.ADMIN_MANAGEMENT, label: 'Admins', Icon: Users, superAdminOnly: true },
@@ -985,14 +987,14 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             </NavLink>
 
             <NavLink
-              to={ROUTES.HOME}
+              to={ROUTES.REPORTS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Home"
+              aria-label="Ledger"
             >
               <span className="es-mobile-tab-pill">
-                <House size={18} strokeWidth={2} />
+                <FileText size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Home</span>
+              <span className="es-mobile-tab-label">Ledger</span>
             </NavLink>
           </>
         )}
@@ -1057,26 +1059,44 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 <span>Milestone</span>
               </NavLink>
 
-              {isAnyAdmin && (
-                <>
-                  <NavLink
-                    to={ROUTES.ADMIN_DIAGNOSTICS}
-                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                    onClick={() => setMobileUserSheetOpen(false)}
-                  >
-                    <Stethoscope size={20} strokeWidth={1.8} />
-                    <span>Health</span>
-                  </NavLink>
+              <NavLink
+                to={ROUTES.REPORTS}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <FileText size={20} strokeWidth={1.8} />
+                <span>Ledger</span>
+              </NavLink>
 
-                  <NavLink
-                    to={ROUTES.REPORTS}
-                    className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                    onClick={() => setMobileUserSheetOpen(false)}
-                  >
-                    <FileText size={20} strokeWidth={1.8} />
-                    <span>Ledger</span>
-                  </NavLink>
-                </>
+              <NavLink
+                to={ROUTES.FEEDBACK}
+                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                onClick={() => setMobileUserSheetOpen(false)}
+              >
+                <MessageSquareHeart size={20} strokeWidth={1.8} />
+                <span>Feedback</span>
+              </NavLink>
+
+              {!isAnyAdmin && (
+                <NavLink
+                  to={ROUTES.HOME}
+                  className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                  onClick={() => setMobileUserSheetOpen(false)}
+                >
+                  <House size={20} strokeWidth={1.8} />
+                  <span>Home</span>
+                </NavLink>
+              )}
+
+              {isAnyAdmin && (
+                <NavLink
+                  to={ROUTES.ADMIN_DIAGNOSTICS}
+                  className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
+                  onClick={() => setMobileUserSheetOpen(false)}
+                >
+                  <Stethoscope size={20} strokeWidth={1.8} />
+                  <span>Health</span>
+                </NavLink>
               )}
 
               {isSuperAdmin && (

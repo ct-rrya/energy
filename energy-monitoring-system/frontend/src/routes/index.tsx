@@ -25,6 +25,7 @@ const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').th
 const SensorMonitoringPage = lazy(() => import('@/features/sensors/pages/SensorMonitoringPage').then(m => ({ default: m.SensorMonitoringPage })));
 const AlertsPage = lazy(() => import('@/features/alerts/pages/AlertsPage').then(m => ({ default: m.AlertsPage })));
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const FeedbackPage = lazy(() => import('@/features/feedback/pages/FeedbackPage').then(m => ({ default: m.FeedbackPage })));
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
@@ -143,6 +144,26 @@ export const router = createBrowserRouter([
         ),
       },
 
+      // Reports - Public access (both public users and admins can generate & download reports)
+      {
+        path: ROUTES.REPORTS,
+        element: (
+          <LazyRoute>
+            <ReportsPage />
+          </LazyRoute>
+        ),
+      },
+
+      // Public Feedback & Reviews Board (public post/upvote, admin reply/resolve/delete)
+      {
+        path: ROUTES.FEEDBACK,
+        element: (
+          <LazyRoute>
+            <FeedbackPage />
+          </LazyRoute>
+        ),
+      },
+
       // ADMIN-ONLY ROUTES - Require authentication (SYSTEM_ADMIN or SUPER_ADMIN)
       {
         path: ROUTES.SENSORS_MONITORING,
@@ -162,18 +183,6 @@ export const router = createBrowserRouter([
           <LazyRoute>
             <ProtectedRoute>
               <AlertsPage />
-            </ProtectedRoute>
-          </LazyRoute>
-        ),
-      },
-
-      // Reports (Admin only)
-      {
-        path: ROUTES.REPORTS,
-        element: (
-          <LazyRoute>
-            <ProtectedRoute>
-              <ReportsPage />
             </ProtectedRoute>
           </LazyRoute>
         ),

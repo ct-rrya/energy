@@ -37,6 +37,7 @@ import { ChatModule } from './chat/chat.module';
 import { PlayersModule } from './players/players.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { MilestonesModule } from './milestones/milestones.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 /**
  * Root Application Module
@@ -144,6 +145,9 @@ import { MilestonesModule } from './milestones/milestones.module';
 
     // System Diagnostics Module
     DiagnosticsModule, // Admin-only diagnostic testing
+
+    // Public Feedback & Reviews Board
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [

@@ -33,6 +33,7 @@ import {
   ReportsListResponseDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ReportType, ReportFormat } from './schemas/report.schema';
 import type { UserDocument } from '../users/schemas/user.schema';
@@ -65,7 +66,6 @@ import { extractSafeIp } from '../audit/utils/audit-ip.utils';
  */
 @ApiTags('Reports')
 @Controller('reports')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ReportsController {
   constructor(
@@ -122,6 +122,7 @@ export class ReportsController {
    * }
    */
   @Post('generate')
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Generate new report',
@@ -143,40 +144,43 @@ export class ReportsController {
   })
   async generate(
     @Body() generateReportDto: GenerateReportDto,
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: UserDocument | null,
     @Req() req: Request,
   ) {
+    const userId = user?._id?.toString();
     try {
       const report = await this.reportsService.generate(
         generateReportDto,
-        user._id.toString(),
+        userId,
       );
 
-      const formatLower = (generateReportDto.format || '').toLowerCase();
-      let eventName = 'Generated PDF report';
-      if (formatLower === 'csv') {
-        eventName = 'Exported CSV';
-      } else if (formatLower === 'word' || formatLower === 'docx' || formatLower === 'doc') {
-        eventName = 'Generated Word report';
-      } else if (formatLower === 'excel' || formatLower === 'xlsx') {
-        eventName = 'Exported CSV';
-      }
+      if (user && userId) {
+        const formatLower = (generateReportDto.format || '').toLowerCase();
+        let eventName = 'Generated PDF report';
+        if (formatLower === 'csv') {
+          eventName = 'Exported CSV';
+        } else if (formatLower === 'word' || formatLower === 'docx' || formatLower === 'doc') {
+          eventName = 'Generated Word report';
+        } else if (formatLower === 'excel' || formatLower === 'xlsx') {
+          eventName = 'Exported CSV';
+        }
 
-      await this.auditService.logAudit(req, {
-        category: 'Reports',
-        event: eventName,
-        result: 'SUCCESS',
-        details: {
-          reportName: report.fileName || generateReportDto.type,
-          format: generateReportDto.format,
-          dateRange: `${generateReportDto.startDate} to ${generateReportDto.endDate}`,
-        },
-        admin: {
-          id: user._id.toString(),
-          name: user.name,
-          role: user.role,
-        },
-      });
+        await this.auditService.logAudit(req, {
+          category: 'Reports',
+          event: eventName,
+          result: 'SUCCESS',
+          details: {
+            reportName: report.fileName || generateReportDto.type,
+            format: generateReportDto.format,
+            dateRange: `${generateReportDto.startDate} to ${generateReportDto.endDate}`,
+          },
+          admin: {
+            id: userId,
+            name: user.name,
+            role: user.role,
+          },
+        });
+      }
 
       return {
         success: true,
@@ -187,21 +191,23 @@ export class ReportsController {
         },
       };
     } catch (error) {
-      await this.auditService.logFailure(
-        {
-          administratorId: user._id.toString(),
-          administratorName: user.name,
-          administratorRole: user.role,
-          module: AUDIT_MODULES.REPORTS,
-          action: AUDIT_ACTIONS.GENERATE_REPORT,
-          target: generateReportDto.type,
-          targetType: 'Report',
-          ipAddress: extractSafeIp(req),
-          userAgent: req.headers['user-agent'] as string,
-          details: { dto: generateReportDto },
-        },
-        error,
-      );
+      if (user && userId) {
+        await this.auditService.logFailure(
+          {
+            administratorId: userId,
+            administratorName: user.name,
+            administratorRole: user.role,
+            module: AUDIT_MODULES.REPORTS,
+            action: AUDIT_ACTIONS.GENERATE_REPORT,
+            target: generateReportDto.type,
+            targetType: 'Report',
+            ipAddress: extractSafeIp(req),
+            userAgent: req.headers['user-agent'] as string,
+            details: { dto: generateReportDto },
+          },
+          error,
+        );
+      }
       throw error;
     }
   }
@@ -246,6 +252,7 @@ export class ReportsController {
    * }
    */
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'List user reports',
     description:
@@ -287,7 +294,7 @@ export class ReportsController {
     description: 'Unauthorized - JWT token required',
   })
   async findAll(
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: UserDocument | null,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('type') type?: ReportType,
@@ -298,7 +305,7 @@ export class ReportsController {
     const validLimit = Math.min(100, Math.max(1, Number(limit)));
 
     const { data, meta } = await this.reportsService.findAll(
-      user._id.toString(),
+      user?._id?.toString(),
       validPage,
       validLimit,
       type,
@@ -350,6 +357,7 @@ export class ReportsController {
    * }
    */
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Get report details',
     description:
@@ -375,8 +383,8 @@ export class ReportsController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized - JWT token required',
   })
-  async findOne(@Param('id') id: string, @CurrentUser() user: UserDocument) {
-    const report = await this.reportsService.findOne(id, user._id.toString());
+  async findOne(@Param('id') id: string, @CurrentUser() user: UserDocument | null) {
+    const report = await this.reportsService.findOne(id, user?._id?.toString());
 
     return {
       success: true,
@@ -411,6 +419,7 @@ export class ReportsController {
    * (Binary file stream with headers)
    */
   @Get(':id/download')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Download report file',
     description:
@@ -442,14 +451,15 @@ export class ReportsController {
   })
   async download(
     @Param('id') id: string,
-    @CurrentUser() user: UserDocument,
+    @CurrentUser() user: UserDocument | null,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    const userId = user?._id?.toString();
     try {
       const { stream, report } = await this.reportsService.download(
         id,
-        user._id.toString(),
+        userId,
       );
 
       // Set response headers
@@ -464,49 +474,53 @@ export class ReportsController {
         'Content-Length': report.fileSize,
       });
 
-      const dlFormatLower = (report.format || '').toLowerCase();
-      let dlEventName = 'Generated PDF report';
-      if (dlFormatLower === 'csv') {
-        dlEventName = 'Exported CSV';
-      } else if (dlFormatLower === 'word' || dlFormatLower === 'docx' || dlFormatLower === 'doc') {
-        dlEventName = 'Generated Word report';
-      } else if (dlFormatLower === 'excel' || dlFormatLower === 'xlsx') {
-        dlEventName = 'Exported CSV';
-      }
+      if (user && userId) {
+        const dlFormatLower = (report.format || '').toLowerCase();
+        let dlEventName = 'Generated PDF report';
+        if (dlFormatLower === 'csv') {
+          dlEventName = 'Exported CSV';
+        } else if (dlFormatLower === 'word' || dlFormatLower === 'docx' || dlFormatLower === 'doc') {
+          dlEventName = 'Generated Word report';
+        } else if (dlFormatLower === 'excel' || dlFormatLower === 'xlsx') {
+          dlEventName = 'Exported CSV';
+        }
 
-      await this.auditService.logAudit(req, {
-        category: 'Reports',
-        event: dlEventName,
-        result: 'SUCCESS',
-        details: {
-          reportName: report.fileName,
-          format: report.format,
-          dateRange: `${(report as any)?.parameters?.startDate || ''} to ${(report as any)?.parameters?.endDate || ''}`.trim(),
-        },
-        admin: {
-          id: user._id.toString(),
-          name: user.name,
-          role: user.role,
-        },
-      });
+        await this.auditService.logAudit(req, {
+          category: 'Reports',
+          event: dlEventName,
+          result: 'SUCCESS',
+          details: {
+            reportName: report.fileName,
+            format: report.format,
+            dateRange: `${(report as any)?.parameters?.startDate || ''} to ${(report as any)?.parameters?.endDate || ''}`.trim(),
+          },
+          admin: {
+            id: userId,
+            name: user.name,
+            role: user.role,
+          },
+        });
+      }
 
       return new StreamableFile(stream);
     } catch (error) {
-      await this.auditService.logFailure(
-        {
-          administratorId: user._id.toString(),
-          administratorName: user.name,
-          administratorRole: user.role,
-          module: AUDIT_MODULES.REPORTS,
-          action: AUDIT_ACTIONS.EXPORT_REPORT,
-          target: id,
-          targetType: 'Report',
-          ipAddress: extractSafeIp(req),
-          userAgent: req.headers['user-agent'] as string,
-          details: { reportId: id },
-        },
-        error,
-      );
+      if (user && userId) {
+        await this.auditService.logFailure(
+          {
+            administratorId: userId,
+            administratorName: user.name,
+            administratorRole: user.role,
+            module: AUDIT_MODULES.REPORTS,
+            action: AUDIT_ACTIONS.EXPORT_REPORT,
+            target: id,
+            targetType: 'Report',
+            ipAddress: extractSafeIp(req),
+            userAgent: req.headers['user-agent'] as string,
+            details: { reportId: id },
+          },
+          error,
+        );
+      }
       throw error;
     }
   }
@@ -536,6 +550,7 @@ export class ReportsController {
    * }
    */
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete report',
@@ -650,6 +665,7 @@ export class ReportsController {
    * }
    */
   @Get('types/available')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Get available report types',
     description:

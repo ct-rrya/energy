@@ -77,12 +77,13 @@ describe('permissions', () => {
     it('should return limited permissions for public role', () => {
       const permissions = getPermissions('public');
 
-      // Public users can access dashboard and analytics (read-only)
+      // Public users can access dashboard, analytics, and reports
       expect(permissions.canAccessDashboard).toBe(true);
       expect(permissions.canAccessAnalytics).toBe(true);
+      expect(permissions.canAccessReports).toBe(true);
+      expect(permissions.canExportReports).toBe(true);
 
       // Public users cannot access admin features
-      expect(permissions.canAccessReports).toBe(false);
       expect(permissions.canAccessAlerts).toBe(false);
       expect(permissions.canAccessSensors).toBe(false);
       expect(permissions.canAccessSettings).toBe(false);
@@ -91,7 +92,6 @@ describe('permissions', () => {
       // Public users cannot perform admin actions
       expect(permissions.canManageDevices).toBe(false);
       expect(permissions.canConfigureAlerts).toBe(false);
-      expect(permissions.canExportReports).toBe(false);
       expect(permissions.canModifySettings).toBe(false);
     });
   });
@@ -110,7 +110,8 @@ describe('permissions', () => {
 
       expect(permissions.canAccessDashboard).toBe(true);
       expect(permissions.canAccessAnalytics).toBe(true);
-      expect(permissions.canAccessReports).toBe(false);
+      expect(permissions.canAccessReports).toBe(true);
+      expect(permissions.canExportReports).toBe(true);
       expect(permissions.canManageDevices).toBe(false);
     });
   });
@@ -128,10 +129,11 @@ describe('permissions', () => {
       );
     });
 
-    it('should allow public user to access dashboard and analytics only', () => {
+    it('should allow public user to access dashboard, analytics, and reports only', () => {
       expect(canAccessFeature('canAccessDashboard', false, null)).toBe(true);
       expect(canAccessFeature('canAccessAnalytics', false, null)).toBe(true);
-      expect(canAccessFeature('canAccessReports', false, null)).toBe(false);
+      expect(canAccessFeature('canAccessReports', false, null)).toBe(true);
+      expect(canAccessFeature('canExportReports', false, null)).toBe(true);
       expect(canAccessFeature('canAccessAlerts', false, null)).toBe(false);
       expect(canAccessFeature('canManageDevices', false, null)).toBe(false);
     });

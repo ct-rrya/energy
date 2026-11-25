@@ -105,9 +105,9 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const deviceInfo = client.isSimulation
           ? { id: 'ecostep-demo-device', name: `${BLE_CONFIG.deviceName} (Demo)` }
           : {
-              id: client.device?.id || BLE_CONFIG.deviceName,
-              name: client.device?.name || BLE_CONFIG.deviceName,
-            };
+            id: client.device?.id || BLE_CONFIG.deviceName,
+            name: client.device?.name || BLE_CONFIG.deviceName,
+          };
 
         setIsConnecting(false);
         setIsConnected(true);
