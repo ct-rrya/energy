@@ -223,48 +223,31 @@ export function FeedbackPage() {
         }}
       />
 
-      {/* Summary Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
-        <div className="cd !p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
-            Total Posts
-          </div>
-          <div className="text-2xl font-bold text-[var(--t)] mt-1 tabular-nums">
-            {stats?.total ?? 0}
-          </div>
-        </div>
-        <div className="cd !p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
-            Open
-          </div>
-          <div className="text-2xl font-bold text-amber-400 mt-1 tabular-nums">
-            {stats?.openCount ?? 0}
-          </div>
-        </div>
-        <div className="cd !p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
-            Resolved
-          </div>
-          <div className="text-2xl font-bold text-[#19D46A] mt-1 tabular-nums">
-            {stats?.resolvedCount ?? 0}
-          </div>
-        </div>
-        <div className="cd !p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
-            Average Rating
-          </div>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-bold text-[var(--t)] tabular-nums">
-              {stats?.averageRating !== null && stats?.averageRating !== undefined
-                ? stats.averageRating.toFixed(1)
-                : '--'}
-            </span>
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400 self-center" />
-            <span className="text-xs text-[var(--mu)]">
-              ({stats?.ratingCount ?? 0})
-            </span>
-          </div>
-        </div>
+      {/* Compact inline summary indicators (minimal footprint so Post + Feed stay primary) */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--panel)] border border-[var(--line)] text-[var(--mu)]">
+          <span>Posts</span>
+          <strong className="text-[var(--t)] tabular-nums">{stats?.total ?? 0}</strong>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          <span>Open</span>
+          <strong className="tabular-nums">{stats?.openCount ?? 0}</strong>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[#19D46A]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#19D46A]" />
+          <span>Resolved</span>
+          <strong className="tabular-nums">{stats?.resolvedCount ?? 0}</strong>
+        </span>
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--panel)] border border-[var(--line)] text-[var(--mu)]">
+          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <strong className="text-[var(--t)] tabular-nums">
+            {stats?.averageRating !== null && stats?.averageRating !== undefined
+              ? stats.averageRating.toFixed(1)
+              : '--'}
+          </strong>
+          <span className="opacity-75">({stats?.ratingCount ?? 0})</span>
+        </span>
       </div>
 
       {/* Main Responsive Two-Column Layout on Large Screens */}
