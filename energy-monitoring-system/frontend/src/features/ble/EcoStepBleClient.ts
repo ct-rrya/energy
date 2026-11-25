@@ -109,6 +109,56 @@ export class EcoStepBleClient {
   }
 
   /**
+   * Attempt to silently reconnect to a previously authorized EcoStep BLE device
+   * using Web Bluetooth's navigator.bluetooth.getDevices() when supported.
+   */
+  public async reconnectSavedDevice(savedDeviceId?: string): Promise<boolean> {
+    if (!this.isSupported() || !this.isSecureContext()) {
+      return false;
+    }
+
+    const navBluetooth = (navigator as any).bluetooth;
+    if (typeof navBluetooth?.getDevices !== 'function') {
+      return false;
+    }
+
+    try {
+      const devices: BluetoothDeviceLike[] = await navBluetooth.getDevices();
+      const matched =
+        (savedDeviceId ? devices.find((d) => d.id === savedDeviceId) : undefined) ||
+        devices.find((d) => d.name === BLE_CONFIG.deviceName);
+
+      if (!matched || !matched.gatt) {
+        return false;
+      }
+
+      this.isSimulation = false;
+      this.isManualDisconnect = false;
+      this.device = matched;
+
+      this.onDisconnectListener = () => {
+        this.server = null;
+        this.writeChar = null;
+        this.notifyChar = null;
+        if (this.isManualDisconnect || this.isReconnecting) {
+          return;
+        }
+        void this.tryAutoReconnect();
+      };
+      this.device.addEventListener('gattserverdisconnected', this.onDisconnectListener);
+
+      await this.establishGattSession();
+      return true;
+    } catch {
+      this.device = null;
+      this.server = null;
+      this.writeChar = null;
+      this.notifyChar = null;
+      return false;
+    }
+  }
+
+  /**
    * Connect to the EcoStep Harvester device via Web Bluetooth
    */
   public async connect(): Promise<boolean> {

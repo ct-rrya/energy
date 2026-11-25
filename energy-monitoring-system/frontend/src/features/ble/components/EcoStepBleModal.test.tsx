@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { BleProvider, SAVED_BLE_DEVICE_STORAGE_KEY } from '@/contexts/BleContext';
+import { SAVED_WIFI_SSIDS_STORAGE_KEY } from '../wifiNetworks';
 import { EcoStepBleModal } from './EcoStepBleModal';
 import { EcoStepBleButton } from './EcoStepBleButton';
 
 // Mock EcoStepBleClient
 const mockConnect = vi.fn();
 const mockConnectSimulated = vi.fn();
+const mockReconnectSavedDevice = vi.fn().mockResolvedValue(false);
 const mockDisconnect = vi.fn();
 const mockSendCredentials = vi.fn();
 const mockRequestWiFiScan = vi.fn().mockResolvedValue(undefined);
@@ -22,6 +25,7 @@ vi.mock('../EcoStepBleClient', () => {
       deviceName: 'EcoStep-Harvester',
     },
     EcoStepBleClient: class {
+      device: any = { id: 'esp32-tile-01', name: 'EcoStep-Harvester' };
       isSimulation = false;
       constructor(callback: any) {
         capturedCallback = callback;
@@ -35,6 +39,7 @@ vi.mock('../EcoStepBleClient', () => {
       isConnected = mockIsConnected;
       connect = mockConnect;
       connectSimulated = mockConnectSimulated;
+      reconnectSavedDevice = mockReconnectSavedDevice;
       disconnect = mockDisconnect;
       sendWiFiCredentials = mockSendCredentials;
       requestWiFiScan = mockRequestWiFiScan;
@@ -45,13 +50,35 @@ vi.mock('../EcoStepBleClient', () => {
 describe('EcoStep BLE Components', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockIsConnected.mockReturnValue(false);
+    mockReconnectSavedDevice.mockResolvedValue(false);
     capturedCallback = null;
+
+    // Mock laptop Wi-Fi scan endpoint by default
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          source: 'laptop',
+          networks: [
+            { ssid: 'Laptop-Campus-WiFi', rssi: -48, secure: true },
+            { ssid: 'Laptop-Guest', rssi: -67, secure: false },
+          ],
+        }),
+      }),
+    );
   });
 
   describe('EcoStepBleButton', () => {
     it('renders the trigger button with default label and icon', () => {
-      render(<EcoStepBleButton />);
+      render(
+        <BleProvider>
+          <EcoStepBleButton />
+        </BleProvider>,
+      );
       const btn = screen.getByRole('button', { name: /setup ecostep harvester wi-fi/i });
       expect(btn).toBeInTheDocument();
       expect(btn).toHaveTextContent('Setup Harvester Wi-Fi');
@@ -59,7 +86,11 @@ describe('EcoStep BLE Components', () => {
 
     it('opens modal dialog when trigger button is clicked', async () => {
       const user = userEvent.setup();
-      render(<EcoStepBleButton />);
+      render(
+        <BleProvider>
+          <EcoStepBleButton />
+        </BleProvider>,
+      );
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
@@ -67,7 +98,7 @@ describe('EcoStep BLE Components', () => {
       await user.click(btn);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('EcoStep Wi-Fi Provisioning')).toBeInTheDocument();
+      expect(screen.getByText('Connect Tile to Wi-Fi')).toBeInTheDocument();
     });
   });
 
@@ -76,7 +107,7 @@ describe('EcoStep BLE Components', () => {
       render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('EcoStep Wi-Fi Provisioning')).toBeInTheDocument();
+      expect(screen.getByText('Connect Tile to Wi-Fi')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /pair with ecostep via bluetooth/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /try demo \/ simulation mode/i })).toBeInTheDocument();
     });
@@ -132,11 +163,14 @@ describe('EcoStep BLE Components', () => {
       });
     });
 
-    it('progresses to Step 2 when device connects and displays Wi-Fi form', async () => {
+    it('scans laptop Wi-Fi networks without depending on ESP32 and saves SSID only (never password)', async () => {
       const user = userEvent.setup();
-      render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+      render(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
 
-      // Simulate connection callback
       expect(capturedCallback).toBeDefined();
       await waitFor(() => {
         capturedCallback({
@@ -146,27 +180,107 @@ describe('EcoStep BLE Components', () => {
         });
       });
 
+      // Laptop networks appear and ESP32 Wi-Fi scan is NOT called
       await waitFor(() => {
-        expect(screen.getByLabelText(/wi-fi network name/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/wi-fi password/i)).toBeInTheDocument();
+        expect(screen.getByText('Laptop-Campus-WiFi')).toBeInTheDocument();
+        expect(screen.getByText('Laptop-Guest')).toBeInTheDocument();
       });
+      expect(mockRequestWiFiScan).not.toHaveBeenCalled();
 
-      // Submit credentials
-      mockSendCredentials.mockResolvedValue(undefined);
-      const ssidInput = screen.getByLabelText(/wi-fi network name/i);
+      // Click a scanned laptop network to populate SSID
+      await user.click(screen.getByText('Laptop-Campus-WiFi'));
+      const ssidInput = screen.getByLabelText(/wi-fi network name/i) as HTMLInputElement;
       const passInput = screen.getByLabelText(/wi-fi password/i);
+      expect(ssidInput.value).toBe('Laptop-Campus-WiFi');
 
-      await user.type(ssidInput, 'Lab-WiFi');
+      mockSendCredentials.mockResolvedValue(undefined);
       await user.type(passInput, 'Secret123');
 
       const submitBtn = screen.getByRole('button', { name: /save & connect/i });
       await user.click(submitBtn);
 
-      expect(mockSendCredentials).toHaveBeenCalledWith('Lab-WiFi', 'Secret123');
+      expect(mockSendCredentials).toHaveBeenCalledWith('Laptop-Campus-WiFi', 'Secret123');
+
+      // Verify SSID is saved and password is NEVER stored in localStorage
+      const savedSsids = JSON.parse(localStorage.getItem(SAVED_WIFI_SSIDS_STORAGE_KEY) || '[]');
+      expect(savedSsids).toContain('Laptop-Campus-WiFi');
+      expect(JSON.stringify(localStorage)).not.toContain('Secret123');
+
+      // Verify BLE device metadata is saved
+      const savedBle = JSON.parse(localStorage.getItem(SAVED_BLE_DEVICE_STORAGE_KEY) || 'null');
+      expect(savedBle).toMatchObject({
+        id: 'esp32-tile-01',
+        name: 'EcoStep-Harvester',
+        lastSsid: 'Laptop-Campus-WiFi',
+      });
+    });
+
+    it('falls back to saved SSIDs when hosted browser cannot scan laptop Wi-Fi', async () => {
+      localStorage.setItem(SAVED_WIFI_SSIDS_STORAGE_KEY, JSON.stringify(['Saved-Office-WiFi']));
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Not available on Vercel')));
+
+      render(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
+
+      await waitFor(() => {
+        capturedCallback({
+          state: 'connected',
+          message: 'Connected to EcoStep-Harvester!',
+          type: 'success',
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Saved-Office-WiFi')).toBeInTheDocument();
+      });
+      expect(mockRequestWiFiScan).not.toHaveBeenCalled();
+    });
+
+    it('keeps BLE connection alive when modal unmounts and remounts under BleProvider', async () => {
+      const { rerender } = render(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
+
+      await waitFor(() => {
+        capturedCallback({
+          state: 'connected',
+          message: 'Connected to EcoStep-Harvester!',
+          type: 'success',
+        });
+      });
+
+      // Simulate navigating away (modal unmounts completely while BleProvider stays mounted)
+      rerender(
+        <BleProvider>
+          <div data-testid="other-page">Dashboard</div>
+        </BleProvider>,
+      );
+      expect(mockDisconnect).not.toHaveBeenCalled();
+
+      // Navigate back and reopen modal — still connected in Step 2 with already-connected alert
+      rerender(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/ESP32 Is Already Connected/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/wi-fi network name/i)).toBeInTheDocument();
+      });
     });
 
     it('displays Wi-Fi connected notification with IP address', async () => {
-      render(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+      render(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
 
       await waitFor(() => {
         capturedCallback({
@@ -188,12 +302,27 @@ describe('EcoStep BLE Components', () => {
       });
     });
 
-    it('warns the admin when reopening the modal while ESP32 is still connected', async () => {
+    it('warns the admin when reopening the modal while ESP32 is still connected and allows disconnect', async () => {
       const user = userEvent.setup();
-      mockIsConnected.mockReturnValue(true);
+      const { rerender } = render(
+        <BleProvider>
+          <EcoStepBleModal isOpen={false} onClose={vi.fn()} />
+        </BleProvider>,
+      );
 
-      const { rerender } = render(<EcoStepBleModal isOpen={false} onClose={vi.fn()} />);
-      rerender(<EcoStepBleModal isOpen={true} onClose={vi.fn()} />);
+      await waitFor(() => {
+        capturedCallback({
+          state: 'connected',
+          message: 'Connected to EcoStep-Harvester!',
+          type: 'success',
+        });
+      });
+
+      rerender(
+        <BleProvider>
+          <EcoStepBleModal isOpen={true} onClose={vi.fn()} />
+        </BleProvider>,
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/ESP32 Is Already Connected/i)).toBeInTheDocument();

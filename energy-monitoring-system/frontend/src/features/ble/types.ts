@@ -32,6 +32,14 @@ export interface ScannedWiFiNetwork {
   ssid: string;
   rssi?: number;
   secure?: boolean;
+  source?: 'laptop' | 'saved';
+}
+
+export interface SavedBleDevice {
+  id: string;
+  name: string;
+  lastConnectedAt: string;
+  lastSsid?: string;
 }
 
 export interface WiFiListNotification {

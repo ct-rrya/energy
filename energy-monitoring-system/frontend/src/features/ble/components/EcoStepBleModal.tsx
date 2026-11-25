@@ -1,168 +1,85 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Bluetooth, 
-  Wifi, 
-  CheckCircle2, 
-  AlertTriangle, 
-  X, 
-  Loader2, 
-  Eye, 
-  EyeOff, 
-  Radio, 
+import {
+  Bluetooth,
+  Wifi,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+  Loader2,
+  Eye,
+  EyeOff,
+  Radio,
   Zap,
   Copy,
   Check,
   RefreshCw,
-  Lock
+  Lock,
+  Laptop,
+  Bookmark,
+  Trash2,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { BleProvider, useBle, useOptionalBle } from '@/contexts/BleContext';
 
-import { EcoStepBleClient, BLE_CONFIG } from '../EcoStepBleClient';
-import type { 
-  BleStatusMessage, 
-  WiFiStatusNotification, 
-  WiFiListNotification,
-  ScannedWiFiNetwork,
-  StepTelemetryNotification 
-} from '../types';
+import { BLE_CONFIG } from '../EcoStepBleClient';
+import {
+  removeSavedWifiSsid,
+  scanLaptopWifiNetworks,
+} from '../wifiNetworks';
+import type { ScannedWiFiNetwork } from '../types';
 
 interface EcoStepBleModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClose }) => {
+const EcoStepBleModalContent: React.FC<EcoStepBleModalProps> = ({ isOpen, onClose }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [step, setStep] = useState<1 | 2>(1);
+  const {
+    isSupported,
+    isSecure,
+    isConnected,
+    isSimulation,
+    isConnecting,
+    isProvisioning,
+    connectedDevice,
+    savedDevice,
+    statusText,
+    statusType,
+    wifiStatus,
+    latestTelemetry,
+    connect,
+    connectSimulated,
+    reconnectSaved,
+    sendWiFiCredentials,
+    disconnect,
+    forgetSavedDevice,
+    clearStatus,
+    setStatusMessage,
+  } = useBle();
+
   const [ssid, setSsid] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isProvisioning, setIsProvisioning] = useState(false);
   const [copiedFlag, setCopiedFlag] = useState(false);
   const [showAlreadyConnectedWarning, setShowAlreadyConnectedWarning] = useState(false);
-  const [availableNetworks, setAvailableNetworks] = useState<ScannedWiFiNetwork[]>([]);
-  const [isScanningNetworks, setIsScanningNetworks] = useState(false);
-  const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
-  // Status state
-  const [statusText, setStatusText] = useState<string>('');
-  const [statusType, setStatusType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
-  const [wifiStatus, setWifiStatus] = useState<WiFiStatusNotification | null>(null);
-  const [latestTelemetry, setLatestTelemetry] = useState<StepTelemetryNotification | null>(null);
 
-  // Client reference
-  const bleClientRef = useRef<EcoStepBleClient | null>(null);
-  const ssidRef = useRef(ssid);
-  ssidRef.current = ssid;
+  // Laptop & saved Wi-Fi networks (independent of ESP32)
+  const [availableNetworks, setAvailableNetworks] = useState<ScannedWiFiNetwork[]>([]);
+  const [networkSource, setNetworkSource] = useState<'laptop' | 'saved'>('saved');
+  const [isScanningNetworks, setIsScanningNetworks] = useState(false);
+
   const modalRef = useRef<HTMLDivElement>(null);
   const ssidInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize BLE Client once on mount (do not depend on ssid so typing doesn't disconnect BLE)
-  useEffect(() => {
-    const client = new EcoStepBleClient((status: BleStatusMessage) => {
-      if (status.message) {
-        setStatusText(status.message);
-      }
-      if (status.type) {
-        setStatusType(status.type);
-      }
-
-      if (status.state === 'connected') {
-        setIsConnecting(false);
-        setShowAlreadyConnectedWarning(false);
-        setStep(2);
-        if (!status.message) {
-          setStatusText(`Connection with ESP32 (${BLE_CONFIG.deviceName}) was successful!`);
-        }
-        setStatusType('success');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('ecostep:hardware-connected', { detail: { source: 'ble' } }));
-        }
-        // Request nearby Wi-Fi list from ESP32 automatically after connecting
-        setIsScanningNetworks(true);
-        if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-        scanTimeoutRef.current = setTimeout(() => setIsScanningNetworks(false), 5000);
-        void client.requestWiFiScan();
-      } else if (status.state === 'disconnected') {
-        setIsConnecting(false);
-        setIsProvisioning(false);
-        setIsScanningNetworks(false);
-        setAvailableNetworks([]);
-        setShowAlreadyConnectedWarning(false);
-        setStep(1);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('ecostep:hardware-disconnected', { detail: { source: 'ble' } }));
-        }
-      } else if (status.state === 'error') {
-        setIsConnecting(false);
-        setIsProvisioning(false);
-      }
-
-      // Handle real-time notification events from ESP32
-      if (status.state === 'notification' && status.payload) {
-        const payload = status.payload as any;
-        if (payload.event === 'wifi_list' && Array.isArray(payload.networks)) {
-          const listEvt = payload as WiFiListNotification;
-          if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-          setIsScanningNetworks(false);
-          const unique = listEvt.networks.filter(
-            (n, idx, arr) => n?.ssid && arr.findIndex((x) => x.ssid === n.ssid) === idx
-          );
-          setAvailableNetworks(unique);
-        } else if (payload.event === 'wifi_status') {
-          const wifiEvt = payload as WiFiStatusNotification;
-          setWifiStatus(wifiEvt);
-          if (wifiEvt.status === 'CONNECTING') {
-            setIsProvisioning(true);
-            setStatusText(`ESP32 is attempting to connect to "${wifiEvt.ssid || ssidRef.current}"...`);
-            setStatusType('info');
-          } else if (wifiEvt.status === 'CONNECTED') {
-            setIsProvisioning(false);
-            setStatusText(`Successfully connected to Wi-Fi! Assigned IP: ${wifiEvt.ip || '192.168.1.xxx'}`);
-            setStatusType('success');
-          } else if (wifiEvt.status === 'FAILED') {
-            setIsProvisioning(false);
-            setStatusText(`Wi-Fi connection failed: ${wifiEvt.error || 'Please check SSID and password'}`);
-            setStatusType('error');
-          }
-        } else if (payload.event === 'step') {
-          setLatestTelemetry(payload as StepTelemetryNotification);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('ecostep:hardware-connected', {
-              detail: {
-                source: 'ble',
-                reading: {
-                  power: payload.power,
-                  voltage: payload.voltage,
-                  current: payload.current,
-                  energy: payload.energy,
-                  stepCount: payload.stepCount ?? payload.steps,
-                  timestamp: payload.timestamp || new Date().toISOString(),
-                }
-              }
-            }));
-          }
-        }
-      }
-    });
-
-    bleClientRef.current = client;
-
-    return () => {
-      client.disconnect();
-    };
-  }, []);
-
-  const isSupported = bleClientRef.current?.isSupported() ?? true;
-  const isSecure = bleClientRef.current?.isSecureContext() ?? true;
+  const step: 1 | 2 = isConnected ? 2 : 1;
 
   // Browser check for Brave or Chromium flag URL
   const isBrave = typeof window !== 'undefined' && Boolean((navigator as any)?.brave);
-  const flagUrl = isBrave 
-    ? 'brave://flags/#enable-web-bluetooth' 
+  const flagUrl = isBrave
+    ? 'brave://flags/#enable-web-bluetooth'
     : 'chrome://flags/#enable-web-bluetooth';
 
   const isGloballyDisabled = statusText.toLowerCase().includes('globally disabled');
@@ -179,18 +96,40 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     }
   };
 
-  // Warn admin ONLY when opening the modal (e.g. clicking Setup button) while ESP32 is already connected
+  // Scan available Wi-Fi networks from the current laptop (hybrid: OS scan locally, saved SSIDs on Vercel)
+  const handleScanNetworks = useCallback(async () => {
+    setIsScanningNetworks(true);
+    try {
+      const result = await scanLaptopWifiNetworks();
+      setAvailableNetworks(result.networks);
+      setNetworkSource(result.source);
+    } finally {
+      setIsScanningNetworks(false);
+    }
+  }, []);
+
+  // Automatically load/scan laptop + saved Wi-Fi networks when entering Step 2
+  useEffect(() => {
+    if (isOpen && step === 2) {
+      void handleScanNetworks();
+    }
+  }, [isOpen, step, handleScanNetworks]);
+
+  // Pre-fill last used SSID (never password) when opening Step 2 with an empty field
+  useEffect(() => {
+    if (isOpen && step === 2 && !ssid && savedDevice?.lastSsid) {
+      setSsid(savedDevice.lastSsid);
+    }
+  }, [isOpen, step, ssid, savedDevice?.lastSsid]);
+
+  // Warn admin ONLY when reopening the modal while ESP32 is already connected
   useEffect(() => {
     if (isOpen) {
-      if (bleClientRef.current?.isConnected()) {
-        setShowAlreadyConnectedWarning(true);
-      } else {
-        setShowAlreadyConnectedWarning(false);
-      }
+      setShowAlreadyConnectedWarning(isConnected);
     } else {
       setShowAlreadyConnectedWarning(false);
     }
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Focus SSID input when entering Step 2
   useEffect(() => {
@@ -198,6 +137,13 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
       ssidInputRef.current.focus();
     }
   }, [isOpen, step]);
+
+  const handleClose = useCallback(() => {
+    if (!isConnected) {
+      clearStatus();
+    }
+    onClose();
+  }, [isConnected, clearStatus, onClose]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -211,7 +157,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -225,88 +171,47 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     };
   }, [isOpen]);
 
-  const handleClose = useCallback(() => {
-    if (!bleClientRef.current?.isConnected()) {
-      setStep(1);
-      setStatusText('');
-      setWifiStatus(null);
-      setLatestTelemetry(null);
-    }
-    setIsConnecting(false);
-    setIsProvisioning(false);
-    onClose();
-  }, [onClose]);
-
   // Pair & Connect action
   const handleConnect = async () => {
-    if (!bleClientRef.current) return;
-    if (bleClientRef.current.isConnected()) {
+    if (isConnected) {
       setShowAlreadyConnectedWarning(true);
       return;
     }
-    setIsConnecting(true);
-    setStatusText('');
-    try {
-      await bleClientRef.current.connect();
-    } catch {
-      setIsConnecting(false);
-    }
+    await connect();
   };
 
   // Explicit disconnect + reconnect confirmation action
   const handleConfirmReconnect = () => {
-    bleClientRef.current?.disconnect();
+    disconnect('Previous ESP32 connection closed. You can now pair and reconnect.');
     setShowAlreadyConnectedWarning(false);
-    setStep(1);
-    setWifiStatus(null);
-    setLatestTelemetry(null);
-    setStatusText('Previous ESP32 connection closed. You can now pair and reconnect.');
-    setStatusType('info');
   };
 
-  // Simulated connect for testing without BLE hardware or when flags are disabled
-  const handleSimulatedConnect = async () => {
-    if (!bleClientRef.current) return;
-    setIsConnecting(true);
-    setStatusText('');
-    try {
-      await bleClientRef.current.connectSimulated();
-    } catch {
-      setIsConnecting(false);
-    }
-  };
-
-  // Request nearby Wi-Fi networks from ESP32
-  const handleScanNetworks = async () => {
-    if (!bleClientRef.current?.isConnected()) return;
-    setIsScanningNetworks(true);
-    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-    scanTimeoutRef.current = setTimeout(() => setIsScanningNetworks(false), 5000);
-    await bleClientRef.current.requestWiFiScan();
+  // Remove a saved SSID from localStorage
+  const handleRemoveSavedSsid = (targetSsid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeSavedWifiSsid(targetSsid);
+    setAvailableNetworks((prev) =>
+      prev.filter((net) => !(net.ssid === targetSsid && net.source === 'saved')),
+    );
   };
 
   // Send Wi-Fi credentials action
   const handleSendCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ssid.trim()) {
-      setStatusText('Please enter your Wi-Fi network name (SSID).');
-      setStatusType('error');
+      setStatusMessage('Please enter your Wi-Fi network name (SSID).', 'error');
       return;
     }
-    if (!bleClientRef.current) return;
 
-    try {
-      setIsProvisioning(true);
-      await bleClientRef.current.sendWiFiCredentials(ssid, password);
-    } catch {
-      setIsProvisioning(false);
-    }
+    await sendWiFiCredentials(ssid, password);
+    // Refresh list so the newly saved SSID appears immediately
+    void handleScanNetworks();
   };
 
   if (!isOpen) return null;
 
   const modalElement = (
-    <div 
+    <div
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -322,7 +227,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
         }
       }}
     >
-      <div 
+      <div
         ref={modalRef}
         className="relative z-10 w-full max-w-lg rounded-2xl border p-5 sm:p-6 shadow-2xl my-auto max-h-[min(88vh,calc(100dvh-32px))] flex flex-col overflow-hidden transition-all duration-300"
         style={{
@@ -330,8 +235,8 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
           backgroundColor: isDark ? '#0D1B14' : '#FFFFFF',
           borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
           color: 'var(--t)',
-          boxShadow: isDark 
-            ? '0 30px 60px -15px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(25, 212, 106, 0.25)' 
+          boxShadow: isDark
+            ? '0 30px 60px -15px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(25, 212, 106, 0.25)'
             : '0 20px 40px -10px rgba(0, 0, 0, 0.15)',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -343,7 +248,10 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               <Bluetooth className="h-5 w-5 animate-pulse" />
             </div>
             <div>
-              <h2 id="ble-modal-title" className="text-base sm:text-lg font-bold tracking-tight text-[var(--t)] flex items-center gap-2">
+              <h2
+                id="ble-modal-title"
+                className="text-base sm:text-lg font-bold tracking-tight text-[var(--t)] flex items-center gap-2"
+              >
                 Connect Tile to Wi-Fi
                 <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#19D46A] border border-emerald-500/30">
                   Bluetooth
@@ -372,7 +280,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 {!isSupported ? 'Web Bluetooth Not Supported' : 'Secure Context (HTTPS) Required'}
               </p>
               <p className="mt-1 text-gray-300">
-                {!isSupported 
+                {!isSupported
                   ? 'Your current browser does not support the Web Bluetooth API. Please open this website in Google Chrome, Microsoft Edge, or Samsung Internet. On iOS devices, you can use the free Bluefy browser app.'
                   : 'Web Bluetooth requires an HTTPS connection or localhost. Please ensure you are viewing this page over a secure URL.'}
               </p>
@@ -389,13 +297,11 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
             <div className="flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-amber-300 text-sm">
-                  ESP32 Is Already Connected
-                </p>
+                <p className="font-bold text-amber-300 text-sm">ESP32 Is Already Connected</p>
                 <p className="mt-1 text-[var(--t)] opacity-90 leading-relaxed">
                   Your browser already has an active Bluetooth connection to{' '}
-                  <strong>{BLE_CONFIG.deviceName}</strong>. Proceeding to reconnect will
-                  disconnect the current session.
+                  <strong>{connectedDevice?.name || BLE_CONFIG.deviceName}</strong>. It stays
+                  connected while you browse other pages.
                 </p>
               </div>
             </div>
@@ -423,23 +329,35 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
           {/* Progress Indicator */}
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
-              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                step === 1 ? 'bg-[#19D46A] text-[#0D1B14]' : 'bg-emerald-500/15 text-[#19D46A] border border-emerald-500/30'
-              }`}>
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                  step === 1
+                    ? 'bg-[#19D46A] text-[#0D1B14]'
+                    : 'bg-emerald-500/15 text-[#19D46A] border border-emerald-500/30'
+                }`}
+              >
                 1
               </span>
-              <span className={`text-xs font-semibold ${step === 1 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}>
+              <span
+                className={`text-xs font-semibold ${step === 1 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}
+              >
                 Pair Tile
               </span>
             </div>
             <div className="h-[1px] flex-1 mx-3 bg-[var(--line)]" />
             <div className="flex items-center gap-2">
-              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                step === 2 ? 'bg-[#19D46A] text-[#0D1B14]' : 'bg-[var(--soft)] text-[var(--mu)] border border-[var(--line)]'
-              }`}>
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                  step === 2
+                    ? 'bg-[#19D46A] text-[#0D1B14]'
+                    : 'bg-[var(--soft)] text-[var(--mu)] border border-[var(--line)]'
+                }`}
+              >
                 2
               </span>
-              <span className={`text-xs font-semibold ${step === 2 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}>
+              <span
+                className={`text-xs font-semibold ${step === 2 ? 'text-[var(--t)]' : 'text-[var(--mu)]'}`}
+              >
                 Connect Wi-Fi
               </span>
             </div>
@@ -447,55 +365,101 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
           {/* STEP 1: Scan & Pair */}
           {step === 1 && (
-            <div 
-              className="rounded-2xl border p-5 text-center"
-              style={{
-                backgroundColor: isDark ? '#12241A' : 'var(--soft)',
-                borderColor: 'var(--line)',
-              }}
-            >
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
-                <Radio className={`h-7 w-7 ${isConnecting ? 'animate-pulse text-[#19D46A]' : ''}`} />
-              </div>
-              <h3 className="text-base font-bold text-[var(--t)] tracking-wide">
-                Pair with {BLE_CONFIG.deviceName}
-              </h3>
-              <p className="text-xs text-[var(--mu)] mt-1.5 max-w-sm mx-auto leading-relaxed">
-                Make sure your EcoStep floor tile is powered on and nearby so this browser can connect over Bluetooth.
-              </p>
+            <div className="space-y-3">
+              {/* Saved BLE device card */}
+              {savedDevice && (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-left">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#19D46A] flex items-center gap-1.5">
+                        <Bookmark className="h-3.5 w-3.5" />
+                        Saved Tile
+                      </p>
+                      <p className="text-xs font-bold text-[var(--t)] truncate mt-0.5">
+                        {savedDevice.name}
+                      </p>
+                      <p className="text-[11px] text-[var(--mu)] mt-0.5">
+                        {savedDevice.lastSsid
+                          ? `Last Wi-Fi: ${savedDevice.lastSsid}`
+                          : 'Previously paired on this browser'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void reconnectSaved()}
+                        disabled={isConnecting || !isSupported}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#19D46A] hover:opacity-90 text-[#0D1B14] disabled:opacity-50 cursor-pointer"
+                      >
+                        Reconnect
+                      </button>
+                      <button
+                        type="button"
+                        onClick={forgetSavedDevice}
+                        title="Forget saved tile"
+                        aria-label="Forget saved tile"
+                        className="p-1.5 rounded-lg text-[var(--mu)] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-5 space-y-2.5">
-                <button
-                  type="button"
-                  id="ble-connect-btn"
-                  onClick={handleConnect}
-                  disabled={isConnecting || !isSupported}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer hover:opacity-90 active:scale-95"
-                  style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Scanning & Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Bluetooth className="h-4 w-4" />
-                      Pair with EcoStep via Bluetooth
-                    </>
-                  )}
-                </button>
+              <div
+                className="rounded-2xl border p-5 text-center"
+                style={{
+                  backgroundColor: isDark ? '#12241A' : 'var(--soft)',
+                  borderColor: 'var(--line)',
+                }}
+              >
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
+                  <Radio
+                    className={`h-7 w-7 ${isConnecting ? 'animate-pulse text-[#19D46A]' : ''}`}
+                  />
+                </div>
+                <h3 className="text-base font-bold text-[var(--t)] tracking-wide">
+                  Pair with {BLE_CONFIG.deviceName}
+                </h3>
+                <p className="text-xs text-[var(--mu)] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                  Make sure your EcoStep floor tile is powered on and nearby. Once paired, your
+                  Bluetooth session stays saved as you navigate the dashboard.
+                </p>
 
-                <button
-                  type="button"
-                  id="ble-simulated-connect-btn"
-                  onClick={handleSimulatedConnect}
-                  disabled={isConnecting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-[var(--t)] bg-[var(--panel)] hover:bg-[var(--soft)] border border-[var(--line)] transition-all duration-200 cursor-pointer"
-                >
-                  <Zap className="h-3.5 w-3.5 text-[#19D46A]" />
-                  Blocked or No Hardware? Try Demo / Simulation Mode
-                </button>
+                <div className="mt-5 space-y-2.5">
+                  <button
+                    type="button"
+                    id="ble-connect-btn"
+                    onClick={() => void handleConnect()}
+                    disabled={isConnecting || !isSupported}
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer hover:opacity-90 active:scale-95"
+                    style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Scanning &amp; Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Bluetooth className="h-4 w-4" />
+                        Pair with EcoStep via Bluetooth
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    id="ble-simulated-connect-btn"
+                    onClick={() => void connectSimulated()}
+                    disabled={isConnecting}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-[var(--t)] bg-[var(--panel)] hover:bg-[var(--soft)] border border-[var(--line)] transition-all duration-200 cursor-pointer"
+                  >
+                    <Zap className="h-3.5 w-3.5 text-[#19D46A]" />
+                    Blocked or No Hardware? Try Demo / Simulation Mode
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -511,39 +475,49 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   </span>
                   <div className="text-left">
                     <p className="text-xs font-semibold text-[#19D46A]">
-                      ESP32 Connection Successful {bleClientRef.current?.isSimulation ? '(Demo Mode)' : ''}
+                      ESP32 Connected &amp; Saved {isSimulation ? '(Demo Mode)' : ''}
                     </p>
                     <p className="text-[11px] text-[var(--mu)]">
-                      Connected to {BLE_CONFIG.deviceName} via Bluetooth — ready to configure Wi-Fi.
+                      {connectedDevice?.name || BLE_CONFIG.deviceName} stays connected across pages
+                      until you disconnect.
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    bleClientRef.current?.disconnect();
-                    setStep(1);
-                  }}
+                  onClick={() => disconnect()}
                   className="text-xs text-[var(--mu)] hover:text-[var(--t)] underline underline-offset-2 transition-colors cursor-pointer"
                 >
                   Disconnect
                 </button>
               </div>
 
-              {/* Available Wi-Fi Networks Scanned by ESP32 */}
+              {/* Available Wi-Fi Networks (Laptop Scan + Saved SSIDs, independent of ESP32) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[var(--mu)] uppercase tracking-wider">
-                    Available Wi-Fi Networks
+                  <span className="text-xs font-semibold text-[var(--mu)] uppercase tracking-wider flex items-center gap-1.5">
+                    {networkSource === 'laptop' ? (
+                      <>
+                        <Laptop className="h-3.5 w-3.5 text-[#19D46A]" />
+                        Laptop Wi-Fi Networks
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-3.5 w-3.5 text-[#19D46A]" />
+                        Saved Wi-Fi Networks
+                      </>
+                    )}
                   </span>
                   <button
                     type="button"
-                    onClick={handleScanNetworks}
+                    onClick={() => void handleScanNetworks()}
                     disabled={isScanningNetworks}
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#19D46A] hover:opacity-80 disabled:opacity-50 cursor-pointer"
                   >
-                    <RefreshCw className={`h-3 w-3 ${isScanningNetworks ? 'animate-spin' : ''}`} />
-                    {isScanningNetworks ? 'Scanning...' : 'Scan Networks'}
+                    <RefreshCw
+                      className={`h-3 w-3 ${isScanningNetworks ? 'animate-spin' : ''}`}
+                    />
+                    {isScanningNetworks ? 'Scanning...' : 'Scan Laptop Wi-Fi'}
                   </button>
                 </div>
 
@@ -555,10 +529,17 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     {availableNetworks.map((net) => {
                       const isSelected = ssid === net.ssid;
                       return (
-                        <button
-                          key={net.ssid}
-                          type="button"
+                        <div
+                          key={`${net.source || 'net'}-${net.ssid}`}
                           onClick={() => setSsid(net.ssid)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSsid(net.ssid);
+                            }
+                          }}
                           className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs transition-colors cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-500/20 text-[#19D46A] font-semibold'
@@ -568,28 +549,47 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                           <span className="flex items-center gap-2 min-w-0 truncate">
                             <Wifi className="h-3.5 w-3.5 shrink-0 text-[#19D46A]" />
                             <span className="truncate">{net.ssid}</span>
+                            {net.source === 'saved' && (
+                              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--panel)] text-[var(--mu)] border border-[var(--line)] shrink-0">
+                                Saved
+                              </span>
+                            )}
                           </span>
                           <span className="flex items-center gap-2 shrink-0 text-[10px] text-[var(--mu)]">
                             {net.rssi !== undefined && <span>{net.rssi} dBm</span>}
-                            {net.secure !== false && <Lock className="h-3 w-3" />}
+                            {net.source === 'laptop' && net.secure !== false && (
+                              <Lock className="h-3 w-3" />
+                            )}
+                            {net.source === 'saved' && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleRemoveSavedSsid(net.ssid, e)}
+                                aria-label={`Remove saved network ${net.ssid}`}
+                                className="p-0.5 rounded hover:text-red-400 transition-colors cursor-pointer"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
                           </span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 ) : (
                   <p className="text-[11px] text-[var(--mu)] rounded-xl border border-dashed border-[var(--line)] px-3 py-2">
                     {isScanningNetworks
-                      ? 'Asking ESP32 to scan nearby 2.4 GHz Wi-Fi networks...'
-                      : 'No scanned list received from ESP32 yet. Click "Scan Networks" or enter the SSID below.'}
+                      ? 'Scanning nearby Wi-Fi networks on this laptop...'
+                      : networkSource === 'laptop'
+                      ? 'No Wi-Fi networks detected on this laptop. Click "Scan Laptop Wi-Fi" or enter the SSID below.'
+                      : 'No saved networks yet (hosted browsers cannot scan laptop Wi-Fi directly). Enter your SSID below — it will be saved for next time.'}
                   </p>
                 )}
               </div>
 
               {/* Wi-Fi SSID Field */}
               <div>
-                <label 
-                  htmlFor="ble-ssid" 
+                <label
+                  htmlFor="ble-ssid"
                   className="block text-xs font-semibold text-[var(--mu)] uppercase tracking-wider mb-1.5"
                 >
                   Wi-Fi Network Name (SSID)
@@ -607,9 +607,9 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     onChange={(e) => setSsid(e.target.value)}
                     placeholder="e.g. Campus-WiFi or HomeNetwork"
                     className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors"
-                    style={{ 
+                    style={{
                       backgroundColor: isDark ? '#12241A' : 'var(--soft)',
-                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" 
+                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
                     }}
                   />
                 </div>
@@ -617,8 +617,8 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
               {/* Wi-Fi Password Field */}
               <div>
-                <label 
-                  htmlFor="ble-pass" 
+                <label
+                  htmlFor="ble-pass"
                   className="block text-xs font-semibold text-[var(--mu)] uppercase tracking-wider mb-1.5"
                 >
                   Wi-Fi Password
@@ -631,9 +631,9 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter network password (leave empty if open)"
                     className="w-full pl-3 pr-10 py-2.5 text-sm rounded-xl border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors"
-                    style={{ 
+                    style={{
                       backgroundColor: isDark ? '#12241A' : 'var(--soft)',
-                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" 
+                      fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
                     }}
                   />
                   <button
@@ -646,7 +646,8 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   </button>
                 </div>
                 <p className="text-[11px] text-[var(--mu)] mt-1">
-                  Credentials are sent securely via local BLE direct to your ESP32.
+                  Only the network name (SSID) is saved in your browser — passwords are sent
+                  directly to the ESP32 over BLE and never stored.
                 </p>
               </div>
 
@@ -662,12 +663,12 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                   {isProvisioning ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin text-[#0D1B14]" />
-                      Saving & Connecting ESP32...
+                      Saving &amp; Connecting ESP32...
                     </>
                   ) : (
                     <>
                       <Wifi className="h-4 w-4" />
-                      Save & Connect
+                      Save &amp; Connect
                     </>
                   )}
                 </button>
@@ -677,11 +678,11 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
 
           {/* Real-time Status Box */}
           {statusText && (
-            <div 
+            <div
               id="ble-status-box"
               className={`p-3.5 rounded-xl text-xs flex items-start gap-2.5 transition-all duration-200 ${
-                statusType === 'success' 
-                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300' 
+                statusType === 'success'
+                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
                   : statusType === 'error'
                   ? 'bg-red-500/15 border border-red-500/40 text-red-300'
                   : statusType === 'warning'
@@ -719,13 +720,16 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                     How to Enable Web Bluetooth in {isBrave ? 'Brave Browser' : 'Chromium'}
                   </h4>
                   <p className="mt-1 text-[var(--mu)] leading-relaxed text-[11px]">
-                    {isBrave ? 'Brave' : 'Your browser'} disables the Web Bluetooth API by default for privacy. To allow direct ESP32 Wi-Fi pairing:
+                    {isBrave ? 'Brave' : 'Your browser'} disables the Web Bluetooth API by default
+                    for privacy. To allow direct ESP32 Wi-Fi pairing:
                   </p>
                 </div>
               </div>
 
               <div className="bg-[var(--soft)] rounded-lg p-3 border border-[var(--line)] space-y-2 text-[11px]">
-                <p className="text-[var(--t)] font-medium">1. Open a new tab and paste this URL into your address bar:</p>
+                <p className="text-[var(--t)] font-medium">
+                  1. Open a new tab and paste this URL into your address bar:
+                </p>
                 <div className="flex items-center gap-2 bg-[var(--panel)] px-3 py-1.5 rounded-lg border border-[var(--line)] text-emerald-400">
                   <span className="flex-1 select-all truncate">{flagUrl}</span>
                   <button
@@ -748,8 +752,15 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 </div>
 
                 <div className="text-[var(--t)] space-y-1 pt-1">
-                  <p>2. Locate <strong className="text-[var(--t)]">Web Bluetooth</strong> and change it from <span className="text-[var(--mu)]">Default/Disabled</span> to <strong className="text-emerald-400">Enabled</strong>.</p>
-                  <p>3. Click the blue <strong className="text-[var(--t)]">Relaunch</strong> button at the bottom of the browser.</p>
+                  <p>
+                    2. Locate <strong className="text-[var(--t)]">Web Bluetooth</strong> and change
+                    it from <span className="text-[var(--mu)]">Default/Disabled</span> to{' '}
+                    <strong className="text-emerald-400">Enabled</strong>.
+                  </p>
+                  <p>
+                    3. Click the blue <strong className="text-[var(--t)]">Relaunch</strong> button
+                    at the bottom of the browser.
+                  </p>
                 </div>
               </div>
 
@@ -759,7 +770,7 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
                 </span>
                 <button
                   type="button"
-                  onClick={handleSimulatedConnect}
+                  onClick={() => void connectSimulated()}
                   className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#19D46A] hover:bg-[#16C763] text-[#0D1B14] transition-colors cursor-pointer"
                 >
                   <Zap className="h-3.5 w-3.5" />
@@ -782,39 +793,37 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
               <div className="grid grid-cols-4 gap-2 text-center">
                 <div className="rounded-lg bg-[var(--panel)] border border-[var(--line)] p-1.5">
                   <div className="text-[10px] text-[var(--mu)]">Steps</div>
-                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">{latestTelemetry.steps ?? '--'}</div>
+                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">
+                    {latestTelemetry.steps ?? '--'}
+                  </div>
                 </div>
                 <div className="rounded-lg bg-[var(--panel)] border border-[var(--line)] p-1.5">
                   <div className="text-[10px] text-[var(--mu)]">Voltage</div>
-                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">{latestTelemetry.voltage?.toFixed(2) ?? '--'} V</div>
+                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">
+                    {latestTelemetry.voltage?.toFixed(2) ?? '--'} V
+                  </div>
                 </div>
                 <div className="rounded-lg bg-[var(--panel)] border border-[var(--line)] p-1.5">
                   <div className="text-[10px] text-[var(--mu)]">Power</div>
-                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">{latestTelemetry.power?.toFixed(4) ?? '--'} W</div>
+                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">
+                    {latestTelemetry.power?.toFixed(4) ?? '--'} W
+                  </div>
                 </div>
                 <div className="rounded-lg bg-[var(--panel)] border border-[var(--line)] p-1.5">
                   <div className="text-[10px] text-[var(--mu)]">Freq</div>
-                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">{latestTelemetry.freq?.toFixed(1) ?? '--'} Hz</div>
+                  <div className="text-xs font-bold text-[var(--t)] tabular-nums">
+                    {latestTelemetry.freq?.toFixed(1) ?? '--'} Hz
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="mt-4 pt-3.5 border-t border-[var(--line)] flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-[var(--mu)] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            EcoStep Bluetooth Setup
-          </div>
-          <button
-            type="button"
-            id="ble-close-btn"
-            onClick={handleClose}
-            className="px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--t)] bg-[var(--soft)] hover:bg-[var(--line)] border border-[var(--line)] transition-colors cursor-pointer"
-          >
-            {wifiStatus?.status === 'CONNECTED' ? 'Done' : 'Close'}
-          </button>
+        {/* Footer info */}
+        <div className="mt-5 pt-3 border-t border-[var(--line)] flex items-center justify-between text-[11px] text-[var(--mu)] shrink-0">
+          <span>Target: {BLE_CONFIG.deviceName}</span>
+          <span>2.4 GHz Wi-Fi Only</span>
         </div>
       </div>
     </div>
@@ -825,4 +834,16 @@ export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
   }
 
   return modalElement;
+};
+
+export const EcoStepBleModal: React.FC<EcoStepBleModalProps> = (props) => {
+  const existingBle = useOptionalBle();
+  if (existingBle) {
+    return <EcoStepBleModalContent {...props} />;
+  }
+  return (
+    <BleProvider>
+      <EcoStepBleModalContent {...props} />
+    </BleProvider>
+  );
 };

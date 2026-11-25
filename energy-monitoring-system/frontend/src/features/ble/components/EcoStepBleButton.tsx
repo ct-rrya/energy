@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bluetooth, Wifi } from 'lucide-react';
+import { useOptionalBle } from '@/contexts/BleContext';
 import { EcoStepBleModal } from './EcoStepBleModal';
 
 interface EcoStepBleButtonProps {
@@ -16,6 +17,8 @@ export const EcoStepBleButton: React.FC<EcoStepBleButtonProps> = ({
   label = 'Setup Harvester Wi-Fi',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const ble = useOptionalBle();
+  const isBleConnected = Boolean(ble?.isConnected);
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -43,6 +46,15 @@ export const EcoStepBleButton: React.FC<EcoStepBleButtonProps> = ({
       >
         {showIcon && (
           <span className="flex items-center gap-1.5">
+            {isBleConnected && (
+              <span
+                className="relative flex h-2 w-2"
+                title={`Connected to ${ble?.connectedDevice?.name || 'EcoStep-Harvester'}`}
+              >
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-950" />
+              </span>
+            )}
             <Bluetooth className="h-4 w-4 text-[#0D1B14]" />
             <Wifi className="h-4 w-4 text-[#0D1B14]" />
           </span>
