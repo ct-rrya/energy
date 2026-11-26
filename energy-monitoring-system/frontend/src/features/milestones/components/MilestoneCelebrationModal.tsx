@@ -155,9 +155,7 @@ export function MilestoneCelebrationModal({
     <div
       className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto"
       style={{
-        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.38)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
+        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.45)',
       }}
       role="dialog"
       aria-modal="true"
@@ -170,7 +168,7 @@ export function MilestoneCelebrationModal({
         aria-hidden="true"
       />
 
-      <div className="relative z-10 w-full max-w-[460px] rounded-[22px] overflow-hidden border shadow-2xl p-4 sm:p-5 my-auto bg-[var(--panel)] border-[var(--line)] text-[var(--t)] max-h-[92vh] flex flex-col justify-between">
+      <div className="relative z-10 w-full max-w-[460px] rounded-xl overflow-hidden border p-4 sm:p-5 my-auto bg-white dark:bg-[#131916] border-[var(--line)] text-[var(--t)] max-h-[92vh] flex flex-col justify-between">
         {/* Celebration canvas particles */}
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           <canvas ref={canvasRef} className="w-full h-full" />

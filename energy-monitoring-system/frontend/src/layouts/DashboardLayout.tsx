@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
 import { DesktopDashboardLayout } from './DesktopDashboardLayout';
 import { SplashScreen } from '@/components/common/SplashScreen';
+import { NicknameWelcomeModal } from '@/components/common/NicknameWelcomeModal';
 import { useAuditPageView } from '@/hooks/useAuditPageView';
 
 interface DashboardLayoutProps {
@@ -24,6 +25,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <>
       <SplashScreen forceShow={forceSplash} />
+      <NicknameWelcomeModal />
       <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>
     </>
   );

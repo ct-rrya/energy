@@ -14,8 +14,19 @@ import { FeedbackCategory } from '../schemas/feedback.schema';
 
 export class CreateFeedbackDto {
   @ApiPropertyOptional({
+    description: 'Short headline / main problem summary',
+    example: 'Tile voltage drops when multiple people step quickly',
+    maxLength: 160,
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(3, { message: 'Title must be at least 3 characters' })
+  @MaxLength(160, { message: 'Title must not exceed 160 characters' })
+  title?: string;
+
+  @ApiPropertyOptional({
     description: 'Display name of the submitter (defaults to Anonymous)',
-    example: 'Juan Dela Cruz',
+    example: 'EcoWalker-482',
     maxLength: 60,
   })
   @IsOptional()
@@ -46,14 +57,14 @@ export class CreateFeedbackDto {
   rating?: number;
 
   @ApiProperty({
-    description: 'Feedback message or review content',
+    description: 'Feedback message or full problem details',
     minLength: 3,
-    maxLength: 1000,
+    maxLength: 2000,
     example: 'The EcoStep tile works smoothly and the live dashboard is easy to understand!',
   })
   @IsString()
   @IsNotEmpty({ message: 'Message is required' })
   @MinLength(3, { message: 'Message must be at least 3 characters' })
-  @MaxLength(1000, { message: 'Message must not exceed 1000 characters' })
+  @MaxLength(2000, { message: 'Message must not exceed 2000 characters' })
   message: string;
 }

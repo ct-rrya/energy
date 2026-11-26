@@ -11,7 +11,6 @@ import {
 } from './schemas/admin-chat-thread.schema';
 import { SessionManager } from './session.manager';
 import { ChatbotModule } from '../chatbot/chatbot.module';
-import { PlayersModule } from '../players/players.module';
 
 /**
  * ChatModule
@@ -24,7 +23,6 @@ import { PlayersModule } from '../players/players.module';
       { name: AdminChatThread.name, schema: AdminChatThreadSchema },
     ]),
     ChatbotModule, // For ChatbotCoreService
-    PlayersModule, // For OptionalPlayerSessionGuard
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -94,26 +94,22 @@ export function RegisterSensorDialog({
     <div 
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
       }}
       onClick={handleClose}
     >
       <div 
-        className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100dvh-32px)] sm:max-h-[88vh] overflow-y-auto my-auto border"
+        className="rounded-xl max-w-2xl w-full max-h-[calc(100dvh-32px)] sm:max-h-[88vh] overflow-y-auto my-auto border border-[var(--line)]"
         style={{ 
-          backgroundColor: colors.cardBackground,
-          borderColor: theme === 'light' ? 'rgba(26, 49, 44, 0.12)' : 'rgba(137, 215, 183, 0.16)'
+          backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="sticky top-0 z-10 flex items-center justify-between p-6 border-b"
+          className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-[var(--line)]"
           style={{ 
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border 
+            backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
           }}
         >
           <h2 

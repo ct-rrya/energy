@@ -4,7 +4,6 @@ import { EnergyService } from '../energy/energy.service';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { GeminiAIService } from '../ai/gemini-ai.service';
 import { MilestonesService } from '../milestones/milestones.service';
-import { Player } from '../players/schemas/player.schema';
 import { KnowledgeRagService } from './knowledge-rag.service';
 import {
   parseDateIntent,
@@ -27,7 +26,6 @@ export interface MessageContext {
   channel: ChatChannel;
   sessionData?: any; // For web channel conversation context
   originalText?: string; // Preserve for AI
-  player?: Player; // Optional authenticated guest player
 }
 
 /**

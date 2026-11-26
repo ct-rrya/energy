@@ -19,11 +19,12 @@ export function useReportActions() {
   const generateMutation = useMutation({
     mutationFn: (dto: GenerateReportDto) => reportsService.generateReport(dto),
     onSuccess: () => {
-      // Invalidate reports queries to refetch data
+      // Invalidate reports & quota queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       showToast('Report generated successfully', 'success');
     },
     onError: (error: any) => {
+      queryClient.invalidateQueries({ queryKey: ['reports', 'quota'] });
       showToast(
         error?.response?.data?.message || 'Failed to generate report',
         'error'

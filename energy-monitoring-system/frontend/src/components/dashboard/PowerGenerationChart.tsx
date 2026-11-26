@@ -53,6 +53,8 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
   endDate,
   granularity: propGranularity,
   periodLabel,
+  startHour,
+  endHour,
 }: PowerGenerationChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -68,7 +70,11 @@ export const PowerGenerationChart = React.memo(function PowerGenerationChart({
   // Fetch power generation data based on current time filter or unified page period
   const { data: timeSeries, isLoading, error, refetch } = usePowerGeneration(
     timeFilter,
-    startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
+    startDate && endDate
+      ? { startDate, endDate, granularity: propGranularity, startHour, endHour }
+      : startHour !== undefined && endHour !== undefined
+        ? { startHour, endHour }
+        : undefined
   );
 
   // Determine granularity from prop or timeFilter

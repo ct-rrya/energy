@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/App.tsx": {
-    "mtime": 1795588971.2553487,
-    "seen": 1795616343.807061,
-    "ast_hash": "e189f04b7434af98084b5bad89d1a735",
+    "mtime": 1795699398.4592257,
+    "seen": 1795699404.1087155,
+    "ast_hash": "0c7b06a2bccfe3ad0c5e7041ab11c7be",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/client.ts": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/audit.service.ts": {
-    "mtime": 1794059079.3586922,
-    "seen": 1795616343.807085,
-    "ast_hash": "cd60f37fbf080471044728c50d58b0d2",
+    "mtime": 1795705276.23701,
+    "seen": 1795705321.7971928,
+    "ast_hash": "f67b263040efb4464d5e0cea95d1eeb3",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/auth.service.ts": {
@@ -132,9 +132,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/dashboard.service.ts": {
-    "mtime": 1784381528.2267792,
-    "seen": 1795616343.8070972,
-    "ast_hash": "44ac0a8e8e75ebd4f65a00fd57b1e49f",
+    "mtime": 1795705443.067566,
+    "seen": 1795705887.384203,
+    "ast_hash": "35a2ad79649eb674c448af6c07a59033",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/diagnostics.service.test.ts": {
@@ -150,15 +150,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/energy.service.ts": {
-    "mtime": 1794040903.7581582,
-    "seen": 1795616343.8071096,
-    "ast_hash": "36f6f79d6c098161f0d0a87a136141fc",
+    "mtime": 1795705443.2137022,
+    "seen": 1795705887.3842113,
+    "ast_hash": "25673590a044f86808fccff27263787c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/feedback.service.ts": {
-    "mtime": 1795599581.5857282,
-    "seen": 1795616343.8071134,
-    "ast_hash": "ddf3a59c20e4454d28f148eba22fb9a3",
+    "mtime": 1795711577.4696088,
+    "seen": 1795712107.9621804,
+    "ast_hash": "414a886470e4f4936bbe6dfb737e7ef9",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/health.service.ts": {
@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/reports.service.ts": {
-    "mtime": 1795605864.913939,
-    "seen": 1795616343.807129,
-    "ast_hash": "acd9a24e0df6ec93ae3ebc24d1a14f99",
+    "mtime": 1795699398.5534616,
+    "seen": 1795699404.1087368,
+    "ast_hash": "a75c851ceca844e103860b59a1a91acd",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/api/services/sensor.service.ts": {
@@ -360,9 +360,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/ChartContainer.tsx": {
-    "mtime": 1793893354.336892,
-    "seen": 1795616343.807345,
-    "ast_hash": "315c54723dcf1c5f9e0daf386b5e0200",
+    "mtime": 1795704110.4996793,
+    "seen": 1795704260.4017544,
+    "ast_hash": "8870d45a5278509c65f1866b278e3085",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/ChartEmptyState.test.tsx": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/CumulativeEnergyChart.tsx": {
-    "mtime": 1795514243.627591,
-    "seen": 1795616343.807371,
-    "ast_hash": "3f0f56f24bff58557195ee52c823c1ce",
+    "mtime": 1795705184.897179,
+    "seen": 1795705321.7972512,
+    "ast_hash": "d68fd25eb9c128e56df4750af00c1337",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/CustomChartTooltip.test.tsx": {
@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/EnergyPeriodChart.tsx": {
-    "mtime": 1795514248.0727532,
-    "seen": 1795616343.807386,
-    "ast_hash": "4c30398e66e234625d257c8161be10a3",
+    "mtime": 1795705443.4648283,
+    "seen": 1795705887.3843312,
+    "ast_hash": "6cc0fee9691dba8d740ee6f4028a3e0e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/PowerGenerationChart.test.tsx": {
@@ -438,15 +438,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/PowerGenerationChart.tsx": {
-    "mtime": 1795605865.0081437,
-    "seen": 1795616343.807393,
-    "ast_hash": "37689e55050588bab68cb71399903bf1",
+    "mtime": 1795705443.5532992,
+    "seen": 1795705887.3843355,
+    "ast_hash": "b7e85617275a5f5fae20cc1c8f2d4679",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/StepsChart.tsx": {
-    "mtime": 1795590076.457205,
-    "seen": 1795616343.8073967,
-    "ast_hash": "d800c467af629d9060dbcc7deb4688ce",
+    "mtime": 1795705179.9333625,
+    "seen": 1795705321.797259,
+    "ast_hash": "27799bf97c8dba5ce81d67664b135f64",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/TooltipPositioning.test.tsx": {
@@ -462,15 +462,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/VoltageCurrentChart.tsx": {
-    "mtime": 1795590076.6509259,
-    "seen": 1795616343.8074083,
-    "ast_hash": "7555efe3dae37094458c436bf7eeddc1",
+    "mtime": 1795705181.9504404,
+    "seen": 1795705321.7972631,
+    "ast_hash": "b378a508389a361e520b3c3ef9076f56",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/chartTypes.ts": {
-    "mtime": 1795605865.0665834,
-    "seen": 1795616343.8074124,
-    "ast_hash": "fd063b9a1b7c704e761bf7d86e12a419",
+    "mtime": 1795705176.2874393,
+    "seen": 1795705321.7972639,
+    "ast_hash": "48b5e93df02734931f7ed797e60e2b45",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/dashboard/chartUtils.test.ts": {
@@ -492,15 +492,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/layout/EcoSidebar.tsx": {
-    "mtime": 1795655277.435595,
-    "seen": 1795655436.183819,
-    "ast_hash": "a823b757520a2b6d5e4049b262d70884",
+    "mtime": 1795711119.775466,
+    "seen": 1795711126.9736228,
+    "ast_hash": "e3b2dea5fdd4945ed96d217f5b927b93",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/layout/MobileBottomNav.tsx": {
-    "mtime": 1795655233.620021,
-    "seen": 1795655436.1838307,
-    "ast_hash": "e04bfcaca51491a14ac5b6c1bce150cd",
+    "mtime": 1795706912.692644,
+    "seen": 1795707043.1051905,
+    "ast_hash": "4ce21d134ca8a9e7bbe33c007a55e984",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/layout/MobileHeader.tsx": {
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/ui/Dialog.tsx": {
-    "mtime": 1795523727.6629853,
-    "seen": 1795616343.8074875,
-    "ast_hash": "f91eeb7842e660350f7ecfaa28c016dd",
+    "mtime": 1795707349.6563478,
+    "seen": 1795707353.1791337,
+    "ast_hash": "d4847674dab319f6000a9debd4cbdd9c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/components/ui/Input.tsx": {
@@ -594,15 +594,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/contexts/HardwareStatusContext.test.tsx": {
-    "mtime": 1795512494.1075847,
-    "seen": 1795616343.8075018,
-    "ast_hash": "47c7a168f171370b43585b2ad6246631",
+    "mtime": 1795713421.1660097,
+    "seen": 1795713469.0575855,
+    "ast_hash": "36a25ef66e39780453b295aebf80dc9a",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/contexts/HardwareStatusContext.tsx": {
-    "mtime": 1795590076.7800117,
-    "seen": 1795616343.8075056,
-    "ast_hash": "bb62d6ff7cb286c15100536490e789f9",
+    "mtime": 1795713421.274554,
+    "seen": 1795713469.057589,
+    "ast_hash": "023d6e960f5fa9c8d07b6553f7434750",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/contexts/SocketContext.tsx": {
@@ -618,27 +618,27 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/about/pages/AboutPage.tsx": {
-    "mtime": 1795519269.7548456,
-    "seen": 1795616343.8075173,
-    "ast_hash": "836e5fa3c70a21e34de300df4e3d4467",
+    "mtime": 1795712461.5387511,
+    "seen": 1795713469.0575995,
+    "ast_hash": "9fd9674ad859e0727502c0603c3a37cb",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin-management/components/AccessCodeDisplayModal.tsx": {
-    "mtime": 1794065878.6988585,
-    "seen": 1795616343.8075209,
-    "ast_hash": "db20a0d9cf8fdecfefc21ff22a4b526a",
+    "mtime": 1795707349.7408688,
+    "seen": 1795707353.1792376,
+    "ast_hash": "3e9acfe2bdd9dff140b35a9b11b97a92",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin-management/components/ConfirmationModal.tsx": {
-    "mtime": 1794065878.7948759,
-    "seen": 1795616343.8075247,
-    "ast_hash": "b9cdfa8d8db7d74d8596447134e38ff1",
+    "mtime": 1795707349.824488,
+    "seen": 1795707353.1792405,
+    "ast_hash": "edd587d94c6474058c994af75284e6ac",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin-management/components/CreateAdminModal.tsx": {
-    "mtime": 1794067252.325828,
-    "seen": 1795616343.807528,
-    "ast_hash": "9258deb728929863e3e4d497c72e1824",
+    "mtime": 1795707349.8766851,
+    "seen": 1795707353.1792433,
+    "ast_hash": "e43de49e95d84859a46d8d3476448d58",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin-management/pages/AdminManagementPage.tsx": {
@@ -666,21 +666,21 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/components/DiagnosticWorkbenchCard.tsx": {
-    "mtime": 1795612547.085834,
-    "seen": 1795616343.8075452,
-    "ast_hash": "79660c81e87fd2f19ccaac8bfb080636",
+    "mtime": 1795710472.5705538,
+    "seen": 1795710891.2208154,
+    "ast_hash": "5052056f1a7a239299c8b44ae8374a86",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/components/FatigueDriftRadarCard.tsx": {
-    "mtime": 1795612547.1650293,
-    "seen": 1795616343.807549,
-    "ast_hash": "a1705da6e0a145b031dd2131bfe25259",
+    "mtime": 1795709544.3087158,
+    "seen": 1795710465.8271604,
+    "ast_hash": "2a103357defad26cc3b9e78dbf9195fa",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/components/HardwarePipelineCard.tsx": {
-    "mtime": 1795612547.2455518,
-    "seen": 1795616343.8075526,
-    "ast_hash": "e9d8930d2cfd5473d46fc156e48d3f00",
+    "mtime": 1795713421.3616526,
+    "seen": 1795713469.0576224,
+    "ast_hash": "f4c3fc6452e0e0e4302c808d95666023",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/components/ReferenceConfigForm.test.tsx": {
@@ -732,15 +732,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/pages/DiagnosticsPage.tsx": {
-    "mtime": 1795612547.4018314,
-    "seen": 1795616343.8075848,
-    "ast_hash": "b2bf298fb4636874793429ce606676a8",
+    "mtime": 1795709544.4732094,
+    "seen": 1795710465.8271759,
+    "ast_hash": "0df61e529afc5035f9c7d1d625e45dee",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/pages/LogsPage.tsx": {
-    "mtime": 1795605865.3048286,
-    "seen": 1795616343.807588,
-    "ast_hash": "a4ab0a09e45f18adab53b2238a9ee163",
+    "mtime": 1795710472.702171,
+    "seen": 1795710891.2208917,
+    "ast_hash": "145d7a1639886567eb8d07b39139eae9",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/pages/SettingsPage.test.tsx": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/pages/SettingsPage.tsx": {
-    "mtime": 1795524556.709592,
-    "seen": 1795616343.8075948,
-    "ast_hash": "3099714111fbd11553e859a6536c59a7",
+    "mtime": 1795713421.4518046,
+    "seen": 1795713469.0576618,
+    "ast_hash": "877a33a538cb530538612f9b01cb644e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/admin/pages/index.ts": {
@@ -768,9 +768,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/alerts/components/AlertDetailsDialog.tsx": {
-    "mtime": 1784442951.1559956,
-    "seen": 1795616343.807605,
-    "ast_hash": "ad5b7fde3bbb4048c76e825a906ef5f8",
+    "mtime": 1795707349.9959545,
+    "seen": 1795707353.179305,
+    "ast_hash": "a9109622e5cdf712736d1a8e0bba67ca",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/alerts/components/SeverityBadge.tsx": {
@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/analytics/components/HistoricalDataView.tsx": {
-    "mtime": 1795629154.0561368,
-    "seen": 1795630421.8929124,
-    "ast_hash": "8afbc706fa2c74157a36480ea93838da",
+    "mtime": 1795705443.922876,
+    "seen": 1795705887.3844879,
+    "ast_hash": "c21c38d347b5047b2ac89a581e07f79b",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/analytics/components/MobileAnalyticsDashboard.tsx": {
@@ -876,15 +876,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/analytics/pages/AnalyticsPage.tsx": {
-    "mtime": 1795605865.6815758,
-    "seen": 1795616343.8076644,
-    "ast_hash": "795d31fbd76712da1010e08694085ff0",
+    "mtime": 1795705444.0011022,
+    "seen": 1795705887.3845067,
+    "ast_hash": "93fbbe294b78fc5d9cb7edef73e402a7",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/analytics/types/analytics.types.ts": {
-    "mtime": 1795605494.4877245,
-    "seen": 1795616343.8076675,
-    "ast_hash": "71fa5346067a8a892d0a9cca0fd9a420",
+    "mtime": 1795705175.3340273,
+    "seen": 1795705321.797341,
+    "ast_hash": "b8f7b70fce608a1485c04c62d02403af",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/analytics/types/index.ts": {
@@ -948,9 +948,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/ble/components/EcoStepBleModal.tsx": {
-    "mtime": 1795588971.6619549,
-    "seen": 1795616343.8077064,
-    "ast_hash": "ee8566bbbb895fd2bfb64ce7beb9462c",
+    "mtime": 1795707350.1188948,
+    "seen": 1795707353.1793902,
+    "ast_hash": "52786bed38278b9c4532b1c9689703cc",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/ble/index.ts": {
@@ -990,9 +990,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/components/ChatHeader.tsx": {
-    "mtime": 1795631457.8116984,
-    "seen": 1795631573.567467,
-    "ast_hash": "95dcba8c486688277f2472751cfaaa56",
+    "mtime": 1795700439.605881,
+    "seen": 1795700444.7669928,
+    "ast_hash": "b4314fd9090c305cf75f2839a79cf26c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/components/ChatInput.tsx": {
@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/components/ChatPanel.tsx": {
-    "mtime": 1795631744.4469018,
-    "seen": 1795631764.1721337,
-    "ast_hash": "aeb39dcf63bed991d794df752e16bdc7",
+    "mtime": 1795710891.3023725,
+    "seen": 1795711126.97372,
+    "ast_hash": "7a5e36abe78f33ad0adaceb185caae89",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/components/MessageBubble.tsx": {
@@ -1104,15 +1104,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/DashboardHeader.test.tsx": {
-    "mtime": 1795512494.6734614,
-    "seen": 1795616343.8078067,
-    "ast_hash": "3757ccafdc59a4893abeb9331cd446dd",
+    "mtime": 1795713421.495046,
+    "seen": 1795713469.0578253,
+    "ast_hash": "32b7068bd3c287728d873b6ee8e6635b",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/DashboardHeader.tsx": {
-    "mtime": 1795512494.7633643,
-    "seen": 1795616343.8078103,
-    "ast_hash": "251c9aba4d729984629787afe1f81f3b",
+    "mtime": 1795715123.297045,
+    "seen": 1795715137.67376,
+    "ast_hash": "9c4fe90814b023c7dd5e0977b956655d",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/DashboardSkeleton.tsx": {
@@ -1194,15 +1194,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/HeroPowerCard.tsx": {
-    "mtime": 1795656101.1982274,
-    "seen": 1795656121.8766973,
-    "ast_hash": "f45fd7d1a721a13bc0b27dd460ff1454",
+    "mtime": 1795713421.6916473,
+    "seen": 1795713469.0578594,
+    "ast_hash": "0d1c912d919320b045c400c2b8506961",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/HowHarvestingWorksCard.tsx": {
-    "mtime": 1795516365.1642976,
-    "seen": 1795616343.8078613,
-    "ast_hash": "5e1a14613da0c7cbd77f5664d7775c2b",
+    "mtime": 1795702670.2761285,
+    "seen": 1795703406.6988418,
+    "ast_hash": "860256e13bcbdd3f665eee0c0777ead3",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/MetricCard.example.tsx": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/MetricCard.tsx": {
-    "mtime": 1795656436.553291,
-    "seen": 1795656587.3137023,
-    "ast_hash": "c8911de76d8c3fee5e64a3398d5fb033",
+    "mtime": 1795702670.3744023,
+    "seen": 1795703406.6988451,
+    "ast_hash": "42557bac1fc93ce7db6592e8314e6e28",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/MetricCardSkeleton.test.tsx": {
@@ -1266,9 +1266,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/MobileEnergyHarvestingDashboard.tsx": {
-    "mtime": 1795629154.37228,
-    "seen": 1795630421.8929965,
-    "ast_hash": "818e58ed31aa05099b84d0046236dd99",
+    "mtime": 1795713421.834414,
+    "seen": 1795713469.057887,
+    "ast_hash": "f1230272238e4d80d443caab497569f2",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/components/ResponsiveLayout.test.tsx": {
@@ -1398,15 +1398,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/useDashboardMetrics.ts": {
-    "mtime": 1784381930.4939642,
-    "seen": 1795616343.807973,
-    "ast_hash": "7f3c547ab782bc7c3a21a043fe92e185",
+    "mtime": 1795705444.1013303,
+    "seen": 1795705887.3846922,
+    "ast_hash": "69bd7023ff0b2b79ec8f6fa31a40eceb",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/useEnergyByPeriod.ts": {
-    "mtime": 1795590077.0452483,
-    "seen": 1795616343.8079762,
-    "ast_hash": "de3901b0524bc0086499064454b7a730",
+    "mtime": 1795705091.1532946,
+    "seen": 1795705321.797451,
+    "ast_hash": "664b2c8e6de902ab8ec99fa97d293fd6",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/useLiveSensorData.ts": {
@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/usePowerGeneration.ts": {
-    "mtime": 1795605865.7666705,
-    "seen": 1795616343.807983,
-    "ast_hash": "819f83a36106a8c51cc2d2ab25bc9cbe",
+    "mtime": 1795705088.9105456,
+    "seen": 1795705321.7974534,
+    "ast_hash": "8e0f78cb1f39aa881164c6b65f10a094",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/useSystemHealth.ts": {
@@ -1428,9 +1428,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/hooks/useTimeSeriesData.ts": {
-    "mtime": 1789471864.2596455,
-    "seen": 1795616343.8079896,
-    "ast_hash": "32c0983ecaa47ac1391bd815e7a507cd",
+    "mtime": 1795705444.248003,
+    "seen": 1795705887.3847027,
+    "ast_hash": "0c3f2d5acfc51c7d1be2ba8c384e2908",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/pages/DashboardPage.caching.test.tsx": {
@@ -1452,9 +1452,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/pages/DashboardPage.tsx": {
-    "mtime": 1795656891.519176,
-    "seen": 1795656939.7166133,
-    "ast_hash": "ab559f0ccb69f403983f33f0fbd10930",
+    "mtime": 1795705980.1955142,
+    "seen": 1795706159.9868317,
+    "ast_hash": "ca4c93b67366968c8af521ad024aa8d5",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/dashboard/pages/HealthCheckPage.tsx": {
@@ -1560,9 +1560,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/feedback/pages/FeedbackPage.tsx": {
-    "mtime": 1795657551.2388115,
-    "seen": 1795657574.4976714,
-    "ast_hash": "b14c2b46cf9ee362c61be532a6db7815",
+    "mtime": 1795711577.7319136,
+    "seen": 1795712107.9624858,
+    "ast_hash": "cc90269b8e5da20db474ad61a9b6137c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/landing/components/EcoChatSection.tsx": {
@@ -1644,21 +1644,21 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/components/AdminMilestonesModal.tsx": {
-    "mtime": 1795613443.7696393,
-    "seen": 1795616343.808112,
-    "ast_hash": "4604d89983ae5f7091936d3b96aeae2f",
+    "mtime": 1795708009.9552188,
+    "seen": 1795708060.229465,
+    "ast_hash": "3d9ddd6fcff78625f0f4f34c03a65a09",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/components/MilestoneCelebrationModal.tsx": {
-    "mtime": 1795523078.0635872,
-    "seen": 1795616343.8081152,
-    "ast_hash": "0a1fdcfa074e03ba3bb7ec8988f522a0",
+    "mtime": 1795707350.3266695,
+    "seen": 1795707353.179659,
+    "ast_hash": "edf9a84aceb3e539eaad74de4487ca1e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/components/MilestonesRoadmap.tsx": {
-    "mtime": 1795656891.7261522,
-    "seen": 1795656939.716738,
-    "ast_hash": "529be6f549b39eb12905b33e00c7d3bb",
+    "mtime": 1795708010.091753,
+    "seen": 1795708060.2294679,
+    "ast_hash": "831c239824ca3b38cddd3215314737a8",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/hooks/useMilestones.ts": {
@@ -1674,9 +1674,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/pages/MilestonesPage.tsx": {
-    "mtime": 1795613443.8009858,
-    "seen": 1795616343.808128,
-    "ast_hash": "10fc1d979c6c9bd213200b0ed607f54c",
+    "mtime": 1795708010.1324246,
+    "seen": 1795708060.229471,
+    "ast_hash": "6622db8900a20b0055a56a95daee474e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/types/milestone.types.ts": {
@@ -1740,9 +1740,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/components/GenerateReportDialog.tsx": {
-    "mtime": 1795630598.7267396,
-    "seen": 1795630886.2526112,
-    "ast_hash": "cf8b595003fe198ab962b13c5d6df385",
+    "mtime": 1795709544.9269705,
+    "seen": 1795710465.827438,
+    "ast_hash": "098c197445aa5f45d59a6a3f0fec2de8",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/components/ReportCard.tsx": {
@@ -1752,15 +1752,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/components/ReportDetailsModal.tsx": {
-    "mtime": 1795524556.9040246,
-    "seen": 1795616343.80817,
-    "ast_hash": "455345d8be67eece6fe99befa87864e3",
+    "mtime": 1795709545.0402107,
+    "seen": 1795710465.8274405,
+    "ast_hash": "6f741505d0ff7b30ac8a744a0306f145",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/components/ReportPreviewModal.tsx": {
-    "mtime": 1795523078.3630612,
-    "seen": 1795616343.8081734,
-    "ast_hash": "2348caf3e2ca6b09ed0b4f6a562e9761",
+    "mtime": 1795707350.5292473,
+    "seen": 1795707353.179701,
+    "ast_hash": "0735f8c82b19be9c42ad70c81d100d7c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/hooks/index.ts": {
@@ -1770,9 +1770,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/hooks/useReportActions.ts": {
-    "mtime": 1784444252.1260285,
-    "seen": 1795616343.8081806,
-    "ast_hash": "06979c3f22920c397c9bc04cb9397bdc",
+    "mtime": 1795699399.2502418,
+    "seen": 1795699404.109065,
+    "ast_hash": "82c2ca6c14fd0bec40094dd0d690b288",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/hooks/useReports.ts": {
@@ -1782,21 +1782,21 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/reports/pages/ReportsPage.tsx": {
-    "mtime": 1795630598.790554,
-    "seen": 1795630886.2526195,
-    "ast_hash": "81ae485c2201bd5daff46e7c8d582732",
+    "mtime": 1795708439.1996818,
+    "seen": 1795709357.5322037,
+    "ast_hash": "dc36a20934a22452492511834e5bb40a",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/sensors/components/ApiKeyModal.tsx": {
-    "mtime": 1791511333.2409222,
-    "seen": 1795616343.80819,
-    "ast_hash": "cdb2656f9e4f5b7c56c04b76857700f8",
+    "mtime": 1795707350.6090152,
+    "seen": 1795707353.1797097,
+    "ast_hash": "df2bb3d5a06f679d7fda88104195602a",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/sensors/components/RegisterSensorDialog.tsx": {
-    "mtime": 1793860057.4519548,
-    "seen": 1795616343.8081932,
-    "ast_hash": "a6941b5fc2d61dac1635e4f03c7c19f2",
+    "mtime": 1795707350.6880322,
+    "seen": 1795707353.1797109,
+    "ast_hash": "f1ca70f9f76ee94a33e9661146fd9f40",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/sensors/components/SensorMonitoringCard.tsx": {
@@ -1896,9 +1896,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/hooks/useAuditPageView.ts": {
-    "mtime": 1794762166.0415535,
-    "seen": 1795616343.8082504,
-    "ast_hash": "cfc9f66034e737d02bf68127ba9fdad8",
+    "mtime": 1795706912.7318058,
+    "seen": 1795707043.1055782,
+    "ast_hash": "b7b86f19d147a6531cee8f0c90a2af3c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/hooks/useDeviceLayout.ts": {
@@ -1986,9 +1986,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/layouts/DashboardLayout.tsx": {
-    "mtime": 1795601062.7678034,
-    "seen": 1795616343.8083,
-    "ast_hash": "ab5d4580a18e5418705cc74c970a2930",
+    "mtime": 1795699177.6287138,
+    "seen": 1795699404.1091075,
+    "ast_hash": "b4a05450dcb8f2f37827b7ff83d1ad91",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/layouts/DesktopDashboardLayout.tsx": {
@@ -2130,9 +2130,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/routes/index.tsx": {
-    "mtime": 1795655233.8613517,
-    "seen": 1795655436.1860437,
-    "ast_hash": "73b160f9b2931a207c63a038df8dd5b9",
+    "mtime": 1795701363.4446652,
+    "seen": 1795702001.894283,
+    "ast_hash": "a02ea1b2bb66a2c361d3aae66d9e102f",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/routes/routes.config.ts": {
@@ -2232,9 +2232,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/types/report.types.ts": {
-    "mtime": 1795522863.6542082,
-    "seen": 1795616343.8084466,
-    "ast_hash": "c54b7212e0c3726da7d27cd903645a54",
+    "mtime": 1795705246.3291264,
+    "seen": 1795705321.797619,
+    "ast_hash": "367cf426c80bb46c188acd53d96bc575",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/types/sensor.types.ts": {
@@ -2778,15 +2778,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/analytics/analytics.service.ts": {
-    "mtime": 1795514244.8606117,
-    "seen": 1795616343.8087764,
-    "ast_hash": "85d7cd19eb88cb424dec11cf055056d2",
+    "mtime": 1795704873.3730652,
+    "seen": 1795705321.7977295,
+    "ast_hash": "3b007e795319097dc1b339832b2d535b",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/analytics/dto/analytics-query.dto.ts": {
-    "mtime": 1789724954.020838,
-    "seen": 1795616343.8087792,
-    "ast_hash": "61cbb14f1d0a67657c935af5f4c156ca",
+    "mtime": 1795705444.6141534,
+    "seen": 1795705887.3852472,
+    "ast_hash": "56711de8efff3b8cecaaaa4e5c1e969e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/analytics/dto/analytics-response.dto.ts": {
@@ -2844,9 +2844,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/app.module.ts": {
-    "mtime": 1795601062.9080205,
-    "seen": 1795616343.8088074,
-    "ast_hash": "1506af29a9513aa8297b9d821be59ff7",
+    "mtime": 1795712102.4472802,
+    "seen": 1795712107.962758,
+    "ast_hash": "d85a8ef0b617af3c4588dd6a46813446",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/app.service.ts": {
@@ -2856,9 +2856,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/audit/audit.controller.ts": {
-    "mtime": 1795601062.9567943,
-    "seen": 1795616343.808813,
-    "ast_hash": "ab79cb68e5c3687d9da2248b617a1721",
+    "mtime": 1795705382.8263183,
+    "seen": 1795705427.4528189,
+    "ast_hash": "a470bf0a04f5fb7adafd7db95cc1740d",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/audit/audit.module.ts": {
@@ -2874,15 +2874,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/audit/audit.service.ts": {
-    "mtime": 1795325422.22998,
-    "seen": 1795616343.808822,
-    "ast_hash": "f0d35443aed57da56032fea6c6cb9bd8",
+    "mtime": 1795705444.7315452,
+    "seen": 1795705887.385279,
+    "ast_hash": "c4e53a0227be062ed04ec8d5c03b9351",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/audit/schemas/audit-log.schema.ts": {
-    "mtime": 1794059080.4928343,
-    "seen": 1795616343.808825,
-    "ast_hash": "755f8578acbcafd85404b2097e142b45",
+    "mtime": 1795699399.4496148,
+    "seen": 1795699404.1092784,
+    "ast_hash": "d3c400d92424dd73916c419aaa03315e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/audit/utils/audit-ip.utils.ts": {
@@ -2976,21 +2976,21 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chat/chat.controller.spec.ts": {
-    "mtime": 1794118169.5644355,
-    "seen": 1795616343.8088722,
-    "ast_hash": "19f6ffdf1da53b851ca8f4f4debd82ca",
+    "mtime": 1795712102.5024512,
+    "seen": 1795712107.9627879,
+    "ast_hash": "66e059aeae0c53ecb75815e3adea17d5",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chat/chat.controller.ts": {
-    "mtime": 1795325422.513743,
-    "seen": 1795616343.808875,
-    "ast_hash": "e31ee0f377f11e1c974a13588ca09e3a",
+    "mtime": 1795712103.6931431,
+    "seen": 1795712107.9627888,
+    "ast_hash": "34f4cd0b5551da1cc92b47379228c2bb",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chat/chat.module.ts": {
-    "mtime": 1795631458.5095122,
-    "seen": 1795631573.570324,
-    "ast_hash": "6285b52ce15e174ca539ec1299d01043",
+    "mtime": 1795712103.7885077,
+    "seen": 1795712107.9627898,
+    "ast_hash": "87b425646c1dbaa847f27cb24bd49141",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chat/dto/chat-response.dto.ts": {
@@ -3024,9 +3024,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chatbot/chatbot-core.service.ts": {
-    "mtime": 1795519270.1619282,
-    "seen": 1795616343.8088956,
-    "ast_hash": "8d90d1b7f4507569e09b82284c2a2df5",
+    "mtime": 1795712103.8851213,
+    "seen": 1795712107.962798,
+    "ast_hash": "77294b3b0367a3e8afccd64b47921967",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/chatbot/chatbot.module.ts": {
@@ -3156,9 +3156,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/dashboard/dashboard.controller.ts": {
-    "mtime": 1795325422.7870557,
-    "seen": 1795616343.8089602,
-    "ast_hash": "bd0efbbe440af123d958b53861644699",
+    "mtime": 1795705444.8248665,
+    "seen": 1795705887.3853848,
+    "ast_hash": "634534c924d5a5e35abca1b11a9b3a3d",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/dashboard/dashboard.gateway.ts": {
@@ -3174,9 +3174,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/dashboard/dashboard.service.ts": {
-    "mtime": 1795590077.467718,
-    "seen": 1795616343.8089693,
-    "ast_hash": "02acd4d433cc0b9946fd591a221886fd",
+    "mtime": 1795705444.8880434,
+    "seen": 1795705887.3853905,
+    "ast_hash": "9661cb663a13f149c53adc600e3a0f0d",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/dashboard/dto/dashboard-events.dto.ts": {
@@ -3318,9 +3318,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/energy/dto/energy-query.dto.ts": {
-    "mtime": 1794040903.9747198,
-    "seen": 1795616343.8090408,
-    "ast_hash": "a0cbd255d8fb5972f335a068ee79fcc4",
+    "mtime": 1795704939.253604,
+    "seen": 1795705321.7978392,
+    "ast_hash": "7e0435e8120c8d49b0c9516486a81e78",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/energy/dto/energy-response.dto.ts": {
@@ -3336,9 +3336,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/energy/energy.controller.ts": {
-    "mtime": 1794040583.177812,
-    "seen": 1795616343.8090496,
-    "ast_hash": "33b5fb8bad2d0a5a174328f1a901d7e5",
+    "mtime": 1795704940.1963317,
+    "seen": 1795705321.7978423,
+    "ast_hash": "8a2cffc1cdcdc9c44df62220d251253c",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/energy/energy.module.ts": {
@@ -3348,27 +3348,27 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/energy/energy.service.ts": {
-    "mtime": 1795590077.629495,
-    "seen": 1795616343.8090553,
-    "ast_hash": "515e2ac2fec7da679dc33b44e18198f2",
+    "mtime": 1795705445.0295625,
+    "seen": 1795705887.385452,
+    "ast_hash": "70297f7c0cba8513f73f6ee683f37066",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/dto/create-feedback.dto.ts": {
-    "mtime": 1795599501.9824314,
-    "seen": 1795616343.8090587,
-    "ast_hash": "ebcae425406a2f1bbcb672c627fc05ea",
+    "mtime": 1795701363.5145833,
+    "seen": 1795702001.8944964,
+    "ast_hash": "baf0e8789c031ca4fcaf213baaffd022",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/dto/update-feedback.dto.ts": {
-    "mtime": 1795599502.6594849,
-    "seen": 1795616343.8090613,
-    "ast_hash": "f6234d2fe324716dc89b50f8d4fbd25e",
+    "mtime": 1795711438.882919,
+    "seen": 1795711574.380838,
+    "ast_hash": "058139cd1ffcb92ff38140e22da45cb0",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/feedback.controller.ts": {
-    "mtime": 1795599505.9185681,
-    "seen": 1795616343.8090641,
-    "ast_hash": "6b2e3486163cd7886315d9321948836b",
+    "mtime": 1795701363.6778715,
+    "seen": 1795702001.8944983,
+    "ast_hash": "9c2db8f326a627b25b98c078a4972f9f",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/feedback.module.ts": {
@@ -3378,15 +3378,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/feedback.service.ts": {
-    "mtime": 1795599504.3630028,
-    "seen": 1795616343.8090703,
-    "ast_hash": "cbe1852ce2260a7afa8885fb030ca38b",
+    "mtime": 1795711577.885783,
+    "seen": 1795712107.9628706,
+    "ast_hash": "5b99036ff58ca9365e612ed495042ca2",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/feedback/schemas/feedback.schema.ts": {
-    "mtime": 1795599501.1653695,
-    "seen": 1795616343.8090734,
-    "ast_hash": "ef06034c803b4e462ff4313c42de7399",
+    "mtime": 1795711437.7843435,
+    "seen": 1795711574.3808484,
+    "ast_hash": "ca09903bcf8925a3bb805aea894541b4",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/firebase/firebase.module.ts": {
@@ -3399,78 +3399,6 @@
     "mtime": 1791794751.195677,
     "seen": 1795616343.8090794,
     "ast_hash": "873f8061f99523b1e6957b0b7f59c041",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/data/badges.data.ts": {
-    "mtime": 1792743498.598142,
-    "seen": 1795616343.8090823,
-    "ast_hash": "c52d44d7aa9e4cb22e69c4cdcafbfe00",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/data/missions.data.ts": {
-    "mtime": 1792743487.3379693,
-    "seen": 1795616343.8090854,
-    "ast_hash": "9cd30703e39c6eafc1af8e7b99bd3e5a",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/dto/leaderboard-query.dto.ts": {
-    "mtime": 1792754657.4969814,
-    "seen": 1795616343.8090885,
-    "ast_hash": "6453c49153faea7191f9f6751e255dd7",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/dto/submit-quiz.dto.ts": {
-    "mtime": 1792743530.2931483,
-    "seen": 1795616343.8090916,
-    "ast_hash": "cc79c19e8affa6e98438e9854ebbb040",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/gamification.controller.spec.ts": {
-    "mtime": 1792754981.8212495,
-    "seen": 1795616343.8090947,
-    "ast_hash": "567e06067014e9b98549705fe6eacd0b",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/gamification.controller.ts": {
-    "mtime": 1792754910.9068513,
-    "seen": 1795616343.809098,
-    "ast_hash": "1598e80e87b22c5a80e28c416c0e4517",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/gamification.module.ts": {
-    "mtime": 1792761918.9042313,
-    "seen": 1795616343.809101,
-    "ast_hash": "7145e602d557736e4fb85e7d2fef4352",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/gamification.service.spec.ts": {
-    "mtime": 1792756156.2976394,
-    "seen": 1795616343.809104,
-    "ast_hash": "e269a7bf12bf4172387d9df0d2c7a9a5",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/gamification.service.ts": {
-    "mtime": 1792755362.457346,
-    "seen": 1795616343.8091073,
-    "ast_hash": "a60047d4b431e71c98b303d7dda03632",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/guards/optional-player-session.guard.ts": {
-    "mtime": 1792743570.0720704,
-    "seen": 1795616343.8091106,
-    "ast_hash": "e4bb1079aa2d4445dc9e3948c9cc35b0",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/utils/level-calculator.spec.ts": {
-    "mtime": 1792743633.6733904,
-    "seen": 1795616343.8091135,
-    "ast_hash": "f719fa435823ab96d039341e2b50b0ae",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/gamification/utils/level-calculator.ts": {
-    "mtime": 1792754647.2891397,
-    "seen": 1795616343.8091166,
-    "ast_hash": "a0c16f4c917df269c3a1ebae0ec7632e",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/health/dto/health-check.dto.ts": {
@@ -3594,9 +3522,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/main.ts": {
-    "mtime": 1795333160.1647165,
-    "seen": 1795616343.809181,
-    "ast_hash": "efacce3b29691802344331c86ae9b11b",
+    "mtime": 1795699399.5296724,
+    "seen": 1795699404.1094081,
+    "ast_hash": "abe15cee01e2da8f9eea6eafd2d59b84",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/milestones/dto/update-milestone-targets.dto.ts": {
@@ -3630,9 +3558,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/milestones/milestones.service.ts": {
-    "mtime": 1795613443.9559875,
-    "seen": 1795616343.8091993,
-    "ast_hash": "f1c32b556436c5f50b95711b6cb199cf",
+    "mtime": 1795708026.8259974,
+    "seen": 1795708060.229816,
+    "ast_hash": "7919ecacd253c9772594a49cb33a264f",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/milestones/schemas/milestone-target.schema.ts": {
@@ -3707,84 +3635,6 @@
     "ast_hash": "0a6073835734b96ec0bec6965474dabe",
     "semantic_hash": ""
   },
-  "energy-monitoring-system/src/players/decorators/current-player.decorator.ts": {
-    "mtime": 1792738677.7668405,
-    "seen": 1795616343.8092396,
-    "ast_hash": "856272233d5491d21ac6e7624792abf2",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/dto/create-guest-player.dto.ts": {
-    "mtime": 1792738663.141671,
-    "seen": 1795616343.809243,
-    "ast_hash": "6b66e2ef3ae4b5bc86d697a52586754c",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/dto/player-response.dto.ts": {
-    "mtime": 1792743420.4854414,
-    "seen": 1795616343.8092463,
-    "ast_hash": "b2303758a13b418bff36dd77d5158a9c",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/guards/player-session.guard.spec.ts": {
-    "mtime": 1792739113.8099794,
-    "seen": 1795616343.809249,
-    "ast_hash": "d1c6330049030e7cd936c17aac2aceef",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/guards/player-session.guard.ts": {
-    "mtime": 1792738724.435333,
-    "seen": 1795616343.809252,
-    "ast_hash": "1f82a8a83d107cf1b14136a666b340a1",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/players.controller.spec.ts": {
-    "mtime": 1792738934.2615523,
-    "seen": 1795616343.8092554,
-    "ast_hash": "a588e457b4349dd68e882ae4bf0caeeb",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/players.controller.ts": {
-    "mtime": 1792739372.2348135,
-    "seen": 1795616343.8092585,
-    "ast_hash": "fe87f1001119c4a1f544a100f007b22d",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/players.module.ts": {
-    "mtime": 1792738742.417846,
-    "seen": 1795616343.8092618,
-    "ast_hash": "4c758afa1558c56054cbd7f5fc8061dc",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/players.service.spec.ts": {
-    "mtime": 1792739089.3057752,
-    "seen": 1795616343.809265,
-    "ast_hash": "2b140e0b9bc67d2a291bb22cd94eefe0",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/players.service.ts": {
-    "mtime": 1792743442.5326357,
-    "seen": 1795616343.8092682,
-    "ast_hash": "76f0fdbd5fcc48ec2dc2a5506e004174",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/schemas/player.schema.ts": {
-    "mtime": 1792754627.9649138,
-    "seen": 1795616343.8092713,
-    "ast_hash": "c7fe7738547a96b25150bf089e551ccd",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/utils/username-validator.spec.ts": {
-    "mtime": 1792738770.3486893,
-    "seen": 1795616343.8092744,
-    "ast_hash": "42cf0cec222bd2cd93de14989397088d",
-    "semantic_hash": ""
-  },
-  "energy-monitoring-system/src/players/utils/username-validator.ts": {
-    "mtime": 1792738646.9616058,
-    "seen": 1795616343.8092773,
-    "ast_hash": "bfacc82bdbece7610f43a7b1ce88c5b2",
-    "semantic_hash": ""
-  },
   "energy-monitoring-system/src/public/dto/telemetry.dto.ts": {
     "mtime": 1789393349.5816238,
     "seen": 1795616343.8092804,
@@ -3810,9 +3660,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/dto/generate-report.dto.ts": {
-    "mtime": 1791476142.8606703,
-    "seen": 1795616343.8092933,
-    "ast_hash": "9fcc1865b1f119b5e2166312e6dac088",
+    "mtime": 1795704878.1327975,
+    "seen": 1795705321.797929,
+    "ast_hash": "979f99af48f05dd4e3db840a2a39db10",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/dto/index.ts": {
@@ -3840,9 +3690,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/reports.controller.ts": {
-    "mtime": 1795615208.673483,
-    "seen": 1795616343.8093114,
-    "ast_hash": "c4b7e1d2af2fb9f8f8179ac6db0a3017",
+    "mtime": 1795699122.8571954,
+    "seen": 1795699404.109452,
+    "ast_hash": "239834536d81f2a4f51d78b148a9b9a0",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/reports.module.ts": {
@@ -3852,15 +3702,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/reports.service.ts": {
-    "mtime": 1795629154.820798,
-    "seen": 1795630421.8934588,
-    "ast_hash": "834fb0bdae43f28d797ffd3cfc699fca",
+    "mtime": 1795705445.1317737,
+    "seen": 1795705887.385633,
+    "ast_hash": "780d61267ab16db0776cecb56934ec92",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/reports/schemas/report.schema.ts": {
-    "mtime": 1795599112.5322444,
-    "seen": 1795616343.8093207,
-    "ast_hash": "adc232ab22d4098f2a9e35df4a8d509b",
+    "mtime": 1795699082.3554082,
+    "seen": 1795699404.109455,
+    "ast_hash": "3f87d106732aa21bbb45e63d4f99e30b",
     "semantic_hash": ""
   },
   "energy-monitoring-system/src/seed/admin-seeder.ts": {
@@ -4614,15 +4464,15 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/components/AdminChatView.tsx": {
-    "mtime": 1795631331.2962594,
-    "seen": 1795631573.5674572,
-    "ast_hash": "53af66cf0a78dbe287a235583d45c05a",
+    "mtime": 1795707047.7800844,
+    "seen": 1795707353.1794107,
+    "ast_hash": "6276c84885b13101f509a18dfc413e98",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/chat/useAdminChat.ts": {
-    "mtime": 1795631330.1129496,
-    "seen": 1795631573.5675406,
-    "ast_hash": "fc1841707cc3026b702890818e9fb260",
+    "mtime": 1795699398.9989974,
+    "seen": 1795699404.1089106,
+    "ast_hash": "30d787b20a469c0b9ad881712cee7471",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/feedback/components/AdminInboxPanel.tsx": {
@@ -4653,6 +4503,42 @@
     "mtime": 1795631697.1205935,
     "seen": 1795631764.1721241,
     "ast_hash": "201b7ae7530eae47f74f5a451cc15a75",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/src/components/common/NicknameWelcomeModal.tsx": {
+    "mtime": 1795711119.6496377,
+    "seen": 1795711126.9735885,
+    "ast_hash": "8dcec41ea08b2ce64865c233c40ac3a6",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/src/contexts/VisitorContext.tsx": {
+    "mtime": 1795711064.8795457,
+    "seen": 1795711126.9736466,
+    "ast_hash": "6a71cd476c19812e8c588164ddcc03e9",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/src/features/feedback/pages/FeedbackDetailPage.tsx": {
+    "mtime": 1795711577.6446714,
+    "seen": 1795712107.9624834,
+    "ast_hash": "0f5eb8e529226642c0da8189501885e3",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/src/components/common/HourRangeSelector.tsx": {
+    "mtime": 1795706912.5453904,
+    "seen": 1795707043.10508,
+    "ast_hash": "3a7ba5d81b0b7ead2839a54e60c5576f",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/src/common/utils/hour-range.util.ts": {
+    "mtime": 1795704870.0212703,
+    "seen": 1795705321.797802,
+    "ast_hash": "59efb7178cb707e2c9ef369e631ce909",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/uploads/reports/system-summary-report-2026-11-27-1795712263797.pdf": {
+    "mtime": 1795712263.9002218,
+    "seen": 1795712308.4658024,
+    "ast_hash": "8b8d04df8050c936627a5c3c98c97ee8",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/package-lock.json": {

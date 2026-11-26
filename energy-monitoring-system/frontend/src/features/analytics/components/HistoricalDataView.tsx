@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Download, Table as TableIcon, BarChart3, ChevronLeft, ChevronRight, Footprints } from 'lucide-react';
-import { EcoCard, EcoEmptyState } from '@/components/common';
+import { Calendar, Download, ChevronLeft, ChevronRight, Footprints } from 'lucide-react';
+import { EcoEmptyState } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { getTimeSeries } from '@/api/services/analytics.service';
 import { energyService, type EnergyReading } from '@/api/services/energy.service';
@@ -42,6 +42,10 @@ interface HistoricalDataViewProps {
   endDate?: string;
   /** Granularity for data aggregation */
   granularity: Granularity;
+  /** Optional hour-of-day filter start (0-23, PHT) */
+  startHour?: number;
+  /** Optional hour-of-day filter end (0-23, PHT) */
+  endHour?: number;
   /** Whether the current user is a public user (read-only) */
   isPublicUser?: boolean;
   /** Callback to reset period to All Time */
@@ -61,6 +65,8 @@ export function HistoricalDataView({
   startDate,
   endDate,
   granularity,
+  startHour,
+  endHour,
   isPublicUser: propIsPublicUser,
   onResetToAllTime: _onResetToAllTime,
 }: HistoricalDataViewProps) {
@@ -78,15 +84,24 @@ export function HistoricalDataView({
   const [includeInactive, setIncludeInactive] = useState<boolean>(false);
   const recordsPerPage = 50;
 
+  const hourFilterParams =
+    startHour !== undefined && endHour !== undefined ? { startHour, endHour } : {};
+
   // Fetch raw readings with pagination (only when in raw mode)
   // When includeInactive is false (default), backend filters out completely inactive records
   const { data: rawReadingsData, isLoading: rawReadingsLoading } = useQuery({
-    queryKey: ['rawReadings', startDate, endDate, currentPage, recordsPerPage, includeInactive],
+    queryKey: ['rawReadings', startDate, endDate, currentPage, recordsPerPage, includeInactive, startHour ?? 'all', endHour ?? 'all'],
     queryFn: async () => {
-      console.log('[HistoricalDataView] Fetching raw readings:', { startDate, endDate, currentPage, recordsPerPage, includeInactive });
       try {
-        const result = await energyService.getRawReadings(startDate, endDate, currentPage, recordsPerPage, includeInactive);
-        console.log('[HistoricalDataView] Raw readings result:', result);
+        const result = await energyService.getRawReadings(
+          startDate,
+          endDate,
+          currentPage,
+          recordsPerPage,
+          includeInactive,
+          startHour,
+          endHour,
+        );
         return result;
       } catch (error) {
         console.error('[HistoricalDataView] Raw readings error:', error);
@@ -102,7 +117,7 @@ export function HistoricalDataView({
 
   // Fetch all metrics in parallel
   const { data: energyData, isLoading: energyLoading } = useQuery({
-    queryKey: ['timeSeries', 'energy', granularity, timeSeriesStartDate, endDate],
+    queryKey: ['timeSeries', 'energy', granularity, timeSeriesStartDate, endDate, startHour ?? 'all', endHour ?? 'all'],
     queryFn: () =>
       getTimeSeries({
         metric: 'energy' as MetricType,
@@ -110,11 +125,12 @@ export function HistoricalDataView({
         startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
+        ...hourFilterParams,
       }),
   });
 
   const { data: voltageData, isLoading: voltageLoading } = useQuery({
-    queryKey: ['timeSeries', 'voltage', granularity, timeSeriesStartDate, endDate],
+    queryKey: ['timeSeries', 'voltage', granularity, timeSeriesStartDate, endDate, startHour ?? 'all', endHour ?? 'all'],
     queryFn: () =>
       getTimeSeries({
         metric: 'voltage' as MetricType,
@@ -122,11 +138,12 @@ export function HistoricalDataView({
         startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
+        ...hourFilterParams,
       }),
   });
 
   const { data: currentData, isLoading: currentLoading } = useQuery({
-    queryKey: ['timeSeries', 'current', granularity, timeSeriesStartDate, endDate],
+    queryKey: ['timeSeries', 'current', granularity, timeSeriesStartDate, endDate, startHour ?? 'all', endHour ?? 'all'],
     queryFn: () =>
       getTimeSeries({
         metric: 'current' as MetricType,
@@ -134,11 +151,12 @@ export function HistoricalDataView({
         startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
+        ...hourFilterParams,
       }),
   });
 
   const { data: powerData, isLoading: powerLoading } = useQuery({
-    queryKey: ['timeSeries', 'power', granularity, timeSeriesStartDate, endDate],
+    queryKey: ['timeSeries', 'power', granularity, timeSeriesStartDate, endDate, startHour ?? 'all', endHour ?? 'all'],
     queryFn: () =>
       getTimeSeries({
         metric: 'power' as MetricType,
@@ -146,11 +164,12 @@ export function HistoricalDataView({
         startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
+        ...hourFilterParams,
       }),
   });
 
   const { data: stepsData, isLoading: stepsLoading } = useQuery({
-    queryKey: ['timeSeries', 'steps', granularity, timeSeriesStartDate, endDate],
+    queryKey: ['timeSeries', 'steps', granularity, timeSeriesStartDate, endDate, startHour ?? 'all', endHour ?? 'all'],
     queryFn: () =>
       getTimeSeries({
         metric: 'steps' as MetricType,
@@ -158,6 +177,7 @@ export function HistoricalDataView({
         startDate: timeSeriesStartDate,
         endDate,
         source: 'hardware',
+        ...hourFilterParams,
       }),
   });
 
@@ -258,14 +278,12 @@ export function HistoricalDataView({
   // Loading state
   if (isLoading) {
     return (
-      <EcoCard>
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
-          <span className="ml-3 text-sm text-[rgb(var(--color-neutral-600))]">
-            Loading historical data...
-          </span>
-        </div>
-      </EcoCard>
+      <div className="flex items-center justify-center py-14">
+        <LoadingSpinner size="lg" />
+        <span className="ml-3 text-sm text-[rgb(var(--color-neutral-600))]">
+          Loading historical data...
+        </span>
+      </div>
     );
   }
 
@@ -273,33 +291,29 @@ export function HistoricalDataView({
   const totalPages = viewMode === 'raw' && rawReadingsData ? rawReadingsData.totalPages : 1;
 
   return (
-    <EcoCard>
+    <div className="w-full">
       <div
-        className="eco-card-header pb-4 mb-4 border-b"
+        className="px-5 sm:px-6 py-4 border-b"
         style={{
           borderColor: 'var(--line)',
         }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="p-2.5 rounded-xl flex items-center justify-center"
-              style={{
-                backgroundColor: theme === 'dark' ? 'rgba(57, 255, 136, 0.12)' : 'rgba(34, 197, 94, 0.1)',
-                color: theme === 'dark' ? '#39FF88' : '#16A34A',
-              }}
-            >
-              <Calendar className="h-5 w-5" strokeWidth={2} />
-            </div>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2.5">
+            <Calendar
+              className="h-4 w-4 shrink-0"
+              strokeWidth={2}
+              style={{ color: theme === 'dark' ? '#39FF88' : '#16A34A' }}
+            />
             <div>
               <h3
-                className="text-lg font-bold"
+                className="text-sm sm:text-base font-semibold m-0"
                 style={{ color: 'var(--t)' }}
               >
                 Historical Records
               </h3>
               <p
-                className="text-sm mt-0.5"
+                className="text-xs m-0"
                 style={{ color: 'var(--mu)' }}
               >
                 {totalRecords}{' '}
@@ -311,7 +325,7 @@ export function HistoricalDataView({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Quiet-Period Filter Toggle */}
             <button
               type="button"
@@ -319,7 +333,7 @@ export function HistoricalDataView({
                 setIncludeInactive((prev) => !prev);
                 setCurrentPage(1);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer"
               style={{
                 backgroundColor: includeInactive
                   ? (theme === 'dark' ? 'rgba(234, 179, 8, 0.15)' : '#FEF9C3')
@@ -334,49 +348,32 @@ export function HistoricalDataView({
               title={includeInactive ? 'Showing all periods, including quiet rows with zero activity' : 'Showing only rows with recorded footsteps or energy'}
               aria-pressed={includeInactive}
             >
-              <span>{includeInactive ? 'Include Quiet' : 'Active Only'}</span>
+              {includeInactive ? 'Include Quiet' : 'Active Only'}
             </button>
 
-            {/* View Mode Toggle - EcoStep Design System Segmented Control */}
-            <div className="sgc sgc-sm grid grid-cols-2 sm:inline-flex flex-shrink-0" role="tablist">
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('aggregated');
-                  setCurrentPage(1);
-                }}
-                className={`flex items-center justify-center gap-1.5 ${viewMode === 'aggregated' ? 'on' : ''}`}
-                aria-pressed={viewMode === 'aggregated'}
-                aria-label="Switch to summary view"
-              >
-                <BarChart3 className="inline-block h-3.5 w-3.5" strokeWidth={2} />
-                <span>Summary</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('raw');
-                  setCurrentPage(1);
-                }}
-                className={`flex items-center justify-center gap-1.5 ${viewMode === 'raw' ? 'on' : ''}`}
-                aria-pressed={viewMode === 'raw'}
-                aria-label="Switch to all readings view"
-              >
-                <TableIcon className="inline-block h-3.5 w-3.5" strokeWidth={2} />
-                <span>All Readings</span>
-              </button>
-            </div>
+            {/* Compact View Mode Dropdown (replaces nested pill bar) */}
+            <select
+              aria-label="Select historical view mode"
+              value={viewMode}
+              onChange={(e) => {
+                setViewMode(e.target.value as 'aggregated' | 'raw');
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
+            >
+              <option value="aggregated">Summary</option>
+              <option value="raw">All Readings</option>
+            </select>
 
-            {/* Export Button (Admins only — hidden from public guests so it doesn't look broken) */}
+            {/* Export Button (Admins only) */}
             {!isPublic && (
               <button
                 type="button"
                 onClick={handleExport}
                 title="Export CSV"
-                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs rounded-full font-medium transition-all w-full sm:w-auto cursor-pointer hover:opacity-90"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium transition-all cursor-pointer hover:opacity-90"
                 style={{
-                  backgroundColor: 'var(--panel)',
-                  borderColor: 'var(--line)',
+                  backgroundColor: 'var(--soft)',
                   color: 'var(--t)',
                   border: '1px solid var(--line)',
                 }}
@@ -568,45 +565,33 @@ export function HistoricalDataView({
             </table>
           </div>
 
-          {/* Mobile Card List View */}
-          <div className="md:hidden space-y-3">
+          {/* Compact Flat List View (< md, directly on main sheet) */}
+          <div className="md:hidden divide-y divide-[var(--line)]">
             {displayRecords.map((record, index) => (
               <div
                 key={viewMode === 'raw' ? record.id : `${record.date}-${record.time}-${index}`}
-                className="p-4 rounded-2xl border transition-all duration-200"
-                style={{
-                  backgroundColor: 'var(--panel)',
-                  borderColor: 'var(--line)',
-                  boxShadow: 'var(--card-shadow)',
-                }}
+                className="px-4 py-3.5"
               >
-                {/* Card Header: Timestamp & Energy Badge */}
-                <div
-                  className="flex items-center justify-between pb-3 mb-3 border-b"
-                  style={{
-                    borderColor: 'var(--line)',
-                  }}
-                >
+                {/* Row Header: Timestamp & Energy */}
+                <div className="flex items-center justify-between gap-2 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-sm font-bold tracking-tight"
-                      style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
+                      className="text-sm font-semibold tracking-tight"
+                      style={{ color: 'var(--t)' }}
                     >
                       {record.date}
                     </span>
                     <span
-                      className="text-xs font-medium"
-                      style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
+                      className="text-xs"
+                      style={{ color: 'var(--mu)' }}
                     >
-                      • {record.time}
+                      · {record.time}
                     </span>
                   </div>
                   <span
-                    className="text-xs font-bold px-2.5 py-0.5 rounded-full tabular-nums"
+                    className="text-xs font-bold tabular-nums"
                     style={{
-                      backgroundColor: theme === 'dark' ? 'rgba(5, 150, 105, 0.25)' : '#ECFDF5',
                       color: theme === 'dark' ? '#39FF88' : '#059669',
-                      border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
                     }}
                   >
                     {record.energy !== undefined ? `${record.energy.toFixed(5)} mWh` : '—'}
@@ -685,9 +670,9 @@ export function HistoricalDataView({
 
           {/* Summary footer */}
           <div
-            className="mt-4 pt-4 border-t"
+            className="px-5 sm:px-6 py-3.5 border-t"
             style={{
-              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
+              borderColor: 'var(--line)',
             }}
           >
             <p
@@ -709,6 +694,6 @@ export function HistoricalDataView({
           </div>
         </>
       )}
-    </EcoCard>
+    </div>
   );
 }

@@ -30,6 +30,8 @@ export interface StepsChartProps {
   endDate?: string;
   granularity?: 'hour' | 'day' | 'week' | 'month';
   periodLabel?: string;
+  startHour?: number;
+  endHour?: number;
 }
 
 /**
@@ -55,6 +57,8 @@ export const StepsChart = React.memo(function StepsChart({
   endDate: propEndDate,
   granularity: propGranularity,
   periodLabel,
+  startHour,
+  endHour,
 }: StepsChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -94,6 +98,8 @@ export const StepsChart = React.memo(function StepsChart({
     granularity,
     startDate,
     endDate,
+    startHour,
+    endHour,
   });
 
   // Transform API data to chart format

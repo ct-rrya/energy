@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { ToastContainer } from '@/components/common/Toast';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { VisitorProvider } from '@/contexts/VisitorContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { HardwareStatusProvider } from '@/contexts/HardwareStatusContext';
 import { BleProvider } from '@/contexts/BleContext';
@@ -46,14 +47,16 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <SocketProvider>
-              <HardwareStatusProvider>
-                <BleProvider>
-                  <RouterProvider router={router} />
-                  <ToastContainer />
-                </BleProvider>
-              </HardwareStatusProvider>
-            </SocketProvider>
+            <VisitorProvider>
+              <SocketProvider>
+                <HardwareStatusProvider>
+                  <BleProvider>
+                    <RouterProvider router={router} />
+                    <ToastContainer />
+                  </BleProvider>
+                </HardwareStatusProvider>
+              </SocketProvider>
+            </VisitorProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

@@ -21,15 +21,20 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { FeedbackService } from './feedback.service';
+import { FeedbackService, type FeedbackTab } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { UpdateFeedbackDto, UpvoteFeedbackDto } from './dto/update-feedback.dto';
+import {
+  CreateAnswerDto,
+  UpdateFeedbackDto,
+  UpvoteFeedbackDto,
+  VoteFeedbackDto,
+} from './dto/update-feedback.dto';
 import { FeedbackCategory, FeedbackStatus } from './schemas/feedback.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { AuditService } from '../audit/audit.service';
-import { extractSafeIp } from '../audit/utils/audit-ip.utils';
 
 @ApiTags('Feedback')
 @Controller('feedback')
@@ -50,6 +55,7 @@ export class FeedbackController {
   @ApiQuery({ name: 'status', required: false, enum: FeedbackStatus })
   @ApiQuery({ name: 'category', required: false, enum: FeedbackCategory })
   @ApiQuery({ name: 'sort', required: false, enum: ['newest', 'top'] })
+  @ApiQuery({ name: 'tab', required: false, enum: ['newest', 'top', 'unanswered', 'resolved'] })
   @ApiQuery({ name: 'voterId', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Feedback list retrieved successfully' })
   async findAll(
@@ -58,6 +64,7 @@ export class FeedbackController {
     @Query('status') status?: FeedbackStatus,
     @Query('category') category?: FeedbackCategory,
     @Query('sort') sort?: 'newest' | 'top',
+    @Query('tab') tab?: FeedbackTab,
     @Query('voterId') voterId?: string,
   ) {
     const result = await this.feedbackService.findAll({
@@ -66,12 +73,34 @@ export class FeedbackController {
       status,
       category,
       sort,
+      tab,
       voterId,
     });
 
     return {
       success: true,
       ...result,
+    };
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get single feedback post with full details and answers',
+    description: 'Returns full post details, votes, and all community/admin answers. Increments view count.',
+  })
+  async findOne(
+    @Param('id') id: string,
+    @Query('voterId') voterId?: string,
+    @Query('noCount') noCount?: string,
+  ) {
+    const item = await this.feedbackService.findOne(
+      id,
+      voterId,
+      noCount !== 'true',
+    );
+    return {
+      success: true,
+      data: item,
     };
   }
 
@@ -94,6 +123,26 @@ export class FeedbackController {
     };
   }
 
+  @Post(':id/vote')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 40, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Upvote or downvote a feedback post',
+    description: 'Toggles or switches upvote/downvote for a feedback post.',
+  })
+  async votePost(
+    @Param('id') id: string,
+    @Body() dto: VoteFeedbackDto,
+  ) {
+    const voterKey = dto.voterId?.trim() || 'anonymous';
+    const updated = await this.feedbackService.votePost(id, dto.direction, voterKey);
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
   @Post(':id/upvote')
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
@@ -105,10 +154,104 @@ export class FeedbackController {
   async toggleUpvote(
     @Param('id') id: string,
     @Body() dto: UpvoteFeedbackDto,
-    @Req() req: Request,
   ) {
-    const voterKey = dto.voterId?.trim() || extractSafeIp(req);
+    const voterKey = dto.voterId?.trim() || 'anonymous';
     const updated = await this.feedbackService.toggleUpvote(id, voterKey);
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
+  @Post(':id/answers')
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Post an answer or comment on a feedback thread',
+    description:
+      'Allows public visitors (with browser nickname) or authenticated admins (badged as Official Admin) to answer a post.',
+  })
+  async addAnswer(
+    @Param('id') id: string,
+    @Body() dto: CreateAnswerDto,
+    @Query('voterId') voterId: string | undefined,
+    @CurrentUser() user: UserDocument | null,
+  ) {
+    const isAdmin = Boolean(user);
+    const updated = await this.feedbackService.addAnswer(
+      id,
+      dto,
+      isAdmin,
+      user?.name,
+      voterId,
+    );
+    return {
+      success: true,
+      message: 'Answer posted successfully',
+      data: updated,
+    };
+  }
+
+  @Post(':id/answers/:answerId/vote')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 40, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Upvote or downvote an answer',
+  })
+  async voteAnswer(
+    @Param('id') id: string,
+    @Param('answerId') answerId: string,
+    @Body() dto: VoteFeedbackDto,
+  ) {
+    const voterKey = dto.voterId?.trim() || 'anonymous';
+    const updated = await this.feedbackService.voteAnswer(
+      id,
+      answerId,
+      dto.direction,
+      voterKey,
+    );
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
+  @Patch(':id/answers/:answerId/accept')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mark or unmark an answer as Accepted (Admin only)',
+  })
+  async toggleAcceptAnswer(
+    @Param('id') id: string,
+    @Param('answerId') answerId: string,
+    @CurrentUser() user: UserDocument,
+  ) {
+    const updated = await this.feedbackService.toggleAcceptAnswer(
+      id,
+      answerId,
+      user.name || 'Admin',
+    );
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
+  @Delete(':id/answers/:answerId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete an answer (Admin only)',
+  })
+  async deleteAnswer(
+    @Param('id') id: string,
+    @Param('answerId') answerId: string,
+  ) {
+    const updated = await this.feedbackService.deleteAnswer(id, answerId);
     return {
       success: true,
       data: updated,

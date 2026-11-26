@@ -123,6 +123,7 @@ export const DashboardHeader = React.memo(function DashboardHeader({
           <SystemStatusInfo
             status={effectiveStatus} 
             isWebSocketConnected={effectiveWebSocketConnected}
+            lastActivityTimestamp={hardwareStatus.lastReading?.timestamp}
           />
 
           {/* Refresh Data Button beside Status Pill */}
@@ -138,7 +139,6 @@ export const DashboardHeader = React.memo(function DashboardHeader({
               className={`h-3.5 w-3.5 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`}
               strokeWidth={2.2}
             />
-            <span className="header-refresh-label">Refresh</span>
           </button>
         </div>
 
@@ -155,9 +155,25 @@ export const DashboardHeader = React.memo(function DashboardHeader({
 interface SystemStatusInfoProps {
   status: SystemStatusType;
   isWebSocketConnected: boolean;
+  lastActivityTimestamp?: string;
 }
 
-function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProps) {
+function formatLastActivity(isoTimestamp?: string): string | null {
+  if (!isoTimestamp) return null;
+  const parsedMs = new Date(isoTimestamp).getTime();
+  if (!Number.isFinite(parsedMs)) return null;
+
+  const diffSec = Math.max(0, Math.floor((Date.now() - parsedMs) / 1000));
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function SystemStatusInfo({ status, isWebSocketConnected, lastActivityTimestamp }: SystemStatusInfoProps) {
   const getStatusConfig = () => {
     // 1. Disconnected / Connection Lost:
     // Either isWebSocketConnected is explicitly false, or status is 'disconnected'
@@ -186,15 +202,19 @@ function SystemStatusInfo({ status, isWebSocketConnected }: SystemStatusInfoProp
 
       case 'waiting':
       case 'unknown':
-      default:
+      default: {
+        const lastAgo = formatLastActivity(lastActivityTimestamp);
         return {
-          label: 'Standby',
+          label: 'Idle',
           statusKey: 'waiting',
           dotColor: 'bg-[#F59E0B]',
           statusClass: 'status-waiting status-standby',
-          title: 'System Status: Standby',
-          description: 'Connected to EcoStep. The tile only sends readings when someone steps on it, so Standby is normal when idle.',
+          title: 'System Status: Idle',
+          description: lastAgo
+            ? `Last activity ${lastAgo}. The tile only sends data when stepped on, so Idle means either no recent footsteps or the tile is powered off.`
+            : 'No footstep activity recorded yet. The tile only sends data when stepped on, so Idle means either waiting for footsteps or the tile is powered off.',
         };
+      }
     }
   };
 

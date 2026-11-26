@@ -33,8 +33,6 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
-import { PlayersModule } from './players/players.module';
-import { GamificationModule } from './gamification/gamification.module';
 import { MilestonesModule } from './milestones/milestones.module';
 import { FeedbackModule } from './feedback/feedback.module';
 
@@ -135,8 +133,6 @@ import { FeedbackModule } from './feedback/feedback.module';
     AlertsModule, // Phase 8: Alert Management System
     ChatbotModule, // EcoChat: AI-powered chatbot with Gemini/Groq fallback
     ChatModule, // Public web chat interface
-    PlayersModule, // Gamification Phase 2: Guest Player Foundation
-    GamificationModule, // Gamification Phase 3: Missions, Quizzes, XP & Badges
 
     PublicModule, // Public telemetry API
     MilestonesModule, // EcoStep Milestones: 1W, 1M, 3M, 6M, 1Y kinetic energy goals

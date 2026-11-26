@@ -55,6 +55,8 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
   endDate: propEndDate,
   granularity: propGranularity,
   periodLabel,
+  startHour,
+  endHour,
 }: VoltageCurrentChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -94,6 +96,8 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
     granularity,
     startDate,
     endDate,
+    startHour,
+    endHour,
   });
 
   // Fetch current data
@@ -107,6 +111,8 @@ export const VoltageCurrentChart = React.memo(function VoltageCurrentChart({
     granularity,
     startDate,
     endDate,
+    startHour,
+    endHour,
   });
 
   // Transform API data to chart format

@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings2, X, Check, Save, AlertCircle, Calendar, Zap, Footprints, Lock, ShieldAlert } from 'lucide-react';
+import { Settings2, X, Check, Save, AlertCircle, Lock } from 'lucide-react';
 import { eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
 import type { UpdateMonthTargetsPayload, WeeklyTargetsMWh, MonthlyConfigurationPolicy } from '../types/milestone.types';
 import { formatMWh, formatWhFromMWh, parsePositiveDecimal, formatMonthLabel } from '../utils/milestone.utils';
 
@@ -38,18 +37,17 @@ export function AdminMilestonesModal({
   onClose,
   activeMonth = '2026-11',
   availableMonths = ['2026-10', '2026-11'],
-  currentMonthTargetMWh = 0.1,
+  currentMonthTargetMWh = 0,
   configurationPolicy,
   onSave,
 }: AdminMilestonesModalProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { user, isAuthenticated } = useAuth();
-  const isSuperAdmin = Boolean(isAuthenticated && user);
 
   const [selectedMonth, setSelectedMonth] = useState(activeMonth);
-  const [monthlyTarget, setMonthlyTarget] = useState(String(currentMonthTargetMWh ?? 0.1));
-  const [correctionReason, setCorrectionReason] = useState('');
+  const [monthlyTarget, setMonthlyTarget] = useState(
+    currentMonthTargetMWh > 0 ? String(currentMonthTargetMWh) : '',
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -59,12 +57,14 @@ export function AdminMilestonesModal({
   const parsedMonthlyTarget = parsePositiveDecimal(monthlyTarget);
   const autoWeeklyTargetMWh = parsedMonthlyTarget !== null ? round6(parsedMonthlyTarget / weekCount) : 0;
 
-  // Month-locking evaluation
+  // Strict lock: once a goal is set for a month, it cannot be changed anymore
   const isMonthSelectedActive = selectedMonth === activeMonth;
   const isLocked = Boolean(isMonthSelectedActive && configurationPolicy?.isLocked);
-  const isReadOnly = isLocked && !isSuperAdmin;
 
-  // Lock body scrolling when modal is open
+  const prevMonthMWh = configurationPolicy?.previousMonthMWh ?? 0;
+  const prevMonthLabel = configurationPolicy?.autoCalculatedFromLabel ?? null;
+  const hasPrevSuggestion = Boolean(!isLocked && isMonthSelectedActive && prevMonthMWh > 0 && prevMonthLabel);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -76,7 +76,6 @@ export function AdminMilestonesModal({
     };
   }, [isOpen]);
 
-  // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -90,7 +89,7 @@ export function AdminMilestonesModal({
   useEffect(() => {
     if (isOpen) {
       setSelectedMonth(activeMonth);
-      setMonthlyTarget(String(currentMonthTargetMWh ?? 0.1));
+      setMonthlyTarget(currentMonthTargetMWh > 0 ? String(currentMonthTargetMWh) : '');
       setErrorMessage(null);
       setSuccessMessage(false);
     }
@@ -98,109 +97,78 @@ export function AdminMilestonesModal({
 
   if (!isOpen) return null;
 
-  // Practical presets calibrated directly to actual piezoelectric prototype telemetry
-  const presets = [
-    {
-      name: 'Pilot / Micro Harvest (Default)',
-      monthly: 0.1,
-      isDefault: true,
-      description: 'Single-tile bench testing & prototype validation (~100–400 footsteps)',
-    },
-    {
-      name: 'Active Walkway (Moderate Traffic)',
-      monthly: 0.5,
-      isDefault: false,
-      description: 'Regular prototype hallway pedestrian testing (~400–2,000 footsteps)',
-    },
-    {
-      name: 'Corridor Array (High Traffic)',
-      monthly: 2.0,
-      isDefault: false,
-      description: 'Multi-tile corridor or busy entrance array (~2,000–8,000 footsteps)',
-    },
-  ];
-
-  const handleApplyPreset = (p: typeof presets[0]) => {
-    if (isReadOnly) return;
-    setMonthlyTarget(String(p.monthly));
-    setErrorMessage(null);
-  };
-
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
+
     setErrorMessage(null);
+    setSuccessMessage(false);
 
-    if (isReadOnly) return;
-
-    if (isLocked && isSuperAdmin && !correctionReason.trim()) {
-      setErrorMessage(
-        'Super Administrator corrections on locked months require an audit justification reason.'
-      );
+    const parsedMonth = parsePositiveDecimal(monthlyTarget);
+    if (parsedMonth === null || parsedMonth <= 0) {
+      setErrorMessage('Please enter a valid positive number for the monthly energy target.');
       return;
     }
 
-    const mTarget = parsePositiveDecimal(monthlyTarget);
+    const perWeek = round6(parsedMonth / weekCount);
 
-    if (mTarget === null) {
-      setErrorMessage(
-        'Please enter a valid positive decimal number (e.g. 0.1, 0.5, 2.0 mWh) for the monthly target.'
-      );
-      return;
-    }
-
+    setIsSaving(true);
     try {
-      setIsSaving(true);
       await onSave({
         month: selectedMonth,
-        monthlyTargetMWh: mTarget,
-        ...(isLocked && isSuperAdmin ? { reason: correctionReason.trim() } : {}),
+        monthlyTargetMWh: parsedMonth,
+        weeklyTargetsMWh: {
+          week1MWh: perWeek,
+          week2MWh: perWeek,
+          week3MWh: perWeek,
+          week4MWh: perWeek,
+          week5MWh: perWeek,
+          week6MWh: perWeek,
+        },
+        target1MonthMWh: parsedMonth,
+        target1WeekMWh: perWeek,
       });
 
       setSuccessMessage(true);
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 900);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Failed to save milestone targets. Please try again.');
+      setErrorMessage(err?.message || 'Failed to save milestone target. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const configuredByLabel =
+    configurationPolicy?.configuredBy && !/^[a-f\d]{24}$/i.test(configurationPolicy.configuredBy.trim())
+      ? configurationPolicy.configuredBy
+      : 'an administrator';
+
   const modalElement = (
     <div
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{
-        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.38)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
+        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.45)',
       }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-milestones-title"
     >
-      {/* Clickable Backdrop Dismiss Overlay */}
       <div
         className="fixed inset-0 -z-10"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="w-full max-w-2xl rounded-[22px] border p-6 relative overflow-hidden shadow-2xl max-h-[92vh] flex flex-col my-auto bg-[var(--panel)] border-[var(--line)] text-[var(--t)]">
+      <div className="w-full max-w-lg rounded-xl border p-6 relative overflow-hidden max-h-[92vh] flex flex-col my-auto bg-white dark:bg-[#131916] border-[var(--line)] text-[var(--t)]">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[var(--line)] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[var(--acc)]">
-              <Settings2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 id="admin-milestones-title" className="text-lg font-bold text-[var(--t)] tracking-tight">
-                Configure Milestone Targets
-              </h3>
-              <p className="text-xs text-[var(--mu)]">
-                Calibrated to piezoelectric prototype telemetry (in milliwatt-hours, mWh)
-              </p>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Settings2 className="w-4 h-4 text-[var(--acc)] shrink-0" />
+            <h3 id="admin-milestones-title" className="text-base font-bold text-[var(--t)] tracking-tight">
+              Configure Milestone Target
+            </h3>
           </div>
           <button
             type="button"
@@ -208,288 +176,153 @@ export function AdminMilestonesModal({
             aria-label="Close dialog"
             className="p-1.5 rounded-lg text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content Form */}
-        <form onSubmit={handleSave} className="overflow-y-auto pr-1 py-4 space-y-5">
-          {/* Policy Status Banner */}
-          {isLocked && !isSuperAdmin && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5">
-              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-              <div>
-                <div className="font-bold">Targets Locked for {formatMonthLabel(selectedMonth)}</div>
-                <div className="text-[11px] opacity-90 mt-0.5">
-                  Target configuration was submitted by{' '}
-                  {configurationPolicy?.configuredBy && !/^[a-f\d]{24}$/i.test(configurationPolicy.configuredBy.trim())
-                    ? configurationPolicy.configuredBy
-                    : 'an administrator'}{' '}
-                  {configurationPolicy?.configuredAt ? `on ${new Date(configurationPolicy.configuredAt).toLocaleDateString()}` : ''}.
-                  Under the Monthly Goal Configuration Policy, ordinary modifications are locked.
-                </div>
-                <div className="text-[11px] font-semibold mt-1 text-amber-800 dark:text-amber-200">
-                  System Admins cannot change locked months — only a Super Admin (project lead) can adjust them.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isLocked && isSuperAdmin && (
-            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-xs flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-purple-600 dark:text-purple-400" />
-              <div>
-                <div className="font-bold">Super Administrator Exceptional Correction</div>
-                <div className="text-[11px] opacity-90 mt-0.5">
-                  Targets for {formatMonthLabel(selectedMonth)} are locked. As an authorized Super Administrator, you may perform an exceptional correction. All changes and your reason will be appended to the audit log.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!isLocked && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
-              <Calendar className="w-4 h-4 shrink-0 text-[var(--acc)]" />
-              <div className="text-[11px]">
-                <span className="font-semibold">Auto-Calculated Goal:</span>{' '}
-                {configurationPolicy?.autoCalculatedFromLabel
-                  ? `Automatically set from ${configurationPolicy.autoCalculatedFromLabel} (${configurationPolicy.previousMonthMWh ?? 0} mWh + ${configurationPolicy.growthPercent ?? 10}% growth).`
-                  : 'Automatically calculated from the previous active month (+10% growth).'}
-                {' '}Save a custom target below anytime to override it.
-              </div>
-            </div>
-          )}
-
-          {/* Month Selection */}
-          <div className="p-3.5 rounded-xl bg-[var(--soft)] border border-[var(--line)] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[var(--acc)]" />
-              <span className="text-xs font-semibold text-[var(--t)]">Target Calendar Month:</span>
-            </div>
+        {/* Flat Form Body (Zero Nested Boxes) */}
+        <form onSubmit={handleSave} className="overflow-y-auto divide-y divide-[var(--line)]">
+          {/* Month Selection Row */}
+          <div className="py-4 flex items-center justify-between gap-3">
+            <label htmlFor="milestone-month-select" className="text-xs font-semibold text-[var(--mu)] uppercase tracking-wider">
+              Target Month
+            </label>
             <select
+              id="milestone-month-select"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-[var(--panel)] border border-[var(--line)] text-[var(--t)] text-xs rounded-lg px-3 py-1.5 font-semibold focus:outline-none focus:border-[var(--acc)] shadow-sm"
+              className="bg-transparent border border-[var(--line)] text-[var(--t)] text-xs rounded-lg px-3 py-1.5 font-semibold focus:outline-none focus:border-[var(--acc)] cursor-pointer"
             >
               {availableMonths.map((m) => (
-                <option key={m} value={m} className="bg-[var(--panel)] text-[var(--t)]">
+                <option key={m} value={m} className="bg-white dark:bg-[#131916] text-[var(--t)]">
                   {formatMonthLabel(m)} ({m})
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Preset Buttons */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-[var(--mu)] uppercase tracking-wider block">
-                Calibrated Target Presets
-              </span>
-              <span
-                className="text-[10px] text-[var(--acc)] font-[500] tracking-[-0.02em] tabular-nums"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Hardware: ~0.086 mWh / 300 steps
-              </span>
+          {isLocked ? (
+            /* Locked Read-Only Summary */
+            <div className="py-5 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--mu)]">
+                <Lock className="w-3.5 h-3.5 text-[var(--acc)] shrink-0" />
+                <span>Target Locked for {formatMonthLabel(selectedMonth)}</span>
+              </div>
+              <div className="text-2xl font-bold text-[var(--t)] tabular-nums">
+                {formatMWh(currentMonthTargetMWh)} <span className="text-sm font-medium text-[var(--acc)]">mWh</span>
+              </div>
+              <p className="text-xs text-[var(--mu)] m-0">
+                ≈ {formatMWh(round6(currentMonthTargetMWh / weekCount))} mWh / week across {weekCount} calendar weeks
+              </p>
+              <p className="text-xs text-[var(--mu)] pt-2 m-0">
+                Set by <strong className="text-[var(--t)]">{configuredByLabel}</strong>
+                {configurationPolicy?.configuredAt
+                  ? ` on ${new Date(configurationPolicy.configuredAt).toLocaleDateString()}`
+                  : ''}
+                . Once a monthly goal is set, it cannot be changed.
+              </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {presets.map((p) => {
-                const isSelected = parseFloat(monthlyTarget) === p.monthly;
-                const presetWeekly = round6(p.monthly / weekCount);
-
-                return (
+          ) : (
+            /* Unlocked Target Input */
+            <div className="py-4 space-y-4">
+              {/* Previous Month Suggestion (flat left-accent line, no box) */}
+              {hasPrevSuggestion && (
+                <div className="border-l-2 border-[var(--acc)] pl-3 py-0.5 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-[var(--mu)] m-0 leading-relaxed">
+                    Previous month ({prevMonthLabel}) generated{' '}
+                    <strong className="text-[var(--t)] tabular-nums">{formatMWh(prevMonthMWh)} mWh</strong>. Use this as your {formatMonthLabel(selectedMonth)} goal?
+                  </p>
                   <button
                     type="button"
-                    key={p.name}
-                    disabled={isReadOnly}
-                    onClick={() => handleApplyPreset(p)}
-                    className={`px-3 py-2.5 rounded-xl text-xs text-left transition-all flex flex-col justify-between border ${
-                      isReadOnly ? 'opacity-60 cursor-not-allowed' : ''
-                    } ${
-                      isSelected
-                        ? 'bg-[var(--mint)] text-[var(--acc)] border-[var(--acc)] shadow-sm font-semibold'
-                        : 'bg-[var(--soft)] hover:bg-[var(--mint)]/50 border-[var(--line)] text-[var(--t)]'
-                    }`}
+                    onClick={() => setMonthlyTarget(String(prevMonthMWh))}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold border border-[var(--acc)]/50 text-[var(--acc)] hover:bg-[var(--acc)]/10 transition-colors cursor-pointer shrink-0"
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-1.5 flex-wrap">
-                        <span className="font-semibold text-[11px] leading-snug">{p.name}</span>
-                        {p.isDefault && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/20 text-[var(--acc)] border border-emerald-500/30 shrink-0">
-                            DEFAULT
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[var(--mu)] mt-1 leading-snug">
-                        {p.description}
-                      </p>
-                    </div>
-                    <div
-                      className="text-[10px] text-[var(--acc)] font-[500] tracking-[-0.02em] tabular-nums mt-2 pt-1 border-t border-[var(--line)]"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      Month: <strong>{p.monthly}</strong> mWh • Week: <strong>{formatMWh(presetWeekly)}</strong> mWh
-                    </div>
+                    Use {formatMWh(prevMonthMWh)} mWh
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              )}
 
-          {/* 1. Monthly Target Input */}
-          <div className="p-4 rounded-xl bg-[var(--soft)] border border-[var(--line)]">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-[var(--t)] uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[var(--acc)]" />
-                Monthly Energy Target ({formatMonthLabel(selectedMonth)})
-              </label>
-              <span
-                className="text-[11px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--mu)]"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                ≈ {formatWhFromMWh(parseFloat(monthlyTarget) || 0)} Wh
-              </span>
-            </div>
-            <div className="relative">
-              <input
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-                disabled={isReadOnly}
-                value={monthlyTarget}
-                onChange={(e) => setMonthlyTarget(e.target.value)}
-                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-[var(--acc)] rounded-xl px-4 py-2.5 text-[var(--t)] font-[500] tracking-[-0.02em] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                placeholder="0.1"
-              />
-              <span className="absolute right-3.5 top-2.5 text-xs font-bold text-[var(--mu)]">
-                mWh
-              </span>
-            </div>
-            <span className="text-[11px] text-[var(--mu)] mt-1.5 block">
-              Cumulative goal for all kinetic energy generated throughout {formatMonthLabel(selectedMonth)}.
-            </span>
-          </div>
-
-          {/* 2. Auto-Split Weekly Energy Target Preview */}
-          <div className="p-4 rounded-xl bg-[var(--soft)] border border-[var(--line)]">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-[var(--t)] uppercase tracking-wider flex items-center gap-1.5">
-                <Footprints className="w-3.5 h-3.5 text-cyan-500" />
-                Auto-Split Weekly Goal ({weekCount} weeks)
-              </span>
-              <span
-                className="text-[11px] font-[500] tracking-[-0.02em] tabular-nums text-[var(--mu)]"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                ≈ {formatWhFromMWh(autoWeeklyTargetMWh)} Wh
-              </span>
-            </div>
-            <div
-              className="flex items-baseline gap-1.5 text-base font-semibold text-[var(--t)] tabular-nums"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              <span>{formatMWh(autoWeeklyTargetMWh)}</span>
-              <span className="text-xs font-bold text-[var(--acc)]">mWh / week</span>
-            </div>
-            <span className="text-[11px] text-[var(--mu)] mt-1 block">
-              Automatically calculated by splitting the monthly goal evenly across all {weekCount} calendar weeks in {formatMonthLabel(selectedMonth)}.
-            </span>
-          </div>
-
-          {/* 3. Super Admin Correction Reason (if locked & Super Admin) */}
-          {isLocked && isSuperAdmin && (
-            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-              <label className="text-xs font-bold text-[var(--t)] uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                Audit Justification Reason <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={correctionReason}
-                onChange={(e) => setCorrectionReason(e.target.value)}
-                placeholder="e.g. Piezoelectric sensor recalibration, campus walkway schedule changes"
-                className="w-full bg-[var(--panel)] border border-[var(--line)] focus:border-purple-500 rounded-xl px-4 py-2 text-[var(--t)] text-xs placeholder-[var(--mu)] focus:outline-none shadow-sm"
-              />
-              <span className="text-[11px] text-[var(--mu)] mt-1.5 block">
-                This explanation will be permanently recorded in the audit log alongside your administrator ID and timestamp.
-              </span>
-            </div>
-          )}
-
-          {/* Alerts */}
-          {errorMessage && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
-              <span>Milestone targets updated successfully for {formatMonthLabel(selectedMonth)}!</span>
-            </div>
-          )}
-
-          {/* Clear Lock Warning Before Saving an Unlocked Month */}
-          {!isLocked && !isReadOnly && !isSuperAdmin && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5">
-              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              {/* Monthly Target Input + Inline Weekly Split */}
               <div>
-                <div className="font-bold">Heads up: Saving locks {formatMonthLabel(selectedMonth)}</div>
-                <p className="text-[11px] opacity-90 mt-0.5 leading-relaxed">
-                  Once you save these goals, regular System Admins cannot edit {formatMonthLabel(selectedMonth)} again. Only a Super Admin (project lead) can unlock or change it later.
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor="monthly-energy-target-input"
+                    className="text-xs font-semibold text-[var(--t)] uppercase tracking-wider"
+                  >
+                    Monthly Energy Goal ({formatMonthLabel(selectedMonth)})
+                  </label>
+                  <span className="text-[11px] text-[var(--mu)] tabular-nums">
+                    ≈ {formatWhFromMWh(parseFloat(monthlyTarget) || 0)} Wh
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    id="monthly-energy-target-input"
+                    type="number"
+                    step="any"
+                    min="0.000001"
+                    required
+                    value={monthlyTarget}
+                    onChange={(e) => setMonthlyTarget(e.target.value)}
+                    className="w-full bg-transparent border border-[var(--line)] focus:border-[var(--acc)] rounded-lg px-3.5 py-2.5 pr-12 text-[var(--t)] tabular-nums text-sm placeholder-[var(--mu)] focus:outline-none"
+                    placeholder={hasPrevSuggestion ? String(prevMonthMWh) : 'Enter target in mWh'}
+                  />
+                  <span className="absolute right-3.5 top-2.5 text-xs font-semibold text-[var(--mu)]">
+                    mWh
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--mu)] mt-2 mb-0 tabular-nums">
+                  Auto-split across {weekCount} calendar weeks:{' '}
+                  <strong className="text-[var(--t)]">{formatMWh(autoWeeklyTargetMWh)} mWh / week</strong>
                 </p>
               </div>
+
+              {errorMessage && (
+                <div className="border-l-2 border-red-500 pl-3 py-1 text-red-500 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="border-l-2 border-[var(--acc)] pl-3 py-1 text-[var(--acc)] text-xs flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>Target saved and locked for {formatMonthLabel(selectedMonth)}.</span>
+                </div>
+              )}
+
+              <p className="text-[11px] text-[var(--mu)] m-0 flex items-center gap-1.5">
+                <Lock className="w-3 h-3 shrink-0" />
+                <span>Once saved, this month&apos;s goal is permanently locked and cannot be changed.</span>
+              </p>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--line)] shrink-0">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-4 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] border border-[var(--line)] transition-colors"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] border border-[var(--line)] transition-colors cursor-pointer"
             >
-              {isReadOnly ? 'Close' : 'Cancel'}
+              {isLocked ? 'Close' : 'Cancel'}
             </button>
-            {isReadOnly ? (
-              <button
-                type="button"
-                disabled
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--mu)] bg-[var(--soft)] border border-[var(--line)] flex items-center gap-2 cursor-not-allowed opacity-80"
-              >
-                <Lock className="w-3.5 h-3.5 text-amber-500" />
-                Locked (Super Admin Only)
-              </button>
-            ) : (
+            {!isLocked && (
               <button
                 type="submit"
                 disabled={isSaving}
-                className={`px-5 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 transition-all disabled:opacity-50 ${
-                  isLocked && isSuperAdmin
-                    ? 'text-white bg-purple-600 hover:bg-purple-700'
-                    : 'text-white dark:text-black bg-[var(--acc)] hover:bg-[var(--brand-mid)]'
-                }`}
+                className="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 text-white dark:text-black bg-[var(--acc)] hover:opacity-90 cursor-pointer"
               >
                 {isSaving ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     Saving...
                   </>
-                ) : isLocked && isSuperAdmin ? (
-                  <>
-                    <ShieldAlert className="w-4 h-4" />
-                    Apply Audited Correction
-                  </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
-                    Save & Lock {formatMonthLabel(selectedMonth)} Targets
+                    <Save className="w-3.5 h-3.5" />
+                    Save &amp; Lock Target
                   </>
                 )}
               </button>

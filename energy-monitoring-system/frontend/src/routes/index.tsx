@@ -24,6 +24,7 @@ const SensorMonitoringPage = lazy(() => import('@/features/sensors/pages/SensorM
 const AlertsPage = lazy(() => import('@/features/alerts/pages/AlertsPage').then(m => ({ default: m.AlertsPage })));
 const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const FeedbackPage = lazy(() => import('@/features/feedback/pages/FeedbackPage').then(m => ({ default: m.FeedbackPage })));
+const FeedbackDetailPage = lazy(() => import('@/features/feedback/pages/FeedbackDetailPage').then(m => ({ default: m.FeedbackDetailPage })));
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
@@ -148,12 +149,20 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // Public Feedback & Reviews Board (public post/upvote, admin reply/resolve/delete)
+      // Public Feedback & Reviews Board (Stack Overflow–style Q&A forum)
       {
         path: ROUTES.FEEDBACK,
         element: (
           <LazyRoute>
             <FeedbackPage />
+          </LazyRoute>
+        ),
+      },
+      {
+        path: `${ROUTES.FEEDBACK}/:id`,
+        element: (
+          <LazyRoute>
+            <FeedbackDetailPage />
           </LazyRoute>
         ),
       },

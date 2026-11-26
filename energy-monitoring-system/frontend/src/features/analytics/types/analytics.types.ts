@@ -104,6 +104,8 @@ export interface AnalyticsQuery {
   source?: SourceFilter;
   granularity?: Granularity;
   metric?: MetricType;
+  startHour?: number;
+  endHour?: number;
 }
 
 // ============================================================================

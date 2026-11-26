@@ -35,42 +35,31 @@ export function ReportDetailsModal({
     <div 
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
       }}
       onClick={onClose}
     >
       <div 
-        className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100dvh-32px)] sm:max-h-[88vh] overflow-y-auto my-auto border"
+        className="rounded-xl max-w-2xl w-full max-h-[calc(100dvh-32px)] sm:max-h-[88vh] overflow-y-auto my-auto border border-[var(--line)]"
         style={{ 
-          backgroundColor: colors.cardBackground,
-          borderColor: theme === 'light' ? 'rgba(26, 49, 44, 0.12)' : 'rgba(137, 215, 183, 0.16)'
+          backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="sticky top-0 z-10 flex items-center justify-between p-6 border-b"
+          className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-[var(--line)]"
           style={{ 
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border 
+            backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
           }}
         >
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{
-                backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
-              }}
-            >
-              <FileText 
-                className="w-5 h-5"
-                style={{ color: colors.accent }}
-              />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <FileText 
+              className="w-5 h-5"
+              style={{ color: colors.accent }}
+            />
             <h2 
-              className="text-xl font-semibold"
+              className="text-lg font-semibold"
               style={{ color: colors.textPrimary }}
             >
               Report Details
@@ -286,20 +275,14 @@ export function ReportDetailsModal({
                 : `~${ledSeconds} sec`;
 
             return (
-              <div>
+              <div className="pt-5 border-t border-[var(--line)]">
                 <h3
                   className="text-sm font-semibold mb-3 uppercase tracking-wide"
                   style={{ color: colors.textSecondary }}
                 >
                   Summary Metrics
                 </h3>
-                <div
-                  className="grid grid-cols-2 gap-4 p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)',
-                    border: `1px solid ${colors.border}`,
-                  }}
-                >
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div>
                     <div
                       className="text-xs mb-1"
@@ -378,10 +361,9 @@ export function ReportDetailsModal({
 
         {/* Footer Actions */}
         <div 
-          className="sticky bottom-0 flex gap-3 p-6 border-t"
+          className="sticky bottom-0 flex gap-3 px-6 py-4 border-t border-[var(--line)]"
           style={{ 
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border 
+            backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
           }}
         >
           <button

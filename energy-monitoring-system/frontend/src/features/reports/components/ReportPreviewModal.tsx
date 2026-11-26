@@ -107,74 +107,48 @@ export function ReportPreviewModal({
     >
       <div className="space-y-6 max-h-[60vh] overflow-y-auto">
         
-        {/* Report Header */}
-        <div className="text-center">
-          <div 
-            className="w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4"
-            style={{
-              backgroundColor: theme === 'light' 
-                ? 'rgba(66, 132, 117, 0.1)' 
-                : 'rgba(137, 215, 183, 0.1)',
-              border: theme === 'light'
-                ? '1px solid rgba(26, 49, 44, 0.08)'
-                : '1px solid rgba(137, 215, 183, 0.12)'
-            }}
-          >
-            <Icon 
-              className="w-8 h-8"
-              style={{ color: colors.accent }}
-            />
-          </div>
-          <h2 
-            className="text-xl font-bold mb-2"
-            style={{ color: colors.textPrimary }}
-          >
-            {getReportTypeLabel(report.type)}
-          </h2>
-          <div className="flex items-center justify-center gap-2 text-sm font-[tabular-nums]">
-            <Calendar 
-              className="w-4 h-4"
-              style={{ color: colors.textSecondary }}
-            />
-            <span style={{ color: colors.textSecondary }}>
-              {formatDate(report.startDate)} – {formatDate(report.endDate)}
-            </span>
+        {/* Report Header (Flat) */}
+        <div className="flex items-center gap-3">
+          <Icon 
+            className="w-5 h-5 shrink-0"
+            style={{ color: colors.accent }}
+          />
+          <div>
+            <h2 
+              className="text-lg font-bold"
+              style={{ color: colors.textPrimary }}
+            >
+              {getReportTypeLabel(report.type)}
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs font-[tabular-nums] mt-0.5">
+              <Calendar 
+                className="w-3.5 h-3.5"
+                style={{ color: colors.textSecondary }}
+              />
+              <span style={{ color: colors.textSecondary }}>
+                {formatDate(report.startDate)} – {formatDate(report.endDate)}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div 
-          className="border-t"
-          style={{ borderColor: colors.border }}
-        />
-
-        {/* Summary Section */}
+        {/* Summary Section (Flat hairline-divided grid, zero nested cards) */}
         {report.summary && (
-          <div>
+          <div className="border-t border-[var(--line)] pt-4">
             <h3 
-              className="text-base font-semibold mb-4"
-              style={{ color: colors.textPrimary }}
+              className="text-xs font-semibold uppercase tracking-wider mb-3"
+              style={{ color: colors.textSecondary }}
             >
               Summary
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
               {report.summary.totalEnergyKWh !== undefined && (() => {
                 const energyMWh =
                   report.summary.totalEnergyMWh ?? report.summary.totalEnergyKWh * 1_000_000;
                 return (
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{
-                      backgroundColor: theme === 'light'
-                        ? '#FFFFFF'
-                        : '#1C1F28',
-                      border: theme === 'light'
-                        ? '1px solid rgba(26, 49, 44, 0.08)'
-                        : '1px solid rgba(137, 215, 183, 0.12)'
-                    }}
-                  >
+                  <div>
                     <div
-                      className="text-xs font-medium mb-1"
+                      className="text-xs font-medium mb-0.5"
                       style={{ color: colors.textSecondary }}
                     >
                       Total Energy
@@ -185,7 +159,7 @@ export function ReportPreviewModal({
                     >
                       {energyMWh > 0 && energyMWh < 1 ? energyMWh.toFixed(3) : energyMWh.toFixed(2)}
                       <span
-                        className="text-sm font-normal ml-1"
+                        className="text-xs font-normal ml-1"
                         style={{ color: colors.textSecondary }}
                       >
                         mWh
@@ -199,19 +173,9 @@ export function ReportPreviewModal({
                 const avgPowerMW =
                   report.summary.avgPowerMW ?? report.summary.avgPowerW * 1000;
                 return (
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{
-                      backgroundColor: theme === 'light'
-                        ? '#FFFFFF'
-                        : '#1C1F28',
-                      border: theme === 'light'
-                        ? '1px solid rgba(26, 49, 44, 0.08)'
-                        : '1px solid rgba(137, 215, 183, 0.12)'
-                    }}
-                  >
+                  <div>
                     <div
-                      className="text-xs font-medium mb-1"
+                      className="text-xs font-medium mb-0.5"
                       style={{ color: colors.textSecondary }}
                     >
                       Average Power
@@ -222,7 +186,7 @@ export function ReportPreviewModal({
                     >
                       {avgPowerMW.toFixed(2)}
                       <span
-                        className="text-sm font-normal ml-1"
+                        className="text-xs font-normal ml-1"
                         style={{ color: colors.textSecondary }}
                       >
                         mW
@@ -236,19 +200,9 @@ export function ReportPreviewModal({
                 const peakPowerMW =
                   report.summary.peakPowerMW ?? report.summary.peakPowerW * 1000;
                 return (
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{
-                      backgroundColor: theme === 'light'
-                        ? '#FFFFFF'
-                        : '#1C1F28',
-                      border: theme === 'light'
-                        ? '1px solid rgba(26, 49, 44, 0.08)'
-                        : '1px solid rgba(137, 215, 183, 0.12)'
-                    }}
-                  >
+                  <div>
                     <div
-                      className="text-xs font-medium mb-1"
+                      className="text-xs font-medium mb-0.5"
                       style={{ color: colors.textSecondary }}
                     >
                       Peak Power
@@ -259,7 +213,7 @@ export function ReportPreviewModal({
                     >
                       {peakPowerMW.toFixed(2)}
                       <span
-                        className="text-sm font-normal ml-1"
+                        className="text-xs font-normal ml-1"
                         style={{ color: colors.textSecondary }}
                       >
                         mW
@@ -270,19 +224,9 @@ export function ReportPreviewModal({
               })()}
 
               {report.summary.readingCount !== undefined && (
-                <div
-                  className="p-4 rounded-lg"
-                  style={{
-                    backgroundColor: theme === 'light'
-                      ? '#FFFFFF'
-                      : '#1C1F28',
-                    border: theme === 'light'
-                      ? '1px solid rgba(26, 49, 44, 0.08)'
-                      : '1px solid rgba(137, 215, 183, 0.12)'
-                  }}
-                >
+                <div>
                   <div
-                    className="text-xs font-medium mb-1"
+                    className="text-xs font-medium mb-0.5"
                     style={{ color: colors.textSecondary }}
                   >
                     Readings Recorded
@@ -307,19 +251,9 @@ export function ReportPreviewModal({
                     ? `~${(ledSeconds / 60).toFixed(1)} min`
                     : `~${ledSeconds} sec`;
                 return (
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{
-                      backgroundColor: theme === 'light'
-                        ? '#FFFFFF'
-                        : '#1C1F28',
-                      border: theme === 'light'
-                        ? '1px solid rgba(26, 49, 44, 0.08)'
-                        : '1px solid rgba(137, 215, 183, 0.12)'
-                    }}
-                  >
+                  <div>
                     <div
-                      className="text-xs font-medium mb-1"
+                      className="text-xs font-medium mb-0.5"
                       style={{ color: colors.textSecondary }}
                     >
                       Small LED Light Time

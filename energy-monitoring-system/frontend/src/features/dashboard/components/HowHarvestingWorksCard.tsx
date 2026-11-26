@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { Footprints, Cpu, Zap, Activity, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { Footprints, Cpu, Activity, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
 
 /**
  * HowHarvestingWorksCard Component
- * 
- * Educational visual card on the main dashboard explaining the 4-step energy harvesting process.
- * Can be collapsed by returning users to keep the interface compact.
+ *
+ * Clean, flat horizontal 3-step editorial strip explaining EcoStep footstep harvesting.
+ * Uses hairline dividers instead of nested cards for a calm, non-boxy layout.
  */
 export function HowHarvestingWorksCard() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Allow users to collapse the card if they already know how it works
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('ecostep.dashboard.howItWorksExpanded');
@@ -37,178 +36,100 @@ export function HowHarvestingWorksCard() {
 
   const steps = [
     {
-      num: 1,
+      num: '01',
       icon: Footprints,
-      title: '1. Footstep Pressure',
-      subtitle: 'Every Step Counts',
-      desc: 'When someone walks across the smart floor tile, their step gently presses special energy-harvesting pads built inside.',
-      color: '#3ED98A',
-      bgColor: isDark ? 'rgba(62, 217, 138, 0.12)' : 'rgba(47, 191, 113, 0.1)',
+      title: 'Step & Harvest',
+      desc: 'Footsteps press piezoelectric pads inside the tile, converting everyday motion directly into clean electric charge.',
+      color: '#19D46A',
     },
     {
-      num: 2,
-      icon: Zap,
-      title: '2. Instant Electric Charge',
-      subtitle: 'Pressure to Power',
-      desc: 'Squeezing those built-in pads turns the motion of each footstep directly into a small burst of clean electricity.',
-      color: '#F59E0B',
-      bgColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.1)',
-    },
-    {
-      num: 3,
+      num: '02',
       icon: Cpu,
-      title: '3. Clean Energy Storage',
-      subtitle: 'Smooth & Save',
-      desc: 'A built-in power module smooths out each electrical burst and saves the harvested energy safely inside onboard storage.',
+      title: 'Smooth & Store',
+      desc: 'An onboard power module stabilizes each electrical burst and stores the harvested energy safely.',
       color: '#3B82F6',
-      bgColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.1)',
     },
     {
-      num: 4,
+      num: '03',
       icon: Activity,
-      title: '4. Live on Your Screen',
-      subtitle: 'Real-Time Updates',
-      desc: 'Built-in smart sensors count footsteps and measure power output, sending live updates straight to this dashboard.',
-      color: '#EC4899',
-      bgColor: isDark ? 'rgba(236, 72, 153, 0.12)' : 'rgba(236, 72, 153, 0.1)',
+      title: 'Live Telemetry',
+      desc: 'Smart sensors count footsteps and measure output, streaming real-time watts straight to this dashboard.',
+      color: '#F59E0B',
     },
   ];
 
   return (
-    <div className="cd how-harvesting-card w-full transition-all duration-200">
-      {/* Header bar with toggle */}
-      <div className="how-harvesting-header flex items-center justify-between pb-3.5 mb-2 border-b border-[var(--line)]">
-        <div className="how-harvesting-title-group flex items-center gap-2.5 min-w-0">
-          <div
-            className="how-harvesting-badge w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{
-              backgroundColor: isDark ? 'rgba(62, 217, 138, 0.15)' : 'rgba(47, 191, 113, 0.12)',
-              color: isDark ? '#3ED98A' : '#087A3A',
-            }}
-          >
-            <BookOpen size={16} strokeWidth={2.2} />
-          </div>
+    <section className="how-harvesting-card w-full pt-5 mt-2 border-t border-[var(--line)]">
+      {/* Flat Editorial Section Header */}
+      <div className="flex items-center justify-between gap-3 pb-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <BookOpen
+            size={16}
+            strokeWidth={2}
+            className="shrink-0"
+            style={{ color: isDark ? '#3ED98A' : '#087A3A' }}
+          />
           <div className="min-w-0">
-            <h3 className="how-harvesting-title text-sm sm:text-base font-bold tracking-tight text-[var(--t)]">
+            <h3 className="text-sm font-semibold tracking-tight text-[var(--t)] m-0">
               How EcoStep Harvesting Works
             </h3>
-            <p className="how-harvesting-sub text-[11px] sm:text-xs text-[var(--mu)]">
-              From a student's step on the tile to real-time watts on your screen
+            <p className="text-xs text-[var(--mu)] m-0">
+              From a footstep on the tile to real-time power on your screen
             </p>
           </div>
         </div>
 
-        <div className="how-harvesting-actions flex items-center gap-2 shrink-0">
-          <span className="how-harvesting-tooltip">
-            <InfoTooltip
-              title="How Footstep Power Works"
-              description="Step down, press the smart pads, and store clean electricity—powered purely by everyday walking."
-              size={16}
-              align="right"
-            />
-          </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <InfoTooltip
+            title="How Footstep Power Works"
+            description="Step down, press the smart pads, and store clean electricity—powered purely by everyday walking."
+            size={15}
+            align="right"
+          />
 
           <button
             type="button"
             onClick={toggleExpanded}
-            className="how-harvesting-toggle-btn flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
-            style={{
-              backgroundColor: isDark ? 'rgba(31, 41, 55, 0.6)' : '#EEF2EF',
-              color: isDark ? '#D1D5DB' : '#0D1B14',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer bg-transparent"
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Collapse explanation' : 'Expand explanation'}
           >
             <span>{isExpanded ? 'Hide' : 'Explain'}</span>
-            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
       </div>
 
-      {/* 4-Step Process Content */}
+      {/* Flat Horizontal 3-Step Strip with Hairline Dividers */}
       {isExpanded && (
-        <div className="how-harvesting-body px-3.5 pb-3.5 pt-0 sm:px-4 sm:pb-4">
-          <style>{`
-            .harvesting-steps-grid {
-              display: grid;
-              grid-template-columns: 1fr;
-              gap: 0.75rem;
-            }
-            @container (min-width: 560px) {
-              .harvesting-steps-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-              }
-            }
-            @container (min-width: 960px) {
-              .harvesting-steps-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-              }
-            }
-            @media (max-width: 768px) {
-              .harvesting-steps-grid {
-                grid-template-columns: 1fr !important;
-                gap: 12px !important;
-              }
-            }
-          `}</style>
-          <div className="harvesting-steps-grid">
-            {steps.map((step) => {
-              const IconComp = step.icon;
-              return (
-                <div
-                  key={step.num}
-                  className="harvesting-step-item p-3 rounded-xl transition-colors flex flex-col justify-between min-w-0"
-                  style={{
-                    backgroundColor: isDark ? 'rgba(17, 24, 39, 0.45)' : 'rgba(245, 248, 245, 0.75)',
-                    border: isDark ? '1px solid rgba(55, 65, 81, 0.4)' : '1px solid rgba(13, 27, 20, 0.06)',
-                  }}
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-2 min-w-0">
-                      <div
-                        className="harvesting-step-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold"
-                        style={{
-                          backgroundColor: step.bgColor,
-                          color: step.color,
-                        }}
-                      >
-                        <IconComp size={16} strokeWidth={2.2} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className="harvesting-step-title text-xs font-bold leading-tight"
-                          style={{
-                            color: 'var(--t)',
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'normal',
-                          }}
-                        >
-                          {step.title}
-                        </div>
-                        <div
-                          className="harvesting-step-subtitle text-[10px] uppercase font-semibold text-gray-500 dark:text-gray-400 leading-tight mt-0.5"
-                          style={{
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'normal',
-                            letterSpacing: '0.04em',
-                          }}
-                        >
-                          {step.subtitle}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="harvesting-step-desc text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                      {step.desc}
-                    </p>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--line)] border-y border-[var(--line)]">
+          {steps.map((step) => {
+            const IconComp = step.icon;
+            return (
+              <div
+                key={step.num}
+                className="py-4 md:px-5 md:first:pl-0 md:last:pr-0 flex flex-col gap-1.5 min-w-0"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[11px] font-bold tabular-nums tracking-wider"
+                    style={{ color: step.color }}
+                  >
+                    {step.num}
+                  </span>
+                  <IconComp size={15} strokeWidth={2} style={{ color: step.color }} className="shrink-0" />
+                  <span className="text-xs sm:text-[13px] font-semibold text-[var(--t)]">
+                    {step.title}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+                <p className="text-xs leading-relaxed text-[var(--mu)] m-0">
+                  {step.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

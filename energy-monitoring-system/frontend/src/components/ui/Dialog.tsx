@@ -82,9 +82,7 @@ export function Dialog({
     <div 
       className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
       }}
     >
       {/* Backdrop */}
@@ -94,22 +92,17 @@ export function Dialog({
         aria-hidden="true"
       />
 
-      {/* Dialog */}
+      {/* Dialog (Flat) */}
       <div
         className={cn(
-          'relative z-10 w-full rounded-2xl flex flex-col my-auto max-h-[min(88vh,calc(100dvh-32px))] overflow-hidden',
+          'relative z-10 w-full rounded-xl flex flex-col my-auto max-h-[min(88vh,calc(100dvh-32px))] overflow-hidden border border-[var(--line)]',
           sizeClasses[size],
           className
         )}
         style={{
           fontFamily: "'DM Sans', sans-serif",
-          backgroundColor: colors.cardBackground,
-          boxShadow: theme === 'light' 
-            ? '0 20px 50px rgba(0, 0, 0, 0.2)' 
-            : '0 20px 50px rgba(0, 0, 0, 0.7)',
-          border: theme === 'light'
-            ? '1px solid rgba(26, 49, 44, 0.12)'
-            : '1px solid rgba(137, 215, 183, 0.16)'
+          backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916',
+          boxShadow: 'none',
         }}
         role="dialog"
         aria-modal="true"

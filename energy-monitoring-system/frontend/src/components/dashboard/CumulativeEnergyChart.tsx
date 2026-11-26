@@ -76,6 +76,8 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
   endDate: propEndDate,
   granularity: propGranularity,
   periodLabel,
+  startHour,
+  endHour,
 }: CumulativeEnergyChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -108,6 +110,8 @@ export const CumulativeEnergyChart = React.memo(function CumulativeEnergyChart({
     granularity,
     startDate,
     endDate,
+    startHour,
+    endHour,
   });
 
   // Transform API data to chart format

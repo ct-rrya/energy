@@ -322,6 +322,12 @@ export class Report {
    * Note: index: true removed to avoid duplicate with TTL index
    */
   @Prop({
+    required: false,
+    index: true,
+  })
+  visitorId?: string;
+
+  @Prop({
     required: true,
   })
   expiresAt: Date;
@@ -360,6 +366,7 @@ export const ReportSchema = SchemaFactory.createForClass(Report);
  *    - Used in report search
  */
 ReportSchema.index({ generatedBy: 1, createdAt: -1 });
+ReportSchema.index({ visitorId: 1, createdAt: -1 });
 ReportSchema.index({ type: 1, format: 1, createdAt: -1 });
 ReportSchema.index({ startDate: 1, endDate: 1 });
 

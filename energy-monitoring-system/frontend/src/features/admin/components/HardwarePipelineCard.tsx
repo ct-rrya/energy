@@ -11,7 +11,6 @@ import {
   Wrench,
   Zap,
   BatteryCharging,
-  ChevronRight,
 } from 'lucide-react';
 import type {
   DiagnosticInsights,
@@ -73,7 +72,7 @@ function getStageStyles(status: PipelineStageStatus) {
         dot: 'bg-slate-400',
         ring: 'border-[var(--line)] bg-[var(--soft)] text-[var(--mu)]',
         pill: 'bg-[var(--soft)] text-[var(--mu)]',
-        label: 'Standby',
+        label: 'Idle',
       };
   }
 }
@@ -136,7 +135,7 @@ export function HardwarePipelineCard({
         ? { label: 'Needs Checkup', cls: 'bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25' }
         : status === 'attention'
           ? { label: 'Check Hardware', cls: 'bg-rose-500/12 text-rose-600 dark:text-rose-400 border-rose-500/25' }
-          : { label: 'Idle / Standby', cls: 'bg-[var(--soft)] text-[var(--mu)] border-[var(--line)]' };
+          : { label: 'Idle / No Activity', cls: 'bg-[var(--soft)] text-[var(--mu)] border-[var(--line)]' };
 
   const diagStyles =
     diagnosis?.severity === 'critical'
@@ -171,10 +170,10 @@ export function HardwarePipelineCard({
 
   return (
     <section
-      className="cd !p-5 sm:!p-6 flex flex-col gap-5"
+      className="py-5 first:pt-1 flex flex-col gap-5"
       aria-label="Live Hardware Pipeline and Fault Diagnosis"
     >
-      {/* Top Row: Composite Health Score + Sub-score Pills */}
+      {/* Top Row: Composite Health Score + Inline Sub-scores */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div className="flex items-center gap-4">
           {/* Circular Health Score Ring */}
@@ -228,8 +227,8 @@ export function HardwarePipelineCard({
           </div>
         </div>
 
-        {/* 3 Sub-score Indicators */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* 3 Sub-score Indicators (Flat inline hairline strip) */}
+        <div className="flex flex-wrap items-center divide-x divide-[var(--line)]">
           {[
             { label: 'Power Output', val: breakdown.harvesting },
             { label: 'Steadiness', val: breakdown.consistency },
@@ -237,7 +236,7 @@ export function HardwarePipelineCard({
           ].map((item) => (
             <div
               key={item.label}
-              className="px-3 py-1.5 rounded-xl bg-[var(--soft)] border border-[var(--line)] flex items-center gap-2"
+              className="px-3.5 first:pl-0 last:pr-0 flex items-center gap-2"
             >
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
                 {item.label}
@@ -250,7 +249,7 @@ export function HardwarePipelineCard({
         </div>
       </div>
 
-      {/* Interactive 5-Stage Power Path */}
+      {/* Interactive 5-Stage Power Path (Flat horizontal hairline rail) */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mu)] flex items-center gap-1.5">
@@ -268,68 +267,52 @@ export function HardwarePipelineCard({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 relative">
-          {stages.map((stage, idx) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-[var(--line)] border-y border-[var(--line)]">
+          {stages.map((stage) => {
             const Icon = STAGE_ICONS[stage.id] || Activity;
             const st = getStageStyles(stage.status);
             const isSelected = selectedStageId === stage.id;
             return (
-              <div key={stage.id} className="relative flex items-stretch">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedStageId((prev) => (prev === stage.id ? null : stage.id))
-                  }
-                  className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2 ${
-                    isSelected
-                      ? 'border-[var(--acc)] bg-[var(--soft)] shadow-sm ring-1 ring-[var(--acc)]/30'
-                      : 'border-[var(--line)] bg-[var(--panel)] hover:bg-[var(--soft)]/70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div
-                      className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${st.ring}`}
-                    >
-                      <Icon className="w-4 h-4" strokeWidth={2} />
-                    </div>
+              <button
+                key={stage.id}
+                type="button"
+                onClick={() =>
+                  setSelectedStageId((prev) => (prev === stage.id ? null : stage.id))
+                }
+                className={`w-full text-left py-3.5 px-3.5 transition-colors cursor-pointer flex flex-col justify-between gap-2 ${
+                  isSelected
+                    ? 'bg-[var(--soft)]'
+                    : 'bg-transparent hover:bg-[var(--soft)]/60'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <Icon className="w-4 h-4 text-[var(--acc)] shrink-0" strokeWidth={2} />
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[var(--mu)]">
                     <span
-                      className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.pill}`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${st.dot} ${
-                          stage.status === 'ok' ? 'animate-pulse' : ''
-                        }`}
-                      />
-                      {st.label}
-                    </span>
-                  </div>
+                      className={`w-1.5 h-1.5 rounded-full ${st.dot} ${
+                        stage.status === 'ok' ? 'animate-pulse' : ''
+                      }`}
+                    />
+                    {st.label}
+                  </span>
+                </div>
 
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--mu)]">
-                      {stage.shortLabel}
-                    </div>
-                    <div className="text-[14px] font-bold text-[var(--t)] tabular-nums truncate mt-0.5">
-                      {stage.primaryValue}
-                    </div>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--mu)]">
+                    {stage.shortLabel}
                   </div>
-                </button>
-
-                {idx < stages.length - 1 && (
-                  <div
-                    className="hidden lg:flex items-center justify-center w-3 -mr-2.5 z-10 text-[var(--mu)] opacity-60 pointer-events-none"
-                    aria-hidden="true"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
+                  <div className="text-[14px] font-bold text-[var(--t)] tabular-nums truncate mt-0.5">
+                    {stage.primaryValue}
                   </div>
-                )}
-              </div>
+                </div>
+              </button>
             );
           })}
         </div>
 
         {/* Selected Stage Inspector Bar */}
         {activeStage && (
-          <div className="px-4 py-2.5 rounded-xl bg-[var(--soft)] border border-[var(--line)] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="border-l-2 border-[var(--acc)] pl-3 py-1 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-[var(--t)]">
               <span className="font-bold">{activeStage.label}:</span>
               <span className="text-[var(--mu)]">{activeStage.detail}</span>
@@ -345,13 +328,13 @@ export function HardwarePipelineCard({
         )}
       </div>
 
-      {/* Fault-Signature Diagnosis & Technician Checklist */}
+      {/* Fault-Signature Diagnosis & Technician Checklist (Flat left-accent callout) */}
       {diagnosis && (
-        <div className={`rounded-2xl border p-4 sm:p-4.5 ${diagStyles.wrap}`}>
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="border-l-2 border-[var(--acc)] pl-4 py-1">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
+            <div className="flex items-start gap-2.5 flex-1 min-w-0">
               <div className={`mt-0.5 shrink-0 ${diagStyles.iconColor}`}>
-                <DiagIcon className="w-5 h-5" />
+                <DiagIcon className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -372,7 +355,7 @@ export function HardwarePipelineCard({
             </div>
 
             {diagnosis.recommendedChecks.length > 0 && (
-              <div className="md:w-[42%] shrink-0 rounded-xl bg-[var(--panel)]/80 border border-[var(--line)] p-3">
+              <div className="md:w-[42%] shrink-0 md:border-l md:border-[var(--line)] md:pl-4">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--mu)] flex items-center gap-1.5 mb-2">
                   <Wrench className="w-3.5 h-3.5 text-[var(--acc)]" />
                   What to Check

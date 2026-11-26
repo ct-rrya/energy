@@ -87,27 +87,27 @@ export function AlertDetailsDialog({
           <Badge variant="default">{alert.type.replace(/_/g, ' ')}</Badge>
         </div>
 
-        {/* Sensor Information */}
+        {/* Sensor Information (Flat hairline section) */}
         {(alert.sensorName || alert.sensorLocation) && (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-            <h4 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-              <Info className="h-4 w-4" />
+          <div className="border-t border-[var(--line)] pt-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--mu)] mb-2.5 flex items-center gap-2">
+              <Info className="h-3.5 w-3.5" />
               Sensor Information
             </h4>
             <div className="space-y-2">
               {alert.sensorName && (
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-neutral-500">Name:</span>
-                  <span className="font-medium text-neutral-900">
+                  <span className="text-[var(--mu)]">Name:</span>
+                  <span className="font-medium text-[var(--t)]">
                     {alert.sensorName}
                   </span>
                 </div>
               )}
               {alert.sensorLocation && (
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-neutral-400" />
-                  <span className="text-neutral-500">Location:</span>
-                  <span className="font-medium text-neutral-900">
+                  <MapPin className="h-4 w-4 text-[var(--mu)]" />
+                  <span className="text-[var(--mu)]">Location:</span>
+                  <span className="font-medium text-[var(--t)]">
                     {alert.sensorLocation}
                   </span>
                 </div>

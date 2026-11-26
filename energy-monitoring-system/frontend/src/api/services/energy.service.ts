@@ -76,7 +76,9 @@ export const energyService = {
     endDate?: string,
     page: number = 1,
     limit: number = 50,
-    includeInactive: boolean = false
+    includeInactive: boolean = false,
+    startHour?: number,
+    endHour?: number,
   ): Promise<PaginatedReadingsResponse> => {
     // Backend requires YYYY-MM-DD format, extract date portion if ISO string
     const formatDate = (dateStr?: string) => {
@@ -88,6 +90,10 @@ export const energyService = {
     const formattedEndDate = formatDate(endDate);
 
     const params = new URLSearchParams();
+    if (startHour !== undefined && endHour !== undefined) {
+      params.append('startHour', String(startHour));
+      params.append('endHour', String(endHour));
+    }
     if (formattedStartDate) params.append('startDate', formattedStartDate);
     if (formattedEndDate) params.append('endDate', formattedEndDate);
     if (includeInactive) params.append('includeInactive', 'true');

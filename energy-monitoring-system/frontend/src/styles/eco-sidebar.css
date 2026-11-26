@@ -101,6 +101,7 @@
   align-items: center;
   gap: 8px;
   padding: 0 4px;
+  height: 34px;
   margin-bottom: clamp(10px, 2vh, 20px);
   width: 100%;
   min-width: 0;
@@ -161,11 +162,12 @@
 /* Collapsed Header Layout */
 .es-side.collapsed .es-nav-header,
 .sidebar.collapsed .es-nav-header {
-  flex-direction: column !important;
+  flex-direction: row !important;
   align-items: center !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   width: 100% !important;
-  gap: 12px !important;
+  height: 34px !important;
+  gap: 0 !important;
   padding: 0 12px !important;
   box-sizing: border-box !important;
 }
@@ -737,7 +739,7 @@
   width: var(--left-panel-w, 72px) !important;
   max-width: 72px !important;
   min-width: 0 !important;
-  padding: clamp(16px, 2.5vh, 28px) 0 !important;
+  padding: clamp(12px, 2vh, 22px) 0 !important;
   align-items: center !important;
   overflow: hidden !important;
   overflow-x: hidden !important;
@@ -750,7 +752,7 @@
   width: 100% !important;
   max-width: 72px !important;
   min-width: 0 !important;
-  padding: 0 12px !important;
+  padding: 0 12px 6px !important;
   overflow-x: hidden !important;
   align-items: center !important;
   box-sizing: border-box !important;
@@ -758,10 +760,10 @@
 
 .es-side.collapsed .es-nav-item,
 .sidebar.collapsed .es-nav-item {
-  width: 48px !important;
-  max-width: 48px !important;
+  width: 46px !important;
+  max-width: 46px !important;
   min-width: 0 !important;
-  height: 44px !important;
+  height: clamp(36px, 5.2vh, 42px) !important;
   padding: 0 !important;
   justify-content: flex-start !important;
   gap: 0 !important;
@@ -783,7 +785,7 @@
   width: 100% !important;
   max-width: 72px !important;
   min-width: 0 !important;
-  padding: 0 12px !important;
+  padding: 10px 12px 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   display: flex !important;

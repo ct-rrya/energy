@@ -12,7 +12,9 @@ import {
   FeedbackStatus,
 } from './schemas/feedback.schema';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { CreateAnswerDto, UpdateFeedbackDto } from './dto/update-feedback.dto';
+
+export type FeedbackTab = 'newest' | 'top' | 'unanswered' | 'resolved';
 
 export interface FeedbackListQuery {
   page?: number;
@@ -20,6 +22,7 @@ export interface FeedbackListQuery {
   status?: FeedbackStatus;
   category?: FeedbackCategory;
   sort?: 'newest' | 'top';
+  tab?: FeedbackTab;
   voterId?: string;
 }
 
@@ -42,13 +45,69 @@ export class FeedbackService {
     return value.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').trim();
   }
 
+  private deriveTitleFromMessage(message: string): string {
+    const firstLine = (message || '').split(/\r?\n/)[0].trim();
+    const firstSentence = firstLine.split(/(?<=[.!?])\s+/)[0] || firstLine;
+    return firstSentence.length > 96
+      ? `${firstSentence.slice(0, 93).trimEnd()}...`
+      : firstSentence || 'Community Feedback';
+  }
+
   private formatPublicItem(doc: FeedbackDocument, voterId?: string) {
-    const hasUpvoted = Boolean(
-      voterId && Array.isArray(doc.upvotedByTokens) && doc.upvotedByTokens.includes(voterId),
-    );
+    const upTokens = Array.isArray(doc.upvotedByTokens) ? doc.upvotedByTokens : [];
+    const downTokens = Array.isArray(doc.downvotedByTokens) ? doc.downvotedByTokens : [];
+    const userVote: 'up' | 'down' | null = voterId
+      ? upTokens.includes(voterId)
+        ? 'up'
+        : downTokens.includes(voterId)
+          ? 'down'
+          : null
+      : null;
+
+    const rawAnswers = Array.isArray(doc.answers) ? doc.answers : [];
+    const formattedAnswers = rawAnswers
+      .map((ans) => {
+        const ansUp = Array.isArray(ans.upvotedByTokens) ? ans.upvotedByTokens : [];
+        const ansDown = Array.isArray(ans.downvotedByTokens) ? ans.downvotedByTokens : [];
+        const ansUserVote: 'up' | 'down' | null = voterId
+          ? ansUp.includes(voterId)
+            ? 'up'
+            : ansDown.includes(voterId)
+              ? 'down'
+              : null
+          : null;
+
+        return {
+          id: ans._id ? ans._id.toString() : '',
+          authorName: ans.authorName || 'Anonymous',
+          authorRole: ans.authorRole || 'visitor',
+          body: ans.body,
+          voteScore: ans.voteScore ?? (ansUp.length - ansDown.length),
+          isAccepted: Boolean(ans.isAccepted),
+          parentAnswerId: ans.parentAnswerId || null,
+          replyToAuthor: ans.replyToAuthor || null,
+          userVote: ansUserVote,
+          createdAt: ans.createdAt,
+        };
+      })
+      .sort((a, b) => {
+        if (a.isAccepted !== b.isAccepted) return a.isAccepted ? -1 : 1;
+        if (b.voteScore !== a.voteScore) return b.voteScore - a.voteScore;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+
+    const json = doc.toJSON() as any;
+    const resolvedTitle =
+      (doc.title && doc.title.trim()) || this.deriveTitleFromMessage(doc.message);
+
     return {
-      ...doc.toJSON(),
-      hasUpvoted,
+      ...json,
+      title: resolvedTitle,
+      views: doc.views ?? 0,
+      hasUpvoted: userVote === 'up',
+      userVote,
+      answers: formattedAnswers,
+      answersCount: formattedAnswers.length + (doc.adminReply && formattedAnswers.length === 0 ? 1 : 0),
     };
   }
 
@@ -102,15 +161,24 @@ export class FeedbackService {
     const skip = (page - 1) * limit;
 
     const filter: Record<string, any> = {};
-    if (query.status) {
+    if (query.tab === 'resolved') {
+      filter.status = FeedbackStatus.RESOLVED;
+      filter.category = { $in: [FeedbackCategory.ISSUE, FeedbackCategory.SUGGESTION] };
+    } else if (query.tab === 'unanswered') {
+      filter.$and = [
+        { $or: [{ answers: { $exists: false } }, { answers: { $size: 0 } }] },
+        { $or: [{ adminReply: { $exists: false } }, { adminReply: null }, { adminReply: '' }] },
+      ];
+    } else if (query.status) {
       filter.status = query.status;
     }
+
     if (query.category) {
       filter.category = query.category;
     }
 
     const sortSpec: Record<string, 1 | -1> =
-      query.sort === 'top'
+      query.tab === 'top' || query.sort === 'top'
         ? { upvotes: -1, createdAt: -1 }
         : { createdAt: -1 };
 
@@ -132,28 +200,52 @@ export class FeedbackService {
     };
   }
 
+  async findOne(id: string, voterId?: string, incrementViews = true) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid feedback ID');
+    }
+
+    const feedback = incrementViews
+      ? await this.feedbackModel
+          .findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true })
+          .exec()
+      : await this.feedbackModel.findById(id).exec();
+
+    if (!feedback) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+
+    return this.formatPublicItem(feedback, voterId);
+  }
+
   async create(dto: CreateFeedbackDto) {
     const cleanMessage = this.sanitizeText(dto.message);
     if (cleanMessage.length < 3) {
       throw new BadRequestException('Message must be at least 3 characters');
     }
 
+    const cleanTitle = dto.title ? this.sanitizeText(dto.title) : '';
     const cleanName = dto.authorName ? this.sanitizeText(dto.authorName) : '';
+    const resolvedCategory = dto.category || FeedbackCategory.GENERAL;
     const feedback = new this.feedbackModel({
+      title: cleanTitle || this.deriveTitleFromMessage(cleanMessage),
       authorName: cleanName || 'Anonymous',
-      category: dto.category || FeedbackCategory.GENERAL,
-      rating: dto.rating,
+      category: resolvedCategory,
+      rating: resolvedCategory === FeedbackCategory.REVIEW ? dto.rating : undefined,
       message: cleanMessage,
       status: FeedbackStatus.OPEN,
       upvotes: 0,
+      views: 0,
       upvotedByTokens: [],
+      downvotedByTokens: [],
+      answers: [],
     });
 
     const saved = await feedback.save();
     return this.formatPublicItem(saved);
   }
 
-  async toggleUpvote(id: string, voterKey: string) {
+  async votePost(id: string, direction: 'up' | 'down', voterKey: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid feedback ID');
     }
@@ -164,18 +256,216 @@ export class FeedbackService {
     }
 
     const cleanKey = this.sanitizeText(voterKey) || 'anonymous';
-    const existingTokens = feedback.upvotedByTokens || [];
-    const alreadyUpvoted = existingTokens.includes(cleanKey);
+    let upTokens = Array.isArray(feedback.upvotedByTokens) ? [...feedback.upvotedByTokens] : [];
+    let downTokens = Array.isArray(feedback.downvotedByTokens) ? [...feedback.downvotedByTokens] : [];
 
-    if (alreadyUpvoted) {
-      feedback.upvotedByTokens = existingTokens.filter((t) => t !== cleanKey);
+    if (direction === 'up') {
+      const alreadyUp = upTokens.includes(cleanKey);
+      upTokens = upTokens.filter((t) => t !== cleanKey);
+      downTokens = downTokens.filter((t) => t !== cleanKey);
+      if (!alreadyUp) {
+        upTokens.push(cleanKey);
+      }
     } else {
-      feedback.upvotedByTokens = [...existingTokens, cleanKey];
+      const alreadyDown = downTokens.includes(cleanKey);
+      upTokens = upTokens.filter((t) => t !== cleanKey);
+      downTokens = downTokens.filter((t) => t !== cleanKey);
+      if (!alreadyDown) {
+        downTokens.push(cleanKey);
+      }
     }
-    feedback.upvotes = feedback.upvotedByTokens.length;
+
+    feedback.upvotedByTokens = upTokens;
+    feedback.downvotedByTokens = downTokens;
+    feedback.upvotes = upTokens.length - downTokens.length;
 
     const saved = await feedback.save();
     return this.formatPublicItem(saved, cleanKey);
+  }
+
+  async toggleUpvote(id: string, voterKey: string) {
+    return this.votePost(id, 'up', voterKey);
+  }
+
+  async addAnswer(
+    id: string,
+    dto: CreateAnswerDto,
+    isAdmin: boolean,
+    adminName?: string,
+    voterId?: string,
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid feedback ID');
+    }
+
+    const cleanBody = this.sanitizeText(dto.body);
+    if (cleanBody.length < 2) {
+      throw new BadRequestException('Answer must be at least 2 characters');
+    }
+
+    const feedback = await this.feedbackModel.findById(id).exec();
+    if (!feedback) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+
+    const authorName = isAdmin
+      ? this.sanitizeText(adminName || 'EcoStep Admin') || 'EcoStep Admin'
+      : this.sanitizeText(dto.authorName || '') || 'Anonymous';
+
+    if (!Array.isArray(feedback.answers)) {
+      feedback.answers = [];
+    }
+
+    let resolvedParentId: string | null = null;
+    let resolvedReplyToAuthor: string | null = null;
+    if (dto.parentAnswerId) {
+      const parent = feedback.answers.find(
+        (a) => a._id && a._id.toString() === dto.parentAnswerId,
+      );
+      if (!parent) {
+        throw new NotFoundException(`Parent comment with ID ${dto.parentAnswerId} not found`);
+      }
+      resolvedParentId = parent._id.toString();
+      resolvedReplyToAuthor = parent.authorName || 'Anonymous';
+    }
+
+    feedback.answers.push({
+      _id: new Types.ObjectId(),
+      authorName,
+      authorRole: isAdmin ? 'admin' : 'visitor',
+      body: cleanBody,
+      voteScore: 0,
+      upvotedByTokens: [],
+      downvotedByTokens: [],
+      isAccepted: false,
+      parentAnswerId: resolvedParentId,
+      replyToAuthor: resolvedReplyToAuthor,
+      createdAt: new Date(),
+    });
+
+    const saved = await feedback.save();
+    return this.formatPublicItem(saved, voterId);
+  }
+
+  async voteAnswer(
+    id: string,
+    answerId: string,
+    direction: 'up' | 'down',
+    voterKey: string,
+  ) {
+    if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(answerId)) {
+      throw new BadRequestException('Invalid feedback or answer ID');
+    }
+
+    const feedback = await this.feedbackModel.findById(id).exec();
+    if (!feedback) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+
+    const answer = (feedback.answers || []).find(
+      (a) => a._id && a._id.toString() === answerId,
+    );
+    if (!answer) {
+      throw new NotFoundException(`Answer with ID ${answerId} not found`);
+    }
+
+    const cleanKey = this.sanitizeText(voterKey) || 'anonymous';
+    let upTokens = Array.isArray(answer.upvotedByTokens) ? [...answer.upvotedByTokens] : [];
+    let downTokens = Array.isArray(answer.downvotedByTokens) ? [...answer.downvotedByTokens] : [];
+
+    if (direction === 'up') {
+      const alreadyUp = upTokens.includes(cleanKey);
+      upTokens = upTokens.filter((t) => t !== cleanKey);
+      downTokens = downTokens.filter((t) => t !== cleanKey);
+      if (!alreadyUp) upTokens.push(cleanKey);
+    } else {
+      const alreadyDown = downTokens.includes(cleanKey);
+      upTokens = upTokens.filter((t) => t !== cleanKey);
+      downTokens = downTokens.filter((t) => t !== cleanKey);
+      if (!alreadyDown) downTokens.push(cleanKey);
+    }
+
+    answer.upvotedByTokens = upTokens;
+    answer.downvotedByTokens = downTokens;
+    answer.voteScore = upTokens.length - downTokens.length;
+
+    feedback.markModified('answers');
+    const saved = await feedback.save();
+    return this.formatPublicItem(saved, cleanKey);
+  }
+
+  async toggleAcceptAnswer(id: string, answerId: string, adminName: string) {
+    if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(answerId)) {
+      throw new BadRequestException('Invalid feedback or answer ID');
+    }
+
+    const feedback = await this.feedbackModel.findById(id).exec();
+    if (!feedback) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+
+    const target = (feedback.answers || []).find(
+      (a) => a._id && a._id.toString() === answerId,
+    );
+    if (!target) {
+      throw new NotFoundException(`Answer with ID ${answerId} not found`);
+    }
+
+    const nextAccepted = !target.isAccepted;
+    for (const ans of feedback.answers) {
+      ans.isAccepted = ans._id.toString() === answerId ? nextAccepted : false;
+    }
+
+    const supportsResolution =
+      feedback.category === FeedbackCategory.ISSUE ||
+      feedback.category === FeedbackCategory.SUGGESTION;
+
+    if (nextAccepted && supportsResolution && feedback.status !== FeedbackStatus.RESOLVED) {
+      feedback.status = FeedbackStatus.RESOLVED;
+      feedback.resolvedAt = new Date();
+      feedback.resolvedBy = adminName || 'Admin';
+    }
+
+    feedback.markModified('answers');
+    const saved = await feedback.save();
+    return this.formatPublicItem(saved);
+  }
+
+  async deleteAnswer(id: string, answerId: string) {
+    if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(answerId)) {
+      throw new BadRequestException('Invalid feedback or answer ID');
+    }
+
+    const feedback = await this.feedbackModel.findById(id).exec();
+    if (!feedback) {
+      throw new NotFoundException(`Feedback with ID ${id} not found`);
+    }
+
+    const allAnswers = feedback.answers || [];
+    const idsToDelete = new Set<string>([answerId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const a of allAnswers) {
+        const aId = a._id ? a._id.toString() : '';
+        if (aId && !idsToDelete.has(aId) && a.parentAnswerId && idsToDelete.has(a.parentAnswerId)) {
+          idsToDelete.add(aId);
+          grew = true;
+        }
+      }
+    }
+
+    const before = allAnswers.length;
+    feedback.answers = allAnswers.filter(
+      (a) => a._id && !idsToDelete.has(a._id.toString()),
+    );
+    if (feedback.answers.length === before) {
+      throw new NotFoundException(`Answer with ID ${answerId} not found`);
+    }
+
+    feedback.markModified('answers');
+    const saved = await feedback.save();
+    return this.formatPublicItem(saved);
   }
 
   async adminUpdate(

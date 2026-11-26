@@ -7,6 +7,11 @@ import { getUserRole } from '@/lib/permissions';
 import { HistoricalDataView } from '../components/HistoricalDataView';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { ChartCardSkeleton } from '@/components/dashboard/ChartCardSkeleton';
+import {
+  HourRangeSelector,
+  formatHourRangeLabel,
+  type HourRange,
+} from '@/components/common/HourRangeSelector';
 import type { Granularity } from '../types';
 
 // Lazy-loaded chart components to avoid blocking initial paint and hydration
@@ -56,6 +61,7 @@ export function AnalyticsPage() {
   const [activeView, setActiveView] = useState<ViewType>('charts');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
   const [trackingInterval, setTrackingInterval] = useState<TrackingInterval>('day');
+  const [hourRange, setHourRange] = useState<HourRange | null>(null);
   const [, startTransition] = useTransition();
 
   const handleViewChange = (view: ViewType) => {
@@ -180,8 +186,12 @@ export function AnalyticsPage() {
       selectedPeriod === 'hourly'
         ? 'Last 24 Hours'
         : PERIOD_OPTIONS.find((opt) => opt.value === selectedPeriod)?.label ?? 'All Time';
-    return `${base} • ${trackingInterval === 'hour' ? 'Hourly' : 'Daily'}`;
-  }, [selectedPeriod, trackingInterval]);
+    const hourSuffix =
+      hourRange && !(hourRange.startHour === 0 && hourRange.endHour === 23)
+        ? ` • ${formatHourRangeLabel(hourRange)}`
+        : '';
+    return `${base} • ${trackingInterval === 'hour' ? 'Hourly' : 'Daily'}${hourSuffix}`;
+  }, [selectedPeriod, trackingInterval, hourRange]);
 
   const { status: hardwareConnectionStatus } = useHardwareStatus();
 
@@ -196,81 +206,97 @@ export function AnalyticsPage() {
         isPublicUser={isPublicUser}
       />
 
-      {/* View Toggle and Period Filter */}
-      <div className="analytics-toolbar mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* View Toggle - Segmented Control */}
-        <div className="sgc grid grid-cols-2 sm:inline-flex flex-shrink-0" role="tablist">
+      {/* Record-Folder Tabs + Compact Dropdown Controls */}
+      <div className="flex flex-wrap items-end justify-between gap-3 pt-1">
+        {/* Record-Folder Tabs (reused from ECommunity) */}
+        <div
+          className="flex flex-wrap items-end gap-1 max-w-full"
+          role="tablist"
+          aria-label="Analytics view tabs"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={activeView === 'charts'}
             onClick={() => handleViewChange('charts')}
-            className={activeView === 'charts' ? 'on' : ''}
-            aria-pressed={activeView === 'charts'}
-            aria-label="Switch to chart view"
+            className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-[13px] font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap ${
+              activeView === 'charts'
+                ? 'bg-[var(--card-bg)] text-[var(--t)] border-[var(--line)] -mb-px z-10 pb-2.5'
+                : 'bg-transparent text-[var(--mu)] border-transparent hover:text-[var(--t)] hover:bg-[var(--card-bg)]/50'
+            }`}
           >
-            <BarChart3 className="inline-block mr-1.5 h-3.5 w-3.5" strokeWidth={2} />
+            {activeView === 'charts' && (
+              <span
+                className="absolute top-0 left-3 right-3 h-[2.5px] rounded-b-full bg-[var(--acc)]"
+                aria-hidden="true"
+              />
+            )}
+            <BarChart3 className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span>Chart View</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeView === 'historical'}
             onClick={() => handleViewChange('historical')}
-            className={activeView === 'historical' ? 'on' : ''}
-            aria-pressed={activeView === 'historical'}
-            aria-label="Switch to historical data view"
+            className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-[13px] font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap ${
+              activeView === 'historical'
+                ? 'bg-[var(--card-bg)] text-[var(--t)] border-[var(--line)] -mb-px z-10 pb-2.5'
+                : 'bg-transparent text-[var(--mu)] border-transparent hover:text-[var(--t)] hover:bg-[var(--card-bg)]/50'
+            }`}
           >
-            <Table className="inline-block mr-1.5 h-3.5 w-3.5" strokeWidth={2} />
+            {activeView === 'historical' && (
+              <span
+                className="absolute top-0 left-3 right-3 h-[2.5px] rounded-b-full bg-[var(--acc)]"
+                aria-hidden="true"
+              />
+            )}
+            <Table className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             <span>Historical View</span>
           </button>
         </div>
 
-        {/* Period & Interval Filters */}
-        <div className="analytics-period-bar flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar">
-          <span
-            style={{
-              color: 'var(--mu)',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '.08em',
-            }}
-            className="shrink-0 mr-1 period-label"
+        {/* Compact Dropdown Filters (replaces pill bars) */}
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <select
+            aria-label="Select time period"
+            value={selectedPeriod}
+            onChange={(e) => handlePeriodChange(e.target.value as Period)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
           >
-            Period:
-          </span>
-          <div className="sgc flex period-sgc">
             {PERIOD_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handlePeriodChange(option.value)}
-                className={`shrink-0 whitespace-nowrap ${selectedPeriod === option.value ? 'on' : ''}`}
-                aria-pressed={selectedPeriod === option.value}
-              >
+              <option key={option.value} value={option.value}>
                 {option.label}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
 
-          <div className="sgc flex shrink-0" role="group" aria-label="Tracking interval">
+          <select
+            aria-label="Select grouping interval"
+            value={trackingInterval}
+            onChange={(e) => handleIntervalChange(e.target.value as TrackingInterval)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
+          >
             {INTERVAL_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleIntervalChange(option.value)}
-                className={`shrink-0 whitespace-nowrap ${trackingInterval === option.value ? 'on' : ''}`}
-                aria-pressed={trackingInterval === option.value}
-              >
+              <option key={option.value} value={option.value}>
                 {option.label}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
+
+          <HourRangeSelector
+            value={hourRange}
+            onChange={setHourRange}
+            label="Hours"
+          />
         </div>
       </div>
 
       {/* Content based on active view */}
       {activeView === 'charts' ? (
-        /* Chart View - Optimized Responsive Layout */
-        <div className="flex flex-col" style={{ gap: 'var(--page-gap)' }}>
+        /* Chart View — Standalone clean chart cards with gap (no outer sheet box) */
+        <div className="pt-3 flex flex-col" style={{ gap: 'var(--page-gap)' }}>
           {/* 1. Power Generation | Steps - Equal 2-Column Row */}
           <div className="analytics-charts-grid">
             <div className="min-w-0 h-full flex flex-col">
@@ -281,6 +307,8 @@ export function AnalyticsPage() {
                   endDate={chartDateRange.endDate}
                   granularity={chartGranularity}
                   periodLabel={periodLabel}
+                  startHour={hourRange?.startHour}
+                  endHour={hourRange?.endHour}
                 />
               </Suspense>
             </div>
@@ -291,12 +319,14 @@ export function AnalyticsPage() {
                   endDate={chartDateRange.endDate}
                   granularity={chartGranularity}
                   periodLabel={periodLabel}
+                  startHour={hourRange?.startHour}
+                  endHour={hourRange?.endHour}
                 />
               </Suspense>
             </div>
           </div>
 
-          {/* 2. Voltage Trend | Current Trend - Equal 2-Column Row */}
+          {/* 2. Voltage Trend | Current Trend - Full-Width Row */}
           <div className="w-full min-w-0">
             <Suspense fallback={<ChartCardSkeleton title="Voltage & Current Trend" height={280} />}>
               <VoltageCurrentChart
@@ -304,6 +334,8 @@ export function AnalyticsPage() {
                 endDate={chartDateRange.endDate}
                 granularity={chartGranularity}
                 periodLabel={periodLabel}
+                startHour={hourRange?.startHour}
+                endHour={hourRange?.endHour}
               />
             </Suspense>
           </div>
@@ -317,6 +349,8 @@ export function AnalyticsPage() {
                   endDate={chartDateRange.endDate}
                   granularity={chartGranularity}
                   periodLabel={periodLabel}
+                  startHour={hourRange?.startHour}
+                  endHour={hourRange?.endHour}
                 />
               </Suspense>
             </div>
@@ -327,22 +361,26 @@ export function AnalyticsPage() {
                   endDate={chartDateRange.endDate}
                   granularity={chartGranularity}
                   periodLabel={periodLabel}
+                  startHour={hourRange?.startHour}
+                  endHour={hourRange?.endHour}
                 />
               </Suspense>
             </div>
           </div>
         </div>
       ) : (
-        /* Historical View - Tabular Data Display */
-        <div className="space-y-4 sm:space-y-6">
+        /* Historical View — Connected Folder Sheet with table directly on container */
+        <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
           <HistoricalDataView
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
             granularity={granularity}
+            startHour={hourRange?.startHour}
+            endHour={hourRange?.endHour}
             isPublicUser={isPublicUser}
             onResetToAllTime={() => handlePeriodChange('all')}
           />
-        </div>
+        </section>
       )}
     </div>
   );

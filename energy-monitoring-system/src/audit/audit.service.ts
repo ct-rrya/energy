@@ -3,7 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AuditLog, AuditLogDocument, AUDIT_MODULES } from './schemas/audit-log.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { formatToManilaTime, extractSafeIp } from './utils/audit-ip.utils';
+import { formatToManilaTime } from './utils/audit-ip.utils';
+import { buildHourRangeExpr } from '../common/utils/hour-range.util';
 
 export interface CreateAuditLogDto {
   administratorId: string | Types.ObjectId;
@@ -50,6 +51,8 @@ export interface QueryAuditLogsDto {
   search?: string;
   startDate?: Date;
   endDate?: Date;
+  startHour?: number;
+  endHour?: number;
   limit?: number;
   skip?: number;
 }
@@ -143,7 +146,6 @@ export class AuditService {
         details: sanitizedDetails,
         result: normalizedResult,
         failureReason: dto.failureReason,
-        ipAddress: dto.ipAddress || '127.0.0.1',
         userAgent: dto.userAgent,
         sessionId: dto.sessionId,
         timestamp: dto.timestamp || new Date(),
@@ -203,7 +205,6 @@ export class AuditService {
       details: options.details,
       result: normalizedResult,
       failureReason: options.failureReason,
-      ipAddress: extractSafeIp(req),
       userAgent: req?.headers?.['user-agent'],
       sessionId: req?.user?.jti,
       timestamp: new Date(),
@@ -349,6 +350,11 @@ export class AuditService {
       conditions.push({ timestamp: timeFilter });
     }
 
+    const hourExpr = buildHourRangeExpr('timestamp', query.startHour, query.endHour);
+    if (hourExpr) {
+      conditions.push({ $expr: hourExpr });
+    }
+
     if (query.search && query.search.trim()) {
       const term = query.search
         .trim()
@@ -361,7 +367,6 @@ export class AuditService {
           { action: regex },
           { target: regex },
           { module: regex },
-          { ipAddress: regex },
           { failureReason: regex },
         ],
       });
@@ -384,6 +389,7 @@ export class AuditService {
 
     return this.auditLogModel
       .find(filter)
+      .select('-ipAddress')
       .sort({ timestamp: -1 })
       .skip(query.skip || 0)
       .limit(query.limit || 50)

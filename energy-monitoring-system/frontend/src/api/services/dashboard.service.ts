@@ -10,9 +10,13 @@ export const dashboardService = {
   /**
    * Get dashboard metrics
    */
-  getMetrics: async (): Promise<ApiResponse<DashboardMetrics>> => {
+  getMetrics: async (params?: {
+    startHour?: number;
+    endHour?: number;
+  }): Promise<ApiResponse<DashboardMetrics>> => {
     const response = await apiClient.get<ApiResponse<DashboardMetrics>>(
-      '/dashboard/metrics'
+      '/dashboard/metrics',
+      { params }
     );
     return response.data;
   },

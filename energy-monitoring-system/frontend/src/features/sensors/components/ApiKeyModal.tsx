@@ -32,38 +32,27 @@ export function ApiKeyModal({ apiKey, sensorName, onClose }: ApiKeyModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={(e) => {
         // Prevent accidental close - must click Close button
         e.stopPropagation();
       }}
     >
       <div 
-        className="rounded-xl shadow-2xl max-w-2xl w-full"
-        style={{ backgroundColor: colors.cardBackground }}
+        className="rounded-xl max-w-2xl w-full border border-[var(--line)]"
+        style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#131916' }}
       >
         {/* Header */}
         <div 
-          className="flex items-center justify-between p-6 border-b"
-          style={{ 
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border 
-          }}
+          className="flex items-center justify-between px-6 py-4 border-b border-[var(--line)]"
         >
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{
-                backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
-              }}
-            >
-              <Key 
-                className="w-5 h-5"
-                style={{ color: colors.accent }}
-              />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Key 
+              className="w-5 h-5"
+              style={{ color: colors.accent }}
+            />
             <h2 
-              className="text-xl font-semibold"
+              className="text-lg font-semibold"
               style={{ color: colors.textPrimary }}
             >
               Sensor API Key

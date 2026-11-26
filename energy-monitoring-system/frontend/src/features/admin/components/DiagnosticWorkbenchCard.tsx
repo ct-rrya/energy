@@ -345,11 +345,11 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
   return (
     <section
       id="diagnostic-workbench"
-      className="grid grid-cols-1 lg:grid-cols-12 gap-5"
+      className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-0 lg:divide-x divide-[var(--line)]"
       aria-label="Diagnostic Bench Test and BLE Field Check"
     >
       {/* LEFT (8 cols): Floor Tile Step Test */}
-      <div className="lg:col-span-8 cd !p-5 sm:!p-6 flex flex-col gap-4">
+      <div className="lg:col-span-8 lg:pr-6 flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -403,8 +403,8 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
           </div>
         </div>
 
-        {/* Live Step Output Graph */}
-        <div className="rounded-2xl border border-[var(--line)] bg-[var(--soft)]/45 p-3.5">
+        {/* Live Step Output Graph (Flat hairline band, no nested box) */}
+        <div className="border-y border-[var(--line)] py-3">
           <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--mu)] mb-1.5">
             <span className="inline-flex items-center gap-1.5">
               <Radio
@@ -622,7 +622,7 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
         )}
 
         {mode === 'RESULT' && evaluation && (
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--soft)]/60 p-4 flex flex-col gap-3">
+          <div className="border-t border-[var(--line)] pt-4 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 {evaluation.stepResult.result === DiagnosticResultStatus.WITHIN_RANGE ? (
@@ -644,21 +644,21 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
               <button
                 type="button"
                 onClick={handleStartBench}
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] hover:bg-[var(--soft)] inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-transparent text-[var(--t)] hover:bg-[var(--soft)] inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Test Again
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--line)] border-y border-[var(--line)]">
+              <div className="py-2.5 sm:px-3 first:sm:pl-0">
                 <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Test Score</div>
                 <div className="text-lg font-extrabold tabular-nums text-[var(--acc)]">
                   {evaluation.benchHealthScore}/100
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
+              <div className="py-2.5 sm:px-3">
                 <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Average Output</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.meanMWh.toFixed(5)} mWh
@@ -668,7 +668,7 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
                   {evaluation.stepResult.deviationPercentage}% vs normal
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
+              <div className="py-2.5 sm:px-3">
                 <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Strongest Step</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.peakMWh.toFixed(5)} mWh
@@ -677,7 +677,7 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
                   {evaluation.sampleCount} reading{evaluation.sampleCount > 1 ? 's' : ''}
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
+              <div className="py-2.5 sm:px-3 last:sm:pr-0">
                 <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Steadiness</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.consistencyScore}%
@@ -693,16 +693,16 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
         )}
       </div>
 
-      {/* RIGHT (4 cols): Normal Range + Bluetooth & Wi-Fi Connection */}
-      <div className="lg:col-span-4 flex flex-col gap-5">
-        {/* Compact 30-Day Normal Output Card */}
-        <div className="cd !p-5 flex flex-col gap-3">
+      {/* RIGHT (4 cols): Normal Range + Bluetooth & Wi-Fi Connection (Flat hairline-divided rail) */}
+      <div className="lg:col-span-4 lg:pl-6 flex flex-col divide-y divide-[var(--line)]">
+        {/* Compact 30-Day Normal Output */}
+        <div className="pb-5 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--mu)] flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5 text-[var(--acc)]" />
               Normal Output ({daysAnalyzed}-Day Avg)
             </span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)] tabular-nums">
+            <span className="text-[11px] font-semibold text-[var(--mu)] tabular-nums">
               ±{tolerance}% OK
             </span>
           </div>
@@ -714,7 +714,7 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
             <span className="text-xs font-semibold text-[var(--mu)]">mWh per step</span>
           </div>
 
-          <div className="w-full h-2.5 rounded-full bg-[var(--soft)] border border-[var(--line)] relative overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-[var(--soft)] relative overflow-hidden">
             <div
               className="absolute top-0 bottom-0 bg-emerald-500/35 border-x border-emerald-500/70"
               style={{ left: '20%', right: '20%' }}
@@ -731,8 +731,8 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
           </div>
         </div>
 
-        {/* Bluetooth & Wi-Fi Connection Card */}
-        <div className="cd !p-5 flex flex-col gap-3 flex-1 justify-between">
+        {/* Bluetooth & Wi-Fi Connection */}
+        <div className="pt-5 flex flex-col gap-3 flex-1 justify-between">
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--mu)] flex items-center gap-1.5">
@@ -758,14 +758,14 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
               Connect directly to the tile box via Bluetooth to test it or change its Wi-Fi network if the internet goes down.
             </p>
 
-            <div className="rounded-xl bg-[var(--soft)]/70 border border-[var(--line)] p-3 space-y-1.5 text-xs">
-              <div className="flex items-center justify-between gap-2">
+            <div className="divide-y divide-[var(--line)] border-t border-[var(--line)] text-xs">
+              <div className="flex items-center justify-between gap-2 py-2">
                 <span className="text-[var(--mu)]">Tile Box</span>
                 <span className="font-semibold text-[var(--t)] truncate">
                   {ble.connectedDevice?.name || ble.savedDevice?.name || 'Not paired yet'}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 py-2">
                 <span className="text-[var(--mu)] flex items-center gap-1">
                   <Wifi className="w-3 h-3" /> Wi-Fi Network
                 </span>
@@ -776,7 +776,7 @@ export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCa
                 </span>
               </div>
               {ble.latestTelemetry && (
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--line)]">
+                <div className="flex items-center justify-between gap-2 py-2">
                   <span className="text-[var(--mu)]">Live Bluetooth</span>
                   <span className="font-semibold text-[var(--acc)] tabular-nums">
                     {ble.latestTelemetry.voltage?.toFixed?.(1) ?? '—'}V • {ble.latestTelemetry.steps ?? 0} steps

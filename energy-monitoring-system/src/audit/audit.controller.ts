@@ -47,6 +47,8 @@ export class AuditController {
     @Query('search') search?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('startHour') startHour?: string,
+    @Query('endHour') endHour?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
     @Req() req?: any,
@@ -86,6 +88,18 @@ export class AuditController {
       const parsedStart = new Date(startDate);
       if (!isNaN(parsedStart.getTime())) {
         query.startDate = parsedStart;
+      }
+    }
+    if (startHour !== undefined && startHour !== '') {
+      const parsedStartHour = Number(startHour);
+      if (Number.isInteger(parsedStartHour) && parsedStartHour >= 0 && parsedStartHour <= 23) {
+        query.startHour = parsedStartHour;
+      }
+    }
+    if (endHour !== undefined && endHour !== '') {
+      const parsedEndHour = Number(endHour);
+      if (Number.isInteger(parsedEndHour) && parsedEndHour >= 0 && parsedEndHour <= 23) {
+        query.endHour = parsedEndHour;
       }
     }
 
@@ -295,6 +309,8 @@ export class LogsController {
     @Query('endDate') endDate?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
+    @Query('startHour') startHour?: string,
+    @Query('endHour') endHour?: string,
   ) {
     const query: any = {};
 
@@ -331,6 +347,18 @@ export class LogsController {
       const parsedStart = new Date(startDate);
       if (!isNaN(parsedStart.getTime())) {
         query.startDate = parsedStart;
+      }
+    }
+    if (startHour !== undefined && startHour !== '') {
+      const parsedStartHour = Number(startHour);
+      if (Number.isInteger(parsedStartHour) && parsedStartHour >= 0 && parsedStartHour <= 23) {
+        query.startHour = parsedStartHour;
+      }
+    }
+    if (endHour !== undefined && endHour !== '') {
+      const parsedEndHour = Number(endHour);
+      if (Number.isInteger(parsedEndHour) && parsedEndHour >= 0 && parsedEndHour <= 23) {
+        query.endHour = parsedEndHour;
       }
     }
 

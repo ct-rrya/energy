@@ -107,7 +107,7 @@ export function ConfirmationModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/75 backdrop-blur-sm p-4 sm:p-6 font-['DM_Sans',sans-serif]"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/60 p-4 sm:p-6 font-['DM_Sans',sans-serif]"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
@@ -115,7 +115,7 @@ export function ConfirmationModal({
       <div className="min-h-full flex items-center justify-center">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md my-8 rounded-2xl border border-[var(--line,rgba(255,255,255,0.12))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] shadow-2xl overflow-hidden flex flex-col p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="relative w-full max-w-md my-8 rounded-xl border border-[var(--line)] bg-white dark:bg-[#131916] text-[var(--t)] overflow-hidden flex flex-col p-6"
         >
           {/* Close button */}
           <button

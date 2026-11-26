@@ -90,7 +90,7 @@ export function DiagnosticsPage() {
         systemStatus={hardwareConnectionStatus}
       />
 
-      <div className="flex flex-col gap-6">
+      <div className="divide-y divide-[var(--line)]">
         {/* Section 1: Hardware Pipeline Schematic + Fault-Signature Diagnosis + Health Score */}
         <HardwarePipelineCard
           insights={insights}
@@ -99,7 +99,9 @@ export function DiagnosticsPage() {
         />
 
         {/* Section 2: Guided Multi-Sample Bench Test + Baseline Band + BLE Field Check */}
-        <DiagnosticWorkbenchCard onOpenHistory={() => setIsHistoryOpen(true)} />
+        <div className="py-5">
+          <DiagnosticWorkbenchCard onOpenHistory={() => setIsHistoryOpen(true)} />
+        </div>
 
         {/* Section 3: Passive 7-Day vs 30-Day Fatigue & Drift Radar */}
         <FatigueDriftRadarCard

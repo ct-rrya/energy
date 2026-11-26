@@ -6,7 +6,7 @@ import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader
 import { MilestonesRoadmap } from '../components/MilestonesRoadmap';
 import { AdminMilestonesModal } from '../components/AdminMilestonesModal';
 import { useMilestones } from '../hooks/useMilestones';
-import { ChevronLeft, ChevronRight, Settings2, Calendar, Lock, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings2, Calendar, Lock } from 'lucide-react';
 
 export function MilestonesPage() {
   const { user, isAuthenticated } = useAuth();
@@ -34,9 +34,7 @@ export function MilestonesPage() {
   const canGoPrev = currentIdx > 0;
   const canGoNext = currentIdx >= 0 && currentIdx < availableMonths.length - 1;
 
-  const isAutoCalculated = Boolean(configurationPolicy?.isAutoCalculated);
-  const autoFromLabel = configurationPolicy?.autoCalculatedFromLabel;
-  const growthPct = configurationPolicy?.growthPercent ?? 10;
+  const isGoalConfigured = Boolean(configurationPolicy?.isConfigured);
 
   return (
     <div className="page font-sans space-y-4">
@@ -88,22 +86,16 @@ export function MilestonesPage() {
             </span>
           )}
 
-          {isAutoCalculated && (
-            <span
-              className="pill text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1"
-              title="Automatically calculated from the previous month's harvested energy plus 10% growth"
-            >
-              <Sparkles className="w-2.5 h-2.5" />
-              {autoFromLabel
-                ? `AUTO: ${autoFromLabel.toUpperCase()} +${growthPct}%`
-                : `AUTO TARGET (+${growthPct}%)`}
+          {!isGoalConfigured && (
+            <span className="pill text-[10px] font-semibold text-[var(--mu)] bg-[var(--soft)] border border-[var(--line)]">
+              NO GOAL SET YET
             </span>
           )}
 
           {isAdminUser && isLocked && (
             <span className="pill text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
-              CUSTOM TARGET
+              GOAL LOCKED
             </span>
           )}
         </div>
@@ -114,10 +106,10 @@ export function MilestonesPage() {
             type="button"
             onClick={() => setIsAdminModalOpen(true)}
             className="self-start sm:self-auto min-h-[34px] px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm bg-[var(--acc)] text-white hover:bg-[var(--acc)]/90 cursor-pointer"
-            title="Adjust monthly and weekly targets"
+            title={isLocked ? 'View locked monthly target' : 'Set monthly energy goal'}
           >
             <Settings2 className="w-3.5 h-3.5" />
-            <span>{isLocked ? 'Adjust Target' : 'Customize Target'}</span>
+            <span>{isLocked ? 'View Target' : 'Set Target'}</span>
           </button>
         )}
       </div>
@@ -136,8 +128,8 @@ export function MilestonesPage() {
           onClose={() => setIsAdminModalOpen(false)}
           activeMonth={selectedMonth}
           availableMonths={availableMonths}
-          currentMonthTargetMWh={monthlyMilestone?.targetMWh ?? 0.1}
-          currentWeeklyTargetMWh={weeklyMilestones[0]?.targetMWh ?? 0.025}
+          currentMonthTargetMWh={monthlyMilestone?.targetMWh ?? 0}
+          currentWeeklyTargetMWh={weeklyMilestones[0]?.targetMWh ?? 0}
           configurationPolicy={configurationPolicy}
           onSave={async (payload) => {
             await updateTargets(payload);

@@ -23,9 +23,6 @@ import { ChatResponseDto } from './dto/chat-response.dto';
 import { ChatbotCoreService } from '../chatbot/chatbot-core.service';
 import { SessionManager } from './session.manager';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
-import { OptionalPlayerSessionGuard } from '../gamification/guards/optional-player-session.guard';
-import { CurrentPlayer } from '../players/decorators/current-player.decorator';
-import { Player } from '../players/schemas/player.schema';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_MODULES, AUDIT_ACTIONS } from '../audit/schemas/audit-log.schema';
 import { extractSafeIp } from '../audit/utils/audit-ip.utils';
@@ -46,7 +43,7 @@ import { extractSafeIp } from '../audit/utils/audit-ip.utils';
  */
 @ApiTags('Public Chat')
 @Controller('chat')
-@UseGuards(RateLimitGuard, OptionalPlayerSessionGuard)
+@UseGuards(RateLimitGuard)
 @SkipThrottle({ default: true, auth: true, iot: true, telemetry: true })
 @Throttle({ chat: { limit: 40, ttl: 60000 } })
 export class ChatController {
@@ -303,11 +300,10 @@ export class ChatController {
     @Body() dto: SendMessageDto,
     @Ip() ip: string,
     @Req() req: Request,
-    @CurrentPlayer() player?: Player,
   ): Promise<ChatResponseDto> {
     const messagePreview = dto.message.substring(0, 50);
     this.logger.log(
-      `Chat request from IP ${ip}: "${messagePreview}${dto.message.length > 50 ? '...' : ''}" (Player: ${player ? player.username : 'Anonymous visitor'})`,
+      `Chat request from IP ${ip}: "${messagePreview}${dto.message.length > 50 ? '...' : ''}"`,
     );
 
     // Extract authenticated admin info if present
@@ -357,13 +353,12 @@ export class ChatController {
         lastDateContext: session.metadata.lastDateContext ?? null,
       };
 
-      // Process message through chatbot core with optional player context
+      // Process message through chatbot core
       const response = await this.chatbotCore.processMessage(dto.message, {
         userId: session.sessionId,
         channel: 'web',
         sessionData,
         originalText: dto.message,
-        player,
       });
 
       // Persist updated/cleared date context back onto the session

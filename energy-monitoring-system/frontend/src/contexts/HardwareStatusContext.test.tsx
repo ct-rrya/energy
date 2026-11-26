@@ -54,7 +54,7 @@ describe('HardwareStatusContext', () => {
     sessionStorage.clear();
   });
 
-  it('initializes in Standby state when no recent footsteps have arrived', async () => {
+  it('initializes in Idle state when no recent footsteps have arrived', async () => {
     render(
       <HardwareStatusProvider>
         <TestConsumer />
@@ -62,7 +62,7 @@ describe('HardwareStatusContext', () => {
     );
 
     expect(screen.getByTestId('status').textContent).toBe('waiting');
-    expect(screen.getByTestId('statusLabel').textContent).toBe('Standby');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Idle');
   });
 
   it('transitions to Live when telemetry arrives', async () => {
@@ -127,7 +127,7 @@ describe('HardwareStatusContext', () => {
     expect(screen.getByTestId('statusLabel').textContent).toBe('Live');
   });
 
-  it('stays in Standby when initial reading from API is older than 60s', async () => {
+  it('stays in Idle when initial reading from API is older than 60s', async () => {
     const oldDate = new Date(Date.now() - 120_000).toISOString();
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: [{
@@ -152,7 +152,7 @@ describe('HardwareStatusContext', () => {
     });
 
     expect(screen.getByTestId('status').textContent).toBe('waiting');
-    expect(screen.getByTestId('statusLabel').textContent).toBe('Standby');
+    expect(screen.getByTestId('statusLabel').textContent).toBe('Idle');
   });
 });
 

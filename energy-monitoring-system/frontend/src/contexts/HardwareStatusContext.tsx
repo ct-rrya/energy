@@ -43,10 +43,10 @@ export interface HardwareStatusContextValue {
 
 const DEFAULT_STATUS_CONFIG = {
   waiting: {
-    label: 'Standby',
-    shortLabel: 'Standby',
+    label: 'Idle',
+    shortLabel: 'Idle',
     description:
-      'Connected to EcoStep. The tile only sends readings when someone steps on it, so Standby is normal when idle.',
+      'No recent footstep activity received. The tile only sends data when stepped on, so Idle means either no recent footsteps or the tile is powered off.',
     dotColor: 'bg-[#F59E0B]',
     pulseColor: undefined,
     statusClass: 'status-waiting status-standby',
@@ -418,13 +418,13 @@ export function HardwareStatusProvider({ children }: { children: React.ReactNode
     };
   }, [markHardwareConnected, markHardwareDisconnected]);
 
-  // Idle check timer: Returns Live -> Standby if no footstep reading received for > 60s (unless BLE GATT is actively connected)
+  // Idle check timer: Returns Live -> Idle if no footstep reading received for > 60s (unless BLE GATT is actively connected)
   useEffect(() => {
     const interval = setInterval(() => {
       if (statusRef.current === 'connected' && !isBleConnectedRef.current) {
         const lastSeen = lastSeenMsRef.current;
         if (lastSeen && Date.now() - lastSeen > TIMEOUT_MS) {
-          console.log('[HardwareStatus] No footsteps for >60s -> Standby');
+          console.log('[HardwareStatus] No footsteps for >60s -> Idle');
           setStatus('waiting');
         }
       }

@@ -3,52 +3,32 @@ import {
   adminChatService,
   type AdminChatMessage,
 } from '@/api/services/adminChat.service';
-
-const VISITOR_ID_KEY = 'ecostep_admin_chat_visitor_id';
-const VISITOR_NAME_KEY = 'ecostep_admin_chat_visitor_name';
-
-function getOrCreateVisitorId(): string {
-  if (typeof window === 'undefined') return 'visitor-ssr';
-  try {
-    const existing = localStorage.getItem(VISITOR_ID_KEY);
-    if (existing && existing.length >= 6) return existing;
-    const generated =
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? `vis-${crypto.randomUUID()}`
-        : `vis-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(VISITOR_ID_KEY, generated);
-    return generated;
-  } catch {
-    return `vis-${Date.now()}`;
-  }
-}
-
-function loadVisitorName(): string {
-  if (typeof window === 'undefined') return '';
-  try {
-    return localStorage.getItem(VISITOR_NAME_KEY) || '';
-  } catch {
-    return '';
-  }
-}
+import {
+  getOrCreateVisitorId,
+  getStoredVisitorNickname,
+  useOptionalVisitor,
+} from '@/contexts/VisitorContext';
 
 export function useAdminChat(isActiveTab: boolean) {
-  const [visitorId] = useState<string>(() => getOrCreateVisitorId());
-  const [visitorName, setVisitorNameState] = useState<string>(() => loadVisitorName());
+  const visitor = useOptionalVisitor();
+  const [fallbackVisitorId] = useState<string>(() => getOrCreateVisitorId());
+  const [fallbackVisitorName] = useState<string>(() => getStoredVisitorNickname());
+
+  const visitorId = visitor?.visitorId || fallbackVisitorId;
+  const visitorName = visitor?.nickname || fallbackVisitorName || 'EcoGuest';
+
   const [messages, setMessages] = useState<AdminChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setVisitorName = useCallback((name: string) => {
-    setVisitorNameState(name);
-    try {
-      localStorage.setItem(VISITOR_NAME_KEY, name);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  const setVisitorName = useCallback(
+    (name: string) => {
+      visitor?.setNickname(name);
+    },
+    [visitor],
+  );
 
   const fetchThread = useCallback(
     async (silent = false) => {

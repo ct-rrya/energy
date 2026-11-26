@@ -49,6 +49,8 @@ export interface QueryAuditLogsParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  startHour?: number;
+  endHour?: number;
   limit?: number;
   skip?: number;
 }

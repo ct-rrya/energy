@@ -3,6 +3,10 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CustomDropdown } from '@/components/common';
+import {
+  HourRangeSelector,
+  type HourRange,
+} from '@/components/common/HourRangeSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/lib/theme';
 import {
@@ -10,12 +14,14 @@ import {
   ReportFormat,
   type GenerateReportDto,
 } from '@/types/report.types';
+import type { ReportQuota } from '@/api/services/reports.service';
 
 interface GenerateReportDialogProps {
   open: boolean;
   onClose: () => void;
   onGenerate: (dto: GenerateReportDto) => void;
   isGenerating?: boolean;
+  quota?: ReportQuota;
 }
 
 function toYmd(date: Date): string {
@@ -30,14 +36,19 @@ export function GenerateReportDialog({
   onClose,
   onGenerate,
   isGenerating,
+  quota,
 }: GenerateReportDialogProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const isLimitReached = Boolean(
+    quota && !quota.isUnlimited && quota.remainingToday !== null && quota.remainingToday <= 0
+  );
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [format, setFormat] = useState<ReportFormat>(ReportFormat.PDF);
   const [aggregation, setAggregation] = useState<'hourly' | 'daily' | 'weekly'>('hourly');
+  const [hourRange, setHourRange] = useState<HourRange | null>(null);
   const [includeAI, setIncludeAI] = useState(true);
 
   useEffect(() => {
@@ -52,6 +63,7 @@ export function GenerateReportDialog({
         setEndDate('');
         setFormat(ReportFormat.PDF);
         setAggregation('hourly');
+        setHourRange(null);
         setIncludeAI(true);
       }, 300);
     }
@@ -95,6 +107,9 @@ export function GenerateReportDialog({
       endDate,
       aggregation,
       includeAIAnalysis: includeAI,
+      ...(hourRange
+        ? { startHour: hourRange.startHour, endHour: hourRange.endHour }
+        : {}),
     };
 
     onGenerate(dto);
@@ -241,23 +256,37 @@ export function GenerateReportDialog({
             </div>
           </div>
 
-          {/* AI Summary Option */}
-          <div
-            className="p-3.5 rounded-lg"
-            style={{
-              backgroundColor:
-                theme === 'light' ? 'rgba(66, 132, 117, 0.05)' : 'rgba(137, 215, 183, 0.05)',
-              border: `1px solid ${
-                theme === 'light' ? 'rgba(66, 132, 117, 0.2)' : 'rgba(137, 215, 183, 0.2)'
-              }`,
-            }}
-          >
+          {/* Optional Custom Hour Range */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div>
+              <span
+                className="block text-sm font-medium"
+                style={{ color: colors.textSecondary }}
+              >
+                Hour Window (Optional)
+              </span>
+              <span
+                className="block text-xs"
+                style={{ color: colors.textSecondary }}
+              >
+                Filter report data to specific hours of the day (PHT)
+              </span>
+            </div>
+            <HourRangeSelector
+              value={hourRange}
+              onChange={setHourRange}
+              compact={false}
+            />
+          </div>
+
+          {/* AI Summary Option (Flat hairline row) */}
+          <div className="pt-3 border-t border-[var(--line)]">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeAI}
                 onChange={(e) => setIncludeAI(e.target.checked)}
-                className="w-4 h-4 rounded accent-[#428475] mt-1"
+                className="w-4 h-4 rounded accent-[#428475] mt-0.5"
                 disabled={isGenerating}
               />
               <div className="flex-1">
@@ -276,11 +305,22 @@ export function GenerateReportDialog({
               </div>
             </label>
           </div>
+
+          {/* Public Daily Quota Notice (Flat inline caption) */}
+          {quota && !quota.isUnlimited && quota.limit !== null && quota.remainingToday !== null && (
+            <p
+              className="text-xs font-medium m-0 pt-2 border-t border-[var(--line)]"
+              style={{ color: isLimitReached ? '#ef4444' : colors.textSecondary }}
+            >
+              {isLimitReached
+                ? `Daily limit reached (${quota.usedToday}/${quota.limit} reports used today). Resets tomorrow.`
+                : `Public daily quota: ${quota.remainingToday} of ${quota.limit} reports remaining today`}
+            </p>
+          )}
         </div>
 
         <DialogFooter
-          className="sticky bottom-0 -mx-5 sm:-mx-6 -mb-4 px-5 sm:px-6"
-          style={{ backgroundColor: colors.cardBackground }}
+          className="pt-4 mt-1 border-t border-[var(--line)]"
         >
           <Button
             type="button"
@@ -293,9 +333,13 @@ export function GenerateReportDialog({
           <Button
             type="submit"
             variant="primary"
-            disabled={isGenerating || !startDate || !endDate}
+            disabled={isGenerating || isLimitReached || !startDate || !endDate}
           >
-            {isGenerating ? 'Generating...' : 'Generate Report'}
+            {isGenerating
+              ? 'Generating...'
+              : isLimitReached
+                ? 'Daily Limit Reached'
+                : 'Generate Report'}
           </Button>
         </DialogFooter>
       </form>

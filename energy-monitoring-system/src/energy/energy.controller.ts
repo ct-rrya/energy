@@ -247,6 +247,8 @@ export class EnergyController {
       query.endDate,
       query.limit,
       query.includeInactive,
+      query.startHour,
+      query.endHour,
     );
     return readings.map((reading) => reading.toJSON());
   }

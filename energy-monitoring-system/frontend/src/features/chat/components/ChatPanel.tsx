@@ -8,8 +8,9 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquare, ChevronLeft, Sparkles, ShieldCheck } from 'lucide-react';
+import { MessageSquare, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminChatService } from '@/api/services/adminChat.service';
 import { ChatHeader } from './ChatHeader';
@@ -26,6 +27,8 @@ interface ChatPanelProps {
   isFloating?: boolean;
   isPinned?: boolean;
   onToggleCollapse?: () => void;
+  onTogglePin?: () => void;
+  onClosePanel?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   onFocusCapture?: () => void;
@@ -38,6 +41,8 @@ export function ChatPanel({
   isFloating = false,
   isPinned,
   onToggleCollapse,
+  onTogglePin,
+  onClosePanel,
   onMouseEnter,
   onMouseLeave,
   onFocusCapture,
@@ -178,12 +183,20 @@ export function ChatPanel({
     };
   }, [isMobile, isCollapsed]);
 
+  const [railHovered, setRailHovered] = useState(false);
+
   // Set scrollTop = 0 on guide on mount
   useEffect(() => {
     if (panelRef.current) {
       panelRef.current.scrollTop = 0;
     }
   }, []);
+
+  useEffect(() => {
+    if (!isCollapsed) {
+      setRailHovered(false);
+    }
+  }, [isCollapsed]);
 
   const panelClasses = [
     'cp',
@@ -198,13 +211,6 @@ export function ChatPanel({
 
   return (
     <>
-      {isMobile && isMobileOpen && (
-        <div
-          className="ecoguide-mobile-backdrop"
-          onClick={handleCloseMobile}
-          aria-hidden="true"
-        />
-      )}
       <aside
         ref={panelRef}
         className={panelClasses}
@@ -216,30 +222,44 @@ export function ChatPanel({
         onFocusCapture={onFocusCapture}
         onBlurCapture={onBlurCapture}
       >
-        {/* Collapsed Slim Rail (56px) */}
-        <div 
-          className="docked-chat-rail" 
+        {/* Collapsed Slim Rail (56px) — Click to expand, hover shows tooltip */}
+        <button
+          type="button"
+          className="docked-chat-rail w-full h-full border-0 bg-transparent cursor-pointer"
           aria-hidden={!isCollapsed || isMobile}
+          aria-expanded={!isCollapsed}
+          aria-controls="ecoguide-panel"
+          aria-label="Expand to chat with EcoGuide"
+          onClick={handleToggle}
+          onMouseEnter={() => setRailHovered(true)}
+          onMouseLeave={() => setRailHovered(false)}
+          onFocus={() => setRailHovered(true)}
+          onBlur={() => setRailHovered(false)}
         >
-          <button
-            type="button"
-            className="ib es-toggle-btn"
-            onClick={handleToggle}
-            aria-expanded={resolvedPinned}
-            aria-controls="ecoguide-panel"
-            aria-label="Expand EcoGuide"
-            title="Pin EcoGuide open ( ] )"
-          >
-            <ChevronLeft size={16} strokeWidth={2} />
-          </button>
           <span
-            className="mt-6 text-[var(--acc)] opacity-70"
+            className="mt-4 text-[var(--acc)] opacity-80"
             aria-hidden="true"
           >
             <MessageSquare size={18} strokeWidth={2} />
           </span>
           <span className="docked-rail-label">EcoGuide</span>
-        </div>
+        </button>
+
+        {isCollapsed && !isMobile && railHovered && typeof document !== 'undefined' && createPortal(
+          <div
+            role="tooltip"
+            style={{
+              position: 'fixed',
+              top: '76px',
+              right: '68px',
+              zIndex: 9999,
+            }}
+            className="pointer-events-none px-3 py-1.5 rounded-lg border border-[var(--line)] bg-white dark:bg-[#131916] text-xs font-medium text-[var(--t)] whitespace-nowrap"
+          >
+            Expand to chat with EcoGuide
+          </div>,
+          document.body,
+        )}
 
         {/* Expanded Chat Content (330px desktop / full-height bottom sheet mobile) */}
         <div 
@@ -248,10 +268,12 @@ export function ChatPanel({
         >
           {isMobile && <div className="ecoguide-sheet-handle" aria-hidden="true" />}
           <ChatHeader
-            onClose={isMobile ? handleCloseMobile : handleToggle}
-            onCollapse={handleToggle}
+            onClose={isMobile ? handleCloseMobile : (onClosePanel ?? handleToggle)}
+            onCollapse={onClosePanel ?? handleToggle}
+            onTogglePin={onTogglePin}
             onNewChat={clearChat}
-            isExpanded={resolvedPinned}
+            isExpanded={!isCollapsed}
+            isPinned={resolvedPinned}
             isFloating={isFloating && !isMobile}
             isMobile={isMobile}
             subtitle={
@@ -264,10 +286,10 @@ export function ChatPanel({
             showNewChat={activeMode === 'bot'}
           />
 
-          {/* Mode Switcher: EcoGuide AI vs Talk to Admin / Visitor Inbox */}
-          <div className="px-3.5 py-2 border-b border-[var(--line)] shrink-0">
+          {/* Mode Switcher: EcoGuide AI vs Talk to Admin / Visitor Inbox (single horizontal row) */}
+          <div className="py-2 border-b border-[var(--line)] shrink-0">
             <div
-              className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--soft)] border border-[var(--line)]"
+              className="flex items-center gap-1 p-1 rounded-xl bg-[var(--soft)] border border-[var(--line)]"
               role="tablist"
               aria-label="Chat mode"
             >
@@ -276,13 +298,13 @@ export function ChatPanel({
                 role="tab"
                 aria-selected={activeMode === 'bot'}
                 onClick={() => setActiveMode('bot')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[12px] font-semibold transition-all cursor-pointer ${
+                className={`flex-auto flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11.5px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeMode === 'bot'
                     ? 'bg-[var(--panel)] text-[var(--t)] shadow-xs border border-[var(--line)]'
-                    : 'text-[var(--mu)] hover:text-[var(--t)]'
+                    : 'text-[var(--mu)] hover:text-[var(--t)] border border-transparent'
                 }`}
               >
-                <Sparkles size={13} className={activeMode === 'bot' ? 'text-[var(--acc)]' : ''} />
+                <Sparkles size={12} className={`shrink-0 ${activeMode === 'bot' ? 'text-[var(--acc)]' : ''}`} />
                 <span>EcoGuide AI</span>
               </button>
 
@@ -291,17 +313,17 @@ export function ChatPanel({
                 role="tab"
                 aria-selected={activeMode === 'admin'}
                 onClick={() => setActiveMode('admin')}
-                className={`relative flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[12px] font-semibold transition-all cursor-pointer ${
+                className={`flex-auto relative flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11.5px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeMode === 'admin'
                     ? 'bg-[var(--panel)] text-[var(--t)] shadow-xs border border-[var(--line)]'
-                    : 'text-[var(--mu)] hover:text-[var(--t)]'
+                    : 'text-[var(--mu)] hover:text-[var(--t)] border border-transparent'
                 }`}
               >
-                <ShieldCheck size={13} className={activeMode === 'admin' ? 'text-[var(--acc)]' : ''} />
+                <ShieldCheck size={12} className={`shrink-0 ${activeMode === 'admin' ? 'text-[var(--acc)]' : ''}`} />
                 <span>{isAdmin ? 'Visitor Inbox' : 'Talk to Admin'}</span>
                 {secondTabUnread > 0 && activeMode !== 'admin' && (
                   <span
-                    className="min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[10px] font-bold inline-flex items-center justify-center"
+                    className="shrink-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[10px] font-bold inline-flex items-center justify-center"
                     aria-label={`${secondTabUnread} unread messages`}
                   >
                     {secondTabUnread}
@@ -341,7 +363,6 @@ export function ChatPanel({
               <AdminChatView
                 messages={adminChat.messages}
                 visitorName={adminChat.visitorName}
-                onVisitorNameChange={adminChat.setVisitorName}
                 isLoading={adminChat.isLoading}
                 isSending={adminChat.isSending}
                 error={adminChat.error}

@@ -82,7 +82,7 @@ export function AboutPage() {
   const hasVideoId = YOUTUBE_VIDEO_ID && YOUTUBE_VIDEO_ID !== 'YOUR_YOUTUBE_VIDEO_ID';
 
   return (
-    <div className="page font-sans space-y-6">
+    <div className="page font-sans">
       <DashboardHeader
         greeting="Project & Team"
         title="About EcoStep"
@@ -91,135 +91,129 @@ export function AboutPage() {
         isPublicUser={isPublicUser}
       />
 
-      {/* System Overview */}
-      <section className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111916] p-6 shadow-sm space-y-5">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#2FBF71]/15 text-[#2FBF71]">
-            <Info className="w-5 h-5" />
+      {/* Open Editorial Layout — Full-Width Aligned With Page Header, Zero Nested Boxes */}
+      <div className="w-full divide-y divide-[var(--line)]">
+        {/* 1. System Overview */}
+        <section className="py-6 first:pt-2 space-y-5">
+          <div className="flex items-center gap-2 text-[var(--acc)]">
+            <Info className="w-4 h-4 shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold text-[var(--t)] m-0">
+              What EcoStep Is About
+            </h2>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            What EcoStep Is About
-          </h2>
-        </div>
 
-        <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-          <strong>EcoStep</strong> is a smart footstep energy harvesting and
-          monitoring system that turns everyday walking into measurable clean
-          electricity. Each step on the floor tile creates a small electrical
-          charge that is safely stored, measured by built-in smart sensors, and
-          shared live on this web platform for real-time tracking, history
-          charts, energy milestones, and tile health checks.
-        </p>
+          <p className="text-sm sm:text-[15px] leading-relaxed text-[var(--mu)] w-full pb-2 m-0">
+            <strong className="text-[var(--t)]">EcoStep</strong> is a smart footstep energy harvesting and
+            monitoring system that turns everyday walking into measurable clean
+            electricity. Each step on the floor tile creates a small electrical
+            charge that is safely stored, measured by built-in smart sensors, and
+            shared live on this web platform for real-time tracking, history
+            charts, energy milestones, and tile health checks.
+          </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-          {SYSTEM_HIGHLIGHTS.map(({ icon: Icon, title, description }) => (
-            <div
-              key={title}
-              className="rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] p-4 space-y-2"
-            >
-              <div className="inline-flex p-2 rounded-lg bg-[#2FBF71]/15 text-[#2FBF71]">
-                <Icon className="w-4 h-4" />
+          {/* Flat Horizontal 3-Column Highlight Strip */}
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--line)] border-y border-[var(--line)]">
+            {SYSTEM_HIGHLIGHTS.map(({ icon: Icon, title, description }) => (
+              <div
+                key={title}
+                className="py-4 md:px-5 md:first:pl-0 md:last:pr-0 space-y-1.5"
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-[var(--acc)] shrink-0" />
+                  <h3 className="text-sm font-semibold text-[var(--t)] m-0">
+                    {title}
+                  </h3>
+                </div>
+                <p className="text-xs leading-relaxed text-[var(--mu)] m-0">
+                  {description}
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                {title}
-              </h3>
-              <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-                {description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
 
-      {/* Advertisement Video Template */}
-      <section className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111916] p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-[#2FBF71]/15 text-[#2FBF71]">
-              <PlayCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        {/* 2. Advertisement Video */}
+        <section className="py-7 space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[var(--acc)]">
+              <PlayCircle className="w-4 h-4 shrink-0" />
+              <h2 className="text-base sm:text-lg font-semibold text-[var(--t)] m-0">
                 Project Advertisement Video
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Watch our EcoStep overview and hardware demonstration on YouTube.
-              </p>
             </div>
+            <p className="text-xs sm:text-sm text-[var(--mu)] m-0">
+              Watch our EcoStep overview and hardware demonstration on YouTube.
+            </p>
           </div>
-        </div>
 
-        <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 bg-gray-950 aspect-video">
-          {hasVideoId ? (
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
-              title="EcoStep Advertisement Video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-gradient-to-br from-[#0e1914] via-[#11221a] to-[#0a120e] text-white space-y-3">
-              <div className="p-4 rounded-full bg-[#2FBF71]/20 text-[#2FBF71] border border-[#2FBF71]/30">
-                <PlayCircle className="w-10 h-10" />
+          <div className="relative w-full overflow-hidden rounded-xl border border-[var(--line)] bg-gray-950 aspect-video max-h-[480px]">
+            {hasVideoId ? (
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
+                title="EcoStep Advertisement Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-gradient-to-br from-[#0e1914] via-[#11221a] to-[#0a120e] text-white space-y-3">
+                <div className="p-3.5 rounded-full bg-[#2FBF71]/15 text-[#2FBF71] border border-[#2FBF71]/30">
+                  <PlayCircle className="w-9 h-9" />
+                </div>
+                <div className="space-y-1 max-w-md">
+                  <p className="text-base font-semibold m-0">Video Coming Soon</p>
+                  <p className="text-xs text-gray-300 leading-relaxed m-0">
+                    Our EcoStep overview and hardware demonstration video is currently in production. Check back soon!
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1 max-w-md">
-                <p className="text-base font-semibold">
-                  Video Coming Soon
-                </p>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  Our EcoStep overview and hardware demonstration video is currently in production. Check back soon!
-                </p>
-              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 3. Research Team — Flat Typographic Roster */}
+        <section className="py-7 space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[var(--acc)]">
+              <Users className="w-4 h-4 shrink-0" />
+              <h2 className="text-base sm:text-lg font-semibold text-[var(--t)] m-0">
+                Research Team
+              </h2>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* Research Team */}
-      <section className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111916] p-6 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#2FBF71]/15 text-[#2FBF71]">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Research Team
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-[var(--mu)] m-0">
               The team behind the EcoStep hardware, software, and research manuscript.
             </p>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {RESEARCH_TEAM.map((member) => (
-            <div
-              key={member.name}
-              className="flex items-center gap-3.5 rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] p-4"
-            >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            {RESEARCH_TEAM.map((member) => (
               <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                  member.highlight
-                    ? 'bg-[#2FBF71]/20 text-[#2FBF71] border border-[#2FBF71]/40'
-                    : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200'
-                }`}
+                key={member.name}
+                className="flex items-center gap-3.5 py-3.5 border-b border-[var(--line)]"
               >
-                {member.initials}
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    member.highlight
+                      ? 'bg-[#2FBF71]/15 text-[#2FBF71] border border-[#2FBF71]/35'
+                      : 'bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]'
+                  }`}
+                >
+                  {member.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--t)] truncate m-0">
+                    {member.name}
+                  </p>
+                  <p className="text-xs text-[var(--mu)] m-0 mt-0.5">
+                    {member.role}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {member.name}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {member.role}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

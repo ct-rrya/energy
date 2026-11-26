@@ -323,21 +323,16 @@ export class MilestonesService {
   }
 
   /**
-   * Computes an automatic monthly target from the previous month's actual harvested output + 10% growth.
-   * If the immediate previous month had 0 mWh, looks back up to 12 prior months for the most recent
-   * active month; if none have data yet, falls back to the starter default (0.1 mWh).
+   * Finds the most recent prior month (up to 12 months back) that recorded harvested energy,
+   * returned purely as an optional suggestion for the admin when setting a new month's goal.
+   * No automatic +10% growth or auto-applied target is computed.
    */
-  private async computeAutoTargetFromPreviousMonths(
+  private async getPreviousActiveMonthSuggestion(
     yearMonth: string,
-    fallbackMWh: number = 0.1,
-    growthPercent: number = 10,
   ): Promise<{
-    monthlyTargetMWh: number;
     sourceMonth: string | null;
     sourceMonthLabel: string | null;
     previousMonthMWh: number;
-    growthPercent: number;
-    usedFallback: boolean;
   }> {
     const [yStr, mStr] = yearMonth.split('-');
     let curY = parseInt(yStr, 10);
@@ -359,41 +354,34 @@ export class MilestonesService {
       const { energyMWh } = await this.getAccumulatedEnergyForPeriod(start, end);
 
       if (energyMWh > 0) {
-        const multiplier = 1 + growthPercent / 100;
         const sourceMonth = `${curY}-${String(curM).padStart(2, '0')}`;
         return {
-          monthlyTargetMWh: round6(energyMWh * multiplier),
           sourceMonth,
           sourceMonthLabel: `${shortMonths[curM - 1]} ${curY}`,
           previousMonthMWh: round6(energyMWh),
-          growthPercent,
-          usedFallback: false,
         };
       }
     }
 
     return {
-      monthlyTargetMWh: round6(fallbackMWh || 0.1),
       sourceMonth: null,
       sourceMonthLabel: null,
       previousMonthMWh: 0,
-      growthPercent,
-      usedFallback: true,
     };
   }
 
   /**
-   * Returns overdue months. Always empty now because unconfigured months
-   * automatically calculate their target from the previous month's output (+10%).
+   * Returns overdue months (always empty — admins set goals on demand).
    */
   async getOverdueMonths(_targetsDoc?: MilestoneTargetDocument): Promise<string[]> {
     return [];
   }
 
   /**
-   * Returns the configuration policy, auto-calculation metadata, and editing permissions.
+   * Returns the configuration policy, previous-month suggestion metadata, and strict lock state.
+   * Once a month's goal is saved, it is permanently locked for everyone.
    */
-  async getConfigurationPolicy(yearMonth?: string, userRole?: string): Promise<MonthlyConfigurationPolicy> {
+  async getConfigurationPolicy(yearMonth?: string, _userRole?: string): Promise<MonthlyConfigurationPolicy> {
     const targets = await this.getTargets();
     const manila = this.getManilaNow();
     const targetMonth = yearMonth && /^\d{4}-\d{2}$/.test(yearMonth)
@@ -404,39 +392,29 @@ export class MilestonesService {
     const existingConfig = targets.monthlyConfigurations?.[targetMonth];
     const hasManualConfig = Boolean(existingConfig);
     const isLocked = Boolean(existingConfig?.isLocked ?? hasManualConfig);
-
-    const isAdminRole =
-      userRole === 'SYSTEM_ADMIN' ||
-      userRole === 'SUPER_ADMIN' ||
-      userRole === 'admin' ||
-      userRole === 'super_admin';
-    const canEdit = !isLocked || isAdminRole;
+    const canEdit = !isLocked;
 
     const resolvedConfiguredBy = await this.resolveAdminDisplayName(
       existingConfig?.configuredBy || existingConfig?.updatedBy,
     );
 
-    const autoMeta = hasManualConfig
+    const prevMeta = hasManualConfig
       ? null
-      : await this.computeAutoTargetFromPreviousMonths(
-          targetMonth,
-          targets.target1MonthMWh || 0.1,
-          10,
-        );
+      : await this.getPreviousActiveMonthSuggestion(targetMonth);
 
     return {
       yearMonth: targetMonth,
-      status: 'CONFIGURED',
-      isConfigured: true,
-      isAutoCalculated: !hasManualConfig,
-      autoCalculatedFromMonth: autoMeta?.sourceMonth ?? null,
-      autoCalculatedFromLabel: autoMeta?.sourceMonthLabel ?? null,
-      previousMonthMWh: autoMeta?.previousMonthMWh,
-      growthPercent: autoMeta?.growthPercent ?? 10,
+      status: hasManualConfig ? 'CONFIGURED' : 'PENDING',
+      isConfigured: hasManualConfig,
+      isAutoCalculated: false,
+      autoCalculatedFromMonth: prevMeta?.sourceMonth ?? null,
+      autoCalculatedFromLabel: prevMeta?.sourceMonthLabel ?? null,
+      previousMonthMWh: prevMeta?.previousMonthMWh ?? 0,
+      growthPercent: 0,
       isLocked,
       deadlineDate: deadlineUtc.toISOString(),
       deadlineLabel,
-      configuredBy: hasManualConfig ? resolvedConfiguredBy : 'Auto (+10%)',
+      configuredBy: hasManualConfig ? resolvedConfiguredBy : undefined,
       configuredAt: existingConfig?.configuredAt || existingConfig?.updatedAt,
       canEdit,
       requiresSuperAdmin: false,
@@ -527,43 +505,36 @@ export class MilestonesService {
       };
     }
 
-    // Automatically calculate from previous month's actual harvested energy + 10% growth
-    const auto = await this.computeAutoTargetFromPreviousMonths(
-      effectiveMonth,
-      targets.target1MonthMWh || 0.1,
-      10,
-    );
+    // No goal set yet for this month — return 0 target and previous month's actual energy as an optional suggestion
+    const prev = await this.getPreviousActiveMonthSuggestion(effectiveMonth);
 
     return {
       yearMonth: effectiveMonth,
-      monthlyTargetMWh: auto.monthlyTargetMWh,
-      weeklyTargetsMWh: this.buildEvenWeeklyTargets(auto.monthlyTargetMWh, weekBlocks.length),
-      isConfigured: true,
-      isAutoCalculated: true,
-      autoCalculatedFromMonth: auto.sourceMonth,
-      autoCalculatedFromLabel: auto.sourceMonthLabel,
-      previousMonthMWh: auto.previousMonthMWh,
-      growthPercent: auto.growthPercent,
-      status: 'CONFIGURED',
+      monthlyTargetMWh: 0,
+      weeklyTargetsMWh: this.buildEvenWeeklyTargets(0, weekBlocks.length),
+      isConfigured: false,
+      isAutoCalculated: false,
+      autoCalculatedFromMonth: prev.sourceMonth,
+      autoCalculatedFromLabel: prev.sourceMonthLabel,
+      previousMonthMWh: prev.previousMonthMWh,
+      growthPercent: 0,
+      status: 'PENDING',
       isLocked: false,
       deadlineDate: deadlineUtc.toISOString(),
       deadlineLabel,
-      configuredBy: 'Auto (+10%)',
+      configuredBy: undefined,
       correctionLogs: [],
     };
   }
 
   /**
-   * Update milestone targets for a calendar month.
-   * Enforces the Monthly Goal Configuration Policy:
-   * - One normal configuration submission per month by administrators, which locks targets.
-   * - Once locked, ordinary modifications are prevented.
-   * - Authorized Super Administrators can make exceptional corrections with audit logging.
+   * Set milestone targets for a calendar month.
+   * Once saved, the month's target is permanently locked and cannot be changed.
    */
   async updateTargets(
     dto: UpdateMilestoneTargetsDto,
     userId?: string,
-    userRole?: string,
+    _userRole?: string,
   ): Promise<MilestoneTargetDocument> {
     const existing = await this.getTargets();
     const manila = this.getManilaNow();
@@ -576,16 +547,11 @@ export class MilestonesService {
 
     const existingConfig = existing.monthlyConfigurations[targetMonth];
     const isAlreadyLocked = Boolean(existingConfig && (existingConfig.isLocked || existingConfig.status === 'CONFIGURED'));
-    const isAdminRole =
-      userRole === 'SYSTEM_ADMIN' ||
-      userRole === 'SUPER_ADMIN' ||
-      userRole === 'admin' ||
-      userRole === 'super_admin';
 
-    // Enforcement: If already locked, only an authenticated Administrator can perform audited correction
-    if (isAlreadyLocked && !isAdminRole) {
+    // Strict lock: once a goal is set for a month, it cannot be changed anymore
+    if (isAlreadyLocked) {
       throw new ForbiddenException(
-        `Milestone targets for ${targetMonth} are locked against ordinary modifications. Exceptional corrections require Super Administrator authorization.`
+        `Milestone targets for ${targetMonth} are locked and cannot be changed once set.`,
       );
     }
 
@@ -613,49 +579,19 @@ export class MilestonesService {
     const nowIso = new Date().toISOString();
     const actorDisplayName = (await this.resolveAdminDisplayName(userId)) || 'an administrator';
 
-    if (isAlreadyLocked && isAdminRole) {
-      // Exceptional Super Administrator correction: audit logging
-      const correctionLogEntry: MilestoneCorrectionLog = {
-        correctedBy: actorDisplayName,
-        correctedAt: nowIso,
-        previousTargets: {
-          monthlyTargetMWh: existingConfig.monthlyTargetMWh,
-          weeklyTargetsMWh: { ...existingConfig.weeklyTargetsMWh },
-        },
-        newTargets: {
-          monthlyTargetMWh: updatedMonthMWh,
-          weeklyTargetsMWh: weeklyConfig,
-        },
-        reason: dto.reason || 'Super Administrator exceptional target adjustment',
-      };
-
-      existingConfig.monthlyTargetMWh = updatedMonthMWh;
-      existingConfig.weeklyTargetsMWh = weeklyConfig;
-      existingConfig.updatedBy = actorDisplayName;
-      existingConfig.updatedAt = nowIso;
-      existingConfig.isLocked = true;
-      existingConfig.status = 'CONFIGURED';
-      existingConfig.correctionLogs = [...(existingConfig.correctionLogs || []), correctionLogEntry];
-
-      this.logger.warn(
-        `[AUDIT] Milestone targets exceptionally corrected for ${targetMonth} by Super Admin ${actorDisplayName}. Reason: ${correctionLogEntry.reason}`
-      );
-    } else {
-      // First normal configuration submission for this month (locks targets)
-      existing.monthlyConfigurations[targetMonth] = {
-        monthlyTargetMWh: updatedMonthMWh,
-        weeklyTargetsMWh: weeklyConfig,
-        status: 'CONFIGURED',
-        isLocked: true,
-        configuredBy: actorDisplayName,
-        configuredAt: nowIso,
-        deadlineDate: deadlineUtc.toISOString(),
-        updatedBy: actorDisplayName,
-        updatedAt: nowIso,
-        correctionLogs: [],
-      };
-      this.logger.log(`Milestone targets configured and locked for ${targetMonth} by ${actorDisplayName}`);
-    }
+    existing.monthlyConfigurations[targetMonth] = {
+      monthlyTargetMWh: updatedMonthMWh,
+      weeklyTargetsMWh: weeklyConfig,
+      status: 'CONFIGURED',
+      isLocked: true,
+      configuredBy: actorDisplayName,
+      configuredAt: nowIso,
+      deadlineDate: deadlineUtc.toISOString(),
+      updatedBy: actorDisplayName,
+      updatedAt: nowIso,
+      correctionLogs: [],
+    };
+    this.logger.log(`Milestone targets configured and locked for ${targetMonth} by ${actorDisplayName}`);
 
     if (typeof existing.markModified === 'function') {
       existing.markModified('monthlyConfigurations');

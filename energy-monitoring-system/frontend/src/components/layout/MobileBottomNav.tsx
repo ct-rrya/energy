@@ -68,8 +68,8 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.ADMIN_DIAGNOSTICS),
     },
     {
-      id: 'ledger',
-      label: 'Ledger',
+      id: 'reports',
+      label: 'Reports',
       icon: FileText,
       isActive: isReports,
       onClick: () => navigate(ROUTES.REPORTS),
@@ -92,8 +92,8 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.ANALYTICS),
     },
     {
-      id: 'ledger',
-      label: 'Ledger',
+      id: 'reports',
+      label: 'Reports',
       icon: FileText,
       isActive: isReports,
       onClick: () => navigate(ROUTES.REPORTS),

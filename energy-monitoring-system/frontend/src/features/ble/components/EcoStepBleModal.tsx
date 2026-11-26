@@ -229,33 +229,24 @@ const EcoStepBleModalContent: React.FC<EcoStepBleModalProps> = ({ isOpen, onClos
     >
       <div
         ref={modalRef}
-        className="relative z-10 w-full max-w-lg rounded-2xl border p-5 sm:p-6 shadow-2xl my-auto max-h-[min(88vh,calc(100dvh-32px))] flex flex-col overflow-hidden transition-all duration-300"
+        className="relative z-10 w-full max-w-lg rounded-xl border border-[var(--line)] p-5 sm:p-6 my-auto max-h-[min(88vh,calc(100dvh-32px))] flex flex-col overflow-hidden"
         style={{
           fontFamily: "var(--font-dm, 'DM Sans', sans-serif)",
-          backgroundColor: isDark ? '#0D1B14' : '#FFFFFF',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
+          backgroundColor: isDark ? '#131916' : '#FFFFFF',
           color: 'var(--t)',
-          boxShadow: isDark
-            ? '0 30px 60px -15px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(25, 212, 106, 0.25)'
-            : '0 20px 40px -10px rgba(0, 0, 0, 0.15)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-[var(--line)] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[#19D46A]">
-              <Bluetooth className="h-5 w-5 animate-pulse" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Bluetooth className="h-5 w-5 text-[#19D46A] shrink-0" />
             <div>
               <h2
                 id="ble-modal-title"
                 className="text-base sm:text-lg font-bold tracking-tight text-[var(--t)] flex items-center gap-2"
               >
                 Connect Tile to Wi-Fi
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#19D46A] border border-emerald-500/30">
-                  Bluetooth
-                </span>
               </h2>
               <p className="text-xs text-[var(--mu)] mt-0.5">
                 Pair your EcoStep floor tile over Bluetooth to connect it to Wi-Fi

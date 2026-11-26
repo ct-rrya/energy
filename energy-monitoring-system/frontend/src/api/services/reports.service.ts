@@ -1,4 +1,8 @@
 import apiClient from '../client';
+import {
+  getOrCreateVisitorId,
+  getStoredVisitorNickname,
+} from '@/contexts/VisitorContext';
 import type {
   Report,
   GenerateReportDto,
@@ -8,11 +12,43 @@ import type {
   ReportFormat,
 } from '@/types/report.types';
 
+export interface ReportQuota {
+  isUnlimited: boolean;
+  limit: number | null;
+  usedToday: number;
+  remainingToday: number | null;
+  resetsAt: string | null;
+}
+
+function getVisitorHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'X-Visitor-Id': getOrCreateVisitorId(),
+  };
+  const nickname = getStoredVisitorNickname();
+  if (nickname) {
+    headers['X-Visitor-Name'] = nickname;
+  }
+  return headers;
+}
+
 /**
  * Reports API Service
  * 
  * Handles all report-related API calls.
  */
+
+/**
+ * Get Daily Report Quota
+ *
+ * Returns remaining daily report quota for public visitors (5/day per browser).
+ * Admins return isUnlimited: true.
+ */
+export const getReportQuota = async (): Promise<ReportQuota> => {
+  const response = await apiClient.get<{ data: ReportQuota }>('/reports/quota', {
+    headers: getVisitorHeaders(),
+  });
+  return response.data.data;
+};
 
 /**
  * Generate Report
@@ -23,7 +59,9 @@ import type {
  * @returns Generated report metadata
  */
 export const generateReport = async (dto: GenerateReportDto): Promise<Report> => {
-  const response = await apiClient.post<{ data: Report }>('/reports/generate', dto);
+  const response = await apiClient.post<{ data: Report }>('/reports/generate', dto, {
+    headers: getVisitorHeaders(),
+  });
   return response.data.data;
 };
 
@@ -144,6 +182,7 @@ export const getAvailableReportTypes = async (): Promise<AvailableReportTypesRes
  * Centralized object for all report API calls.
  */
 export const reportsService = {
+  getReportQuota,
   generateReport,
   getReports,
   getReportById,

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsEnum, IsDateString, IsInt, Min, Max } from 'class-validator';
 
 /**
  * Metric Type Enum
@@ -91,4 +92,28 @@ export class AnalyticsQueryDto {
   @IsOptional()
   @IsEnum(MetricType)
   metric?: MetricType;
+
+  @ApiPropertyOptional({
+    description: 'Start hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  startHour?: number;
+
+  @ApiPropertyOptional({
+    description: 'End hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  endHour?: number;
 }

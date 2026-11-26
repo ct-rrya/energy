@@ -11,6 +11,8 @@ export interface UseTimeSeriesDataParams {
   startDate: string;
   endDate: string;
   sensorId?: string;
+  startHour?: number;
+  endHour?: number;
   enabled?: boolean;
 }
 
@@ -49,10 +51,22 @@ export function useTimeSeriesData({
   startDate,
   endDate,
   sensorId,
+  startHour,
+  endHour,
   enabled = true,
 }: UseTimeSeriesDataParams): UseTimeSeriesDataReturn {
   const query = useQuery({
-    queryKey: ['analytics', 'time-series', metric, granularity, startDate, endDate, sensorId],
+    queryKey: [
+      'analytics',
+      'time-series',
+      metric,
+      granularity,
+      startDate,
+      endDate,
+      sensorId,
+      startHour ?? 'all',
+      endHour ?? 'all',
+    ],
     queryFn: async () => {
       const response = await analyticsService.getTimeSeries({
         metric,
@@ -60,6 +74,9 @@ export function useTimeSeriesData({
         startDate,
         endDate,
         sensorId,
+        ...(startHour !== undefined && endHour !== undefined
+          ? { startHour, endHour }
+          : {}),
       });
       return response;
     },

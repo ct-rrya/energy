@@ -137,19 +137,12 @@ export function ChartContainer({
       ref={containerRef}
       className={`cd transition-all duration-200 flex flex-col justify-between h-full w-full ${className}`}
       style={{
-        borderRadius: '22px',
+        borderRadius: '14px',
         backgroundColor: themeColors.cardBg,
         border: `1px solid ${themeColors.border}`,
-        boxShadow: themeColors.shadow,
         padding: '16px 20px',
         height: '100%',
         width: '100%',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = themeColors.shadowHover;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = themeColors.shadow;
       }}
       data-testid="chart-container"
       aria-label={`${title} chart`}

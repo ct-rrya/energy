@@ -59,21 +59,21 @@ describe('DashboardHeader', () => {
       expect(pulseElement).toHaveClass('bg-[#3ED98A]');
     });
 
-    it('renders Standby status with amber dot when tile is idle', () => {
+    it('renders Idle status with amber dot when tile is idle', () => {
       const { container } = render(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
 
-      expect(screen.getByText('Standby')).toBeInTheDocument();
+      expect(screen.getByText('Idle')).toBeInTheDocument();
       const statusDot = screen.getByRole('status', { name: /system status: waiting/i });
       expect(statusDot).toHaveClass('bg-[#F59E0B]');
 
-      // No pulse animation on waiting/standby
+      // No pulse animation on waiting/idle
       const pulseElement = container.querySelector('.animate-ping');
       expect(pulseElement).not.toBeInTheDocument();
     });
 
-    it('renders Standby status for unknown initial state', () => {
+    it('renders Idle status for unknown initial state', () => {
       render(<DashboardHeader {...defaultProps} systemStatus="unknown" />);
-      expect(screen.getByText('Standby')).toBeInTheDocument();
+      expect(screen.getByText('Idle')).toBeInTheDocument();
     });
 
     it('renders Connection Lost status with red dot when disconnected', () => {
@@ -129,18 +129,18 @@ describe('DashboardHeader', () => {
       expect(screen.getByText(/Footstep readings are actively streaming/i)).toBeInTheDocument();
     });
 
-    it('explains in simple language why the tile is in Standby when idle', async () => {
+    it('explains in simple language why the tile is in Idle when no recent footsteps arrived', async () => {
       const user = userEvent.setup();
       render(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
 
       const helpButton = screen.getByRole('button', {
-        name: /view operating status details for standby/i,
+        name: /view operating status details for idle/i,
       });
       await user.click(helpButton);
 
-      expect(screen.getByText('System Status: Standby')).toBeInTheDocument();
+      expect(screen.getByText('System Status: Idle')).toBeInTheDocument();
       expect(
-        screen.getByText(/The tile only sends readings when someone steps on it, so Standby is normal when idle./i)
+        screen.getByText(/The tile only sends data when stepped on, so Idle means either/i)
       ).toBeInTheDocument();
     });
 
@@ -229,7 +229,7 @@ describe('DashboardHeader', () => {
       expect(screen.getByText('Live')).toBeInTheDocument();
 
       rerender(<DashboardHeader {...defaultProps} systemStatus="waiting" />);
-      expect(screen.getByText('Standby')).toBeInTheDocument();
+      expect(screen.getByText('Idle')).toBeInTheDocument();
 
       rerender(<DashboardHeader {...defaultProps} systemStatus="disconnected" />);
       expect(screen.getByText('Connection Lost')).toBeInTheDocument();

@@ -182,7 +182,7 @@ export function MobileEnergyHarvestingDashboard({
                     ? 'The real-time connection to the EcoStep IoT stream is currently disconnected. Attempting to reconnect.'
                     : isActive
                     ? 'All EcoStep hardware telemetry and database services are connected and operating normally.'
-                    : 'EcoStep is in active standby and ready for footsteps. Zero recorded footsteps is normal when the tile is at rest and does not indicate a system fault.'}
+                    : 'No recent footstep activity received. The tile only sends data when stepped on, so Idle means either no recent footsteps or the tile is powered off.'}
                 </span>
 
                 {/* Upward pointer triangle pointing directly at the status badge */}
@@ -207,7 +207,7 @@ export function MobileEnergyHarvestingDashboard({
               type="button"
               onClick={() => setIsTooltipOpen((prev) => !prev)}
               onDoubleClick={() => setManualState((prev) => (prev === 'active' ? 'empty' : 'active'))}
-              aria-label={!isOnline ? 'Status: Offline' : isActive ? 'Status: Live' : 'Status: Standby'}
+              aria-label={!isOnline ? 'Status: Offline' : isActive ? 'Status: Live' : 'Status: Idle'}
               title="Tap to view status details"
               style={{
                 display: 'inline-flex',
@@ -313,7 +313,7 @@ export function MobileEnergyHarvestingDashboard({
                   letterSpacing: '-0.01em',
                 }}
               >
-                {!isOnline ? 'Offline' : isActive ? 'Live' : 'Standby'}
+                {!isOnline ? 'Offline' : isActive ? 'Live' : 'Idle'}
               </span>
             </button>
           </div>

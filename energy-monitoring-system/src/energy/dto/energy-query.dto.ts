@@ -129,6 +129,30 @@ export class DateRangeLimitQueryDto {
   limit?: number = 1000;
 
   @ApiPropertyOptional({
+    description: 'Start hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  startHour?: number;
+
+  @ApiPropertyOptional({
+    description: 'End hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  endHour?: number;
+
+  @ApiPropertyOptional({
     description: 'Whether to include completely inactive records (all zero)',
     example: false,
     default: false,

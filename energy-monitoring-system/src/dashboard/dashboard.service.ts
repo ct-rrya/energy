@@ -220,9 +220,18 @@ export class DashboardService
   }
 
   /**
-   * Get Dashboard Metrics (60s in-memory TTL cache + non-blocking background AI insight)
+   * Get Dashboard Metrics (60s in-memory TTL cache for full-day view; live query for custom hour window)
    */
-  async getDashboardMetrics() {
+  async getDashboardMetrics(startHour?: number, endHour?: number) {
+    const hasCustomHours =
+      startHour !== undefined &&
+      endHour !== undefined &&
+      !(startHour === 0 && endHour === 23);
+
+    if (hasCustomHours) {
+      return this.computeDashboardMetrics(startHour, endHour);
+    }
+
     const now = Date.now();
     if (this.metricsCache && now < this.metricsCache.expiresAt) {
       return this.metricsCache.data;
@@ -341,15 +350,15 @@ Examples for NORMAL_GENERATION:
       });
   }
 
-  private async computeDashboardMetrics() {
+  private async computeDashboardMetrics(startHour?: number, endHour?: number) {
     this.logger.debug('Computing dashboard metrics (cache miss)...');
 
     // Run all independent MongoDB queries concurrently
     const [stats, detailedStats, activeSensors, rawStats] = await Promise.all([
       this.energyService.getTotalStatistics(),
-      this.energyService.getTodayDetailedStats(),
+      this.energyService.getTodayDetailedStats(startHour, endHour),
       this.sensorModel.countDocuments({ isActive: true }).exec(),
-      this.energyService.getTodayRawStatistics(),
+      this.energyService.getTodayRawStatistics(startHour, endHour),
     ]);
 
     // Refresh AI insight asynchronously in the background without blocking HTTP response

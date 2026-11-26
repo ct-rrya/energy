@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { buildHourRangeExpr } from '../common/utils/hour-range.util';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -293,19 +294,25 @@ export class EnergyService {
    * Critical for tiny energy values where rounding would produce misleading zeros.
    * Example: 0.009722 mWh would round to 0 kWh, misleading the AI.
    */
-  async getTodayRawStatistics() {
+  async getTodayRawStatistics(startHour?: number, endHour?: number) {
     const { todayStart, todayEnd } = this.getDailyBoundary();
+    const hourExpr = buildHourRangeExpr('receivedAt', startHour, endHour);
 
     try {
+      const matchFilter: Record<string, any> = {
+        receivedAt: {
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
+        source: 'hardware' as any,
+      };
+      if (hourExpr) {
+        matchFilter.$expr = hourExpr;
+      }
+
       const result = await this.readingModel.aggregate([
         {
-          $match: {
-            receivedAt: {
-              $gte: todayStart,
-              $lte: todayEnd,
-            },
-            source: 'hardware' as any,
-          },
+          $match: matchFilter,
         },
         {
           $group: {
@@ -364,24 +371,30 @@ export class EnergyService {
    * 
    * @returns Daily statistics with totals and peaks
    */
-  async getTodayDetailedStats() {
+  async getTodayDetailedStats(startHour?: number, endHour?: number) {
     const { todayStart, todayEnd } = this.getDailyBoundary();
+    const hourExpr = buildHourRangeExpr('receivedAt', startHour, endHour);
 
     this.logger.debug(
       `Calculating today's detailed stats for ${todayStart.toISOString()} to ${todayEnd.toISOString()}`,
     );
 
     try {
+      const matchFilter: Record<string, any> = {
+        receivedAt: {
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
+        source: 'hardware' as any,
+      };
+      if (hourExpr) {
+        matchFilter.$expr = hourExpr;
+      }
+
       const result = await this.readingModel.aggregate([
         {
           // Match readings received today (use server timestamp, not ESP32 timestamp)
-          $match: {
-            receivedAt: {
-              $gte: todayStart,
-              $lte: todayEnd,
-            },
-            source: 'hardware' as any,
-          },
+          $match: matchFilter,
         },
         {
           // ESP32 resets stepCount to 0 after each upload, so sum batch stepCounts directly
@@ -974,6 +987,8 @@ export class EnergyService {
     endDate?: string,
     limit: number = 1000,
     includeInactive: boolean = false,
+    startHour?: number,
+    endHour?: number,
   ): Promise<EnergyReadingDocument[]> {
     const filter: Record<string, any> = {};
 
@@ -987,6 +1002,11 @@ export class EnergyService {
         end.setHours(23, 59, 59, 999);
         filter.timestamp.$lte = end;
       }
+    }
+
+    const hourExpr = buildHourRangeExpr('timestamp', startHour, endHour);
+    if (hourExpr) {
+      filter.$expr = hourExpr;
     }
 
     // Exclude completely inactive records by default (all 5 values are 0: voltage, current, power, energy, stepCount)

@@ -121,6 +121,60 @@ export class ReportsController {
    *   "includeAIAnalysis": false
    * }
    */
+  private extractVisitorContext(req: Request): {
+    visitorId: string;
+    visitorName?: string;
+  } {
+    const rawVisitorId = req.headers['x-visitor-id'];
+    const visitorIdStr = Array.isArray(rawVisitorId)
+      ? rawVisitorId[0]
+      : rawVisitorId || '';
+    const sanitizedVisitorId = visitorIdStr
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 80);
+
+    const rawVisitorName = req.headers['x-visitor-name'];
+    const visitorNameStr = Array.isArray(rawVisitorName)
+      ? rawVisitorName[0]
+      : rawVisitorName || '';
+    const sanitizedVisitorName = visitorNameStr.trim().slice(0, 60);
+
+    return {
+      visitorId: sanitizedVisitorId || 'anonymous-public',
+      visitorName: sanitizedVisitorName || undefined,
+    };
+  }
+
+  /**
+   * Get Daily Report Quota
+   *
+   * Returns daily report generation limit and remaining count for public visitors.
+   * Authenticated administrators are unlimited.
+   */
+  @Get('quota')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get daily report generation quota',
+    description:
+      'Returns the daily report generation quota for public visitors (5/day per browser). Admins are unlimited.',
+  })
+  async getQuota(
+    @CurrentUser() user: UserDocument | null,
+    @Req() req: Request,
+  ) {
+    const visitorContext = this.extractVisitorContext(req);
+    const quota = await this.reportsService.getDailyQuota(
+      visitorContext.visitorId,
+      Boolean(user),
+    );
+
+    return {
+      success: true,
+      data: quota,
+    };
+  }
+
   @Post('generate')
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -148,10 +202,12 @@ export class ReportsController {
     @Req() req: Request,
   ) {
     const userId = user?._id?.toString();
+    const visitorContext = this.extractVisitorContext(req);
     try {
       const report = await this.reportsService.generate(
         generateReportDto,
         userId,
+        visitorContext,
       );
 
       if (user && userId) {

@@ -19,9 +19,11 @@ import {
   MessageSquareHeart,
   ScrollText,
   Info,
+  Pencil,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOptionalVisitor } from '@/contexts/VisitorContext';
 import { ROUTES } from '@/routes/routes.config';
 import { EcoStepMark, EcoStepWordmark } from '@/components/common/EcoStepLogo';
 const ChatPanel = lazy(() => import('@/features/chat').then(m => ({ default: m.ChatPanel })));
@@ -40,8 +42,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   // Public routes (shown to everyone)
   { to: ROUTES.DASHBOARD, label: 'Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Analytics', Icon: TrendingUp },
-  { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText },
-  { to: ROUTES.FEEDBACK, label: 'Feedback', Icon: MessageSquareHeart },
+  { to: ROUTES.REPORTS, label: 'Reports', Icon: FileText },
+  { to: ROUTES.FEEDBACK, label: 'ECommunity', Icon: MessageSquareHeart },
   { to: ROUTES.ABOUT, label: 'About', Icon: Info },
   // Unified Admin routes
   { to: ROUTES.ADMIN_DIAGNOSTICS, label: 'Health', Icon: Stethoscope, adminOnly: true },
@@ -94,18 +96,16 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   });
 
-  // Desktop hover-to-expand overlay state (only active while panel is unpinned/collapsed)
+  // Desktop hover-to-expand overlay state (left navigation panel)
   const [leftHoverExpanded, setLeftHoverExpanded] = useState(false);
-  const [rightHoverExpanded, setRightHoverExpanded] = useState(false);
-  const [rightFocusExpanded, setRightFocusExpanded] = useState(false);
+
+  // Desktop EcoGuide floating overlay state (opens on hover/click, stays overlapped until explicitly closed or pinned)
+  const [rightOverlayOpen, setRightOverlayOpen] = useState(false);
 
   const leftEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leftLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rightEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rightLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Prevent immediate hover re-open right after clicking Collapse while pointer is still over panel
   const leftSuppressHoverRef = useRef(false);
-  const rightSuppressHoverRef = useRef(false);
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileUserSheetOpen, setMobileUserSheetOpen] = useState(false);
@@ -121,9 +121,10 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
   const leftVisuallyCollapsed = !leftVisuallyExpanded;
   const leftFloating = leftCollapsed && leftVisuallyExpanded;
 
-  const rightVisuallyExpanded = !rightCollapsed || rightHoverExpanded || rightFocusExpanded;
+  const rightPinned = !rightCollapsed;
+  const rightVisuallyExpanded = rightPinned || rightOverlayOpen;
   const rightVisuallyCollapsed = !rightVisuallyExpanded;
-  const rightFloating = rightCollapsed && rightVisuallyExpanded;
+  const rightFloating = !rightPinned && rightOverlayOpen;
 
   const [isAnimating, setIsAnimating] = useState(false);
   const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,40 +149,26 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   }, []);
 
-  const clearRightHoverTimers = useCallback(() => {
-    if (rightEnterTimerRef.current) {
-      clearTimeout(rightEnterTimerRef.current);
-      rightEnterTimerRef.current = null;
-    }
-    if (rightLeaveTimerRef.current) {
-      clearTimeout(rightLeaveTimerRef.current);
-      rightLeaveTimerRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
     return () => {
       if (animTimerRef.current) clearTimeout(animTimerRef.current);
       clearLeftHoverTimers();
-      clearRightHoverTimers();
     };
-  }, [clearLeftHoverTimers, clearRightHoverTimers]);
+  }, [clearLeftHoverTimers]);
 
   // Clear desktop floating state if viewport shrinks to mobile
   useEffect(() => {
     const handleViewportResize = () => {
       if (window.innerWidth <= 768) {
         clearLeftHoverTimers();
-        clearRightHoverTimers();
         setLeftHoverExpanded(false);
-        setRightHoverExpanded(false);
-        setRightFocusExpanded(false);
+        setRightOverlayOpen(false);
       }
     };
 
     window.addEventListener('resize', handleViewportResize);
     return () => window.removeEventListener('resize', handleViewportResize);
-  }, [clearLeftHoverTimers, clearRightHoverTimers]);
+  }, [clearLeftHoverTimers]);
 
   const handleLeftMouseEnter = useCallback(() => {
     if (!leftCollapsed || leftSuppressHoverRef.current || !canUseDesktopHover()) return;
@@ -211,62 +198,6 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }, HOVER_LEAVE_DELAY_MS);
   }, [leftCollapsed]);
 
-  const handleRightMouseEnter = useCallback(() => {
-    if (!rightCollapsed || rightSuppressHoverRef.current || !canUseDesktopHover()) return;
-    if (rightLeaveTimerRef.current) {
-      clearTimeout(rightLeaveTimerRef.current);
-      rightLeaveTimerRef.current = null;
-    }
-    if (rightHoverExpanded) return;
-    if (rightEnterTimerRef.current) clearTimeout(rightEnterTimerRef.current);
-    rightEnterTimerRef.current = setTimeout(() => {
-      rightEnterTimerRef.current = null;
-      setRightHoverExpanded(true);
-    }, HOVER_ENTER_DELAY_MS);
-  }, [rightCollapsed, rightHoverExpanded]);
-
-  const handleRightMouseLeave = useCallback(() => {
-    rightSuppressHoverRef.current = false;
-    if (rightEnterTimerRef.current) {
-      clearTimeout(rightEnterTimerRef.current);
-      rightEnterTimerRef.current = null;
-    }
-    if (!rightCollapsed) return;
-    if (rightLeaveTimerRef.current) clearTimeout(rightLeaveTimerRef.current);
-    rightLeaveTimerRef.current = setTimeout(() => {
-      rightLeaveTimerRef.current = null;
-      setRightHoverExpanded(false);
-    }, HOVER_LEAVE_DELAY_MS);
-  }, [rightCollapsed]);
-
-  const handleRightFocus = useCallback(() => {
-    if (!rightCollapsed || !canUseDesktopHover()) return;
-    if (rightLeaveTimerRef.current) {
-      clearTimeout(rightLeaveTimerRef.current);
-      rightLeaveTimerRef.current = null;
-    }
-    setRightFocusExpanded(true);
-  }, [rightCollapsed]);
-
-  const handleRightBlur = useCallback((e: React.FocusEvent<HTMLElement>) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) {
-      return;
-    }
-    setRightFocusExpanded(false);
-  }, []);
-
-  const handleRightEscape = useCallback(() => {
-    if (!rightCollapsed) return;
-    clearRightHoverTimers();
-    rightSuppressHoverRef.current = true;
-    setRightHoverExpanded(false);
-    setRightFocusExpanded(false);
-    const active = document.activeElement as HTMLElement | null;
-    if (active && document.getElementById('ecoguide-panel')?.contains(active)) {
-      active.blur();
-    }
-  }, [rightCollapsed, clearRightHoverTimers]);
-
   // Toggle Left panel (Pin / Unpin)
   const toggleLeft = useCallback(() => {
     clearLeftHoverTimers();
@@ -291,36 +222,61 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     });
   }, [clearLeftHoverTimers, startAnimation]);
 
-  // Toggle Right panel (Pin / Unpin)
-  const toggleRight = useCallback(() => {
-    clearRightHoverTimers();
+  // Pin / Unpin EcoGuide as part of the page layout (unpinning closes it)
+  const toggleRightPin = useCallback(() => {
     startAnimation();
     setRightCollapsed((prev) => {
-      const next = !prev;
-      if (next) {
-        // Collapsing/unpinning while pointer or focus may still be inside EcoGuide
-        rightSuppressHoverRef.current = true;
-        setRightHoverExpanded(false);
-        setRightFocusExpanded(false);
+      const nextCollapsed = !prev;
+      if (nextCollapsed) {
+        // Unpinning closes EcoGuide back to the 56px rail
+        setRightOverlayOpen(false);
         const active = document.activeElement as HTMLElement | null;
         if (active && document.getElementById('ecoguide-panel')?.contains(active)) {
           active.blur();
         }
       } else {
-        rightSuppressHoverRef.current = false;
-        setRightHoverExpanded(false);
-        setRightFocusExpanded(false);
+        // Pinning docks EcoGuide into the page layout
+        setRightOverlayOpen(false);
       }
       try {
-        localStorage.setItem('ecostep.rightPinned', String(!next));
-        localStorage.setItem('ecostep.rightCollapsed', String(next));
-        localStorage.setItem('ecostep_chat_docked_expanded', String(!next));
+        localStorage.setItem('ecostep.rightPinned', String(!nextCollapsed));
+        localStorage.setItem('ecostep.rightCollapsed', String(nextCollapsed));
+        localStorage.setItem('ecostep_chat_docked_expanded', String(!nextCollapsed));
       } catch {
         /* ignore */
       }
-      return next;
+      return nextCollapsed;
     });
-  }, [clearRightHoverTimers, startAnimation]);
+  }, [startAnimation]);
+
+  // Close / Collapse EcoGuide back to the 56px rail (works from both floating and pinned)
+  const closeRight = useCallback(() => {
+    setRightOverlayOpen(false);
+    if (!rightCollapsed) {
+      startAnimation();
+      setRightCollapsed(true);
+      try {
+        localStorage.setItem('ecostep.rightPinned', 'false');
+        localStorage.setItem('ecostep.rightCollapsed', 'true');
+        localStorage.setItem('ecostep_chat_docked_expanded', 'false');
+      } catch {
+        /* ignore */
+      }
+    }
+    const active = document.activeElement as HTMLElement | null;
+    if (active && document.getElementById('ecoguide-panel')?.contains(active)) {
+      active.blur();
+    }
+  }, [rightCollapsed, startAnimation]);
+
+  // Toggle Right EcoGuide via rail click or keyboard shortcut (] / Ctrl+J)
+  const toggleRight = useCallback(() => {
+    if (rightVisuallyExpanded) {
+      closeRight();
+    } else {
+      setRightOverlayOpen(true);
+    }
+  }, [rightVisuallyExpanded, closeRight]);
 
   // Compute portal popover coordinates from user card bounding rect
   const updatePopoverPosition = useCallback(() => {
@@ -590,14 +546,15 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
     }
   };
 
-  const userName = isAnyAdmin ? (user?.name || 'Admin') : 'Guest';
-  const userRole = isAnyAdmin ? 'Administrator' : 'Read-only access';
-  const cardUserRole = isAnyAdmin ? 'Admin' : 'Read-only access';
+  const visitor = useOptionalVisitor();
+  const userName = isAnyAdmin ? (user?.name || 'Admin') : (visitor?.nickname || 'Guest');
+  const userRole = isAnyAdmin ? 'Administrator' : 'Public visitor';
+  const cardUserRole = isAnyAdmin ? 'Admin' : 'Public visitor';
   const isSettingsActive = location.pathname.startsWith(ROUTES.SETTINGS);
   const avatarInitial =
     isAuthenticated && (user?.name || user?.email)
       ? (user.name || user.email || 'A')[0].toUpperCase()
-      : 'G';
+      : (visitor?.nickname ? visitor.nickname[0].toUpperCase() : 'G');
 
   const handleOpenMobileEcoGuide = useCallback(() => {
     setMobileUserSheetOpen(false);
@@ -613,7 +570,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       style={{
         '--left-w': leftCollapsed ? '72px' : '224px',
         '--left-panel-w': leftVisuallyCollapsed ? '72px' : '224px',
-        '--right-w': rightCollapsed ? '56px' : '330px',
+        '--right-w': rightPinned ? '330px' : '56px',
         '--right-panel-w': rightVisuallyCollapsed ? '56px' : '330px',
       } as React.CSSProperties}
     >
@@ -627,28 +584,30 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
         onMouseLeave={handleLeftMouseLeave}
       >
         {/* Header with Wordmark and Collapse/Pin Toggle */}
-        <div className="es-nav-header">
+        <div className="es-nav-header" style={{ minHeight: '34px' }}>
           <a href="/#home" className="es-brand-link" aria-label="EcoStep home" title="EcoStep">
             <EcoStepMark height={24} />
             <span className="es-brand-text">
               <EcoStepWordmark fontSize="1rem" />
             </span>
           </a>
-          <button
-            type="button"
-            className="es-toggle-btn ib"
-            onClick={toggleLeft}
-            aria-expanded={!leftCollapsed}
-            aria-controls="left-sidebar"
-            aria-label={leftCollapsed ? "Expand sidebar (Toggle sidebar)" : "Collapse sidebar (Toggle sidebar)"}
-            title={leftCollapsed ? "Pin sidebar open ( [ )" : "Collapse sidebar ( [ )"}
-          >
-            {leftFloating ? (
-              <Pin size={14} strokeWidth={2} />
-            ) : (
-              <ChevronLeft size={16} strokeWidth={2} className="es-toggle-icon" />
-            )}
-          </button>
+          {!leftVisuallyCollapsed && (
+            <button
+              type="button"
+              className="es-toggle-btn ib"
+              onClick={toggleLeft}
+              aria-expanded={!leftCollapsed}
+              aria-controls="left-sidebar"
+              aria-label={leftCollapsed ? "Expand sidebar (Toggle sidebar)" : "Collapse sidebar (Toggle sidebar)"}
+              title={leftCollapsed ? "Pin sidebar open ( [ )" : "Collapse sidebar ( [ )"}
+            >
+              {leftFloating ? (
+                <Pin size={14} strokeWidth={2} />
+              ) : (
+                <ChevronLeft size={16} strokeWidth={2} className="es-toggle-icon" />
+              )}
+            </button>
+          )}
         </div>
 
         {/* Navigation Items */}
@@ -700,11 +659,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             title={leftVisuallyCollapsed ? `${userName} (${userRole})` : undefined}
           >
             <div className="es-user-avatar av">
-              {isAuthenticated && (user?.name || user?.email) ? (
-                <span>{(user.name || user.email || 'A')[0].toUpperCase()}</span>
-              ) : (
-                <span>G</span>
-              )}
+              <span>{avatarInitial}</span>
             </div>
             <div className="es-user-info info">
               <div className="es-user-name">{userName}</div>
@@ -777,6 +732,22 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                   {isSettingsActive && (
                     <span className="um-badge es-popover-badge tg">Active</span>
                   )}
+                </button>
+              )}
+
+              {/* Change Nickname (Public visitor only) */}
+              {!isAnyAdmin && visitor && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="um-item es-popover-item it"
+                  onClick={() => {
+                    closeMenu(false);
+                    visitor.openNicknameModal();
+                  }}
+                >
+                  <Pencil size={18} strokeWidth={1.8} />
+                  <span>Change Nickname</span>
                 </button>
               )}
 
@@ -915,12 +886,12 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.REPORTS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Ledger"
+              aria-label="Reports"
             >
               <span className="es-mobile-tab-pill">
                 <FileText size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Ledger</span>
+              <span className="es-mobile-tab-label">Reports</span>
             </NavLink>
           </>
         ) : (
@@ -951,23 +922,23 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             <NavLink
               to={ROUTES.FEEDBACK}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Feedback"
+              aria-label="ECommunity"
             >
               <span className="es-mobile-tab-pill">
                 <MessageSquareHeart size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Feedback</span>
+              <span className="es-mobile-tab-label">ECommunity</span>
             </NavLink>
 
             <NavLink
               to={ROUTES.REPORTS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Ledger"
+              aria-label="Reports"
             >
               <span className="es-mobile-tab-pill">
                 <FileText size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Ledger</span>
+              <span className="es-mobile-tab-label">Reports</span>
             </NavLink>
           </>
         )}
@@ -1029,7 +1000,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 onClick={() => setMobileUserSheetOpen(false)}
               >
                 <FileText size={20} strokeWidth={1.8} />
-                <span>Ledger</span>
+                <span>Reports</span>
               </NavLink>
 
               <NavLink
@@ -1038,7 +1009,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 onClick={() => setMobileUserSheetOpen(false)}
               >
                 <MessageSquareHeart size={20} strokeWidth={1.8} />
-                <span>Feedback</span>
+                <span>ECommunity</span>
               </NavLink>
 
               {!isAnyAdmin && (
@@ -1094,6 +1065,21 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 </button>
               )}
 
+              {/* Change Nickname (Public visitor only) */}
+              {!isAnyAdmin && visitor && (
+                <button
+                  type="button"
+                  className="es-sheet-item"
+                  onClick={() => {
+                    setMobileUserSheetOpen(false);
+                    visitor.openNicknameModal();
+                  }}
+                >
+                  <Pencil size={20} strokeWidth={1.8} />
+                  <span>Change Nickname</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 className="es-sheet-item"
@@ -1138,18 +1124,15 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
         document.body
       )}
 
-      {/* Right EcoGuide Panel (Lazily Loaded to Defer Non-Critical Chat JS & Sanitizer) */}
+      {/* Right EcoGuide Panel — Click-to-open Persistent Floating Overlay + Pin to Page + Separate Close */}
       <Suspense fallback={null}>
         <ChatPanel 
           isCollapsed={rightVisuallyCollapsed}
           isFloating={rightFloating}
-          isPinned={!rightCollapsed}
+          isPinned={rightPinned}
           onToggleCollapse={toggleRight}
-          onMouseEnter={handleRightMouseEnter}
-          onMouseLeave={handleRightMouseLeave}
-          onFocusCapture={handleRightFocus}
-          onBlurCapture={handleRightBlur}
-          onEscapeFloating={handleRightEscape}
+          onTogglePin={toggleRightPin}
+          onClosePanel={closeRight}
         />
       </Suspense>
     </div>

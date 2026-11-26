@@ -92,7 +92,11 @@ async function bootstrap() {
       'Authorization',
       'X-Guest-Session',
       'x-guest-session',
-    ], // ✅ Include Authorization and Guest Session headers
+      'X-Visitor-Id',
+      'x-visitor-id',
+      'X-Visitor-Name',
+      'x-visitor-name',
+    ], // ✅ Include Authorization, Guest Session, and Visitor Identity headers
     credentials: true, // ✅ Enable credentials
     maxAge: 3600,
   });

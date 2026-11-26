@@ -83,6 +83,8 @@ export interface GenerateReportDto {
   includeSections?: string[];
   aggregation?: 'hourly' | 'daily' | 'weekly';
   includeAIAnalysis?: boolean;
+  startHour?: number;
+  endHour?: number;
 }
 
 /**

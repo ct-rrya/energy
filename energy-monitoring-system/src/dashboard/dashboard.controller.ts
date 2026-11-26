@@ -1,8 +1,9 @@
-import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { DashboardService } from './dashboard.service';
+import { parseHourParam } from '../common/utils/hour-range.util';
 
 /**
  * Dashboard Controller
@@ -36,9 +37,17 @@ export class DashboardController {
     status: 200,
     description: 'Dashboard metrics retrieved successfully',
   })
-  async getMetrics() {
+  async getMetrics(
+    @Query('startHour') startHour?: string,
+    @Query('endHour') endHour?: string,
+  ) {
     try {
-      const metrics = await this.dashboardService.getDashboardMetrics();
+      const parsedStartHour = parseHourParam(startHour);
+      const parsedEndHour = parseHourParam(endHour);
+      const metrics = await this.dashboardService.getDashboardMetrics(
+        parsedStartHour,
+        parsedEndHour,
+      );
       return {
         success: true,
         data: metrics,

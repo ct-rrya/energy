@@ -110,7 +110,7 @@ export const HeroPowerCard = React.memo(
               />
             </div>
             <span className="pill">
-              ● {isDisconnected ? 'Offline' : isLive ? 'Live' : 'Standby'}
+              ● {isDisconnected ? 'Offline' : isLive ? 'Live' : 'Idle'}
             </span>
           </div>
 
@@ -131,7 +131,7 @@ export const HeroPowerCard = React.memo(
             {isDisconnected
               ? 'Connection lost — trying to reconnect to live feed.'
               : hasNoActivityToday
-              ? 'Standby — Waiting for footsteps.'
+              ? 'Idle — No recent footstep activity.'
               : 'Instantaneous rate of electricity generation'}
           </div>
         </div>

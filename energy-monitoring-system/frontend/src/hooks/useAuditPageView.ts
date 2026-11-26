@@ -10,7 +10,7 @@ const ROUTE_PAGE_NAMES: Record<string, string> = {
   '/milestones': 'Energy Milestones',
   '/about': 'About EcoStep',
   '/energy': 'Energy Monitoring',
-  '/reports': 'Reports & Ledger',
+  '/reports': 'Reports',
   '/admin/diagnostics': 'Hardware Diagnostics & Calibration',
   '/settings': 'System Settings & Hardware Pairing',
   '/admin-management': 'Administrator Management',

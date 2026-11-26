@@ -13,6 +13,8 @@ export interface EnergyRangeOverride {
   startDate?: string;
   endDate?: string;
   granularity?: Granularity;
+  startHour?: number;
+  endHour?: number;
 }
 
 /**
@@ -72,5 +74,7 @@ export function useEnergyByPeriod(
     granularity,
     startDate,
     endDate,
+    startHour: customRange?.startHour,
+    endHour: customRange?.endHour,
   });
 }

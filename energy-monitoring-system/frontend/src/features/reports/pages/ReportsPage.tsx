@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '@/contexts/ThemeContext';
+import { reportsService } from '@/api/services/reports.service';
 import { getThemeColors } from '@/lib/theme';
 import {
   Plus,
   FileText,
   Download,
   ChevronRight,
-  ChevronDown,
-  Filter
 } from 'lucide-react';
 import { GenerateReportDialog } from '../components/GenerateReportDialog';
 import { ReportPreviewModal } from '../components/ReportPreviewModal';
@@ -15,9 +15,12 @@ import { ReportDetailsModal } from '../components/ReportDetailsModal';
 import { useReports, useReportActions } from '../hooks';
 import { ReportType, ReportFormat, type GenerateReportDto, type Report } from '@/types/report.types';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { CustomDropdown } from '@/components/common';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import {
+  HourRangeSelector,
+  type HourRange,
+} from '@/components/common/HourRangeSelector';
 
 /**
  * Reports Page Component
@@ -35,12 +38,13 @@ import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader
 export function ReportsPage() {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const { status: hardwareConnectionStatus } = useHardwareStatus();
 
   // State
   const [page, setPage] = useState(1);
   const [formatFilter, setFormatFilter] = useState<ReportFormat | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [hourRange, setHourRange] = useState<HourRange | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [previewReport, setPreviewReport] = useState<Report | null>(null);
   const [detailsReport, setDetailsReport] = useState<Report | null>(null);
@@ -70,6 +74,7 @@ export function ReportsPage() {
   const {
     data: reportsData,
     isLoading: reportsLoading,
+    isFetching: reportsFetching,
     error: reportsError,
     refetch: refetchReports,
   } = useReports(
@@ -85,6 +90,12 @@ export function ReportsPage() {
     isGenerating,
     downloadReport,
   } = useReportActions();
+
+  const { data: reportQuota } = useQuery({
+    queryKey: ['reports', 'quota'],
+    queryFn: () => reportsService.getReportQuota(),
+    staleTime: 15_000,
+  });
 
   // Handlers
   const handleGenerateReport = (dto: GenerateReportDto) => {
@@ -133,86 +144,26 @@ export function ReportsPage() {
 
   const rawReports = reportsData?.data || [];
   const reports = useMemo(() => {
-    if (!dateFilterStartISO) return rawReports;
-    const cutoff = new Date(dateFilterStartISO).getTime();
     return rawReports.filter((r) => {
-      const created = new Date(r.createdAt).getTime();
-      return !isNaN(created) && created >= cutoff;
+      const created = new Date(r.createdAt);
+      if (isNaN(created.getTime())) return true;
+      if (dateFilterStartISO) {
+        const cutoff = new Date(dateFilterStartISO).getTime();
+        if (created.getTime() < cutoff) return false;
+      }
+      if (hourRange && !(hourRange.startHour === 0 && hourRange.endHour === 23)) {
+        const h = created.getHours();
+        const inRange =
+          hourRange.startHour <= hourRange.endHour
+            ? h >= hourRange.startHour && h <= hourRange.endHour
+            : h >= hourRange.startHour || h <= hourRange.endHour;
+        if (!inRange) return false;
+      }
+      return true;
     });
-  }, [rawReports, dateFilterStartISO]);
+  }, [rawReports, dateFilterStartISO, hourRange]);
   const meta = reportsData?.meta;
-  const reportCount = dateFilterStartISO ? reports.length : (meta?.total || 0);
-
-  // Loading state
-  if (reportsLoading && !reportsData) {
-    return (
-      <div className="w-full p-4 sm:p-6 lg:p-8">
-        <div className="max-w-[1600px] mx-auto">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <LoadingSpinner size="lg" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (reportsError && !reportsData) {
-    return (
-      <div className="w-full p-4 sm:p-6 lg:p-8">
-        <div className="max-w-[1600px] mx-auto">
-          <div
-            className="rounded-lg p-8 text-center"
-            style={{
-              backgroundColor: colors.cardBackground,
-              border: `1px solid ${colors.border}`,
-            }}
-          >
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
-              style={{
-                backgroundColor: theme === 'light' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.2)'
-              }}
-            >
-              <FileText className="w-6 h-6 text-red-500" />
-            </div>
-            <h3
-              className="text-base font-semibold mb-2"
-              style={{ color: colors.textPrimary }}
-            >
-              Unable to Load Reports
-            </h3>
-            <p
-              className="text-sm mb-6"
-              style={{ color: colors.textSecondary }}
-            >
-              Could not connect to the server. Please ensure the server is running and try again.
-            </p>
-            <button
-              onClick={() => refetchReports()}
-              className="px-5 py-2.5 rounded-lg font-medium transition-colors duration-200"
-              style={{
-                backgroundColor: colors.accent,
-                color: 'white',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme === 'light' ? '#35c27b' : '#35c27b';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = colors.accent;
-              }}
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const activeFilterCount = (formatFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0);
-
-  const { status: hardwareConnectionStatus } = useHardwareStatus();
+  const reportCount = dateFilterStartISO || hourRange ? reports.length : (meta?.total || 0);
 
   return (
     <div className="page">
@@ -224,136 +175,136 @@ export function ReportsPage() {
         systemStatus={hardwareConnectionStatus}
       />
 
-      {/* Reports Section with Integrated Compact Filter Toolbar */}
-      <div className="cd !p-0 overflow-hidden">
-        {/* Card Header: Title + Report Count + Filters + Generate Report Button */}
-        <div className="px-5 sm:px-6 py-4 border-b border-[var(--line)] flex flex-col min-[900px]:flex-row min-[900px]:items-center justify-between gap-3.5 min-[900px]:gap-4">
-          {/* Left: Title & Count Badge */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <h2
-              className="text-[16px] sm:text-[18px] font-[600] tracking-tight text-[var(--t)] m-0"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Generated Reports
-            </h2>
-            <span
-              className="text-[11px] font-[600] px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)] whitespace-nowrap"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              {reportCount} {reportCount === 1 ? 'report' : 'reports'}
-            </span>
-          </div>
-
-          {/* Right Controls Container */}
-          <div className="flex flex-col min-[900px]:flex-row min-[900px]:items-center gap-3 min-[900px]:gap-0 w-full min-[900px]:w-auto">
-            {/* Phone Width: Collapsed Single "Filters" Button (< sm) */}
-            <div className="sm:hidden flex flex-col gap-2.5 w-full">
+      {/* Record-Folder Tabs + Compact Format Dropdown & Generate Report Button */}
+      <div className="flex flex-wrap items-end justify-between gap-3 pt-1">
+        {/* Record-Folder Tabs (Date Scope) */}
+        <div
+          className="flex flex-wrap items-end gap-1 max-w-full"
+          role="tablist"
+          aria-label="Reports date filter tabs"
+        >
+          {[
+            { id: 'all', label: 'All Reports' },
+            { id: 'today', label: 'Today' },
+            { id: 'last7', label: 'Last 7 Days' },
+            { id: 'last30', label: 'Last 30 Days' },
+          ].map((tab) => {
+            const isActive = dateFilter === tab.id;
+            return (
               <button
+                key={tab.id}
                 type="button"
-                onClick={() => setMobileFiltersOpen((prev) => !prev)}
-                className="min-h-[44px] h-[44px] px-4 rounded-full border border-[var(--line)] bg-[var(--soft)] hover:bg-[var(--panel)] transition-colors flex items-center justify-between gap-2 text-[13px] font-[500] text-[var(--t)] select-none w-full cursor-pointer"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => {
+                  setDateFilter(tab.id);
+                  setPage(1);
+                }}
+                className={`relative px-4 py-2 text-xs sm:text-[13px] font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[var(--card-bg)] text-[var(--t)] border-[var(--line)] -mb-px z-10 pb-2.5'
+                    : 'bg-transparent text-[var(--mu)] border-transparent hover:text-[var(--t)] hover:bg-[var(--card-bg)]/50'
+                }`}
               >
-                <span className="inline-flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-[var(--mu)] shrink-0" />
-                  <span>Filters</span>
-                  {activeFilterCount > 0 && (
-                    <span className="text-[10px] font-[700] px-2 py-0.5 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] tabular-nums">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-[var(--mu)] transition-transform duration-200 shrink-0 ${mobileFiltersOpen ? 'rotate-180' : ''
-                    }`}
-                />
+                {isActive && (
+                  <span
+                    className="absolute top-0 left-3 right-3 h-[2.5px] rounded-b-full bg-[var(--acc)]"
+                    aria-hidden="true"
+                  />
+                )}
+                {tab.label}
               </button>
-
-              {mobileFiltersOpen && (
-                <div className="flex flex-col gap-2 p-3 rounded-2xl bg-[var(--soft)]/60 border border-[var(--line)]">
-                  <CustomDropdown
-                    value={formatFilter}
-                    onChange={(value) => {
-                      setFormatFilter(value as ReportFormat | 'all');
-                      setPage(1);
-                    }}
-                    options={[
-                      { value: 'all', label: 'All Formats' },
-                      { value: ReportFormat.PDF, label: 'PDF' },
-                      { value: ReportFormat.EXCEL, label: 'Excel (.xlsx)' },
-                    ]}
-                  />
-
-                  <CustomDropdown
-                    value={dateFilter}
-                    onChange={(value) => {
-                      setDateFilter(value);
-                      setPage(1);
-                    }}
-                    options={[
-                      { value: 'all', label: 'All Dates' },
-                      { value: 'hourly', label: 'Hourly (Last Hour)' },
-                      { value: 'today', label: 'Today' },
-                      { value: 'last7', label: 'Last 7 Days' },
-                      { value: 'last30', label: 'Last 30 Days' },
-                    ]}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Tablet & Desktop Width: 2 Inline Filter Dropdowns (>= sm) */}
-            <div className="hidden sm:flex flex-wrap min-[900px]:flex-nowrap items-center gap-2 sm:gap-2.5">
-              {/* Format Filter */}
-              <div className="w-[144px] shrink-0">
-                <CustomDropdown
-                  value={formatFilter}
-                  onChange={(value) => {
-                    setFormatFilter(value as ReportFormat | 'all');
-                    setPage(1);
-                  }}
-                  options={[
-                    { value: 'all', label: 'All Formats' },
-                    { value: ReportFormat.PDF, label: 'PDF' },
-                    { value: ReportFormat.EXCEL, label: 'Excel (.xlsx)' },
-                  ]}
-                />
-              </div>
-
-              {/* Date Filter */}
-              <div className="w-[164px] shrink-0">
-                <CustomDropdown
-                  value={dateFilter}
-                  onChange={(value) => {
-                    setDateFilter(value);
-                    setPage(1);
-                  }}
-                  options={[
-                    { value: 'all', label: 'All Dates' },
-                    { value: 'hourly', label: 'Hourly (Last Hour)' },
-                    { value: 'today', label: 'Today' },
-                    { value: 'last7', label: 'Last 7 Days' },
-                    { value: 'last30', label: 'Last 30 Days' },
-                  ]}
-                />
-              </div>
-            </div>
-
-            {/* Generate Report Button */}
-            <button
-              type="button"
-              onClick={() => setIsGenerateDialogOpen(true)}
-              className="min-h-[44px] h-[44px] px-5 sm:px-6 rounded-full inline-flex items-center justify-center gap-2 font-[600] text-[13px] sm:text-[14px] bg-[var(--acc)] text-white dark:text-[#04210f] hover:bg-[var(--bar)] shadow-xs transition-all cursor-pointer whitespace-nowrap w-full min-[900px]:w-auto min-[900px]:ml-5 shrink-0 select-none active:scale-[0.98]"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              <Plus className="w-4 h-4 shrink-0" strokeWidth={2.5} />
-              <span>Generate Report</span>
-            </button>
-          </div>
+            );
+          })}
         </div>
 
-        {/* Content: Empty State or Table */}
-        {reports.length === 0 ? (
+        {/* Right Controls: Compact Format Dropdown + Public Quota + Generate Button */}
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          {reportQuota && !reportQuota.isUnlimited && reportQuota.limit !== null && reportQuota.remainingToday !== null && (
+            <span
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border whitespace-nowrap ${
+                reportQuota.remainingToday <= 0
+                  ? 'bg-red-500/10 text-red-500 border-red-500/30'
+                  : 'bg-[var(--panel)] text-[var(--mu)] border-[var(--line)]'
+              }`}
+              title="Public visitors can generate up to 5 reports per day per browser"
+            >
+              {reportQuota.remainingToday}/{reportQuota.limit} left today
+            </span>
+          )}
+
+          <select
+            aria-label="Filter reports by format"
+            value={formatFilter}
+            onChange={(e) => {
+              setFormatFilter(e.target.value as ReportFormat | 'all');
+              setPage(1);
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
+          >
+            <option value="all">All Formats</option>
+            <option value={ReportFormat.PDF}>PDF</option>
+            <option value={ReportFormat.EXCEL}>Excel (.xlsx)</option>
+          </select>
+
+          <HourRangeSelector
+            value={hourRange}
+            onChange={(next) => {
+              setHourRange(next);
+              setPage(1);
+            }}
+            label="Hours"
+          />
+
+          <button
+            type="button"
+            onClick={() => setIsGenerateDialogOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer hover:opacity-90 active:scale-[0.99] shrink-0"
+            style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Generate Report</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Connected Folder Content Sheet — Table sits directly on main container */}
+      <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
+        {/* Flush Sub-Header Strip */}
+        <div className="px-5 sm:px-6 py-3 border-b border-[var(--line)] flex items-center justify-between gap-2 text-xs text-[var(--mu)]">
+          <span>
+            <strong className="text-[var(--t)]">{reportCount}</strong>{' '}
+            {reportCount === 1 ? 'report' : 'reports'}
+          </span>
+          {reportsFetching && !reportsLoading && (
+            <span className="text-[11px] text-[var(--mu)]">Updating...</span>
+          )}
+        </div>
+
+        {/* Content: Table-Only Loading, Error, Empty State, or Table */}
+        {reportsLoading && !reportsData ? (
+          <div className="flex items-center justify-center py-16">
+            <LoadingSpinner size="md" />
+          </div>
+        ) : reportsError && !reportsData ? (
+          <div className="p-10 text-center">
+            <FileText className="w-7 h-7 text-red-500 mx-auto mb-3" />
+            <h3 className="text-base font-semibold mb-1.5 text-[var(--t)]">
+              Unable to Load Reports
+            </h3>
+            <p className="text-sm mb-5 text-[var(--mu)]">
+              Could not connect to the server. Please ensure the server is running and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchReports()}
+              className="px-4 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 cursor-pointer"
+              style={{ backgroundColor: colors.accent, color: '#0D1B14' }}
+            >
+              Try Again
+            </button>
+          </div>
+        ) : reports.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 bg-[var(--soft)] text-[var(--acc)] border border-[var(--line)]">
               <FileText className="w-6 h-6" />
@@ -510,62 +461,34 @@ export function ReportsPage() {
               </table>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden divide-y" style={{ borderColor: colors.border }}>
+            {/* Compact Flat List View (< md, directly on main sheet) */}
+            <div className="md:hidden divide-y divide-[var(--line)]">
               {reports.map((report) => (
-                <div key={report.id} className="p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{
-                        backgroundColor: theme === 'light' ? 'rgba(66, 132, 117, 0.1)' : 'rgba(137, 215, 183, 0.1)'
-                      }}
-                    >
-                      <FileText
-                        className="w-6 h-6"
-                        style={{ color: colors.accent }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div
-                        className="text-sm font-medium mb-1"
-                        style={{ color: colors.textPrimary }}
-                      >
+                <div key={report.id} className="px-4 py-3.5 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-[var(--t)] truncate">
                         {getReportTypeLabel(report.type)}
                       </div>
-                      <div
-                        className="text-xs mb-1"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        Generated on {formatDate(report.createdAt)}
-                      </div>
-                      <div
-                        className="text-xs"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        By {report.generatedByName}
+                      <div className="text-xs text-[var(--mu)] mt-0.5">
+                        {formatDate(report.createdAt)} · By {report.generatedByName}
                       </div>
                     </div>
-                    <span
-                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)]"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {report.format.toUpperCase()}
+                    <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--mu)] shrink-0">
+                      {report.format}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-3">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleViewDetails(report)}
-                      className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--mint)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--line)] bg-transparent text-[var(--t)] hover:bg-[var(--soft)] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     >
                       View Details
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDownload(report.id, report.fileName)}
-                      className="flex-1 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:bg-[var(--bar)] shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--acc)] text-white dark:text-[#0D1B14] hover:opacity-90 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Download
@@ -606,7 +529,7 @@ export function ReportsPage() {
             )}
           </>
         )}
-      </div>
+      </section>
 
       {/* Generate Report Dialog */}
       <GenerateReportDialog
@@ -614,6 +537,7 @@ export function ReportsPage() {
         onClose={() => setIsGenerateDialogOpen(false)}
         onGenerate={handleGenerateReport}
         isGenerating={isGenerating}
+        quota={reportQuota}
       />
 
       {/* Report Preview Modal */}

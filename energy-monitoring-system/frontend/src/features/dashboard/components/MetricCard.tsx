@@ -46,6 +46,9 @@ export interface MetricCardProps {
   /** Optional subtitle/hint text to show below the value (e.g., "No steps yet today", "Awaiting footsteps") */
   subtitle?: string;
 
+  /** Render as a flat borderless cell inside an inline horizontal metric strip */
+  inline?: boolean;
+
   /** @deprecated Removed per design spec: icon tiles removed from stat cards */
   icon?: React.ReactNode;
 }
@@ -72,6 +75,7 @@ export const MetricCard = React.memo(function MetricCard({
   color,
   dotColor,
   subtitle,
+  inline = false,
 }: MetricCardProps) {
   // Brand status tint palette: Steps #19D46A, Energy #A6DC3C, Voltage #13B95C, Current #7FE0A8
   const activeDotColor = React.useMemo(() => {
@@ -108,14 +112,18 @@ export const MetricCard = React.memo(function MetricCard({
 
   return (
     <article
-      className="cd st stat metric-card-container eco-card hover:opacity-95 transition-opacity duration-200 min-w-0"
+      className={
+        inline
+          ? 'st stat metric-card-container min-w-0 hover:bg-[var(--soft)]/35 transition-colors duration-200'
+          : 'cd st stat metric-card-container eco-card hover:opacity-95 transition-opacity duration-200 min-w-0'
+      }
       style={{
-        padding: '18px 22px',
-        borderRadius: '22px',
+        padding: inline ? '16px 20px' : '18px 22px',
+        borderRadius: inline ? '0px' : '14px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        minHeight: '130px',
+        minHeight: inline ? '112px' : '130px',
         height: '100%',
         boxSizing: 'border-box',
         width: '100%',

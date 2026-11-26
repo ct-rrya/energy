@@ -84,10 +84,13 @@ export function MilestonesRoadmap({
   }, [selectedItemId, weeklyMilestones]);
 
   const monthEnergy = monthlyMilestone?.currentMWh ?? 0;
-  const monthTarget = monthlyMilestone?.targetMWh ?? 0.1;
+  const monthTarget = monthlyMilestone?.targetMWh ?? 0;
+  const isMonthGoalConfigured = Boolean(
+    milestoneHook.configurationPolicy?.isConfigured ?? (monthTarget > 0),
+  );
   const monthSteps = monthlyMilestone?.stepCount ?? 0;
-  const monthProgressPct = monthTarget > 0 ? Math.min(100, (monthEnergy / monthTarget) * 100) : 0;
-  const achievedCount = weeklyMilestones.filter((m) => m.isAchieved).length;
+  const monthProgressPct = isMonthGoalConfigured && monthTarget > 0 ? Math.min(100, (monthEnergy / monthTarget) * 100) : 0;
+  const achievedCount = isMonthGoalConfigured ? weeklyMilestones.filter((m) => m.isAchieved).length : 0;
 
   // Compact station coordinates (viewBox 0 0 920 205) eliminating dead vertical space
   const stationCoords = useMemo(() => {
@@ -138,7 +141,7 @@ export function MilestonesRoadmap({
 
   // Active week progress calculation
   const weekEnergy = activeMilestone?.currentMWh ?? 0;
-  const weekTarget = activeMilestone?.targetMWh ?? 0.025;
+  const weekTarget = isMonthGoalConfigured ? (activeMilestone?.targetMWh ?? 0) : 0;
   const weekProgressPct = weekTarget > 0 ? Math.min(100, (weekEnergy / weekTarget) * 100) : 0;
   const weekSteps = activeMilestone?.stepCount ?? 0;
 
@@ -211,7 +214,9 @@ export function MilestonesRoadmap({
                 mWh
               </span>
               <span className="text-[12px] sm:text-[13px] text-[#50665a] dark:text-[#93A89C] font-normal">
-                of {formatMWh(monthTarget, 5)} mWh
+                {isMonthGoalConfigured && monthTarget > 0
+                  ? `of ${formatMWh(monthTarget, 5)} mWh`
+                  : '· No goal set yet'}
               </span>
             </div>
 
@@ -601,7 +606,9 @@ export function MilestonesRoadmap({
                   {isLoading ? '...' : formatMWh(weekEnergy, 5)}
                 </strong>
                 <span className="text-[#50665a] dark:text-[#93A89C]">
-                  {' '}/ {formatMWh(weekTarget, 5)} mWh
+                  {isMonthGoalConfigured && weekTarget > 0
+                    ? ` / ${formatMWh(weekTarget, 5)} mWh`
+                    : ' mWh · No goal set yet'}
                 </span>
               </span>
 
@@ -701,7 +708,9 @@ export function MilestonesRoadmap({
                 mWh
               </span>
               <span className="text-xs text-[var(--mu)] font-sans">
-                of {formatMWh(weekTarget, 3)} mWh
+                {isMonthGoalConfigured && weekTarget > 0
+                  ? `of ${formatMWh(weekTarget, 3)} mWh`
+                  : '· No goal set yet'}
               </span>
 
               {/* Comparative week-over-week telemetry badge */}

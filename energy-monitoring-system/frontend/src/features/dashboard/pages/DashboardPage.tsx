@@ -185,25 +185,46 @@ function DashboardPageContent() {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             grid-auto-rows: 1fr;
-            gap: 16px;
+            gap: 0;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--card-bg);
+            overflow: hidden;
           }
 
           .dashboard-secondary-metrics > div {
             height: 100%;
             display: flex;
             flex-direction: column;
+            border-right: 1px solid var(--line);
+          }
+
+          .dashboard-secondary-metrics > div:last-child {
+            border-right: none;
           }
 
           @container (max-width: 899px) {
             .dashboard-secondary-metrics {
               grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+            .dashboard-secondary-metrics > div:nth-child(2n) {
+              border-right: none;
+            }
+            .dashboard-secondary-metrics > div:nth-child(-n+2) {
+              border-bottom: 1px solid var(--line);
+            }
           }
 
           @media (max-width: 768px) {
             .dashboard-secondary-metrics {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 12px;
+              gap: 0;
+            }
+            .dashboard-secondary-metrics > div:nth-child(2n) {
+              border-right: none;
+            }
+            .dashboard-secondary-metrics > div:nth-child(-n+2) {
+              border-bottom: 1px solid var(--line);
             }
           }
         `}</style>
@@ -256,7 +277,7 @@ function DashboardPageContent() {
           />
         </div>
 
-        {/* Live Row: Power Output (Left) + Steps, Energy Today, Voltage, Current 2x2 (Right) */}
+        {/* Live Row: Power Output (Left) + Steps, Energy Today, Voltage, Current */}
         <div className="dashboard-live-row">
           <div className="metric-hero-power">
             <HeroPowerCard
@@ -279,6 +300,7 @@ function DashboardPageContent() {
           {/* Step Count */}
           <div className="metric-steps min-w-0">
             <MetricCard
+              inline
               label="Steps Today"
               plainDescription="Footsteps on Tile"
               tooltip={{
@@ -324,6 +346,7 @@ function DashboardPageContent() {
               const energyPrecision = 5;
               return (
                 <MetricCard
+                  inline
                   label="Energy Today"
                   plainDescription="Total Stored Clean Energy"
                   tooltip={{
@@ -348,6 +371,7 @@ function DashboardPageContent() {
           {/* Voltage */}
           <div className="metric-voltage min-w-0">
             <MetricCard
+              inline
               label="Voltage"
               plainDescription="Electrical Push"
               tooltip={{
@@ -370,6 +394,7 @@ function DashboardPageContent() {
           {/* Current */}
           <div className="metric-current min-w-0">
             <MetricCard
+              inline
               label="Current"
               plainDescription="Charge Flow Rate"
               tooltip={{

@@ -118,7 +118,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
 
   return (
     <section
-      className="cd !p-5 sm:!p-6 flex flex-col gap-5"
+      className="py-5 flex flex-col gap-5"
       aria-label="Passive Tile Fatigue and Drift Radar"
     >
       {/* Header */}
@@ -143,8 +143,8 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
         </div>
       </div>
 
-      {/* 14-Day Efficiency Trend Chart */}
-      <div className="w-full h-[210px] rounded-2xl border border-[var(--line)] bg-[var(--soft)]/40 p-3">
+      {/* 14-Day Efficiency Trend Chart (Direct, no nested box) */}
+      <div className="w-full h-[210px]">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 4, bottom: 0 }}>
@@ -223,9 +223,9 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
         )}
       </div>
 
-      {/* Compact Wear & Connection Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
+      {/* Compact Wear & Connection Summary (Flat 4-column hairline strip) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--line)] border-t border-[var(--line)] pt-2">
+        <div className="py-3 sm:px-4 first:sm:pl-0">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Footprints className="w-3.5 h-3.5 text-[var(--acc)]" />
             Total Steps Walked
@@ -238,7 +238,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
+        <div className="py-3 sm:px-4">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Radio className="w-3.5 h-3.5 text-[var(--acc)]" />
             Updates (24 Hours)
@@ -251,7 +251,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
+        <div className="py-3 sm:px-4">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Gauge className="w-3.5 h-3.5 text-[var(--acc)]" />
             Upload Speed
@@ -264,7 +264,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
+        <div className="py-3 sm:px-4 last:sm:pr-0">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Clock className="w-3.5 h-3.5 text-[var(--acc)]" />
             Last Check-In

@@ -55,6 +55,8 @@ export const EnergyPeriodChart = React.memo(function EnergyPeriodChart({
   endDate,
   granularity: propGranularity,
   periodLabel,
+  startHour,
+  endHour,
 }: EnergyPeriodChartProps) {
   const { theme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -70,7 +72,11 @@ export const EnergyPeriodChart = React.memo(function EnergyPeriodChart({
   // Fetch energy data based on current period filter or unified page period
   const { data: timeSeries, isLoading, error, refetch } = useEnergyByPeriod(
     periodFilter,
-    startDate && endDate ? { startDate, endDate, granularity: propGranularity } : undefined
+    startDate && endDate
+      ? { startDate, endDate, granularity: propGranularity, startHour, endHour }
+      : startHour !== undefined && endHour !== undefined
+        ? { startHour, endHour }
+        : undefined
   );
 
   // Transform API data to chart format

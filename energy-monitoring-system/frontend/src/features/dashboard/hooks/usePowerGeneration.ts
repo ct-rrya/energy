@@ -13,6 +13,8 @@ export interface PowerRangeOverride {
   startDate?: string;
   endDate?: string;
   granularity?: Granularity;
+  startHour?: number;
+  endHour?: number;
 }
 
 /**
@@ -78,5 +80,7 @@ export function usePowerGeneration(
     granularity,
     startDate,
     endDate,
+    startHour: customRange?.startHour,
+    endHour: customRange?.endHour,
   });
 }

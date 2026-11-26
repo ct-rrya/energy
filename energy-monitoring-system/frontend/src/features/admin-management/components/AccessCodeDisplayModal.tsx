@@ -42,50 +42,50 @@ export function AccessCodeDisplayModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/80 backdrop-blur-sm p-4 sm:p-6 font-['DM_Sans',sans-serif]"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/65 p-4 sm:p-6 font-['DM_Sans',sans-serif]"
       role="dialog"
       aria-modal="true"
     >
       <div className="min-h-full flex items-center justify-center">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md my-8 rounded-2xl border border-[var(--line,rgba(255,255,255,0.12))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] shadow-2xl overflow-hidden flex flex-col p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="relative w-full max-w-md my-8 rounded-xl border border-[var(--line)] bg-white dark:bg-[#131916] text-[var(--t)] overflow-hidden flex flex-col p-6"
         >
           {/* Close button if confirmed */}
           {confirmed && (
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 p-1 rounded-lg text-[var(--mu,#87A993)] hover:text-[var(--t,#E4F7EA)] hover:bg-[var(--soft,rgba(255,255,255,0.06))] transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-1 rounded-lg text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
           )}
 
           {/* Header */}
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] rounded-2xl mb-3 shadow-sm">
-              <Key size={22} />
+          <div className="mb-4 pb-3 border-b border-[var(--line)]">
+            <div className="flex items-center gap-2 text-[var(--acc)] mb-1">
+              <Key size={18} />
+              <h2 className="text-lg font-bold text-[var(--t)]">
+                Access Code Generated
+              </h2>
             </div>
-            <h2 className="text-lg font-bold text-[var(--t,#E4F7EA)] mb-1">
-              Access Code Generated
-            </h2>
-            <p className="text-xs text-[var(--mu,#87A993)]">
-              For: <strong className="text-[var(--t,#E4F7EA)]">{administratorName}</strong>
+            <p className="text-xs text-[var(--mu)]">
+              For: <strong className="text-[var(--t)]">{administratorName}</strong>
             </p>
           </div>
 
-          {/* Warning banner */}
-          <div className="p-3 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-300">
-            <AlertTriangle size={15} className="shrink-0 text-amber-400 mt-0.5" />
+          {/* Warning notice (flat left accent) */}
+          <div className="pl-3 py-1.5 mb-4 border-l-2 border-amber-500 flex items-start gap-2 text-xs text-amber-600 dark:text-amber-300">
+            <AlertTriangle size={15} className="shrink-0 text-amber-500 mt-0.5" />
             <span>
               This access code is shown <strong>only once</strong>. Please copy and store it securely.
             </span>
           </div>
 
-          {/* Code box */}
-          <div className="p-4 mb-4 rounded-xl bg-[var(--soft,rgba(255,255,255,0.04))] border border-[var(--line,rgba(255,255,255,0.1))] text-center">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--mu,#87A993)] mb-1.5">
+          {/* Code block (flat hairline section) */}
+          <div className="py-4 mb-4 border-y border-[var(--line)] text-center">
+            <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--mu)] mb-1.5">
               Secure Access Code
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold tracking-widest text-[#10B981] select-all my-2 font-['DM_Sans',sans-serif]">
@@ -94,10 +94,10 @@ export function AccessCodeDisplayModal({
             <button
               type="button"
               onClick={handleCopy}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 copied
                   ? 'bg-[#10B981] text-white'
-                  : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.15))] hover:border-[#10B981]'
+                  : 'bg-transparent text-[var(--t)] border border-[var(--line)] hover:border-[#10B981]'
               }`}
             >
               {copied ? <Check size={13} /> : <Copy size={13} />}
@@ -106,7 +106,7 @@ export function AccessCodeDisplayModal({
           </div>
 
           {/* Confirmation Checkbox */}
-          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))] mb-5 cursor-pointer text-xs text-[var(--mu,#87A993)]">
+          <label className="flex items-start gap-2.5 py-2 mb-5 cursor-pointer text-xs text-[var(--mu)]">
             <input
               type="checkbox"
               checked={confirmed}

@@ -325,4 +325,26 @@ export class GenerateReportDto {
   @IsOptional()
   @IsBoolean()
   includeAIAnalysis?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Optional start hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(23)
+  startHour?: number;
+
+  @ApiPropertyOptional({
+    description: 'Optional end hour-of-day filter (0-23, Asia/Manila)',
+    minimum: 0,
+    maximum: 23,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(23)
+  endHour?: number;
 }

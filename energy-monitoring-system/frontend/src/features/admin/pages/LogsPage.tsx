@@ -17,6 +17,10 @@ import {
   Shield,
 } from 'lucide-react';
 import { auditService, type AuditLogItem } from '@/api/services/audit.service';
+import {
+  HourRangeSelector,
+  type HourRange,
+} from '@/components/common/HourRangeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -213,6 +217,7 @@ export function LogsPage() {
   const [dateRange, setDateRange] = useState<'all' | 'hourly' | 'today' | '7days' | '30days' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [hourRange, setHourRange] = useState<HourRange | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -297,6 +302,8 @@ export function LogsPage() {
       resultFilter,
       startDateISO,
       endDateISO,
+      hourRange?.startHour ?? 'all',
+      hourRange?.endHour ?? 'all',
     ],
     queryFn: () =>
       auditService.getLogs({
@@ -308,6 +315,9 @@ export function LogsPage() {
         result: resultFilter !== 'all' ? resultFilter : undefined,
         startDate: startDateISO,
         endDate: endDateISO,
+        ...(hourRange
+          ? { startHour: hourRange.startHour, endHour: hourRange.endHour }
+          : {}),
       }),
     refetchOnWindowFocus: false,
   });
@@ -419,23 +429,23 @@ export function LogsPage() {
       className="page flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-[1450px] mx-auto w-full"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* Header matching screenshot */}
+      {/* Header */}
       <div className="flex items-start sm:items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--t,#E4F7EA)]">
             Logs
           </h1>
           <p className="text-xs sm:text-sm text-[var(--mu,#87A993)] mt-1 max-w-2xl">
-            A permanent record of administrator sign-ins, report exports, milestone goal changes and daily tile diagnostics.
+            Permanent record of administrator sign-ins, report exports, milestone changes, and tile diagnostics · All times in <strong className="text-[var(--t)]">Asia/Manila (PHT)</strong>.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
+        <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
           <button
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] hover:bg-[var(--soft,rgba(255,255,255,0.06))] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-transparent text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
             <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
             <span>Refresh</span>
@@ -444,7 +454,7 @@ export function LogsPage() {
             type="button"
             onClick={handleExportCSV}
             disabled={isExporting}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white transition-opacity cursor-pointer shadow-xs disabled:opacity-50 shrink-0 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#19D46A] hover:opacity-90 text-[#0D1B14] transition-opacity cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
           >
             <Download size={13} strokeWidth={2.4} className={isExporting ? 'animate-bounce' : ''} />
             <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
@@ -452,192 +462,145 @@ export function LogsPage() {
         </div>
       </div>
 
-      {/* Timezone Context Banner */}
-      <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl border border-[var(--line,rgba(255,255,255,0.08))] bg-[var(--panel,#12241A)] text-xs text-[var(--mu,#87A993)]">
-        <div className="flex items-center gap-2">
-          <Clock size={14} className="text-[#10B981]" />
-          <span>
-            All times are shown in <strong className="text-[var(--t,#E4F7EA)]">Asia/Manila (PHT, UTC+8)</strong>
-          </span>
-        </div>
-        <div className="flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-[#19D46A] border border-emerald-500/25">
-          Viewing as admin
-        </div>
-      </div>
-
-      {/* Category Pills Selector Row */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              setCategoryFilter('all');
-              setPage(1);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              categoryFilter === 'all'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.1))] hover:border-[#10B981]/40'
-            }`}
-          >
-            <span>All activity</span>
-            <span className="font-bold">{counts.all ?? total}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCategoryFilter('Authentication');
-              setPage(1);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              categoryFilter === 'Authentication'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.1))] hover:border-[#10B981]/40'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-            <span>Authentication</span>
-            <span className="font-bold">{counts.authentication}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCategoryFilter('Reports');
-              setPage(1);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              categoryFilter === 'Reports'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.1))] hover:border-[#10B981]/40'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>Reports</span>
-            <span className="font-bold">{counts.reports}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCategoryFilter('Milestones');
-              setPage(1);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              categoryFilter === 'Milestones'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.1))] hover:border-[#10B981]/40'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-            <span>Milestones</span>
-            <span className="font-bold">{counts.milestones}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setCategoryFilter('Diagnostics');
-              setPage(1);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              categoryFilter === 'Diagnostics'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] border border-[var(--line,rgba(255,255,255,0.1))] hover:border-[#10B981]/40'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>Diagnostics</span>
-            <span className="font-bold">{counts.diagnostics}</span>
-          </button>
-        </div>
-
-        <div className="text-xs text-[var(--mu,#87A993)] pt-1">
-          Showing <strong className="text-[var(--t,#E4F7EA)]">{logs.length}</strong> of{' '}
-          <strong className="text-[var(--t,#E4F7EA)]">{total}</strong> records · all administrators
-        </div>
-      </div>
-
-      {/* Filter Bar with z-30 stacking context so popups float over the table */}
-      <div className="relative z-30 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <div className="relative">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--mu,#87A993)]" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search administrator, event or target"
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-full border border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] placeholder:text-[var(--mu,#87A993)]/60 focus:outline-hidden focus:ring-1 focus:ring-[#10B981]"
-          />
-        </div>
-
-        <CustomSelect
-          value={adminFilter}
-          onChange={(val) => {
-            setAdminFilter(val);
-            setPage(1);
-          }}
-          options={adminOptions}
-          placeholder="All administrators"
-        />
-
-        <CustomSelect
-          value={resultFilter}
-          onChange={(val) => {
-            setResultFilter(val as any);
-            setPage(1);
-          }}
-          options={resultOptions}
-          placeholder="All results"
-        />
-
-        <CustomSelect
-          value={dateRange}
-          onChange={(val) => {
-            setDateRange(val as any);
-            setPage(1);
-          }}
-          options={dateOptions}
-          placeholder="All time"
-        />
-      </div>
-
-      {/* Custom Date Pickers when 'custom' is active */}
-      {dateRange === 'custom' && (
-        <div className="relative z-20 flex items-center gap-3 p-3 rounded-2xl border border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--panel,#12241A)] text-xs flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-[var(--mu,#87A993)]">From:</span>
-            <input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => {
-                setCustomStartDate(e.target.value);
-                setPage(1);
-              }}
-              className="px-2.5 py-1 text-xs rounded-lg border border-[var(--line,rgba(255,255,255,0.15))] bg-[var(--soft,rgba(255,255,255,0.04))] text-[var(--t,#E4F7EA)]"
-            />
+      {/* Connected Record-Folder Tabs + Neutral Sheet */}
+      <div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-1 max-w-full" role="tablist" aria-label="Log categories">
+            {(
+              [
+                { id: 'all', label: 'All Activity', count: counts.all ?? total },
+                { id: 'Authentication', label: 'Authentication', count: counts.authentication },
+                { id: 'Reports', label: 'Reports', count: counts.reports },
+                { id: 'Milestones', label: 'Milestones', count: counts.milestones },
+                { id: 'Diagnostics', label: 'Diagnostics', count: counts.diagnostics },
+              ] as const
+            ).map((tab) => {
+              const isActive = categoryFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    setCategoryFilter(tab.id);
+                    setPage(1);
+                  }}
+                  className={`relative px-3.5 py-2 text-xs font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-[var(--card-bg)] text-[var(--t)] border-[var(--line)] -mb-px z-10 pb-2.5'
+                      : 'bg-transparent text-[var(--mu)] border-transparent hover:text-[var(--t)] hover:bg-[var(--card-bg)]/50'
+                  }`}
+                >
+                  {isActive && (
+                    <span
+                      className="absolute top-0 left-3 right-3 h-[2.5px] rounded-b-full bg-[var(--acc)]"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>{tab.label}</span>
+                  <span className="text-[11px] opacity-75 tabular-nums">{tab.count}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[var(--mu,#87A993)]">To:</span>
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => {
-                setCustomEndDate(e.target.value);
-                setPage(1);
-              }}
-              className="px-2.5 py-1 text-xs rounded-lg border border-[var(--line,rgba(255,255,255,0.15))] bg-[var(--soft,rgba(255,255,255,0.04))] text-[var(--t,#E4F7EA)]"
-            />
+
+          <div className="text-xs text-[var(--mu)] mb-1.5">
+            Showing <strong className="text-[var(--t)]">{logs.length}</strong> of{' '}
+            <strong className="text-[var(--t)]">{total}</strong> records
           </div>
         </div>
-      )}
 
-      {/* Main Table */}
-      <div className="relative z-0 rounded-2xl border border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--panel,#12241A)] overflow-hidden shadow-xs">
+        {/* Folder Sheet: Filter Bar + Direct Table */}
+        <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
+          {/* Flush Filter Bar */}
+          <div className="relative z-30 p-3.5 sm:px-5 border-b border-[var(--line)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-center">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mu)]" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search admin, event, target..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--line)] bg-transparent text-[var(--t)] placeholder:text-[var(--mu)]/70 focus:outline-none focus:border-[var(--acc)]"
+              />
+            </div>
+
+            <CustomSelect
+              value={adminFilter}
+              onChange={(val) => {
+                setAdminFilter(val);
+                setPage(1);
+              }}
+              options={adminOptions}
+              placeholder="All administrators"
+            />
+
+            <CustomSelect
+              value={resultFilter}
+              onChange={(val) => {
+                setResultFilter(val as any);
+                setPage(1);
+              }}
+              options={resultOptions}
+              placeholder="All results"
+            />
+
+            <CustomSelect
+              value={dateRange}
+              onChange={(val) => {
+                setDateRange(val as any);
+                setPage(1);
+              }}
+              options={dateOptions}
+              placeholder="All time"
+            />
+
+            <HourRangeSelector
+              value={hourRange}
+              onChange={(next) => {
+                setHourRange(next);
+                setPage(1);
+              }}
+              label="Hours"
+            />
+          </div>
+
+          {/* Custom Date Pickers when 'custom' is active */}
+          {dateRange === 'custom' && (
+            <div className="flex items-center gap-3 px-5 py-2.5 border-b border-[var(--line)] text-xs flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-[var(--mu)]">From:</span>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-[var(--line)] bg-transparent text-[var(--t)]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[var(--mu)]">To:</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    setCustomEndDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-[var(--line)] bg-transparent text-[var(--t)]"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Direct Table */}
+          <div className="relative z-0 overflow-hidden">
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-2 text-xs text-[var(--mu,#87A993)]">
             <RefreshCw size={20} className="animate-spin text-[#10B981]" />
@@ -817,11 +780,13 @@ export function LogsPage() {
           </div>
         </div>
       </div>
+        </section>
+      </div>
 
-      {/* Details Modal */}
+      {/* Details Modal (Flat, zero nested cards) */}
       {selectedLog && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[99999] overflow-y-auto bg-black/80 backdrop-blur-sm p-4 sm:p-6"
+          className="fixed inset-0 z-[99999] overflow-y-auto bg-black/60 p-4 sm:p-6"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
           onClick={() => setSelectedLog(null)}
           role="dialog"
@@ -830,24 +795,24 @@ export function LogsPage() {
           <div className="min-h-full flex items-center justify-center">
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-xl my-8 rounded-2xl border border-[var(--line,rgba(255,255,255,0.12))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] shadow-2xl overflow-hidden flex flex-col"
+              className="relative w-full max-w-xl my-8 rounded-xl border border-[var(--line)] bg-white dark:bg-[#131916] text-[var(--t)] overflow-hidden flex flex-col"
             >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 px-5 border-b border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--soft,rgba(255,255,255,0.02))] shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--line)] shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
-                  {formatCategorySubtitle(selectedLog)}
+                <h3 className="font-bold text-sm text-[var(--t)]">Audit Event Details</h3>
+                <span className="text-[10px] uppercase font-semibold tracking-wider text-[var(--mu)]">
+                  · {formatCategorySubtitle(selectedLog)}
                 </span>
-                <h3 className="font-bold text-sm text-[var(--t,#E4F7EA)]">Audit Event Details</h3>
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
                     selectedLog.result?.toUpperCase() === 'SUCCESS'
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                      ? 'bg-emerald-500/15 text-emerald-500'
                       : selectedLog.result?.toUpperCase() === 'DENIED'
-                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
-                      : 'bg-rose-500/15 text-rose-400 border border-rose-500/25'
+                      ? 'bg-amber-500/15 text-amber-500'
+                      : 'bg-rose-500/15 text-rose-500'
                   }`}
                 >
                   {selectedLog.result?.toUpperCase() || 'SUCCESS'}
@@ -855,7 +820,7 @@ export function LogsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedLog(null)}
-                  className="p-1 rounded-lg text-[var(--mu,#87A993)] hover:text-[var(--t,#E4F7EA)] hover:bg-[var(--soft,rgba(255,255,255,0.08))] transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer"
                   title="Close (Esc)"
                 >
                   <X size={17} />
@@ -863,40 +828,40 @@ export function LogsPage() {
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 flex flex-col gap-4 max-h-[75vh] overflow-y-auto text-xs">
-              {/* Event Title Banner */}
-              <div className="p-3.5 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))]">
-                <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--mu,#87A993)]">Event Action</div>
-                <div className="font-bold text-base text-[var(--t,#E4F7EA)] mt-0.5">
+            {/* Modal Body (Flat hairline-divided sections) */}
+            <div className="px-5 py-4 divide-y divide-[var(--line)] max-h-[75vh] overflow-y-auto text-xs">
+              {/* Event Action */}
+              <div className="pb-3.5">
+                <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--mu)]">Event Action</div>
+                <div className="font-bold text-base text-[var(--t)] mt-0.5">
                   {formatEventTitle(selectedLog)}
                 </div>
               </div>
 
-              {/* Who & When Overview Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))]">
-                  <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[var(--mu,#87A993)]">
-                    <Clock size={12} className="text-[#10B981]" />
+              {/* Who & When */}
+              <div className="grid grid-cols-2 gap-4 py-3.5">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[var(--mu)]">
+                    <Clock size={12} className="text-[var(--acc)]" />
                     <span>When Performed</span>
                   </div>
-                  <div className="font-medium text-xs text-[var(--t,#E4F7EA)] mt-1">
+                  <div className="font-medium text-xs text-[var(--t)] mt-1">
                     {formatManilaDateParts(selectedLog.timestamp).datePart}
                   </div>
-                  <div className="text-[11px] text-[var(--mu,#87A993)]">
+                  <div className="text-[11px] text-[var(--mu)]">
                     {formatManilaDateParts(selectedLog.timestamp).timePart}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))]">
-                  <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[var(--mu,#87A993)]">
-                    <Shield size={12} className="text-[#10B981]" />
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[var(--mu)]">
+                    <Shield size={12} className="text-[var(--acc)]" />
                     <span>Who Performed</span>
                   </div>
-                  <div className="font-semibold text-xs text-[var(--t,#E4F7EA)] mt-1">
+                  <div className="font-semibold text-xs text-[var(--t)] mt-1">
                     {selectedLog.administratorName || 'Admin'}
                   </div>
-                  <div className="text-[10px] font-bold text-[#10B981] uppercase">
+                  <div className="text-[10px] font-bold text-[var(--acc)] uppercase">
                     {selectedLog.administratorRole || 'ADMIN'}
                   </div>
                 </div>
@@ -927,139 +892,116 @@ export function LogsPage() {
 
                 return (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--mu,#87A993)]">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--mu)] block">
                       Operation Details
                     </span>
 
-                    <div className="p-3.5 rounded-xl bg-[var(--soft,rgba(255,255,255,0.03))] border border-[var(--line,rgba(255,255,255,0.08))] space-y-2.5">
-                      {/* Milestone Target Month */}
+                    <div className="divide-y divide-[var(--line)]">
                       {details.month && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Target Month:</span>
-                          <span className="font-semibold text-[var(--t,#E4F7EA)] bg-[var(--soft,rgba(255,255,255,0.08))] px-2 py-0.5 rounded">
-                            {String(details.month)}
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Target Month</span>
+                          <span className="font-semibold text-[var(--t)]">{String(details.month)}</span>
+                        </div>
+                      )}
+
+                      {(details.oldValue !== undefined || details.newValue !== undefined) && (
+                        <div className="py-2 flex items-center justify-between">
+                          <span className="text-[var(--mu)]">Target Change</span>
+                          <span className="font-semibold text-[var(--t)] tabular-nums">
+                            {details.oldValue !== undefined && details.oldValue !== null ? String(details.oldValue) : 'None'}
+                            {' → '}
+                            <strong className="text-[var(--acc)]">{String(details.newValue)}</strong>
                           </span>
                         </div>
                       )}
 
-                      {/* Milestone Before & After values */}
-                      {(details.oldValue !== undefined || details.newValue !== undefined) && (
-                        <div className="p-2.5 rounded-lg bg-[var(--soft,rgba(255,255,255,0.02))] border border-[var(--line,rgba(255,255,255,0.08))] flex items-center justify-between">
-                          <div>
-                            <div className="text-[10px] text-[var(--mu,#87A993)]">Previous Target</div>
-                            <div className="font-medium text-[var(--mu,#87A993)]">
-                              {details.oldValue !== undefined && details.oldValue !== null ? String(details.oldValue) : 'None'}
-                            </div>
-                          </div>
-                          <div className="text-xs font-bold text-[#10B981]">→</div>
-                          <div className="text-right">
-                            <div className="text-[10px] text-[var(--mu,#87A993)]">New Target</div>
-                            <div className="font-bold text-sm text-[#10B981]">
-                              {String(details.newValue)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Report Specific Display */}
                       {details.reportName && (
-                        <div className="flex items-start justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))] gap-2">
-                          <span className="text-[var(--mu,#87A993)] shrink-0">Report File:</span>
-                          <span className="text-xs text-[var(--t,#E4F7EA)] font-medium text-right break-all">
+                        <div className="flex items-start justify-between py-2 gap-2">
+                          <span className="text-[var(--mu)] shrink-0">Report File</span>
+                          <span className="text-xs text-[var(--t)] font-medium text-right break-all">
                             {String(details.reportName)}
                           </span>
                         </div>
                       )}
                       {details.format && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Format:</span>
-                          <span className="text-xs uppercase font-bold px-2 py-0.5 rounded bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Format</span>
+                          <span className="text-xs uppercase font-bold text-[var(--acc)]">
                             {String(details.format)}
                           </span>
                         </div>
                       )}
                       {details.dateRange && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Date Range:</span>
-                          <span className="text-[var(--t,#E4F7EA)] font-medium">{String(details.dateRange)}</span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Date Range</span>
+                          <span className="text-[var(--t)] font-medium">{String(details.dateRange)}</span>
                         </div>
                       )}
 
-                      {/* Diagnostics Specific Display */}
                       {details.tilesChecked !== undefined && (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <div className="p-2 rounded bg-[var(--soft,rgba(255,255,255,0.02))] border border-[var(--line,rgba(255,255,255,0.08))]">
-                            <span className="text-[10px] text-[var(--mu,#87A993)]">Tiles Checked</span>
-                            <div className="text-sm font-bold text-[var(--t,#E4F7EA)]">
-                              {String(details.tilesChecked)}
-                            </div>
-                          </div>
-                          <div className="p-2 rounded bg-[var(--soft,rgba(255,255,255,0.02))] border border-[var(--line,rgba(255,255,255,0.08))]">
-                            <span className="text-[10px] text-[var(--mu,#87A993)]">Flagged Tiles</span>
-                            <div className={`text-sm font-bold ${Number(details.flaggedTiles) > 0 ? 'text-rose-400' : 'text-[#10B981]'}`}>
-                              {String(details.flaggedTiles ?? 0)}
-                            </div>
-                          </div>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Tiles Checked / Flagged</span>
+                          <span className="font-semibold text-[var(--t)] tabular-nums">
+                            {String(details.tilesChecked)} checked ·{' '}
+                            <span className={Number(details.flaggedTiles) > 0 ? 'text-rose-500' : 'text-[var(--acc)]'}>
+                              {String(details.flaggedTiles ?? 0)} flagged
+                            </span>
+                          </span>
                         </div>
                       )}
                       {details.result && typeof details.result === 'string' && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Verdict:</span>
-                          <span className="font-semibold text-[var(--t,#E4F7EA)]">{details.result}</span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Verdict</span>
+                          <span className="font-semibold text-[var(--t)]">{details.result}</span>
                         </div>
                       )}
                       {details.actualEnergyWh !== undefined && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Energy Output:</span>
-                          <span className="font-bold text-[#10B981]">{String(details.actualEnergyWh)} Wh</span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Energy Output</span>
+                          <span className="font-bold text-[var(--acc)]">{String(details.actualEnergyWh)} Wh</span>
                         </div>
                       )}
                       {details.performancePercentage !== undefined && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Performance:</span>
-                          <span className="font-bold text-[#10B981]">{String(details.performancePercentage)}%</span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Performance</span>
+                          <span className="font-bold text-[var(--acc)]">{String(details.performancePercentage)}%</span>
                         </div>
                       )}
 
-                      {/* Authentication Specific Display */}
                       {details.method && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Auth Method:</span>
-                          <span className="text-xs uppercase font-bold px-2 py-0.5 rounded bg-[var(--soft,rgba(255,255,255,0.08))] text-[var(--t,#E4F7EA)]">
-                            {String(details.method)}
-                          </span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Auth Method</span>
+                          <span className="text-xs uppercase font-semibold text-[var(--t)]">{String(details.method)}</span>
                         </div>
                       )}
                       {details.reason && (
-                        <div className="flex items-center justify-between py-1 border-b border-[var(--line,rgba(255,255,255,0.08))]">
-                          <span className="text-[var(--mu,#87A993)]">Session Reason:</span>
-                          <span className="text-xs text-[var(--t,#E4F7EA)] font-medium">{String(details.reason)}</span>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-[var(--mu)]">Session Reason</span>
+                          <span className="text-xs text-[var(--t)] font-medium">{String(details.reason)}</span>
                         </div>
                       )}
 
-                      {/* Weekly Targets Breakdown */}
                       {weeklyTargetsEntries && weeklyTargetsEntries.length > 0 && (
-                        <div className="pt-2">
-                          <span className="text-[10px] uppercase font-bold text-[var(--mu,#87A993)] block mb-1.5">
-                            Weekly Targets Breakdown:
+                        <div className="py-2">
+                          <span className="text-[10px] uppercase font-bold text-[var(--mu)] block mb-1.5">
+                            Weekly Targets Breakdown
                           </span>
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
                             {weeklyTargetsEntries.map(([week, val]) => (
-                              <div key={week} className="p-1.5 rounded bg-[var(--soft,rgba(255,255,255,0.02))] border border-[var(--line,rgba(255,255,255,0.08))] text-center">
-                                <span className="text-[10px] text-[var(--mu,#87A993)] block uppercase">{week}</span>
-                                <span className="text-[11px] font-bold text-[#10B981]">{String(val)} mWh</span>
+                              <div key={week} className="text-xs">
+                                <span className="text-[10px] text-[var(--mu)] uppercase mr-1">{week}:</span>
+                                <span className="font-semibold text-[var(--acc)] tabular-nums">{String(val)} mWh</span>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Toggle raw JSON inspection with copy button */}
-                      <div className="pt-2 border-t border-[var(--line,rgba(255,255,255,0.08))] flex items-center justify-between">
+                      <div className="pt-2.5 flex items-center justify-between">
                         <button
                           type="button"
                           onClick={() => setShowRawJson((prev) => !prev)}
-                          className="text-[11px] text-[var(--mu,#87A993)] hover:text-[#10B981] underline cursor-pointer"
+                          className="text-[11px] text-[var(--mu)] hover:text-[var(--acc)] underline cursor-pointer"
                         >
                           {showRawJson ? 'Hide raw JSON audit metadata' : 'View raw JSON metadata'}
                         </button>
@@ -1067,15 +1009,15 @@ export function LogsPage() {
                         <button
                           type="button"
                           onClick={handleCopyJson}
-                          className="inline-flex items-center gap-1 text-[11px] text-[var(--mu,#87A993)] hover:text-[#10B981] px-2 py-1 rounded hover:bg-[var(--soft,rgba(255,255,255,0.06))] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[11px] text-[var(--mu)] hover:text-[var(--acc)] px-2 py-1 rounded hover:bg-[var(--soft)] transition-colors cursor-pointer"
                         >
-                          {copied ? <Check size={12} className="text-[#10B981]" /> : <Copy size={12} />}
+                          {copied ? <Check size={12} className="text-[var(--acc)]" /> : <Copy size={12} />}
                           <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
                         </button>
                       </div>
 
                       {showRawJson && (
-                        <pre className="mt-2 p-3 rounded-xl bg-[var(--soft,rgba(255,255,255,0.04))] text-[var(--mu,#87A993)] font-mono text-[10px] overflow-x-auto border border-[var(--line,rgba(255,255,255,0.1))]">
+                        <pre className="mt-2 p-3 rounded-lg bg-[var(--soft)] text-[var(--mu)] font-mono text-[10px] overflow-x-auto">
                           {JSON.stringify(selectedLog, null, 2)}
                         </pre>
                       )}
@@ -1086,14 +1028,14 @@ export function LogsPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 px-5 border-t border-[var(--line,rgba(255,255,255,0.1))] bg-[var(--soft,rgba(255,255,255,0.02))] flex items-center justify-between shrink-0">
-              <span className="text-[10px] text-[var(--mu,#87A993)] truncate max-w-[280px]">
+            <div className="px-5 py-3.5 border-t border-[var(--line)] flex items-center justify-between shrink-0">
+              <span className="text-[10px] text-[var(--mu)] truncate max-w-[280px]">
                 Event ID: {selectedLog.id || (selectedLog as any)._id}
               </span>
               <button
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="px-5 py-1.5 rounded-full text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white transition-opacity cursor-pointer shadow-xs"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#19D46A] hover:opacity-90 text-[#0D1B14] transition-opacity cursor-pointer"
               >
                 Close
               </button>

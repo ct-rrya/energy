@@ -155,6 +155,10 @@ export interface BaseChartProps {
   granularity?: 'hour' | 'day' | 'week' | 'month';
   /** Optional human-readable label for the selected period */
   periodLabel?: string;
+  /** Optional hour-of-day filter start (0-23, PHT) */
+  startHour?: number;
+  /** Optional hour-of-day filter end (0-23, PHT) */
+  endHour?: number;
 }
 
 /**

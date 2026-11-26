@@ -37,7 +37,7 @@ export function CreateAdminModal({ onClose, onSuccess }: CreateAdminModalProps) 
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/75 backdrop-blur-sm p-4 sm:p-6 font-['DM_Sans',sans-serif]"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/60 p-4 sm:p-6 font-['DM_Sans',sans-serif]"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -45,19 +45,17 @@ export function CreateAdminModal({ onClose, onSuccess }: CreateAdminModalProps) 
       <div className="min-h-full flex items-center justify-center">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md my-8 rounded-2xl border border-[var(--line,rgba(255,255,255,0.12))] bg-[var(--panel,#12241A)] text-[var(--t,#E4F7EA)] shadow-2xl overflow-hidden flex flex-col p-6 animate-in fade-in zoom-in-95 duration-150"
+          className="relative w-full max-w-md my-8 rounded-xl border border-[var(--line)] bg-white dark:bg-[#131916] text-[var(--t)] overflow-hidden flex flex-col p-6"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
-                <UserPlus size={18} />
-              </div>
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--line)]">
+            <div className="flex items-center gap-2.5">
+              <UserPlus size={18} className="text-[var(--acc)] shrink-0" />
               <div>
-                <h2 className="text-base font-bold text-[var(--t,#E4F7EA)]">
+                <h2 className="text-base font-bold text-[var(--t)]">
                   Add Administrator
                 </h2>
-                <p className="text-xs text-[var(--mu,#87A993)]">
+                <p className="text-xs text-[var(--mu)]">
                   Create a new administrator account
                 </p>
               </div>

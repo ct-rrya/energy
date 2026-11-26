@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
+import { buildHourRangeExpr } from '../common/utils/hour-range.util';
 import { toZonedTime } from 'date-fns-tz';
 import { EnergyService } from '../energy/energy.service';
 import { SensorsService } from '../sensors/sensors.service';
@@ -830,6 +831,17 @@ export class AnalyticsService {
     // Filter by source
     if (source !== SourceFilter.ALL) {
       matchStage.source = source;
+    }
+
+    // Optional hour-of-day window filter (Asia/Manila)
+    const hourExpr = buildHourRangeExpr(
+      'timestamp',
+      query.startHour,
+      query.endHour,
+      this.timezone || 'Asia/Manila',
+    );
+    if (hourExpr) {
+      matchStage.$expr = hourExpr;
     }
 
     // Filter by sensor

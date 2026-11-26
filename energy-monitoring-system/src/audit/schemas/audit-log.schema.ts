@@ -214,15 +214,6 @@ export class AuditLog {
   failureReason?: string;
 
   /**
-   * Client IP address (safely obtained)
-   */
-  @Prop({
-    required: false,
-    index: true,
-  })
-  ipAddress?: string;
-
-  /**
    * User agent (browser / operating system client)
    */
   @Prop({
