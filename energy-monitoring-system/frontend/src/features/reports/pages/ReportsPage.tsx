@@ -38,7 +38,6 @@ export function ReportsPage() {
 
   // State
   const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<ReportType | 'all'>('all');
   const [formatFilter, setFormatFilter] = useState<ReportFormat | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -76,7 +75,7 @@ export function ReportsPage() {
   } = useReports(
     page,
     10,
-    typeFilter === 'all' ? undefined : typeFilter,
+    undefined,
     formatFilter === 'all' ? undefined : formatFilter,
     dateFilterStartISO
   );
@@ -113,27 +112,8 @@ export function ReportsPage() {
     setPreviewReport(report);
   };
 
-  const getReportTypeLabel = (type: ReportType): string => {
-    switch (type) {
-      case ReportType.ENERGY_MONITORING:
-        return 'Energy Generation';
-      case ReportType.HISTORICAL_ANALYTICS:
-        return 'Energy Trends';
-      case ReportType.SYSTEM_DIAGNOSTICS:
-        return 'System Performance';
-      case ReportType.SYSTEM_SUMMARY:
-        return 'System Overview';
-      case ReportType.DAILY:
-        return 'Daily';
-      case ReportType.WEEKLY:
-        return 'Weekly';
-      case ReportType.MONTHLY:
-        return 'Monthly';
-      case ReportType.CUSTOM:
-        return 'Custom';
-      default:
-        return type;
-    }
+  const getReportTypeLabel = (_type: ReportType): string => {
+    return 'Energy & Health Report';
   };
 
   const formatDate = (dateString: string): string => {
@@ -230,7 +210,7 @@ export function ReportsPage() {
     );
   }
 
-  const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (formatFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0);
+  const activeFilterCount = (formatFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0);
 
   const { status: hardwareConnectionStatus } = useHardwareStatus();
 
@@ -292,21 +272,6 @@ export function ReportsPage() {
               {mobileFiltersOpen && (
                 <div className="flex flex-col gap-2 p-3 rounded-2xl bg-[var(--soft)]/60 border border-[var(--line)]">
                   <CustomDropdown
-                    value={typeFilter}
-                    onChange={(value) => {
-                      setTypeFilter(value as ReportType | 'all');
-                      setPage(1);
-                    }}
-                    options={[
-                      { value: 'all', label: 'All Types' },
-                      { value: ReportType.ENERGY_MONITORING, label: 'Energy Monitoring' },
-                      { value: ReportType.HISTORICAL_ANALYTICS, label: 'Historical Analytics' },
-                      { value: ReportType.SYSTEM_DIAGNOSTICS, label: 'System Diagnostics' },
-                      { value: ReportType.SYSTEM_SUMMARY, label: 'System Summary' },
-                    ]}
-                  />
-
-                  <CustomDropdown
                     value={formatFilter}
                     onChange={(value) => {
                       setFormatFilter(value as ReportFormat | 'all');
@@ -315,7 +280,7 @@ export function ReportsPage() {
                     options={[
                       { value: 'all', label: 'All Formats' },
                       { value: ReportFormat.PDF, label: 'PDF' },
-                      { value: ReportFormat.EXCEL, label: 'CSV' },
+                      { value: ReportFormat.EXCEL, label: 'Excel (.xlsx)' },
                     ]}
                   />
 
@@ -337,26 +302,8 @@ export function ReportsPage() {
               )}
             </div>
 
-            {/* Tablet & Desktop Width: 3 Inline Filter Dropdowns (>= sm) */}
+            {/* Tablet & Desktop Width: 2 Inline Filter Dropdowns (>= sm) */}
             <div className="hidden sm:flex flex-wrap min-[900px]:flex-nowrap items-center gap-2 sm:gap-2.5">
-              {/* Type Filter */}
-              <div className="w-[152px] shrink-0">
-                <CustomDropdown
-                  value={typeFilter}
-                  onChange={(value) => {
-                    setTypeFilter(value as ReportType | 'all');
-                    setPage(1);
-                  }}
-                  options={[
-                    { value: 'all', label: 'All Types' },
-                    { value: ReportType.ENERGY_MONITORING, label: 'Energy Monitoring' },
-                    { value: ReportType.HISTORICAL_ANALYTICS, label: 'Historical Analytics' },
-                    { value: ReportType.SYSTEM_DIAGNOSTICS, label: 'System Diagnostics' },
-                    { value: ReportType.SYSTEM_SUMMARY, label: 'System Summary' },
-                  ]}
-                />
-              </div>
-
               {/* Format Filter */}
               <div className="w-[144px] shrink-0">
                 <CustomDropdown
@@ -368,7 +315,7 @@ export function ReportsPage() {
                   options={[
                     { value: 'all', label: 'All Formats' },
                     { value: ReportFormat.PDF, label: 'PDF' },
-                    { value: ReportFormat.EXCEL, label: 'CSV' },
+                    { value: ReportFormat.EXCEL, label: 'Excel (.xlsx)' },
                   ]}
                 />
               </div>
@@ -415,7 +362,7 @@ export function ReportsPage() {
               className="text-base font-semibold mb-2 text-[var(--t)]"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              {typeFilter !== 'all' || formatFilter !== 'all' || dateFilter !== 'all'
+              {formatFilter !== 'all' || dateFilter !== 'all'
                 ? 'No Reports Match Filters'
                 : 'No Reports Yet'}
             </h3>
@@ -423,7 +370,7 @@ export function ReportsPage() {
               className="text-sm mb-6 max-w-md mx-auto text-[var(--mu)]"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              {typeFilter !== 'all' || formatFilter !== 'all' || dateFilter !== 'all'
+              {formatFilter !== 'all' || dateFilter !== 'all'
                 ? 'No reports match the current filter criteria. Try adjusting your filters or generate a new report.'
                 : 'Generate your first EcoStep report from monitoring, analytics, or diagnostic data.'}
             </p>

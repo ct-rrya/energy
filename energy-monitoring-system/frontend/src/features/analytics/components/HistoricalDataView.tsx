@@ -235,10 +235,10 @@ export function HistoricalDataView({
         [
           record.date,
           record.time,
-          record.energy !== undefined && record.energy !== null ? record.energy.toFixed(3) : '',
-          record.voltage !== undefined && record.voltage !== null ? record.voltage.toFixed(1) : '',
-          record.current !== undefined && record.current !== null ? (record.current * 1000).toFixed(3) : '',
-          record.power !== undefined && record.power !== null ? (record.power * 1000).toFixed(2) : '',
+          record.energy !== undefined && record.energy !== null ? record.energy.toFixed(5) : '',
+          record.voltage !== undefined && record.voltage !== null ? record.voltage.toFixed(5) : '',
+          record.current !== undefined && record.current !== null ? (record.current * 1000).toFixed(5) : '',
+          record.power !== undefined && record.power !== null ? (record.power * 1000).toFixed(5) : '',
           record.steps !== undefined && record.steps !== null ? record.steps.toFixed(0) : '',
         ].join(',')
       ),
@@ -535,26 +535,26 @@ export function HistoricalDataView({
                       className="py-3 px-4 text-sm text-right tabular-nums font-bold"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
                     >
-                      {record.energy !== undefined ? `${record.energy.toFixed(record.energy > 0 && record.energy < 1 ? 3 : 2)} mWh` : '—'}
+                      {record.energy !== undefined ? `${record.energy.toFixed(5)} mWh` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
                     >
-                      {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
+                      {record.voltage !== undefined ? `${record.voltage.toFixed(5)} V` : '—'}
                     </td>
                     <td 
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
                       title="Estimated electrical current generated"
                     >
-                      {record.current !== undefined ? `${(record.current * 1000).toFixed(record.current > 0 && record.current * 1000 < 0.1 ? 3 : 1)} mA` : '—'}
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(5)} mA` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
                     >
-                      {record.power !== undefined ? `${(record.power * 1000).toFixed(2)} mW` : '—'}
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(5)} mW` : '—'}
                     </td>
                     <td
                       className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
@@ -609,7 +609,7 @@ export function HistoricalDataView({
                       border: theme === 'dark' ? '1px solid rgba(57, 255, 136, 0.25)' : '1px solid #A7F3D0',
                     }}
                   >
-                    {record.energy !== undefined ? `${record.energy.toFixed(record.energy > 0 && record.energy < 1 ? 3 : 2)} mWh` : '—'}
+                    {record.energy !== undefined ? `${record.energy.toFixed(5)} mWh` : '—'}
                   </span>
                 </div>
 
@@ -627,7 +627,7 @@ export function HistoricalDataView({
                       className="text-base font-extrabold tabular-nums mt-0.5 block"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
                     >
-                      {record.voltage !== undefined ? `${record.voltage.toFixed(1)} V` : '—'}
+                      {record.voltage !== undefined ? `${record.voltage.toFixed(5)} V` : '—'}
                     </span>
                   </div>
 
@@ -643,7 +643,7 @@ export function HistoricalDataView({
                       className="text-base font-extrabold tabular-nums mt-0.5 block"
                       style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
                     >
-                      {record.current !== undefined ? `${(record.current * 1000).toFixed(record.current > 0 && record.current * 1000 < 0.1 ? 3 : 1)} mA` : '—'}
+                      {record.current !== undefined ? `${(record.current * 1000).toFixed(5)} mA` : '—'}
                     </span>
                   </div>
 
@@ -659,7 +659,7 @@ export function HistoricalDataView({
                       className="text-base font-extrabold tabular-nums mt-0.5 block"
                       style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
                     >
-                      {record.power !== undefined ? `${(record.power * 1000).toFixed(2)} mW` : '—'}
+                      {record.power !== undefined ? `${(record.power * 1000).toFixed(5)} mW` : '—'}
                     </span>
                   </div>
 

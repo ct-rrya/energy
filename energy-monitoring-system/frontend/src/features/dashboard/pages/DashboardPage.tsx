@@ -1,13 +1,11 @@
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle, Settings2 } from 'lucide-react';
+import { Settings2, Sparkles, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
-import { getUserRole } from '@/lib/permissions';
+import { getUserRole, isAdmin } from '@/lib/permissions';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 import { useLiveSensorData } from '../hooks/useLiveSensorData';
-import { useMilestones } from '@/features/milestones/hooks/useMilestones';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { MetricCard } from '../components/MetricCard';
 import { HeroPowerCard } from '../components/HeroPowerCard';
@@ -15,6 +13,9 @@ import { DashboardErrorBoundary } from '../components/DashboardErrorBoundary';
 import { validateSensorData } from '../utils/validateSensorData';
 import type { SensorReading } from '../types/dashboard.types';
 import { HowHarvestingWorksCard } from '../components/HowHarvestingWorksCard';
+import { MilestonesRoadmap } from '@/features/milestones/components/MilestonesRoadmap';
+import { AdminMilestonesModal } from '@/features/milestones/components/AdminMilestonesModal';
+import { useMilestones } from '@/features/milestones/hooks/useMilestones';
 import {
   getStepsTooltip,
   getEnergyTodayTooltip,
@@ -58,11 +59,15 @@ function DashboardPageContent() {
 
   // Determine user role (Requirements 18.1-18.7)
   const userRole = getUserRole(isAuthenticated, user);
+  const isAdminUser = isAdmin(isAuthenticated, user);
   const isPublicUser = userRole === 'public';
 
-  // Milestones goal policy for admin overdue tracking
+  // Current-month milestone journey data (combined into Central)
   const milestoneData = useMilestones();
-  const { hasOverdue, overdueMonths } = milestoneData;
+  const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+  const isAutoCalculated = Boolean(milestoneData.configurationPolicy?.isAutoCalculated);
+  const autoFromLabel = milestoneData.configurationPolicy?.autoCalculatedFromLabel;
+  const growthPct = milestoneData.configurationPolicy?.growthPercent ?? 10;
 
   // Fetch dashboard data with error and loading states (Requirements 16.1-16.3, 17.1-17.5)
   const {
@@ -151,33 +156,7 @@ function DashboardPageContent() {
         isPublicUser={isPublicUser}
       />
 
-      {/* Admin-only persistent reminder banner when monthly milestone targets are overdue */}
-      {!isPublicUser && hasOverdue && overdueMonths.length > 0 && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-700 dark:text-red-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200 -mt-2 mb-2">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-red-500/20 text-red-600 dark:text-red-400 shrink-0 mt-0.5">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-bold text-sm tracking-tight">
-                Monthly Milestone Targets Overdue ({overdueMonths.join(', ')})
-              </div>
-              <p className="text-xs text-red-600/90 dark:text-red-300/90 mt-0.5 leading-relaxed">
-                EcoStep administrators must configure monthly and weekly energy milestone targets by the 2nd day of each month (Asia/Manila). Milestone evaluations remain on hold until targets are set.
-              </p>
-            </div>
-          </div>
-          <Link
-            to={`/milestones?month=${overdueMonths[0]}`}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-sm shrink-0 flex items-center gap-1.5 transition-colors self-start sm:self-auto"
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-            Configure Targets
-          </Link>
-        </div>
-      )}
-
-      {/* Main Metrics Grid - Container Query Driven */}
+      {/* Main Metrics Grid - Full-Width Stacked Layout with Equal-Size Metric Cards */}
       <style>{`
           .dashboard-metrics-grid {
             display: flex;
@@ -186,18 +165,33 @@ function DashboardPageContent() {
             width: 100%;
             min-width: 0;
           }
-          
+
+          .dashboard-live-row {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            min-width: 0;
+          }
+
           .metric-hero-power {
             width: 100%;
             min-width: 0;
           }
-          
+
           .dashboard-secondary-metrics {
             width: 100%;
             min-width: 0;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-auto-rows: 1fr;
             gap: 16px;
+          }
+
+          .dashboard-secondary-metrics > div {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
           }
 
           @container (max-width: 899px) {
@@ -216,21 +210,68 @@ function DashboardPageContent() {
 
       <div className="dashboard-metrics-grid">
 
-        {/* Hero Power Card - Prominent display with AI analysis */}
-        <div className="metric-hero-power">
-          <HeroPowerCard
-            powerValue={
-              displayReading?.power !== undefined
-                ? displayReading.power * 1000
-                : undefined
-            }
-            previousPower={undefined}
-            aiInsight={displayMetrics?.aiInsight}
-            isLoading={false}
-            todaySteps={displayMetrics?.todayTotalSteps ?? displayReading?.stepCount}
-            connectionStatus={hardwareConnectionStatus}
+        {/* Main Hero Card: Current Month Energy Milestone Journey */}
+        <div className="w-full min-w-0 space-y-2.5">
+          {(isAutoCalculated || isAdminUser) && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center flex-wrap gap-2">
+                {isAutoCalculated && (
+                  <span
+                    className="pill text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1"
+                    title="Automatically calculated from the previous month's harvested energy plus 10% growth"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    {autoFromLabel
+                      ? `AUTO: ${autoFromLabel.toUpperCase()} +${growthPct}%`
+                      : `AUTO TARGET (+${growthPct}%)`}
+                  </span>
+                )}
+                {isAdminUser && milestoneData.isLocked && (
+                  <span className="pill text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" />
+                    CUSTOM TARGET
+                  </span>
+                )}
+              </div>
+
+              {isAdminUser && (
+                <button
+                  type="button"
+                  onClick={() => setIsMilestoneModalOpen(true)}
+                  className="min-h-[32px] px-3 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm bg-[var(--acc)] text-white dark:text-[#04210f] hover:opacity-90 cursor-pointer"
+                  title="Adjust monthly and weekly targets"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>{milestoneData.isLocked ? 'Adjust Goal' : 'Customize Goal'}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <MilestonesRoadmap
+            selectedMonth={milestoneData.currentMonth || milestoneData.selectedMonth}
+            milestoneData={milestoneData}
+            isAdmin={isAdminUser}
+            compact
           />
         </div>
+
+        {/* Live Row: Power Output (Left) + Steps, Energy Today, Voltage, Current 2x2 (Right) */}
+        <div className="dashboard-live-row">
+          <div className="metric-hero-power">
+            <HeroPowerCard
+              powerValue={
+                displayReading?.power !== undefined
+                  ? displayReading.power * 1000
+                  : undefined
+              }
+              previousPower={undefined}
+              aiInsight={displayMetrics?.aiInsight}
+              isLoading={false}
+              todaySteps={displayMetrics?.todayTotalSteps ?? displayReading?.stepCount}
+              connectionStatus={hardwareConnectionStatus}
+            />
+          </div>
 
         {/* Secondary Metrics - Steps, Energy Today, Voltage, Current */}
         <div className="dashboard-secondary-metrics">
@@ -280,12 +321,7 @@ function DashboardPageContent() {
                   : ledSeconds >= 60
                   ? `≈ ${(ledSeconds / 60).toFixed(1)} min of a small LED`
                   : `≈ ${Math.max(1, ledSeconds)} sec of a small LED`;
-              const energyPrecision =
-                energyMWh > 0 && energyMWh < 0.01
-                  ? 4
-                  : energyMWh > 0 && energyMWh < 1
-                  ? 3
-                  : 2;
+              const energyPrecision = 5;
               return (
                 <MetricCard
                   label="Energy Today"
@@ -320,7 +356,7 @@ function DashboardPageContent() {
               }}
               value={displayReading?.voltage}
               unit="V"
-              precision={2}
+              precision={5}
               color="accent"
               dotColor="#13B95C"
               subtitle={
@@ -342,7 +378,7 @@ function DashboardPageContent() {
               }}
               value={displayReading?.current ? displayReading.current * 1000 : undefined}
               unit="mA"
-              precision={1}
+              precision={5}
               color="blue"
               dotColor="#7FE0A8"
               subtitle={
@@ -354,11 +390,28 @@ function DashboardPageContent() {
           </div>
 
         </div>
+        </div>
 
       </div>
 
       {/* Educational Process: How EcoStep Footstep Harvesting Works */}
       <HowHarvestingWorksCard />
+
+      {/* Admin Milestone Target Configuration Modal */}
+      {isAdminUser && (
+        <AdminMilestonesModal
+          isOpen={isMilestoneModalOpen}
+          onClose={() => setIsMilestoneModalOpen(false)}
+          activeMonth={milestoneData.currentMonth || milestoneData.selectedMonth}
+          availableMonths={milestoneData.availableMonths}
+          currentMonthTargetMWh={milestoneData.monthlyMilestone?.targetMWh ?? 0.1}
+          currentWeeklyTargetMWh={milestoneData.weeklyMilestones[0]?.targetMWh ?? 0.025}
+          configurationPolicy={milestoneData.configurationPolicy}
+          onSave={async (payload) => {
+            await milestoneData.updateTargets(payload);
+          }}
+        />
+      )}
 
     </div>
   );

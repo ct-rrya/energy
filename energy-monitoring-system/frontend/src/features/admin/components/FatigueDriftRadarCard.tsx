@@ -126,7 +126,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-[16px] sm:text-[18px] font-bold tracking-tight text-[var(--t)] m-0">
-              Passive Fatigue & Drift Radar
+              Tile Wear Over Time (Last 14 Days)
             </h2>
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${driftBadge.cls}`}
@@ -136,9 +136,9 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
             </span>
           </div>
           <p className="text-xs sm:text-[13px] text-[var(--mu)] mt-1 m-0">
-            Continuously compares your 7-day average yield (
-            <strong className="text-[var(--t)] tabular-nums">{recent7d.toFixed(4)} mWh/step</strong>) against your 30-day baseline (
-            <strong className="text-[var(--t)] tabular-nums">{baseline.toFixed(4)} mWh/step</strong>) — zero manual testing required.
+            Shows whether the tile is getting weaker over time. Compares this week’s average (
+            <strong className="text-[var(--t)] tabular-nums">{recent7d.toFixed(4)} mWh/step</strong>) with your 30-day normal average (
+            <strong className="text-[var(--t)] tabular-nums">{baseline.toFixed(4)} mWh/step</strong>) automatically.
           </p>
         </div>
       </div>
@@ -223,51 +223,51 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
         )}
       </div>
 
-      {/* Compact Telemetry & Mechanical Wear Strip */}
+      {/* Compact Wear & Connection Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Footprints className="w-3.5 h-3.5 text-[var(--acc)]" />
-            Lifetime Wear
+            Total Steps Walked
           </div>
           <div className="text-base font-bold tabular-nums text-[var(--t)] mt-1">
             {(radar?.totalLifetimeSteps ?? 0).toLocaleString()} steps
           </div>
           <div className="text-[11px] text-[var(--mu)]">
-            {(radar?.stepsLast7d ?? 0).toLocaleString()} in last 7d
+            {(radar?.stepsLast7d ?? 0).toLocaleString()} in the last 7 days
           </div>
         </div>
 
         <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Radio className="w-3.5 h-3.5 text-[var(--acc)]" />
-            24h Telemetry
+            Updates (24 Hours)
           </div>
           <div className="text-base font-bold tabular-nums text-[var(--t)] mt-1">
-            {radar?.readingsLast24h ?? 0} uploads
+            {radar?.readingsLast24h ?? 0} updates
           </div>
           <div className="text-[11px] text-[var(--mu)]">
-            {100 - (radar?.poorSignalRatioPercent ?? 0)}% strong signal
+            {100 - (radar?.poorSignalRatioPercent ?? 0)}% fast & reliable
           </div>
         </div>
 
         <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Gauge className="w-3.5 h-3.5 text-[var(--acc)]" />
-            Cloud Latency
+            Upload Speed
           </div>
           <div className="text-base font-bold tabular-nums text-[var(--t)] mt-1">
-            {radar?.avgLatencyMs ? `${radar.avgLatencyMs} ms` : 'Nominal'}
+            {radar?.avgLatencyMs ? `${radar.avgLatencyMs} ms` : 'Fast'}
           </div>
           <div className="text-[11px] text-[var(--mu)]">
-            ESP32 → Server delta
+            Tile to dashboard delay
           </div>
         </div>
 
         <div className="p-3 rounded-xl bg-[var(--soft)]/70 border border-[var(--line)]">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
             <Clock className="w-3.5 h-3.5 text-[var(--acc)]" />
-            Last Heartbeat
+            Last Check-In
           </div>
           <div className="text-base font-bold tabular-nums text-[var(--t)] mt-1">
             {formatRelativeTime(radar?.lastReadingAt ?? null)}
@@ -275,7 +275,7 @@ export function FatigueDriftRadarCard({ radar, isLoading }: FatigueDriftRadarCar
           <div className="text-[11px] text-[var(--mu)]">
             {radar?.electricalSnapshot?.latestVoltageV
               ? `${radar.electricalSnapshot.latestVoltageV}V • ${radar.electricalSnapshot.latestCurrentMA}mA`
-              : 'Waiting for upload'}
+              : 'Waiting for footsteps'}
           </div>
         </div>
       </div>

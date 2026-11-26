@@ -40,6 +40,11 @@ export interface MonthlyConfigurationPolicy {
   yearMonth: string;
   status: MonthConfigurationStatus;
   isConfigured: boolean;
+  isAutoCalculated?: boolean;
+  autoCalculatedFromMonth?: string | null;
+  autoCalculatedFromLabel?: string | null;
+  previousMonthMWh?: number;
+  growthPercent?: number;
   isLocked: boolean;
   deadlineDate: string; // ISO string in UTC
   deadlineLabel: string; // e.g. "Nov 2, 2026, 11:59 PM (Asia/Manila)"

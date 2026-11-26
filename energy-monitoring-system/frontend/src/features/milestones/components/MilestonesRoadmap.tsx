@@ -13,6 +13,7 @@ interface MilestonesRoadmapProps {
   selectedMonth?: string;
   milestoneData?: ReturnType<typeof useMilestones>;
   isAdmin?: boolean;
+  compact?: boolean;
 }
 
 function getWeekDisplayLabel(milestone: MilestoneItem): string {
@@ -36,6 +37,7 @@ export function MilestonesRoadmap({
   selectedMonth: controlledMonth,
   milestoneData: externalHook,
   isAdmin = false,
+  compact = false,
 }: MilestonesRoadmapProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -182,26 +184,34 @@ export function MilestonesRoadmap({
           borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(13, 27, 20, 0.08)',
         }}
       >
-        {/* Top Header Section inside Hero Card (Month Goal + 2x2 Metrics) */}
-        <div className="px-5 pt-4 pb-0 sm:px-6 sm:pt-5 sm:pb-0 flex flex-col lg:flex-row gap-4 lg:gap-8 items-stretch lg:items-center justify-between">
+        {/* Top Header Section inside Hero Card (Month Goal + Floating Week Pill + 2x2 Metrics) */}
+        <div
+          className={`${
+            compact
+              ? 'px-4 pt-3.5 pb-0 sm:px-5 sm:pt-4 sm:pb-0 gap-3 lg:gap-5'
+              : 'px-5 pt-4 pb-0 sm:px-6 sm:pt-5 sm:pb-0 gap-4 lg:gap-8'
+          } flex flex-col lg:flex-row items-stretch lg:items-center justify-between`}
+        >
           {/* Left Column: Month Goal */}
-          <div className="flex flex-col gap-1.5 max-w-[340px]">
-            <div className="text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] uppercase text-[#50665a] dark:text-[#93A89C]">
+          <div className="flex flex-col gap-1 max-w-[320px]">
+            <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[#50665a] dark:text-[#93A89C]">
               {monthLabel} Goal
             </div>
 
-            <div className="flex items-baseline flex-wrap gap-x-2 gap-y-0.5">
+            <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5">
               <span
-                className="text-[36px] sm:text-[46px] font-[500] tracking-[-0.03em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
+                className={`${
+                  compact ? 'text-[28px] sm:text-[34px]' : 'text-[36px] sm:text-[46px]'
+                } font-[500] tracking-[-0.03em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {isLoading ? '...' : formatMWh(monthEnergy, 3)}
+                {isLoading ? '...' : formatMWh(monthEnergy, 5)}
               </span>
-              <span className="text-[16px] sm:text-[18px] font-medium text-[#087A3A] dark:text-[#19D46A]">
+              <span className="text-[14px] sm:text-[16px] font-medium text-[#087A3A] dark:text-[#19D46A]">
                 mWh
               </span>
-              <span className="text-[13px] sm:text-[14px] text-[#50665a] dark:text-[#93A89C] font-normal">
-                of {formatMWh(monthTarget, 3)} mWh
+              <span className="text-[12px] sm:text-[13px] text-[#50665a] dark:text-[#93A89C] font-normal">
+                of {formatMWh(monthTarget, 5)} mWh
               </span>
             </div>
 
@@ -212,7 +222,7 @@ export function MilestonesRoadmap({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label={`${monthLabel} progress`}
-              className="h-1.5 w-full max-w-[280px] rounded-full overflow-hidden bg-white/80 dark:bg-white/20 shadow-inner"
+              className="h-1.5 w-full max-w-[260px] rounded-full overflow-hidden bg-white/80 dark:bg-white/20 shadow-inner"
             >
               <div
                 style={{ width: `${monthProgressPct}%` }}
@@ -221,7 +231,7 @@ export function MilestonesRoadmap({
             </div>
 
             {/* Everyday real-world LED light comparison (~20 mW indicator LED = 180 sec per mWh) */}
-            <p className="m-0 text-[11px] sm:text-xs text-[#50665a] dark:text-[#93A89C]">
+            <p className="m-0 text-[11px] text-[#50665a] dark:text-[#93A89C]">
               {monthEnergy > 0
                 ? (() => {
                     const ledSeconds = Math.max(1, Math.round(monthEnergy * 180));
@@ -233,23 +243,23 @@ export function MilestonesRoadmap({
             </p>
           </div>
 
-          {/* Right Column: 2x2 Key Metrics Grid - matching main dashboard typography (DM Sans, 500, tabular-nums, -0.02em) */}
-          <div className="grid grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-2">
+          {/* Right Column: 2x2 Key Metrics Grid */}
+          <div className={`grid grid-cols-2 ${compact ? 'gap-x-5 gap-y-1.5' : 'gap-x-6 sm:gap-x-10 gap-y-2'}`}>
             <div className="flex flex-col">
               <span
-                className="text-[18px] sm:text-[22px] font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
+                className={`${compact ? 'text-[16px] sm:text-[18px]' : 'text-[18px] sm:text-[22px]'} font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {isLoading ? '...' : monthSteps.toLocaleString()}
               </span>
-              <span className="text-[11px] sm:text-[12px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
+              <span className="text-[11px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
                 steps this month
               </span>
             </div>
 
             <div className="flex flex-col">
               <span
-                className="text-[18px] sm:text-[22px] font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
+                className={`${compact ? 'text-[16px] sm:text-[18px]' : 'text-[18px] sm:text-[22px]'} font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {achievedCount}{' '}
@@ -257,40 +267,40 @@ export function MilestonesRoadmap({
                   / {weeklyMilestones.length}
                 </span>
               </span>
-              <span className="text-[11px] sm:text-[12px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
+              <span className="text-[11px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
                 weeks reached
               </span>
             </div>
 
             <div className="flex flex-col">
               <span
-                className="text-[18px] sm:text-[22px] font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
+                className={`${compact ? 'text-[16px] sm:text-[18px]' : 'text-[18px] sm:text-[22px]'} font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {isLoading ? '...' : formatMWh(allTimeEnergyMWh, 3)}
+                {isLoading ? '...' : formatMWh(allTimeEnergyMWh, 5)}
               </span>
-              <span className="text-[11px] sm:text-[12px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
+              <span className="text-[11px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
                 lifetime mWh
               </span>
             </div>
 
             <div className="flex flex-col">
               <span
-                className="text-[18px] sm:text-[22px] font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums"
+                className={`${compact ? 'text-[16px] sm:text-[18px]' : 'text-[18px] sm:text-[22px]'} font-[500] tracking-[-0.02em] leading-none text-[#0D1B14] dark:text-[#E4F7EA] tabular-nums`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 {isLoading ? '...' : allTimeSteps.toLocaleString()}
               </span>
-              <span className="text-[11px] sm:text-[12px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
+              <span className="text-[11px] text-[#50665a] dark:text-[#93A89C] mt-0.5">
                 lifetime steps
               </span>
             </div>
           </div>
         </div>
 
-        {/* Edge-to-edge Winding Trail Landscape SVG (Touch-friendly horizontal scroll on narrow mobile, edge-to-edge on tablet/desktop) */}
+        {/* Edge-to-edge Winding Trail Landscape SVG */}
         <div
-          className="w-full overflow-x-auto select-none mt-1 scrollbar-none touch-pan-x"
+          className="w-full overflow-x-auto select-none mt-0.5 scrollbar-none touch-pan-x"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="min-w-[560px] sm:min-w-0 w-full">
@@ -544,12 +554,95 @@ export function MilestonesRoadmap({
             </svg>
           </div>
         </div>
+
+        {/* Option A: Slim Inline Footer Strip Inside the Journey Card (Compact / Central Mode) */}
+        {compact && activeMilestone && (
+          <div
+            className="px-4 py-2.5 sm:px-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t text-xs"
+            style={{
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(13, 27, 20, 0.08)',
+              background: isDark ? 'rgba(7, 20, 14, 0.45)' : 'rgba(255, 255, 255, 0.45)',
+            }}
+          >
+            {/* Left: Week label + status pill */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-semibold text-[#0D1B14] dark:text-[#E4F7EA]">
+                {activeMilestone.label} · {getWeekDisplayLabel(activeMilestone)}
+              </span>
+              {activeMilestone.isAchieved ? (
+                <span className="text-[10px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 rounded-full px-2 py-0.5 border border-emerald-500/30">
+                  Completed
+                </span>
+              ) : activeMilestone.state === 'CURRENT' ? (
+                <span
+                  className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${
+                    isDark
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : 'bg-[#fff4d6] text-[#8a5a00]'
+                  }`}
+                >
+                  In progress
+                </span>
+              ) : activeMilestone.state === 'COMPLETED' ? (
+                <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-black/5 dark:bg-white/10 text-[#50665a] dark:text-[#93A89C]">
+                  Not reached
+                </span>
+              ) : (
+                <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-black/5 dark:bg-white/10 text-[#50665a] dark:text-[#93A89C]">
+                  Upcoming
+                </span>
+              )}
+            </div>
+
+            {/* Middle: Energy + inline progress bar */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-[190px] max-w-[380px]">
+              <span className="tabular-nums whitespace-nowrap">
+                <strong className="font-semibold text-[#0D1B14] dark:text-[#E4F7EA]">
+                  {isLoading ? '...' : formatMWh(weekEnergy, 5)}
+                </strong>
+                <span className="text-[#50665a] dark:text-[#93A89C]">
+                  {' '}/ {formatMWh(weekTarget, 5)} mWh
+                </span>
+              </span>
+
+              <div
+                role="progressbar"
+                aria-valuenow={weekProgressPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${activeMilestone.label} progress`}
+                className="h-1.5 flex-1 min-w-[60px] rounded-full overflow-hidden bg-black/10 dark:bg-white/15"
+              >
+                <div
+                  style={{ width: `${weekProgressPct}%` }}
+                  className="h-full bg-[#16a34a] rounded-full transition-all duration-700"
+                />
+              </div>
+            </div>
+
+            {/* Right: Footsteps + optional Admin Replay */}
+            <div className="flex items-center gap-2.5 shrink-0 text-[#50665a] dark:text-[#93A89C] tabular-nums">
+              <span>{weekSteps.toLocaleString()} footsteps</span>
+              {isAdmin && activeMilestone.isAchieved && (
+                <button
+                  type="button"
+                  onClick={() => setCelebratingMilestone(activeMilestone)}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--acc)] hover:opacity-80 cursor-pointer"
+                  title="Replay celebration"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Replay</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────────────────
-          SELECTED WEEK INSPECTION CARD (Compact, fitting comfortably in viewport)
+          SELECTED WEEK INSPECTION CARD (Hidden in compact Central mode since it floats on the hero)
           ───────────────────────────────────────────────────────────────────────────── */}
-      {activeMilestone && (
+      {!compact && activeMilestone && (
         <section className="cd !py-3.5 !px-5 sm:!py-4 sm:!px-6 flex flex-col gap-3 font-sans">
           {/* Header Row: Title + Status + Celebration button (Admins only) */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">

@@ -89,6 +89,11 @@ export interface MonthlyConfigurationPolicy {
   yearMonth: string;
   status: MonthConfigurationStatus;
   isConfigured: boolean;
+  isAutoCalculated?: boolean;
+  autoCalculatedFromMonth?: string | null;
+  autoCalculatedFromLabel?: string | null;
+  previousMonthMWh?: number;
+  growthPercent?: number;
   isLocked: boolean;
   deadlineDate: string; // ISO string in UTC
   deadlineLabel: string; // e.g. "Nov 2, 2026, 11:59 PM (Asia/Manila)"
@@ -318,61 +323,88 @@ export class MilestonesService {
   }
 
   /**
-   * Returns a list of past and current months (from Oct 2026 to current Manila month)
-   * that have passed their configuration deadline without targets being submitted.
+   * Computes an automatic monthly target from the previous month's actual harvested output + 10% growth.
+   * If the immediate previous month had 0 mWh, looks back up to 12 prior months for the most recent
+   * active month; if none have data yet, falls back to the starter default (0.1 mWh).
    */
-  async getOverdueMonths(targetsDoc?: MilestoneTargetDocument): Promise<string[]> {
-    const doc = targetsDoc || (await this.getTargets());
-    const manila = this.getManilaNow();
-    const nowUtc = manila.date;
-    const overdue: string[] = [];
+  private async computeAutoTargetFromPreviousMonths(
+    yearMonth: string,
+    fallbackMWh: number = 0.1,
+    growthPercent: number = 10,
+  ): Promise<{
+    monthlyTargetMWh: number;
+    sourceMonth: string | null;
+    sourceMonthLabel: string | null;
+    previousMonthMWh: number;
+    growthPercent: number;
+    usedFallback: boolean;
+  }> {
+    const [yStr, mStr] = yearMonth.split('-');
+    let curY = parseInt(yStr, 10);
+    let curM = parseInt(mStr, 10);
+    const shortMonths = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
 
-    let curY = 2026;
-    let curM = 10;
-    while (curY < manila.year || (curY === manila.year && curM <= manila.month)) {
-      const ym = `${curY}-${String(curM).padStart(2, '0')}`;
-      const isConfigured = Boolean(doc.monthlyConfigurations?.[ym]);
-      if (!isConfigured) {
-        const { deadlineUtc } = this.getManilaMonthDeadline(ym);
-        if (nowUtc > deadlineUtc) {
-          overdue.push(ym);
-        }
+    for (let lookback = 0; lookback < 12; lookback++) {
+      curM -= 1;
+      if (curM < 1) {
+        curM = 12;
+        curY -= 1;
       }
-      curM++;
-      if (curM > 12) {
-        curM = 1;
-        curY++;
+
+      const daysInPrev = this.getDaysInMonth(curY, curM);
+      const { start, end } = this.getManilaUTCRange(curY, curM, 1, daysInPrev);
+      const { energyMWh } = await this.getAccumulatedEnergyForPeriod(start, end);
+
+      if (energyMWh > 0) {
+        const multiplier = 1 + growthPercent / 100;
+        const sourceMonth = `${curY}-${String(curM).padStart(2, '0')}`;
+        return {
+          monthlyTargetMWh: round6(energyMWh * multiplier),
+          sourceMonth,
+          sourceMonthLabel: `${shortMonths[curM - 1]} ${curY}`,
+          previousMonthMWh: round6(energyMWh),
+          growthPercent,
+          usedFallback: false,
+        };
       }
     }
-    return overdue;
+
+    return {
+      monthlyTargetMWh: round6(fallbackMWh || 0.1),
+      sourceMonth: null,
+      sourceMonthLabel: null,
+      previousMonthMWh: 0,
+      growthPercent,
+      usedFallback: true,
+    };
   }
 
   /**
-   * Returns the configuration policy, deadline, locking status, and overdue months.
+   * Returns overdue months. Always empty now because unconfigured months
+   * automatically calculate their target from the previous month's output (+10%).
+   */
+  async getOverdueMonths(_targetsDoc?: MilestoneTargetDocument): Promise<string[]> {
+    return [];
+  }
+
+  /**
+   * Returns the configuration policy, auto-calculation metadata, and editing permissions.
    */
   async getConfigurationPolicy(yearMonth?: string, userRole?: string): Promise<MonthlyConfigurationPolicy> {
     const targets = await this.getTargets();
     const manila = this.getManilaNow();
-    const nowUtc = manila.date;
     const targetMonth = yearMonth && /^\d{4}-\d{2}$/.test(yearMonth)
       ? yearMonth
       : `${manila.year}-${String(manila.month).padStart(2, '0')}`;
 
     const { deadlineUtc, deadlineLabel } = this.getManilaMonthDeadline(targetMonth);
     const existingConfig = targets.monthlyConfigurations?.[targetMonth];
-    const isConfigured = Boolean(existingConfig);
-    const isLocked = Boolean(existingConfig?.isLocked ?? isConfigured);
+    const hasManualConfig = Boolean(existingConfig);
+    const isLocked = Boolean(existingConfig?.isLocked ?? hasManualConfig);
 
-    let status: MonthConfigurationStatus = 'PENDING';
-    if (isConfigured) {
-      status = 'CONFIGURED';
-    } else if (nowUtc > deadlineUtc) {
-      status = 'OVERDUE';
-    } else {
-      status = 'PENDING';
-    }
-
-    const overdueMonths = await this.getOverdueMonths(targets);
     const isAdminRole =
       userRole === 'SYSTEM_ADMIN' ||
       userRole === 'SUPER_ADMIN' ||
@@ -384,19 +416,32 @@ export class MilestonesService {
       existingConfig?.configuredBy || existingConfig?.updatedBy,
     );
 
+    const autoMeta = hasManualConfig
+      ? null
+      : await this.computeAutoTargetFromPreviousMonths(
+          targetMonth,
+          targets.target1MonthMWh || 0.1,
+          10,
+        );
+
     return {
       yearMonth: targetMonth,
-      status,
-      isConfigured,
+      status: 'CONFIGURED',
+      isConfigured: true,
+      isAutoCalculated: !hasManualConfig,
+      autoCalculatedFromMonth: autoMeta?.sourceMonth ?? null,
+      autoCalculatedFromLabel: autoMeta?.sourceMonthLabel ?? null,
+      previousMonthMWh: autoMeta?.previousMonthMWh,
+      growthPercent: autoMeta?.growthPercent ?? 10,
       isLocked,
       deadlineDate: deadlineUtc.toISOString(),
       deadlineLabel,
-      configuredBy: resolvedConfiguredBy,
+      configuredBy: hasManualConfig ? resolvedConfiguredBy : 'Auto (+10%)',
       configuredAt: existingConfig?.configuredAt || existingConfig?.updatedAt,
       canEdit,
-      requiresSuperAdmin: isLocked,
-      overdueMonths,
-      hasOverdue: overdueMonths.length > 0,
+      requiresSuperAdmin: false,
+      overdueMonths: [],
+      hasOverdue: false,
       correctionCount: existingConfig?.correctionLogs?.length || 0,
       correctionLogs: existingConfig?.correctionLogs || [],
     };
@@ -420,7 +465,9 @@ export class MilestonesService {
   }
 
   /**
-   * Get targets for a specific month (falls back to defaults if not customized).
+   * Get targets for a specific month.
+   * Uses manual admin configuration if present; otherwise automatically calculates
+   * from the previous month's harvested output + 10% growth.
    * Weekly targets are always split evenly from the monthly target across that month's calendar weeks.
    */
   async getTargetsForMonth(yearMonth?: string): Promise<{
@@ -435,6 +482,11 @@ export class MilestonesService {
       week6MWh?: number;
     };
     isConfigured: boolean;
+    isAutoCalculated?: boolean;
+    autoCalculatedFromMonth?: string | null;
+    autoCalculatedFromLabel?: string | null;
+    previousMonthMWh?: number;
+    growthPercent?: number;
     status: MonthConfigurationStatus;
     isLocked: boolean;
     deadlineDate: string;
@@ -444,7 +496,6 @@ export class MilestonesService {
     correctionLogs?: MilestoneCorrectionLog[];
   }> {
     const manila = this.getManilaNow();
-    const nowUtc = manila.date;
     const effectiveMonth = yearMonth && /^\d{4}-\d{2}$/.test(yearMonth)
       ? yearMonth
       : `${manila.year}-${String(manila.month).padStart(2, '0')}`;
@@ -465,6 +516,7 @@ export class MilestonesService {
         monthlyTargetMWh: monthlyMWh,
         weeklyTargetsMWh: this.buildEvenWeeklyTargets(monthlyMWh, weekBlocks.length),
         isConfigured: true,
+        isAutoCalculated: false,
         status: stored.status || 'CONFIGURED',
         isLocked: stored.isLocked ?? true,
         deadlineDate: stored.deadlineDate || deadlineUtc.toISOString(),
@@ -475,19 +527,28 @@ export class MilestonesService {
       };
     }
 
-    // Default configuration based on piezoelectric prototype telemetry (Pilot preset default)
-    const baseMonth = round6(targets.target1MonthMWh || 0.1);
-    const status: MonthConfigurationStatus = nowUtc > deadlineUtc ? 'OVERDUE' : 'PENDING';
+    // Automatically calculate from previous month's actual harvested energy + 10% growth
+    const auto = await this.computeAutoTargetFromPreviousMonths(
+      effectiveMonth,
+      targets.target1MonthMWh || 0.1,
+      10,
+    );
 
     return {
       yearMonth: effectiveMonth,
-      monthlyTargetMWh: baseMonth,
-      weeklyTargetsMWh: this.buildEvenWeeklyTargets(baseMonth, weekBlocks.length),
-      isConfigured: false,
-      status,
+      monthlyTargetMWh: auto.monthlyTargetMWh,
+      weeklyTargetsMWh: this.buildEvenWeeklyTargets(auto.monthlyTargetMWh, weekBlocks.length),
+      isConfigured: true,
+      isAutoCalculated: true,
+      autoCalculatedFromMonth: auto.sourceMonth,
+      autoCalculatedFromLabel: auto.sourceMonthLabel,
+      previousMonthMWh: auto.previousMonthMWh,
+      growthPercent: auto.growthPercent,
+      status: 'CONFIGURED',
       isLocked: false,
       deadlineDate: deadlineUtc.toISOString(),
       deadlineLabel,
+      configuredBy: 'Auto (+10%)',
       correctionLogs: [],
     };
   }

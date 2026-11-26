@@ -104,3 +104,6 @@ docs/
 
 # Scratch folder
 scratch/
+
+# Local-only diagrams
+DIAGRAMS/

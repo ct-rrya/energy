@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Report, ReportSchema } from './schemas/report.schema';
+import {
+  EnergyReading,
+  EnergyReadingSchema,
+} from '../iot/schemas/energy-reading.schema';
 import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { DiagnosticsModule } from '../diagnostics/diagnostics.module';
 import { UsersModule } from '../users/users.module';
 import { AiModule } from '../ai/ai.module';
 import { PdfGeneratorService } from './generators/pdf-generator.service';
@@ -61,16 +66,23 @@ import { ExcelGeneratorService } from './generators/excel-generator.service';
  */
 @Module({
   imports: [
-    // Register Report schema with Mongoose
+    // Register Report & EnergyReading schemas with Mongoose
     MongooseModule.forFeature([
       {
         name: Report.name,
         schema: ReportSchema,
       },
+      {
+        name: EnergyReading.name,
+        schema: EnergyReadingSchema,
+      },
     ]),
 
     // Import AnalyticsModule to access AnalyticsService
     AnalyticsModule,
+
+    // Import DiagnosticsModule to include live tile health & diagnostic audit log
+    DiagnosticsModule,
 
     // Import UsersModule to access UsersService
     UsersModule,

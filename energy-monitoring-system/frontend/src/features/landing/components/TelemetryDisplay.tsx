@@ -617,7 +617,7 @@ export default function TelemetryDisplay({
         <MetricCard
           icon={<Zap size={24} color="#FFFFFF" strokeWidth={2.5} />}
           label="Voltage"
-          value={telemetryData.voltage.toFixed(2)}
+          value={telemetryData.voltage.toFixed(5)}
           unit="V"
           iconBgColor="linear-gradient(135deg, #428475, #2D6559)"
         />
@@ -626,7 +626,7 @@ export default function TelemetryDisplay({
         <MetricCard
           icon={<Activity size={24} color="#FFFFFF" strokeWidth={2.5} />}
           label="Current"
-          value={telemetryData.current.toFixed(2)}
+          value={telemetryData.current.toFixed(5)}
           unit="A"
           iconBgColor="linear-gradient(135deg, #89D7B7, #6FC5A0)"
         />
@@ -635,7 +635,7 @@ export default function TelemetryDisplay({
         <MetricCard
           icon={<Power size={24} color="#FFFFFF" strokeWidth={2.5} />}
           label="Power"
-          value={telemetryData.power.toFixed(2)}
+          value={telemetryData.power.toFixed(5)}
           unit="W"
           iconBgColor="linear-gradient(135deg, #1A312C, #0F1F1B)"
         />
@@ -644,7 +644,7 @@ export default function TelemetryDisplay({
         <MetricCard
           icon={<Battery size={24} color="#FFFFFF" strokeWidth={2.5} />}
           label="Energy Today"
-          value={telemetryData.energyToday.toFixed(3)}
+          value={telemetryData.energyToday.toFixed(5)}
           unit="kWh"
           iconBgColor="linear-gradient(135deg, #428475, #89D7B7)"
         />

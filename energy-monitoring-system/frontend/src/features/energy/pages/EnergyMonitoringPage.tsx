@@ -144,7 +144,7 @@ export function EnergyMonitoringPage() {
                   className="text-2xl font-bold"
                   style={{ color: colors.text }}
                 >
-                  {lastReading.energy?.toFixed(3) || '0.000'}
+                  {lastReading.energy?.toFixed(5) || '0.00000'}
                   <span 
                     className="text-sm font-normal ml-1"
                     style={{ color: colors.subtext }}
@@ -172,7 +172,7 @@ export function EnergyMonitoringPage() {
                   className="text-2xl font-bold"
                   style={{ color: colors.text }}
                 >
-                  {lastReading.voltage?.toFixed(1) || '0.0'}
+                  {lastReading.voltage?.toFixed(5) || '0.00000'}
                   <span 
                     className="text-sm font-normal ml-1"
                     style={{ color: colors.subtext }}
@@ -200,7 +200,7 @@ export function EnergyMonitoringPage() {
                   className="text-2xl font-bold"
                   style={{ color: colors.text }}
                 >
-                  {lastReading.power?.toFixed(1) || '0.0'}
+                  {lastReading.power?.toFixed(5) || '0.00000'}
                   <span 
                     className="text-sm font-normal ml-1"
                     style={{ color: colors.subtext }}
@@ -229,7 +229,7 @@ export function EnergyMonitoringPage() {
                   style={{ color: colors.text }}
                 >
                   {lastReading.capacitorVoltage !== undefined 
-                    ? lastReading.capacitorVoltage.toFixed(1) 
+                    ? lastReading.capacitorVoltage.toFixed(5) 
                     : '—'}
                   <span 
                     className="text-sm font-normal ml-1"

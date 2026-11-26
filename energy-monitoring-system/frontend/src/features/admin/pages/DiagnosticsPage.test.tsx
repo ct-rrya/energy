@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DiagnosticsPage } from './DiagnosticsPage';
@@ -29,8 +30,15 @@ vi.mock('../components/HardwarePipelineCard', () => ({
 }));
 
 vi.mock('../components/DiagnosticWorkbenchCard', () => ({
-  DiagnosticWorkbenchCard: () => (
-    <div data-testid="diagnostic-workbench-card">Diagnostic Workbench Card</div>
+  DiagnosticWorkbenchCard: ({ onOpenHistory }: { onOpenHistory?: () => void }) => (
+    <div data-testid="diagnostic-workbench-card">
+      Diagnostic Workbench Card
+      {onOpenHistory && (
+        <button type="button" onClick={onOpenHistory}>
+          History
+        </button>
+      )}
+    </div>
   ),
 }));
 
@@ -118,13 +126,17 @@ describe('DiagnosticsPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders header and all 4 redesigned diagnostic sections', () => {
+  it('renders header and 3 main workbench sections with history collapsed into a modal', async () => {
+    const user = userEvent.setup();
     renderDiagnosticsPage();
 
     expect(screen.getByText('Tile Performance Diagnostics')).toBeInTheDocument();
     expect(screen.getByTestId('hardware-pipeline-card')).toBeInTheDocument();
     expect(screen.getByTestId('diagnostic-workbench-card')).toBeInTheDocument();
     expect(screen.getByTestId('fatigue-drift-radar-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('diagnostic-history-table')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'History' }));
     expect(screen.getByTestId('diagnostic-history-table')).toBeInTheDocument();
   });
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AdminRoute } from './AdminRoute';
 import { ProtectedRoute } from './ProtectedRoute';
 import { FlexibleRoute } from './FlexibleRoute';
@@ -17,7 +17,6 @@ import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 
 // Lazy-loaded pages
 const AnalyticsPage = lazy(() => import('@/features/analytics/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
-const MilestonesPage = lazy(() => import('@/features/milestones/pages/MilestonesPage').then(m => ({ default: m.MilestonesPage })));
 const AboutPage = lazy(() => import('@/features/about/pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const EnergyMonitoringPage = lazy(() => import('@/features/energy/pages/EnergyMonitoringPage').then(m => ({ default: m.EnergyMonitoringPage })));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
@@ -113,14 +112,10 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // Milestones - Public access
+      // Milestones merged into Central — redirect legacy links smoothly
       {
         path: ROUTES.MILESTONES,
-        element: (
-          <LazyRoute>
-            <MilestonesPage />
-          </LazyRoute>
-        ),
+        element: <Navigate to={ROUTES.DASHBOARD} replace />,
       },
 
       // About - Public access

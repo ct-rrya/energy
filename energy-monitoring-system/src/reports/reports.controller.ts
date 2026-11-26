@@ -157,12 +157,12 @@ export class ReportsController {
       if (user && userId) {
         const formatLower = (generateReportDto.format || '').toLowerCase();
         let eventName = 'Generated PDF report';
-        if (formatLower === 'csv') {
+        if (formatLower === 'excel' || formatLower === 'xlsx') {
+          eventName = 'Generated Excel report';
+        } else if (formatLower === 'csv') {
           eventName = 'Exported CSV';
         } else if (formatLower === 'word' || formatLower === 'docx' || formatLower === 'doc') {
           eventName = 'Generated Word report';
-        } else if (formatLower === 'excel' || formatLower === 'xlsx') {
-          eventName = 'Exported CSV';
         }
 
         await this.auditService.logAudit(req, {

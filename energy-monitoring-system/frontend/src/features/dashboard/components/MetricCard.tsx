@@ -116,6 +116,7 @@ export const MetricCard = React.memo(function MetricCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         minHeight: '130px',
+        height: '100%',
         boxSizing: 'border-box',
         width: '100%',
         textAlign: 'left',

@@ -139,70 +139,70 @@ async function buildFallbackInsights(): Promise<DiagnosticInsights> {
     pipelineStages: [
       {
         id: 'piezo',
-        label: 'Piezo Impact',
-        shortLabel: 'Piezo Tile',
+        label: 'Floor Tile (Footsteps)',
+        shortLabel: 'Floor Tile',
         status: isOffline ? 'idle' : 'ok',
         primaryValue: `${stepsLast7d || latestSteps} steps`,
-        detail: `${(baseline.totalSteps || stepsLast7d).toLocaleString()} steps analyzed across baseline`,
+        detail: `${(baseline.totalSteps || stepsLast7d).toLocaleString()} footsteps recorded in the last 30 days`,
       },
       {
         id: 'electrical',
-        label: 'Rectifier & Sensor',
-        shortLabel: 'V / I Sensor',
+        label: 'Electrical Output (Voltage & Current)',
+        shortLabel: 'Volts & Amps',
         status: isOffline ? 'idle' : latestVoltageV > 1.5 && latestCurrentMA < 0.05 ? 'warn' : 'ok',
         primaryValue: `${(avgVoltage7dV || latestVoltageV).toFixed(1)}V • ${(avgCurrent7dMA || latestCurrentMA).toFixed(1)}mA`,
-        detail: `Latest reading: ${latestVoltageV.toFixed(2)} V, ${latestCurrentMA.toFixed(2)} mA`,
+        detail: `Last measured: ${latestVoltageV.toFixed(2)} V, ${latestCurrentMA.toFixed(2)} mA`,
       },
       {
         id: 'energy',
-        label: 'Energy Yield',
-        shortLabel: 'Storage / Yield',
+        label: 'Energy Stored Per Step',
+        shortLabel: 'Energy Yield',
         status: isOffline ? 'idle' : driftStatus === 'degrading' ? 'warn' : 'ok',
         primaryValue: `${recent7d.toFixed(4)} mWh`,
-        detail: `vs ${baseline30d.toFixed(4)} mWh/step 30-day baseline`,
+        detail: `Average per step vs ${baseline30d.toFixed(4)} mWh monthly average`,
       },
       {
         id: 'esp32',
-        label: 'ESP32 Controller',
-        shortLabel: 'ESP32 Link',
+        label: 'Tile Control Box',
+        shortLabel: 'Control Box',
         status: isOffline ? 'idle' : 'ok',
         primaryValue: isOffline
-          ? 'Standby'
+          ? 'Idle'
           : minutesSinceLast < 2
-            ? 'Live now'
+            ? 'Active now'
             : `${Math.max(1, Math.round(minutesSinceLast))}m ago`,
-        detail: `${last24h.length} uploads in last 24h`,
+        detail: `Sent ${last24h.length} updates in the last 24 hours`,
       },
       {
         id: 'cloud',
-        label: 'Cloud & Live Sync',
-        shortLabel: 'Cloud Sync',
+        label: 'Online Dashboard Sync',
+        shortLabel: 'Online Sync',
         status: isOffline ? 'idle' : 'ok',
-        primaryValue: 'Ready',
-        detail: 'Real-time WebSocket stream listening',
+        primaryValue: 'Connected',
+        detail: 'Ready to receive live updates',
       },
     ],
     faultDiagnosis: isOffline
       ? {
           code: 'NO_RECENT_TELEMETRY',
           severity: 'info',
-          title: 'Tile Standby / No Recent Uploads',
-          summary: 'No ESP32 telemetry has arrived in the past 24 hours.',
-          probableCause: 'Tile is idle, powered down, or awaiting Wi-Fi setup.',
+          title: 'Tile is Idle — No Recent Activity',
+          summary: 'No new readings have come in during the past 24 hours.',
+          probableCause: 'Nobody has stepped on the tile recently, the control box is unplugged, or Wi-Fi needs to be reconnected.',
           recommendedChecks: [
-            'Step on the tile or start a live Bench Test below to verify output.',
-            'Use BLE Field Check to confirm local ESP32 connectivity.',
+            'Walk across the tile or run a quick Step Test below.',
+            'Use the Bluetooth & Wi-Fi box below to check the tile connection.',
           ],
         }
       : {
           code: 'NOMINAL',
           severity: 'healthy',
-          title: 'All Hardware & Telemetry Signatures Nominal',
-          summary: 'Recent piezo, electrical, and cloud readings align with your 30-day baseline.',
-          probableCause: 'No hardware, wiring, or telemetry faults detected.',
+          title: 'Everything Is Working Normally',
+          summary: 'Footstep sensing, electrical output, energy storage, and online updates are all within normal range.',
+          probableCause: 'No wiring, tile wear, or connection problems found.',
           recommendedChecks: [
-            'Run a Multi-Sample Bench Test anytime for official verification.',
-            'Watch the 14-day Fatigue Radar below to catch wear early.',
+            'No repair needed — run a Step Test anytime to log a checkup.',
+            'Check the 14-day wear chart below occasionally to spot slow wear early.',
           ],
         },
     fatigueRadar: {

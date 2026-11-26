@@ -28,6 +28,8 @@ import {
   type FeedbackItem,
   type FeedbackStatus,
 } from '@/api/services/feedback.service';
+import { adminChatService } from '@/api/services/adminChat.service';
+import { AdminInboxPanel } from '../components/AdminInboxPanel';
 
 const CATEGORY_OPTIONS: Array<{
   value: FeedbackCategory;
@@ -90,6 +92,15 @@ export function FeedbackPage() {
   const queryClient = useQueryClient();
 
   const isAdmin = Boolean(isAuthenticated && user);
+  const [activeTab, setActiveTab] = useState<'board' | 'inbox'>('board');
+
+  const { data: inboxMeta } = useQuery({
+    queryKey: ['admin-chat-threads'],
+    queryFn: () => adminChatService.listThreadsForAdmin(),
+    enabled: isAdmin,
+    refetchInterval: 15_000,
+  });
+  const unreadInboxCount = inboxMeta?.totalUnread ?? 0;
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<'all' | FeedbackStatus>('all');
@@ -223,23 +234,68 @@ export function FeedbackPage() {
         }}
       />
 
-      {/* Compact inline summary indicators (minimal footprint so Post + Feed stay primary) */}
-      <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--panel)] border border-[var(--line)] text-[var(--mu)]">
-          <span>Posts</span>
-          <strong className="text-[var(--t)] tabular-nums">{stats?.total ?? 0}</strong>
+      {/* Admin-only Tab Switcher: Public Feedback Board vs Direct Messages Inbox */}
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab('board')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+              activeTab === 'board'
+                ? 'bg-[var(--acc)] text-white dark:text-[#04210f] border-transparent'
+                : 'bg-[var(--panel)] text-[var(--t)] border-[var(--line)] hover:bg-[var(--soft)]'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Public Feedback Board</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('inbox')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+              activeTab === 'inbox'
+                ? 'bg-[var(--acc)] text-white dark:text-[#04210f] border-transparent'
+                : 'bg-[var(--panel)] text-[var(--t)] border-[var(--line)] hover:bg-[var(--soft)]'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Direct Messages</span>
+            {unreadInboxCount > 0 && (
+              <span
+                className={`min-w-[20px] h-[20px] px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center ${
+                  activeTab === 'inbox'
+                    ? 'bg-white/25 text-white dark:bg-black/20 dark:text-[#04210f]'
+                    : 'bg-[var(--acc)] text-white dark:text-[#04210f]'
+                }`}
+              >
+                {unreadInboxCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {isAdmin && activeTab === 'inbox' ? (
+        <AdminInboxPanel />
+      ) : (
+        <>
+      {/* Clean inline summary strip (no floating pill boxes) */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-xs text-[var(--mu)] px-0.5">
+        <span>
+          <strong className="text-[var(--t)] tabular-nums">{stats?.total ?? 0}</strong> posts
         </span>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500">
+        <span className="opacity-40">·</span>
+        <span className="inline-flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          <span>Open</span>
-          <strong className="tabular-nums">{stats?.openCount ?? 0}</strong>
+          <strong className="text-[var(--t)] tabular-nums">{stats?.openCount ?? 0}</strong> open
         </span>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[#19D46A]">
+        <span className="opacity-40">·</span>
+        <span className="inline-flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#19D46A]" />
-          <span>Resolved</span>
-          <strong className="tabular-nums">{stats?.resolvedCount ?? 0}</strong>
+          <strong className="text-[var(--t)] tabular-nums">{stats?.resolvedCount ?? 0}</strong> resolved
         </span>
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--panel)] border border-[var(--line)] text-[var(--mu)]">
+        <span className="opacity-40">·</span>
+        <span className="inline-flex items-center gap-1">
           <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
           <strong className="text-[var(--t)] tabular-nums">
             {stats?.averageRating !== null && stats?.averageRating !== undefined
@@ -250,27 +306,27 @@ export function FeedbackPage() {
         </span>
       </div>
 
-      {/* Main Responsive Two-Column Layout on Large Screens */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-        {/* Left: Submit Feedback Form */}
-        <section className="cd xl:col-span-4">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-[#19D46A] border border-emerald-500/25">
+      {/* Main Responsive Two-Column Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+        {/* Left: Slim Submit Feedback Composer */}
+        <section className="cd !p-4 xl:col-span-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-[#19D46A] border border-emerald-500/25 shrink-0">
               <MessageSquarePlus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[var(--t)] m-0">Post Feedback</h2>
-              <p className="text-xs text-[var(--mu)] m-0">Visible to the EcoStep community</p>
+              <h2 className="text-sm font-bold text-[var(--t)] m-0">Post Feedback</h2>
+              <p className="text-[11px] text-[var(--mu)] m-0">Visible to the EcoStep community</p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Category Pills */}
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)] mb-1.5">
+              <label className="block text-[10.5px] font-semibold uppercase tracking-wider text-[var(--mu)] mb-1">
                 Category
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 {CATEGORY_OPTIONS.map((opt) => {
                   const Icon = opt.Icon;
                   const active = category === opt.value;
@@ -279,7 +335,7 @@ export function FeedbackPage() {
                       key={opt.value}
                       type="button"
                       onClick={() => setCategory(opt.value)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         active
                           ? 'bg-emerald-500/15 border-[#19D46A] text-[#19D46A]'
                           : 'bg-[var(--soft)] border-[var(--line)] text-[var(--mu)] hover:text-[var(--t)]'
@@ -295,8 +351,8 @@ export function FeedbackPage() {
 
             {/* Optional Star Rating */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--mu)]">
                   Star Rating (Optional)
                 </label>
                 {rating > 0 && (
@@ -309,7 +365,7 @@ export function FeedbackPage() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => {
                   const filled = star <= (hoverRating || rating);
                   return (
@@ -320,10 +376,10 @@ export function FeedbackPage() {
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
                       aria-label={`Rate ${star} out of 5 stars`}
-                      className="p-1 rounded-lg hover:bg-[var(--soft)] transition-transform active:scale-90 cursor-pointer"
+                      className="p-0.5 rounded-md hover:bg-[var(--soft)] transition-transform active:scale-90 cursor-pointer"
                     >
                       <Star
-                        className={`w-6 h-6 transition-colors ${
+                        className={`w-5 h-5 transition-colors ${
                           filled
                             ? 'text-amber-400 fill-amber-400'
                             : 'text-[var(--mu)] opacity-45'
@@ -344,7 +400,7 @@ export function FeedbackPage() {
             <div>
               <label
                 htmlFor="feedback-author"
-                className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)] mb-1.5"
+                className="block text-[10.5px] font-semibold uppercase tracking-wider text-[var(--mu)] mb-1"
               >
                 Your Name (Optional)
               </label>
@@ -355,41 +411,41 @@ export function FeedbackPage() {
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
                 placeholder="Leave blank to post as Anonymous"
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors"
                 style={{ backgroundColor: isDark ? '#12241A' : 'var(--soft)' }}
               />
             </div>
 
             {/* Message */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1">
                 <label
                   htmlFor="feedback-message"
-                  className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]"
+                  className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--mu)]"
                 >
                   Feedback or Review
                 </label>
-                <span className="text-[11px] text-[var(--mu)] tabular-nums">
+                <span className="text-[10.5px] text-[var(--mu)] tabular-nums">
                   {message.length}/1000
                 </span>
               </div>
               <textarea
                 id="feedback-message"
-                rows={4}
+                rows={3}
                 required
                 minLength={3}
                 maxLength={1000}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Share your experience with EcoStep, suggest an improvement, or report a tile issue..."
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors resize-y"
+                placeholder="Share your experience, suggest an improvement, or report a tile issue..."
+                className="w-full px-3 py-2 text-xs rounded-lg border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A] transition-colors resize-y"
                 style={{ backgroundColor: isDark ? '#12241A' : 'var(--soft)' }}
               />
             </div>
 
             {submitNotice && (
               <div
-                className={`p-3 rounded-xl text-xs font-medium flex items-start gap-2 ${
+                className={`p-2.5 rounded-lg text-xs font-medium flex items-start gap-2 ${
                   submitNotice.type === 'success'
                     ? isDark
                       ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-300'
@@ -411,17 +467,17 @@ export function FeedbackPage() {
             <button
               type="submit"
               disabled={createMutation.isPending || message.trim().length < 3}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:opacity-90 active:scale-95"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:opacity-90 active:scale-[0.99]"
               style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
             >
               {createMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Posting...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                   Post to Board
                 </>
               )}
@@ -429,12 +485,12 @@ export function FeedbackPage() {
           </form>
         </section>
 
-        {/* Right: Public Community Feed */}
-        <section className="xl:col-span-8 space-y-4">
-          {/* Filter & Sort Toolbar */}
-          <div className="cd !p-3.5 flex flex-wrap items-center justify-between gap-3">
-            {/* Status Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Right: Single Unified Flat Feed Container (Toolbar + Divided List Rows) */}
+        <section className="cd !p-0 overflow-hidden xl:col-span-8">
+          {/* Flush Filter & Sort Header Bar */}
+          <div className="px-4 py-2.5 border-b border-[var(--line)] bg-[var(--soft)]/40 flex flex-wrap items-center justify-between gap-2.5">
+            {/* Status Filter Tabs */}
+            <div className="flex items-center gap-1 flex-wrap">
               {(['all', 'open', 'resolved'] as const).map((st) => (
                 <button
                   key={st}
@@ -443,10 +499,10 @@ export function FeedbackPage() {
                     setStatusFilter(st);
                     setPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     statusFilter === st
                       ? 'bg-[#19D46A] text-[#0D1B14]'
-                      : 'bg-[var(--soft)] text-[var(--mu)] hover:text-[var(--t)] border border-[var(--line)]'
+                      : 'text-[var(--mu)] hover:text-[var(--t)] hover:bg-[var(--soft)]'
                   }`}
                 >
                   {st === 'all' ? 'All' : st === 'open' ? 'Open' : 'Resolved'}
@@ -463,7 +519,7 @@ export function FeedbackPage() {
                   setCategoryFilter(e.target.value as 'all' | FeedbackCategory);
                   setPage(1);
                 }}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] focus:outline-none focus:border-[#19D46A] cursor-pointer"
+                className="px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[#19D46A] cursor-pointer"
               >
                 <option value="all">All Categories</option>
                 {CATEGORY_OPTIONS.map((opt) => (
@@ -480,7 +536,7 @@ export function FeedbackPage() {
                   setSortBy(e.target.value as 'newest' | 'top');
                   setPage(1);
                 }}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] focus:outline-none focus:border-[#19D46A] cursor-pointer"
+                className="px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] focus:outline-none focus:border-[#19D46A] cursor-pointer"
               >
                 <option value="newest">Newest First</option>
                 <option value="top">Most Upvoted</option>
@@ -488,58 +544,61 @@ export function FeedbackPage() {
             </div>
           </div>
 
-          {/* Loading / Error / Empty / Feed */}
+          {/* Loading / Error / Empty / Unified Divided List */}
           {isLoading ? (
-            <div className="cd py-14 flex flex-col items-center justify-center text-[var(--mu)] gap-2">
-              <Loader2 className="w-6 h-6 animate-spin text-[#19D46A]" />
+            <div className="py-12 flex flex-col items-center justify-center text-[var(--mu)] gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-[#19D46A]" />
               <span className="text-xs">Loading community feedback...</span>
             </div>
           ) : error ? (
-            <div className="cd py-12 text-center space-y-3">
-              <AlertCircle className="w-7 h-7 text-red-400 mx-auto" />
-              <p className="text-sm text-[var(--t)] font-semibold">
+            <div className="py-10 text-center space-y-2.5">
+              <AlertCircle className="w-6 h-6 text-red-400 mx-auto" />
+              <p className="text-sm text-[var(--t)] font-semibold m-0">
                 Unable to load feedback right now
               </p>
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#19D46A] text-[#0D1B14] cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#19D46A] text-[#0D1B14] cursor-pointer"
               >
                 Try Again
               </button>
             </div>
           ) : items.length === 0 ? (
-            <div className="cd py-14 text-center space-y-2">
-              <MessageCircle className="w-8 h-8 text-[var(--mu)] opacity-50 mx-auto" />
-              <p className="text-sm font-semibold text-[var(--t)]">No feedback posts yet</p>
-              <p className="text-xs text-[var(--mu)]">
-                Be the first to share a review, suggestion, or report an issue on the left!
+            <div className="py-12 text-center space-y-1.5">
+              <MessageCircle className="w-7 h-7 text-[var(--mu)] opacity-50 mx-auto" />
+              <p className="text-sm font-semibold text-[var(--t)] m-0">No feedback posts yet</p>
+              <p className="text-xs text-[var(--mu)] m-0">
+                Be the first to share a review, suggestion, or report an issue on the left.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-[var(--line)]">
               {items.map((item) => {
                 const catMeta = getCategoryMeta(item.category);
                 const CatIcon = catMeta.Icon;
                 const isResolved = item.status === 'resolved';
 
                 return (
-                  <article key={item.id} className="cd !p-4 sm:!p-5">
-                    <div className="flex items-start gap-3.5">
-                      {/* Upvote Button */}
+                  <article
+                    key={item.id}
+                    className="px-4 py-3.5 hover:bg-[var(--soft)]/30 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Compact Upvote Button */}
                       <button
                         type="button"
                         onClick={() => upvoteMutation.mutate(item.id)}
                         disabled={upvoteMutation.isPending}
                         aria-label={`Upvote feedback from ${item.authorName}`}
-                        className={`flex flex-col items-center justify-center min-w-[48px] py-2 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                        className={`flex flex-col items-center justify-center min-w-[40px] py-1.5 px-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
                           item.hasUpvoted
                             ? 'bg-emerald-500/15 border-[#19D46A] text-[#19D46A]'
                             : 'bg-[var(--soft)] border-[var(--line)] text-[var(--mu)] hover:border-[#19D46A]/60 hover:text-[var(--t)]'
                         }`}
                       >
                         <ThumbsUp
-                          className={`w-3.5 h-3.5 mb-0.5 ${
+                          className={`w-3 h-3 mb-0.5 ${
                             item.hasUpvoted ? 'fill-current' : ''
                           }`}
                         />
@@ -547,68 +606,68 @@ export function FeedbackPage() {
                       </button>
 
                       {/* Main Content */}
-                      <div className="flex-1 min-w-0 space-y-2.5">
-                        {/* Meta Badges Row */}
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        {/* Meta Row */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-bold text-[var(--t)]">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-sm font-semibold text-[var(--t)]">
                               {item.authorName}
                             </span>
                             <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${catMeta.badgeClass}`}
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${catMeta.badgeClass}`}
                             >
-                              <CatIcon className="w-3 h-3" />
+                              <CatIcon className="w-2.5 h-2.5" />
                               {catMeta.label}
                             </span>
                             <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                                 isResolved
                                   ? 'bg-emerald-500/15 text-[#19D46A] border-emerald-500/35'
                                   : 'bg-amber-500/15 text-amber-400 border-amber-500/35'
                               }`}
                             >
                               {isResolved ? (
-                                <CheckCircle2 className="w-3 h-3" />
+                                <CheckCircle2 className="w-2.5 h-2.5" />
                               ) : (
-                                <Clock className="w-3 h-3" />
+                                <Clock className="w-2.5 h-2.5" />
                               )}
                               {isResolved ? 'Resolved' : 'Open'}
                             </span>
+                            {item.rating && item.rating > 0 && (
+                              <span
+                                className="inline-flex items-center gap-0.5 ml-0.5"
+                                aria-label={`${item.rating} out of 5 stars`}
+                              >
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    className={`w-3 h-3 ${
+                                      s <= item.rating!
+                                        ? 'text-amber-400 fill-amber-400'
+                                        : 'text-[var(--mu)] opacity-25'
+                                    }`}
+                                  />
+                                ))}
+                              </span>
+                            )}
                           </div>
                           <span className="text-[11px] text-[var(--mu)]">
                             {formatRelativeDate(item.createdAt)}
                           </span>
                         </div>
 
-                        {/* Optional Star Rating */}
-                        {item.rating && item.rating > 0 && (
-                          <div className="flex items-center gap-0.5" aria-label={`${item.rating} out of 5 stars`}>
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`w-3.5 h-3.5 ${
-                                  s <= item.rating!
-                                    ? 'text-amber-400 fill-amber-400'
-                                    : 'text-[var(--mu)] opacity-30'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        )}
-
                         {/* Message Body */}
-                        <p className="text-sm text-[var(--t)] leading-relaxed whitespace-pre-wrap break-words m-0">
+                        <p className="text-[13.5px] text-[var(--t)] leading-relaxed whitespace-pre-wrap break-words m-0">
                           {item.message}
                         </p>
 
-                        {/* Official Admin Reply Box */}
+                        {/* Official Admin Reply */}
                         {item.adminReply && (
-                          <div className="mt-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 space-y-1">
-                            <div className="flex items-center justify-between gap-2 text-[11px]">
-                              <span className="inline-flex items-center gap-1.5 font-bold text-[#19D46A]">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Official Admin Reply
-                                {item.adminReplyBy ? ` · ${item.adminReplyBy}` : ''}
+                          <div className="mt-1.5 pl-3 py-1.5 border-l-2 border-[#19D46A] bg-emerald-500/5 rounded-r-lg space-y-0.5">
+                            <div className="flex items-center justify-between gap-2 text-[11px] pr-2">
+                              <span className="inline-flex items-center gap-1 font-semibold text-[#19D46A]">
+                                <ShieldCheck className="w-3 h-3" />
+                                Admin Reply{item.adminReplyBy ? ` · ${item.adminReplyBy}` : ''}
                               </span>
                               {item.adminReplyAt && (
                                 <span className="text-[var(--mu)]">
@@ -616,7 +675,7 @@ export function FeedbackPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-[var(--t)] leading-relaxed whitespace-pre-wrap m-0">
+                            <p className="text-xs text-[var(--t)] leading-relaxed whitespace-pre-wrap m-0 pr-2">
                               {item.adminReply}
                             </p>
                           </div>
@@ -624,7 +683,7 @@ export function FeedbackPage() {
 
                         {/* Admin Moderation Controls */}
                         {isAdmin && (
-                          <div className="pt-2.5 mt-2 border-t border-[var(--line)] space-y-2.5">
+                          <div className="pt-2 mt-1.5 border-t border-[var(--line)]/60 space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
                               <button
                                 type="button"
@@ -635,7 +694,7 @@ export function FeedbackPage() {
                                     status: isResolved ? 'open' : 'resolved',
                                   })
                                 }
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
                                   isResolved
                                     ? 'bg-[var(--soft)] text-[var(--t)] border border-[var(--line)] hover:bg-[var(--panel)]'
                                     : 'bg-[#19D46A] text-[#0D1B14] hover:opacity-90'
@@ -643,12 +702,12 @@ export function FeedbackPage() {
                               >
                                 {isResolved ? (
                                   <>
-                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <RotateCcw className="w-3 h-3" />
                                     Reopen
                                   </>
                                 ) : (
                                   <>
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <CheckCircle2 className="w-3 h-3" />
                                     Mark Resolved
                                   </>
                                 )}
@@ -661,9 +720,9 @@ export function FeedbackPage() {
                                     ? setReplyingId(null)
                                     : openReplyEditor(item)
                                 }
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--soft)] text-[var(--t)] border border-[var(--line)] hover:border-[#19D46A] transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[var(--soft)] text-[var(--t)] border border-[var(--line)] hover:border-[#19D46A] transition-colors cursor-pointer"
                               >
-                                <Reply className="w-3.5 h-3.5" />
+                                <Reply className="w-3 h-3" />
                                 {item.adminReply ? 'Edit Reply' : 'Official Reply'}
                               </button>
 
@@ -673,14 +732,14 @@ export function FeedbackPage() {
                                     type="button"
                                     disabled={deleteMutation.isPending}
                                     onClick={() => deleteMutation.mutate(item.id)}
-                                    className="px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-600 text-white hover:bg-red-700 cursor-pointer"
                                   >
                                     Confirm Delete
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setConfirmDeleteId(null)}
-                                    className="px-2.5 py-1 rounded-full text-xs text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
+                                    className="px-2 py-1 rounded-lg text-[11px] text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
                                   >
                                     Cancel
                                   </button>
@@ -689,9 +748,9 @@ export function FeedbackPage() {
                                 <button
                                   type="button"
                                   onClick={() => setConfirmDeleteId(item.id)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors ml-auto cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-red-400 hover:bg-red-500/10 transition-colors ml-auto cursor-pointer"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-3 h-3" />
                                   Delete
                                 </button>
                               )}
@@ -699,21 +758,21 @@ export function FeedbackPage() {
 
                             {/* Inline Admin Reply Editor */}
                             {replyingId === item.id && (
-                              <div className="space-y-2 p-3 rounded-xl bg-[var(--soft)] border border-[var(--line)]">
+                              <div className="space-y-2 p-2.5 rounded-lg bg-[var(--soft)] border border-[var(--line)]">
                                 <textarea
-                                  rows={3}
+                                  rows={2}
                                   maxLength={1000}
                                   value={replyDraft}
                                   onChange={(e) => setReplyDraft(e.target.value)}
                                   placeholder="Write an official admin response (visible to everyone)..."
-                                  className="w-full px-3 py-2 text-xs rounded-lg border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A]"
+                                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-[var(--line)] text-[var(--t)] placeholder-[var(--mu)] focus:outline-none focus:border-[#19D46A]"
                                   style={{ backgroundColor: isDark ? '#0D1B14' : '#FFFFFF' }}
                                 />
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     type="button"
                                     onClick={() => setReplyingId(null)}
-                                    className="px-3 py-1.5 rounded-full text-xs text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
+                                    className="px-2.5 py-1 rounded-lg text-xs text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
                                   >
                                     Cancel
                                   </button>
@@ -726,7 +785,7 @@ export function FeedbackPage() {
                                         adminReply: replyDraft,
                                       })
                                     }
-                                    className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#19D46A] text-[#0D1B14] hover:opacity-90 disabled:opacity-50 cursor-pointer"
+                                    className="px-3.5 py-1 rounded-lg text-xs font-semibold bg-[#19D46A] text-[#0D1B14] hover:opacity-90 disabled:opacity-50 cursor-pointer"
                                   >
                                     Save Reply
                                   </button>
@@ -740,37 +799,39 @@ export function FeedbackPage() {
                   </article>
                 );
               })}
+            </div>
+          )}
 
-              {/* Pagination */}
-              {meta && meta.totalPages > 1 && (
-                <div className="flex items-center justify-between pt-2 text-xs text-[var(--mu)]">
-                  <span>
-                    Page {meta.page} of {meta.totalPages} ({meta.total} posts)
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] disabled:opacity-40 cursor-pointer"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      disabled={page >= meta.totalPages}
-                      onClick={() => setPage((p) => p + 1)}
-                      className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] disabled:opacity-40 cursor-pointer"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+          {/* Flush Pagination Footer */}
+          {meta && meta.totalPages > 1 && (
+            <div className="px-4 py-2.5 border-t border-[var(--line)] flex items-center justify-between text-xs text-[var(--mu)]">
+              <span>
+                Page {meta.page} of {meta.totalPages} ({meta.total} posts)
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1 rounded-lg border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] disabled:opacity-40 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= meta.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-3 py-1 rounded-lg border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] disabled:opacity-40 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </section>
       </div>
+        </>
+      )}
     </div>
   );
 }

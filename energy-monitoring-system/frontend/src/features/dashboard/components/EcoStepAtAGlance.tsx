@@ -25,13 +25,13 @@ export function EcoStepAtAGlance({
   const hasSteps = todaySteps !== undefined && todaySteps > 0;
   const stepsCount = todaySteps ?? 0;
   
-  // Format energy cleanly
+  // Format energy cleanly to 5 decimal places
   const formatEnergy = (wh?: number) => {
-    if (wh === undefined || wh === 0) return { value: '0.00', unit: 'mWh' };
+    if (wh === undefined || wh === 0) return { value: '0.00000', unit: 'mWh' };
     if (wh < 1) {
-      return { value: (wh * 1000).toFixed(2), unit: 'mWh' };
+      return { value: (wh * 1000).toFixed(5), unit: 'mWh' };
     }
-    return { value: wh.toFixed(3), unit: 'Wh' };
+    return { value: wh.toFixed(5), unit: 'Wh' };
   };
 
   const energyInfo = formatEnergy(dailyEnergy);

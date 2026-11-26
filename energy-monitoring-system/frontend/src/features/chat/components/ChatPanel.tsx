@@ -8,11 +8,17 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { MessageSquare, ChevronLeft } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { MessageSquare, ChevronLeft, Sparkles, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { adminChatService } from '@/api/services/adminChat.service';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
+import { AdminChatView } from './AdminChatView';
+import { AdminQuickInboxView } from './AdminQuickInboxView';
 import { ChatInput } from './ChatInput';
 import { useChat } from '../useChat';
+import { useAdminChat } from '../useAdminChat';
 import '../chat.css';
 
 interface ChatPanelProps {
@@ -64,7 +70,22 @@ export function ChatPanel({
   const resolvedPinned = isPinned !== undefined ? isPinned : !isCollapsed;
 
   const panelRef = useRef<HTMLElement>(null);
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = Boolean(isAuthenticated && user);
+
+  const [activeMode, setActiveMode] = useState<'bot' | 'admin'>('bot');
   const { messages, isLoading, error, sendMessage, retryLastMessage, clearChat } = useChat();
+  const adminChat = useAdminChat(!isAdmin && activeMode === 'admin');
+
+  const { data: adminInboxMeta } = useQuery({
+    queryKey: ['admin-chat-threads'],
+    queryFn: () => adminChatService.listThreadsForAdmin(),
+    enabled: isAdmin,
+    refetchInterval: 15_000,
+  });
+  const secondTabUnread = isAdmin
+    ? adminInboxMeta?.totalUnread ?? 0
+    : adminChat.unreadCount;
 
   // Track viewport changes
   useEffect(() => {
@@ -233,28 +254,105 @@ export function ChatPanel({
             isExpanded={resolvedPinned}
             isFloating={isFloating && !isMobile}
             isMobile={isMobile}
+            subtitle={
+              activeMode === 'bot'
+                ? 'Instant AI assistant'
+                : isAdmin
+                  ? 'Admin Visitor Inbox'
+                  : 'Direct to EcoStep Admin'
+            }
+            showNewChat={activeMode === 'bot'}
           />
 
-          <MessageList
-            messages={messages}
-            isLoading={isLoading}
-            onSuggestionClick={sendMessage}
-          />
-
-          {error && (
-            <div className="chat-error" role="alert">
-              <p>{error}</p>
+          {/* Mode Switcher: EcoGuide AI vs Talk to Admin / Visitor Inbox */}
+          <div className="px-3.5 py-2 border-b border-[var(--line)] shrink-0">
+            <div
+              className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--soft)] border border-[var(--line)]"
+              role="tablist"
+              aria-label="Chat mode"
+            >
               <button
-                className="chat-error-retry"
-                onClick={retryLastMessage}
                 type="button"
+                role="tab"
+                aria-selected={activeMode === 'bot'}
+                onClick={() => setActiveMode('bot')}
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[12px] font-semibold transition-all cursor-pointer ${
+                  activeMode === 'bot'
+                    ? 'bg-[var(--panel)] text-[var(--t)] shadow-xs border border-[var(--line)]'
+                    : 'text-[var(--mu)] hover:text-[var(--t)]'
+                }`}
               >
-                Retry
+                <Sparkles size={13} className={activeMode === 'bot' ? 'text-[var(--acc)]' : ''} />
+                <span>EcoGuide AI</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeMode === 'admin'}
+                onClick={() => setActiveMode('admin')}
+                className={`relative flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[12px] font-semibold transition-all cursor-pointer ${
+                  activeMode === 'admin'
+                    ? 'bg-[var(--panel)] text-[var(--t)] shadow-xs border border-[var(--line)]'
+                    : 'text-[var(--mu)] hover:text-[var(--t)]'
+                }`}
+              >
+                <ShieldCheck size={13} className={activeMode === 'admin' ? 'text-[var(--acc)]' : ''} />
+                <span>{isAdmin ? 'Visitor Inbox' : 'Talk to Admin'}</span>
+                {secondTabUnread > 0 && activeMode !== 'admin' && (
+                  <span
+                    className="min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--acc)] text-white dark:text-[#04210f] text-[10px] font-bold inline-flex items-center justify-center"
+                    aria-label={`${secondTabUnread} unread messages`}
+                  >
+                    {secondTabUnread}
+                  </span>
+                )}
               </button>
             </div>
-          )}
+          </div>
 
-          <ChatInput onSend={sendMessage} disabled={isLoading} />
+          {activeMode === 'bot' ? (
+            <>
+              <MessageList
+                messages={messages}
+                isLoading={isLoading}
+                onSuggestionClick={sendMessage}
+              />
+
+              {error && (
+                <div className="chat-error" role="alert">
+                  <p>{error}</p>
+                  <button
+                    className="chat-error-retry"
+                    onClick={retryLastMessage}
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              <ChatInput onSend={sendMessage} disabled={isLoading} />
+            </>
+          ) : isAdmin ? (
+            <AdminQuickInboxView />
+          ) : (
+            <>
+              <AdminChatView
+                messages={adminChat.messages}
+                visitorName={adminChat.visitorName}
+                onVisitorNameChange={adminChat.setVisitorName}
+                isLoading={adminChat.isLoading}
+                isSending={adminChat.isSending}
+                error={adminChat.error}
+                onRefresh={adminChat.refresh}
+              />
+              <ChatInput
+                onSend={adminChat.sendMessage}
+                disabled={adminChat.isSending}
+              />
+            </>
+          )}
         </div>
       </aside>
     </>

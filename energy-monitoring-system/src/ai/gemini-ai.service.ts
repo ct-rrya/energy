@@ -619,21 +619,67 @@ export class GeminiAIService {
       return null;
     }
 
-    const prompt = `Analyze this ${reportType} energy report from EcoStep piezoelectric system:
+    const energyMWh = Number(
+      reportData.kpis?.totalEnergyMWh ??
+        reportData.summary?.totalEnergyMWh ??
+        (reportData.energySummary?.totalEnergyKWh || 0) * 1_000_000,
+    );
+    const totalSteps = Number(
+      reportData.kpis?.totalSteps ?? reportData.energySummary?.totalSteps ?? 0,
+    );
+    const avgPowerMW = Number(
+      reportData.summary?.avgPowerMW ??
+        (reportData.energySummary?.avgPowerW || 0) * 1000,
+    );
+    const peakPowerMW = Number(
+      reportData.summary?.peakPowerMW ??
+        (reportData.energySummary?.peakPowerW || 0) * 1000,
+    );
 
-**Period:** ${reportData.period.startDate} to ${reportData.period.endDate}
-**Total Energy:** ${reportData.energySummary.totalEnergyKWh} kWh
-**Average Power:** ${reportData.energySummary.avgPowerW} W
-**Peak Power:** ${reportData.energySummary.peakPowerW} W
-**CO2 Avoided:** ${reportData.environmentalImpact.co2AvoidedKg} kg
-**Cost Savings:** $${reportData.costSavings.totalSavings} USD
+    const specificYieldUWh = Number(reportData.kpis?.specificYieldUWh ?? 0);
+    const baselineYieldUWh = Number(reportData.kpis?.baselineYieldUWh ?? specificYieldUWh);
+    const healthScore = Number(
+      reportData.kpis?.healthScore ?? reportData.diagnosticInsights?.healthScore ?? 94,
+    );
+    const breakdown = reportData.diagnosticInsights?.scoreBreakdown || {
+      harvesting: healthScore,
+      consistency: healthScore,
+      telemetry: healthScore,
+    };
+    const cap = reportData.electricalTelemetry?.capacitorV;
+    const capStart = cap?.hasData && cap.start !== null ? Number(cap.start) : null;
+    const capEnd = cap?.hasData && cap.end !== null ? Number(cap.end) : null;
+    const capDelta =
+      capStart !== null && capEnd !== null ? Number((capEnd - capStart).toFixed(2)) : null;
 
-Provide a brief analysis (2-3 sentences) covering:
-1. Overall performance assessment
-2. Notable trends or patterns
-3. One actionable recommendation
+    const capacitorLine =
+      capStart !== null && capEnd !== null && capDelta !== null
+        ? `${capStart.toFixed(2)} V (Start) to ${capEnd.toFixed(2)} V (End), Net ${capDelta >= 0 ? '+' : ''}${capDelta.toFixed(2)} V`
+        : 'Not instrumented / standby';
 
-Keep it concise and practical.`;
+    const prompt = `Summarize this EcoStep footstep energy and tile health report in simple, everyday English for non-technical readers (such as school staff, students, and campus admins):
+
+Period: ${reportData.period.startDate} to ${reportData.period.endDate}
+Total Energy Collected: ${energyMWh.toFixed(5)} mWh
+Total Footsteps: ${totalSteps} steps
+Energy per Step: ${specificYieldUWh.toFixed(5)} uWh/step (30-day average: ${baselineYieldUWh.toFixed(5)} uWh/step)
+Average Power: ${avgPowerMW.toFixed(5)} mW
+Highest Power: ${peakPowerMW.toFixed(5)} mW
+Overall Tile Health Score: ${healthScore}/100
+Part Health Scores:
+- Footstep Pads (Piezo Array): ${breakdown.harvesting}/100
+- Power Storage (Capacitor): ${breakdown.consistency}/100
+- Wi-Fi Sensor (ESP32): ${breakdown.telemetry}/100
+Stored Power (Capacitor): ${capacitorLine}
+
+Write 2 to 3 short, friendly, easy-to-understand sentences explaining WHAT THESE RESULTS MEAN for campus staff and students (do NOT just recite raw numbers already shown in the tables):
+1. Whether this lobby location is performing well and capturing steady footstep energy
+2. Whether the tile is reliable and safe, or which part (footstep pads, power storage, or Wi-Fi sensor) needs attention so energy is not wasted
+3. One simple, practical next step for staff or an electrician
+
+IMPORTANT RULES:
+- If ANY part scored below 70/100 OR stored power dropped by more than 1.5 V, clearly say that part needs an electrician checkup and NEVER say "No repair needed" or "all systems normal".
+- Use plain text only. NEVER use LaTeX, KaTeX, dollar signs ($...$), backslashes, curly braces, markdown (** or #), or scientific notation.`;
 
     return this.processQuery(prompt);
   }

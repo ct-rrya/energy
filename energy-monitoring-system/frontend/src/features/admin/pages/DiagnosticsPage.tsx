@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/contexts/SocketContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
@@ -8,6 +8,7 @@ import { DiagnosticWorkbenchCard } from '../components/DiagnosticWorkbenchCard';
 import { FatigueDriftRadarCard } from '../components/FatigueDriftRadarCard';
 import { DiagnosticHistoryTable } from '../components/DiagnosticHistoryTable';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import { Dialog } from '@/components/ui/Dialog';
 
 /**
  * Diagnostics Page Component (EcoStep Tile Health Workbench)
@@ -16,13 +17,14 @@ import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader
  * 1. Live Hardware Pipeline Schematic + Electrical Fault-Signature Diagnosis + 0-100 Health Score
  * 2. Guided Multi-Sample Bench Test (WebSocket + BLE + Manual/Sim) & BLE Field Check
  * 3. Passive 7-Day vs 30-Day Fatigue & Drift Radar
- * 4. Verification History Logs & CSV Export
+ * 4. On-demand Verification History & CSV Export modal (opened via History button)
  */
 export function DiagnosticsPage() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
   const { status: hardwareConnectionStatus } = useHardwareStatus();
   const { data: insights, isLoading: insightsLoading } = useDiagnosticInsights();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Listen for WebSocket events to keep all diagnostic cards live
   useEffect(() => {
@@ -84,7 +86,7 @@ export function DiagnosticsPage() {
       <DashboardHeader
         greeting="Tile health"
         title="Tile Performance Diagnostics"
-        subtitle="Pipeline health, fault fingerprinting, multi-sample bench testing & fatigue radar"
+        subtitle="Check tile health, run a quick step test, and spot wiring or wear issues early"
         systemStatus={hardwareConnectionStatus}
       />
 
@@ -97,17 +99,24 @@ export function DiagnosticsPage() {
         />
 
         {/* Section 2: Guided Multi-Sample Bench Test + Baseline Band + BLE Field Check */}
-        <DiagnosticWorkbenchCard />
+        <DiagnosticWorkbenchCard onOpenHistory={() => setIsHistoryOpen(true)} />
 
         {/* Section 3: Passive 7-Day vs 30-Day Fatigue & Drift Radar */}
         <FatigueDriftRadarCard
           radar={insights?.fatigueRadar}
           isLoading={insightsLoading}
         />
-
-        {/* Section 4: Verification History & CSV Export */}
-        <DiagnosticHistoryTable />
       </div>
+
+      {/* On-demand Verification History & CSV Export Modal */}
+      <Dialog
+        open={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        title="Verification History & Logs"
+        size="xl"
+      >
+        <DiagnosticHistoryTable />
+      </Dialog>
     </div>
   );
 }

@@ -97,10 +97,9 @@ export const HeroEnergyCard = React.memo(
 
     // Requirement 20.3: Memoize formatted value to prevent unnecessary recalculations
     const formattedEnergy = useMemo(() => {
-      // Requirement 3.8: Show "0.0" when undefined
-      if (energyValue === undefined) return '0.0000';
-      // Format to 4 decimal places to show small kWh values
-      return energyValue.toFixed(4);
+      if (energyValue === undefined) return '0.00000';
+      // Format to 5 decimal places to show small energy values cleanly
+      return energyValue.toFixed(5);
     }, [energyValue]);
 
     // Task 6.6: Show loading skeleton when isLoading is true

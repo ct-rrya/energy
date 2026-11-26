@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Radio,
   Sliders,
+  History,
 } from 'lucide-react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useBle } from '@/contexts/BleContext';
@@ -63,7 +64,11 @@ type BenchMode = 'IDLE' | 'CAPTURING' | 'RESULT';
  *
  * Right (Rail): 30-Day Baseline Band + BLE Field Link & Wi-Fi Check
  */
-export function DiagnosticWorkbenchCard() {
+interface DiagnosticWorkbenchCardProps {
+  onOpenHistory?: () => void;
+}
+
+export function DiagnosticWorkbenchCard({ onOpenHistory }: DiagnosticWorkbenchCardProps = {}) {
   const { socket, isConnected } = useSocket();
   const ble = useBle();
 
@@ -76,6 +81,7 @@ export function DiagnosticWorkbenchCard() {
   const [targetSamples, setTargetSamples] = useState<1 | 3 | 5>(3);
   const [samples, setSamples] = useState<BenchSample[]>([]);
   const [manualInput, setManualInput] = useState<string>('');
+  const [showManualTools, setShowManualTools] = useState(false);
   const [evaluation, setEvaluation] = useState<BenchEvaluation | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBleModalOpen, setIsBleModalOpen] = useState(false);
@@ -125,13 +131,13 @@ export function DiagnosticWorkbenchCard() {
       const vSamples = captured.filter((s) => s.voltageV !== undefined);
       const maxV = vSamples.reduce((m, s) => Math.max(m, s.voltageV ?? 0), 0);
       const maxI = vSamples.reduce((m, s) => Math.max(m, s.currentMA ?? 0), 0);
-      let electricalHint = 'Clean electrical profile across captured samples.';
+      let electricalHint = 'Electrical readings look clean and steady across all steps.';
       if (vSamples.length > 0 && maxV >= 1.5 && maxI < 0.05) {
-        electricalHint = 'Voltage spiked without measurable current — check INA219 / load path.';
+        electricalHint = 'Voltage showed up, but almost no current flowed — check the current sensor terminals and load wiring.';
       } else if (vSamples.length > 0 && maxV < 0.05 && meanMWh < minAcceptable) {
-        electricalHint = 'Near-zero voltage during test — inspect piezo-to-rectifier wiring.';
+        electricalHint = 'Almost no voltage measured — check the wires between the floor pads and the rectifier board.';
       } else if (consistencyScore < 70 && values.length >= 2) {
-        electricalHint = 'High variance between steps — check for intermittent contact or loose disc.';
+        electricalHint = 'Readings jumped up and down between steps — check for a loose wire or uneven pad under the tile.';
       }
 
       const sourceSummary = Array.from(new Set(captured.map((s) => s.source))).join('+');
@@ -342,13 +348,13 @@ export function DiagnosticWorkbenchCard() {
       className="grid grid-cols-1 lg:grid-cols-12 gap-5"
       aria-label="Diagnostic Bench Test and BLE Field Check"
     >
-      {/* LEFT (8 cols): Guided Multi-Sample Bench Test */}
+      {/* LEFT (8 cols): Floor Tile Step Test */}
       <div className="lg:col-span-8 cd !p-5 sm:!p-6 flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-[17px] sm:text-[18px] font-bold tracking-tight text-[var(--t)] m-0">
-                Guided Multi-Sample Bench Test
+                Floor Tile Step Test
               </h2>
               <span
                 className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
@@ -357,20 +363,20 @@ export function DiagnosticWorkbenchCard() {
                     : 'bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25'
                 }`}
               >
-                {isDailyAlreadyDone ? 'Daily Check: Verified ✓' : 'Daily Check: Pending'}
+                {isDailyAlreadyDone ? 'Today’s Check: Done ✓' : 'Today’s Check: Not Yet Done'}
               </span>
             </div>
             <p className="text-xs sm:text-[13px] text-[var(--mu)] mt-1 m-0">
-              Captures live ESP32 uploads (WebSocket or BLE) to score peak yield and repeatability. Run anytime — first run of the day automatically verifies today’s daily check.
+              Click <strong>Start Step Test</strong>, then step on the floor tile {targetSamples === 1 ? 'once' : `${targetSamples} times`} to check if power output is healthy and steady.
             </p>
           </div>
 
-          {/* Sample Target Selector */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Step Count Selector + History Button */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
-              Samples:
+              Steps:
             </span>
-            <div className="sgc sgc-sm flex" role="group" aria-label="Bench sample count">
+            <div className="sgc sgc-sm flex" role="group" aria-label="Number of test readings">
               {([1, 3, 5] as const).map((cnt) => (
                 <button
                   key={cnt}
@@ -383,10 +389,21 @@ export function DiagnosticWorkbenchCard() {
                 </button>
               ))}
             </div>
+            {onOpenHistory && (
+              <button
+                type="button"
+                onClick={onOpenHistory}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="View past test history and download CSV"
+              >
+                <History className="w-3.5 h-3.5 text-[var(--acc)]" />
+                <span>History</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Live Oscilloscope / Baseline Band Visualization */}
+        {/* Live Step Output Graph */}
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--soft)]/45 p-3.5">
           <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--mu)] mb-1.5">
             <span className="inline-flex items-center gap-1.5">
@@ -396,13 +413,13 @@ export function DiagnosticWorkbenchCard() {
                 }`}
               />
               {mode === 'CAPTURING'
-                ? `Listening on WebSocket${ble.isConnected ? ' + BLE' : ''} (${samples.length}/${targetSamples} captured)`
+                ? `Waiting for footsteps over Wi-Fi${ble.isConnected ? ' or Bluetooth' : ''} (${samples.length} of ${targetSamples} captured)`
                 : mode === 'RESULT'
-                  ? `Bench Run Complete (${evaluation?.sampleCount ?? samples.length} samples)`
-                  : `Ready • Acceptable band: ${minAcceptable.toFixed(5)} – ${maxAcceptable.toFixed(5)} mWh/step`}
+                  ? `Test Complete (${evaluation?.sampleCount ?? samples.length} reading${(evaluation?.sampleCount ?? samples.length) === 1 ? '' : 's'})`
+                  : `Green band = normal output (${minAcceptable.toFixed(5)} – ${maxAcceptable.toFixed(5)} mWh)`}
             </span>
             <span className="tabular-nums text-[var(--t)]">
-              Baseline {normalStep.toFixed(5)} mWh
+              Normal avg: {normalStep.toFixed(5)} mWh
             </span>
           </div>
 
@@ -480,8 +497,8 @@ export function DiagnosticWorkbenchCard() {
                 fill="var(--mu)"
               >
                 {mode === 'CAPTURING'
-                  ? 'Step on the EcoStep tile (or use Manual / Simulate below)...'
-                  : 'Click "Start Bench Test" to capture live step samples'}
+                  ? 'Step on the floor tile now — readings will appear here automatically...'
+                  : 'Click "Start Step Test" below, then step on the floor tile'}
               </text>
             )}
           </svg>
@@ -503,10 +520,10 @@ export function DiagnosticWorkbenchCard() {
               className="min-h-[42px] px-5 py-2.5 rounded-full inline-flex items-center gap-2 text-sm font-bold bg-[var(--acc)] text-white dark:text-[#04210f] hover:bg-[var(--bar)] shadow-xs transition-all cursor-pointer active:scale-[0.98]"
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>Start {targetSamples}-Sample Bench Test</span>
+              <span>Start Step Test ({targetSamples} {targetSamples === 1 ? 'Step' : 'Steps'})</span>
             </button>
             <span className="text-xs text-[var(--mu)]">
-              Works with both batched ESP32 uploads and individual step triggers.
+              First test of the day automatically completes today’s checkup.
             </span>
           </div>
         )}
@@ -521,20 +538,17 @@ export function DiagnosticWorkbenchCard() {
                     key={s.id}
                     className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-[var(--soft)] border border-[var(--line)] text-[var(--t)] tabular-nums"
                   >
-                    <strong className="text-[var(--acc)]">#{idx + 1}</strong>
+                    <strong className="text-[var(--acc)]">Step {idx + 1}:</strong>
                     {s.energyPerStepMWh.toFixed(5)} mWh
                     {s.voltageV !== undefined && (
                       <span className="text-[var(--mu)]">• {s.voltageV}V</span>
                     )}
-                    <span className="text-[10px] uppercase font-bold text-[var(--mu)]">
-                      ({s.source})
-                    </span>
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Primary Capture Actions + Manual / Simulate Fallback */}
+            {/* Primary Capture Actions + Collapsible Manual Fallback */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -546,8 +560,8 @@ export function DiagnosticWorkbenchCard() {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>
                     {isSaving
-                      ? 'Evaluating...'
-                      : `Finish & Evaluate (${samples.length}/${targetSamples})`}
+                      ? 'Checking results...'
+                      : `Finish & Check Results (${samples.length}/${targetSamples})`}
                   </span>
                 </button>
                 <button
@@ -561,8 +575,18 @@ export function DiagnosticWorkbenchCard() {
                 </button>
               </div>
 
-              {/* Manual + Simulate Fallback */}
-              <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setShowManualTools((prev) => !prev)}
+                className="text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] underline underline-offset-2 cursor-pointer"
+              >
+                {showManualTools ? 'Hide manual entry' : 'Enter reading manually / Demo'}
+              </button>
+            </div>
+
+            {showManualTools && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--line)]">
+                <span className="text-xs text-[var(--mu)]">Manual reading (mWh/step):</span>
                 <input
                   type="number"
                   step="0.00001"
@@ -580,20 +604,20 @@ export function DiagnosticWorkbenchCard() {
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Manual
+                  Add Reading
                 </button>
                 <button
                   type="button"
                   onClick={handleSimulateSample}
                   disabled={isSaving}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:bg-[var(--panel)] inline-flex items-center gap-1 cursor-pointer"
-                  title="Capture a simulated step sample for demo/testing"
+                  title="Add a sample test step for demo purposes"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-[var(--acc)]" />
-                  Simulate
+                  Demo Step
                 </button>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -607,11 +631,13 @@ export function DiagnosticWorkbenchCard() {
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                 )}
                 <span className="text-sm font-bold text-[var(--t)]">
-                  {evaluation.stepResult.statusMessage}
+                  {evaluation.stepResult.result === DiagnosticResultStatus.WITHIN_RANGE
+                    ? 'PASS — Tile Output Is Healthy'
+                    : 'CHECK TILE — Output Outside Normal Range'}
                 </span>
                 {evaluation.dailyCheckMarked && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                    Today’s Daily Check Logged
+                    Today’s Check Saved
                   </span>
                 )}
               </div>
@@ -621,63 +647,63 @@ export function DiagnosticWorkbenchCard() {
                 className="px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[var(--line)] bg-[var(--panel)] text-[var(--t)] hover:bg-[var(--soft)] inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Run Another Test
+                Test Again
               </button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
-                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Bench Score</div>
+                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Test Score</div>
                 <div className="text-lg font-extrabold tabular-nums text-[var(--acc)]">
                   {evaluation.benchHealthScore}/100
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
-                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Mean Output</div>
+                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Average Output</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.meanMWh.toFixed(5)} mWh
                 </div>
                 <div className="text-[11px] text-[var(--mu)] tabular-nums">
                   {evaluation.stepResult.deviationPercentage >= 0 ? '+' : ''}
-                  {evaluation.stepResult.deviationPercentage}% vs base
+                  {evaluation.stepResult.deviationPercentage}% vs normal
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
-                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Peak Output</div>
+                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Strongest Step</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.peakMWh.toFixed(5)} mWh
                 </div>
                 <div className="text-[11px] text-[var(--mu)]">
-                  {evaluation.sampleCount} sample{evaluation.sampleCount > 1 ? 's' : ''}
+                  {evaluation.sampleCount} reading{evaluation.sampleCount > 1 ? 's' : ''}
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[var(--panel)] border border-[var(--line)]">
-                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Consistency</div>
+                <div className="text-[10px] uppercase font-bold text-[var(--mu)]">Steadiness</div>
                 <div className="text-sm font-bold tabular-nums text-[var(--t)] mt-0.5">
                   {evaluation.consistencyScore}%
                 </div>
-                <div className="text-[11px] text-[var(--mu)]">Repeatability</div>
+                <div className="text-[11px] text-[var(--mu)]">Step-to-step</div>
               </div>
             </div>
 
             <p className="text-xs text-[var(--mu)] m-0">
-              <strong className="text-[var(--t)]">Electrical check:</strong> {evaluation.electricalHint}
+              <strong className="text-[var(--t)]">Wiring & meter note:</strong> {evaluation.electricalHint}
             </p>
           </div>
         )}
       </div>
 
-      {/* RIGHT (4 cols): Baseline Band + BLE Field Check */}
+      {/* RIGHT (4 cols): Normal Range + Bluetooth & Wi-Fi Connection */}
       <div className="lg:col-span-4 flex flex-col gap-5">
-        {/* Compact 30-Day Baseline Reference Card */}
+        {/* Compact 30-Day Normal Output Card */}
         <div className="cd !p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--mu)] flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5 text-[var(--acc)]" />
-              {daysAnalyzed}-Day Baseline Band
+              Normal Output ({daysAnalyzed}-Day Avg)
             </span>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--soft)] text-[var(--t)] border border-[var(--line)] tabular-nums">
-              ±{tolerance}%
+              ±{tolerance}% OK
             </span>
           </div>
 
@@ -685,7 +711,7 @@ export function DiagnosticWorkbenchCard() {
             <span className="text-2xl font-extrabold tabular-nums text-[var(--t)]">
               {normalStep.toFixed(5)}
             </span>
-            <span className="text-xs font-semibold text-[var(--mu)]">mWh / step</span>
+            <span className="text-xs font-semibold text-[var(--mu)]">mWh per step</span>
           </div>
 
           <div className="w-full h-2.5 rounded-full bg-[var(--soft)] border border-[var(--line)] relative overflow-hidden">
@@ -700,12 +726,12 @@ export function DiagnosticWorkbenchCard() {
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-[var(--mu)] tabular-nums">
-            <span>Min {minAcceptable.toFixed(5)}</span>
-            <span>Max {maxAcceptable.toFixed(5)}</span>
+            <span>Low: {minAcceptable.toFixed(5)}</span>
+            <span>High: {maxAcceptable.toFixed(5)}</span>
           </div>
         </div>
 
-        {/* BLE Field Link & Wi-Fi Readiness Card */}
+        {/* Bluetooth & Wi-Fi Connection Card */}
         <div className="cd !p-5 flex flex-col gap-3 flex-1 justify-between">
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
@@ -715,7 +741,7 @@ export function DiagnosticWorkbenchCard() {
                 ) : (
                   <Bluetooth className="w-3.5 h-3.5 text-[var(--acc)]" />
                 )}
-                BLE Field Check
+                Bluetooth & Wi-Fi
               </span>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -724,34 +750,34 @@ export function DiagnosticWorkbenchCard() {
                     : 'bg-[var(--soft)] text-[var(--mu)] border-[var(--line)]'
                 }`}
               >
-                {ble.isConnected ? (ble.isSimulation ? 'Demo Linked' : 'Connected') : 'Offline / Ready'}
+                {ble.isConnected ? (ble.isSimulation ? 'Demo Connected' : 'Connected') : 'Not Paired'}
               </span>
             </div>
 
             <p className="text-xs text-[var(--mu)] m-0 leading-relaxed">
-              Verify the ESP32 locally over Bluetooth even when Wi-Fi or cloud sync is unavailable.
+              Connect directly to the tile box via Bluetooth to test it or change its Wi-Fi network if the internet goes down.
             </p>
 
             <div className="rounded-xl bg-[var(--soft)]/70 border border-[var(--line)] p-3 space-y-1.5 text-xs">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[var(--mu)]">Device</span>
+                <span className="text-[var(--mu)]">Tile Box</span>
                 <span className="font-semibold text-[var(--t)] truncate">
                   {ble.connectedDevice?.name || ble.savedDevice?.name || 'Not paired yet'}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[var(--mu)] flex items-center gap-1">
-                  <Wifi className="w-3 h-3" /> Wi-Fi Status
+                  <Wifi className="w-3 h-3" /> Wi-Fi Network
                 </span>
                 <span className="font-semibold text-[var(--t)] truncate">
                   {ble.wifiStatus?.status === 'CONNECTED'
                     ? `${ble.wifiStatus.ssid || 'Connected'}${ble.wifiStatus.ip ? ` (${ble.wifiStatus.ip})` : ''}`
-                    : ble.wifiStatus?.status || (ble.savedDevice?.lastSsid ? `Last: ${ble.savedDevice.lastSsid}` : 'Unknown')}
+                    : ble.wifiStatus?.status || (ble.savedDevice?.lastSsid ? `Last: ${ble.savedDevice.lastSsid}` : 'Not checked')}
                 </span>
               </div>
               {ble.latestTelemetry && (
                 <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--line)]">
-                  <span className="text-[var(--mu)]">Live BLE Packet</span>
+                  <span className="text-[var(--mu)]">Live Bluetooth</span>
                   <span className="font-semibold text-[var(--acc)] tabular-nums">
                     {ble.latestTelemetry.voltage?.toFixed?.(1) ?? '—'}V • {ble.latestTelemetry.steps ?? 0} steps
                   </span>
@@ -769,7 +795,7 @@ export function DiagnosticWorkbenchCard() {
                   disabled={ble.isConnecting || !ble.isSupported}
                   className="flex-1 px-3.5 py-2 rounded-full text-xs font-bold bg-[var(--acc)] text-white dark:text-[#04210f] hover:bg-[var(--bar)] disabled:opacity-45 cursor-pointer"
                 >
-                  {ble.isConnecting ? 'Pairing...' : 'Connect ESP32'}
+                  {ble.isConnecting ? 'Pairing...' : 'Connect Tile Box'}
                 </button>
                 <button
                   type="button"
@@ -786,7 +812,7 @@ export function DiagnosticWorkbenchCard() {
                   onClick={() => setIsBleModalOpen(true)}
                   className="flex-1 px-3.5 py-2 rounded-full text-xs font-bold bg-[var(--soft)] border border-[var(--line)] text-[var(--t)] hover:bg-[var(--panel)] cursor-pointer"
                 >
-                  Configure Wi-Fi
+                  Change Wi-Fi
                 </button>
                 <button
                   type="button"

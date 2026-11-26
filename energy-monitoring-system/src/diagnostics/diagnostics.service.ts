@@ -73,7 +73,7 @@ export class DiagnosticsService {
     private notificationsService: NotificationsService,
     private dashboardGateway: DashboardGateway,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Create or Update Reference Configuration
@@ -331,8 +331,8 @@ export class DiagnosticsService {
 
     this.logger.debug(
       `Calculated: actual=${actualEnergy}, expected=${expectedEnergy}, ` +
-        `difference=${difference}, performance=${performancePercentage}%, ` +
-        `status=${status}, tolerance=±${tolerance}%`,
+      `difference=${difference}, performance=${performancePercentage}%, ` +
+      `status=${status}, tolerance=±${tolerance}%`,
     );
 
     return { difference, performancePercentage, status };
@@ -636,52 +636,52 @@ export class DiagnosticsService {
       0,
     );
 
-    // Fault-Signature Fingerprinting Engine
+    // Plain-language & electrician-friendly fault diagnosis
     let faultDiagnosis: FaultDiagnosisDto;
 
     if (!latestReading || minutesSinceLast > 24 * 60) {
       faultDiagnosis = {
         code: 'NO_RECENT_TELEMETRY',
         severity: 'info',
-        title: 'Tile Standby / No Recent Uploads',
+        title: 'Tile is Idle — No Recent Activity',
         summary: lastReadingAt
-          ? `No ESP32 telemetry has arrived in the past ${Math.round(minutesSinceLast / 60)} hours.`
-          : 'No hardware telemetry readings have been recorded yet.',
+          ? `No new readings have come in for the past ${Math.round(minutesSinceLast / 60)} hours.`
+          : 'No footsteps have been recorded from the floor tile yet.',
         probableCause:
-          'Tile has had no foot traffic, ESP32 is powered down, or Wi-Fi credentials need updating via BLE.',
+          'Nobody has stepped on the tile recently, the control box is unplugged, or Wi-Fi needs to be reconnected.',
         recommendedChecks: [
-          'Step on the tile a few times to trigger a batch upload or run a Bench Test below.',
-          'Check ESP32 power LED and USB/battery supply rail.',
-          'Use the BLE Field Check card to verify local ESP32 reachability and Wi-Fi SSID.',
+          'Walk across the tile a few times or run a quick Step Test below.',
+          'Check that the tile control box has power (power light is on).',
+          'Use the Bluetooth & Wi-Fi box below to reconnect the tile to Wi-Fi.',
         ],
       };
     } else if (recentStepsSum > 0 && recentMaxVoltage < 0.05 && recentMaxCurrentMA < 0.01) {
       faultDiagnosis = {
         code: 'WEAK_PIEZO_OUTPUT',
         severity: 'critical',
-        title: 'Steps Detected with Near-Zero Electrical Output',
+        title: 'Steps Counted, But No Electrical Output',
         summary:
-          'Footsteps are registering, but measured voltage and current remain near 0 V / 0 mA.',
+          'The tile is counting footsteps, but voltage and current are both near 0 V / 0 mA.',
         probableCause:
-          'Loose or broken piezo-to-bridge-rectifier wire, detached piezo disc, or blown diode leg.',
+          'A loose or broken wire between the floor pads and the rectifier circuit, or a disconnected sensor ground.',
         recommendedChecks: [
-          'Inspect solder joints between the piezoelectric array and full-wave bridge rectifier.',
-          'Check ADC / INA219 input wiring and shared GND reference with the ESP32.',
-          'Run a 3-sample Bench Test while pressing firmly on different tile zones.',
+          'Check the wires running from the piezo pads to the rectifier board for loose joints.',
+          'Verify the sensor wiring and common ground wire inside the control box.',
+          'Run a 3-step test while stepping on different spots of the tile.',
         ],
       };
     } else if (recentMaxVoltage >= 1.5 && recentMaxCurrentMA < 0.05) {
       faultDiagnosis = {
         code: 'OPEN_LOAD_LOW_CURRENT',
         severity: 'warning',
-        title: 'Healthy Voltage Spike, Minimal Current Flow',
-        summary: `Peak voltage reached ${recentMaxVoltage.toFixed(2)} V, but current stayed below 0.05 mA.`,
+        title: 'Voltage Present, But Almost No Current Flowing',
+        summary: `Voltage reached ${recentMaxVoltage.toFixed(2)} V, but electrical current stayed near zero (< 0.05 mA).`,
         probableCause:
-          'Open load path, loose INA219 shunt terminal, or high series resistance into the storage capacitor.',
+          'Open circuit on the load/storage side — likely a loose terminal on the current sensor or storage capacitor.',
         recommendedChecks: [
-          'Verify INA219 Vin+ / Vin- terminals and I2C SDA/SCL connections.',
-          'Confirm the storage capacitor / load resistor is firmly seated across the output rails.',
-          'Check for cold solder joints on the rectifier output bus.',
+          'Check the current sensor screw terminals and output wires for a loose connection.',
+          'Confirm the storage capacitor is firmly connected across the output rails.',
+          'Test continuity across the rectifier output with a multimeter.',
         ],
       };
     } else if (
@@ -692,54 +692,54 @@ export class DiagnosticsService {
       faultDiagnosis = {
         code: 'STEP_COUNTER_MISMATCH',
         severity: 'warning',
-        title: 'Electrical Spikes Detected Without Step Counts',
+        title: 'Power Detected, But Steps Are Not Being Counted',
         summary:
-          'Voltage/power activity is uploading, but stepCount stayed at 0 across recent readings.',
+          'The tile is producing electricity, but the step counter stayed at 0 on recent updates.',
         probableCause:
-          'ESP32 step-detection voltage threshold is set too high or debounce window is filtering valid steps.',
+          'The step sensitivity setting in the tile controller is set too high for normal footsteps.',
         recommendedChecks: [
-          'Verify the step trigger threshold in ESP32 firmware against your measured peak voltage.',
-          'Check that step increments are being included in the JSON upload payload.',
+          'Run a Step Test with firm footsteps to see if steps start counting.',
+          'Have a technician lower the step-detection threshold in the tile controller.',
         ],
       };
     } else if (driftStatus === 'degrading') {
       faultDiagnosis = {
         code: 'EFFICIENCY_DRIFT',
         severity: 'warning',
-        title: `Efficiency Drift Detected (${driftPercent}% vs 30-Day Baseline)`,
-        summary: `7-day yield (${recent7dMWhPerStep.toFixed(4)} mWh/step) dropped significantly below the 30-day average (${baseline30dMWhPerStep.toFixed(4)} mWh/step).`,
+        title: `Tile Output Is Lower Than Usual (${driftPercent}% vs Monthly Average)`,
+        summary: `This week’s energy per step (${recent7dMWhPerStep.toFixed(4)} mWh) is noticeably lower than the 30-day average (${baseline30dMWhPerStep.toFixed(4)} mWh).`,
         probableCause:
-          'Gradual mechanical fatigue (foam/spring rebound wear), cracked piezo disc, or aging storage capacitor.',
+          'Normal wear on the tile’s foam/springs, a worn piezo pad, or an aging storage capacitor.',
         recommendedChecks: [
-          'Run a 5-sample Bench Test to verify peak output and step-to-step consistency.',
-          'Inspect tile top-plate rebound pads and mechanical alignment over piezo discs.',
-          'Check storage capacitor for leakage or swelling.',
+          'Run a 3-step or 5-step test below to confirm if output is consistently low.',
+          'Check if the tile top plate springs back cleanly after each step.',
+          'Inspect the internal wiring and storage capacitor during routine maintenance.',
         ],
       };
     } else if (poorSignalRatioPercent >= 35 || avgLatencyMs > 5000) {
       faultDiagnosis = {
         code: 'UNSTABLE_TELEMETRY',
         severity: 'warning',
-        title: 'Telemetry Latency / Wi-Fi Instability',
-        summary: `${poorSignalRatioPercent}% of recent uploads had degraded signal quality (avg latency ${avgLatencyMs} ms).`,
+        title: 'Slow or Weak Wi-Fi Connection',
+        summary: `${poorSignalRatioPercent}% of recent updates arrived slowly (average delay ${avgLatencyMs} ms).`,
         probableCause:
-          'Weak Wi-Fi RSSI at tile location or intermittent ESP32 brownout during Wi-Fi transmit bursts.',
+          'Weak Wi-Fi signal near the floor tile or unstable power supply to the Wi-Fi board.',
         recommendedChecks: [
-          'Check Wi-Fi signal strength near the tile or switch to a closer access point via BLE.',
-          'Inspect ESP32 3.3V/5V supply capacitor to prevent brownouts during Wi-Fi uploads.',
+          'Check Wi-Fi coverage at the tile location or connect to a closer network via Bluetooth.',
+          'Check the power adapter/cable feeding the control box so it does not dip during uploads.',
         ],
       };
     } else {
       faultDiagnosis = {
         code: 'NOMINAL',
         severity: 'healthy',
-        title: 'All Hardware & Telemetry Signatures Nominal',
+        title: 'Everything Is Working Normally',
         summary:
-          'Piezo harvesting, electrical output, energy yield, and cloud telemetry all align with your 30-day baseline.',
-        probableCause: 'No hardware, wiring, or telemetry faults detected.',
+          'Footstep sensing, electrical output, energy storage, and online updates are all within the normal range.',
+        probableCause: 'No wiring, tile wear, or connection problems found.',
         recommendedChecks: [
-          'Run a quick Bench Test whenever you want an official calibration sign-off.',
-          'Monitor the 14-day Fatigue Radar below to catch gradual wear early.',
+          'No repair needed — you can run a quick Step Test anytime to log a checkup.',
+          'Check the 14-day wear chart below occasionally to spot slow wear early.',
         ],
       };
     }
@@ -773,12 +773,12 @@ export class DiagnosticsService {
 
     const healthScore = latestReading
       ? Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(harvestingScore * 0.45 + consistencyScore * 0.25 + telemetryScore * 0.3),
-          ),
-        )
+        0,
+        Math.min(
+          100,
+          Math.round(harvestingScore * 0.45 + consistencyScore * 0.25 + telemetryScore * 0.3),
+        ),
+      )
       : 0;
 
     let status: 'healthy' | 'degraded' | 'attention' | 'offline' = 'healthy';
@@ -790,12 +790,12 @@ export class DiagnosticsService {
       status = 'degraded';
     }
 
-    // 5-Stage Hardware Pipeline Status
+    // 5-Stage Power Path Status (plain names for admin & electrician)
     const pipelineStages: PipelineStageDto[] = [
       {
         id: 'piezo',
-        label: 'Piezo Impact',
-        shortLabel: 'Piezo Tile',
+        label: 'Floor Tile (Footsteps)',
+        shortLabel: 'Floor Tile',
         status:
           !latestReading || minutesSinceLast > 24 * 60
             ? 'idle'
@@ -807,13 +807,13 @@ export class DiagnosticsService {
         primaryValue: `${stepsLast7d > 0 ? stepsLast7d : latestSteps} steps`,
         detail:
           stepsLast7d > 0
-            ? `${stepsLast7d.toLocaleString()} steps in last 7d (${totalLifetimeSteps.toLocaleString()} total)`
-            : 'Waiting for footsteps on the tile',
+            ? `${stepsLast7d.toLocaleString()} footsteps this week (${totalLifetimeSteps.toLocaleString()} total)`
+            : 'Waiting for someone to step on the tile',
       },
       {
         id: 'electrical',
-        label: 'Rectifier & Sensor',
-        shortLabel: 'V / I Sensor',
+        label: 'Electrical Output (Voltage & Current)',
+        shortLabel: 'Volts & Amps',
         status:
           !latestReading || minutesSinceLast > 24 * 60
             ? 'idle'
@@ -823,12 +823,12 @@ export class DiagnosticsService {
                 ? 'warn'
                 : 'ok',
         primaryValue: `${(avgVoltage7dV || latestVoltageV).toFixed(1)}V • ${(avgCurrent7dMA || latestCurrentMA).toFixed(1)}mA`,
-        detail: `Latest reading: ${latestVoltageV.toFixed(2)} V, ${latestCurrentMA.toFixed(2)} mA, ${latestPowerMW.toFixed(2)} mW`,
+        detail: `Last measured: ${latestVoltageV.toFixed(2)} V, ${latestCurrentMA.toFixed(2)} mA (${latestPowerMW.toFixed(2)} mW)`,
       },
       {
         id: 'energy',
-        label: 'Energy Yield',
-        shortLabel: 'Storage / Yield',
+        label: 'Energy Stored Per Step',
+        shortLabel: 'Energy Yield',
         status:
           !latestReading || minutesSinceLast > 24 * 60
             ? 'idle'
@@ -836,12 +836,12 @@ export class DiagnosticsService {
               ? 'warn'
               : 'ok',
         primaryValue: `${recent7dMWhPerStep.toFixed(4)} mWh`,
-        detail: `Per-step yield vs ${baseline30dMWhPerStep.toFixed(4)} mWh 30d baseline (${driftPercent >= 0 ? '+' : ''}${driftPercent}%)`,
+        detail: `Average per step vs ${baseline30dMWhPerStep.toFixed(4)} mWh monthly average (${driftPercent >= 0 ? '+' : ''}${driftPercent}%)`,
       },
       {
         id: 'esp32',
-        label: 'ESP32 Controller',
-        shortLabel: 'ESP32 Link',
+        label: 'Tile Control Box',
+        shortLabel: 'Control Box',
         status:
           !latestReading || minutesSinceLast > 24 * 60
             ? 'idle'
@@ -850,29 +850,29 @@ export class DiagnosticsService {
               : 'ok',
         primaryValue:
           minutesSinceLast < 2
-            ? 'Live now'
+            ? 'Active now'
             : minutesSinceLast < 60
               ? `${Math.round(minutesSinceLast)}m ago`
               : minutesSinceLast < 24 * 60
                 ? `${Math.round(minutesSinceLast / 60)}h ago`
-                : 'Standby',
-        detail: `${last24hReadings.length} uploads in last 24h`,
+                : 'Idle',
+        detail: `Sent ${last24hReadings.length} updates in the last 24 hours`,
       },
       {
         id: 'cloud',
-        label: 'Cloud & Live Sync',
-        shortLabel: 'Cloud Sync',
+        label: 'Online Dashboard Sync',
+        shortLabel: 'Online Sync',
         status:
           !latestReading || minutesSinceLast > 24 * 60
             ? 'idle'
             : avgLatencyMs > 5000 || poorSignalRatioPercent >= 35
               ? 'warn'
               : 'ok',
-        primaryValue: avgLatencyMs > 0 ? `${avgLatencyMs} ms` : 'Ready',
+        primaryValue: avgLatencyMs > 0 ? `${avgLatencyMs} ms` : 'Connected',
         detail:
           latencySampleSet.length > 0
-            ? `${100 - poorSignalRatioPercent}% strong signal quality across recent packets`
-            : 'Real-time WebSocket stream listening',
+            ? `${100 - poorSignalRatioPercent}% fast, reliable uploads recently`
+            : 'Ready to receive live updates',
       },
     ];
 

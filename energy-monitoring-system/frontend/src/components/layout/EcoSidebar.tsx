@@ -17,7 +17,6 @@ import {
   Pin,
   MessageSquare,
   MessageSquareHeart,
-  Award,
   ScrollText,
   Info,
 } from 'lucide-react';
@@ -41,7 +40,6 @@ const ALL_NAV_ITEMS: NavItem[] = [
   // Public routes (shown to everyone)
   { to: ROUTES.DASHBOARD, label: 'Central', Icon: Activity },
   { to: ROUTES.ANALYTICS, label: 'Analytics', Icon: TrendingUp },
-  { to: ROUTES.MILESTONES, label: 'Milestone', Icon: Award },
   { to: ROUTES.REPORTS, label: 'Ledger', Icon: FileText },
   { to: ROUTES.FEEDBACK, label: 'Feedback', Icon: MessageSquareHeart },
   { to: ROUTES.ABOUT, label: 'About', Icon: Info },
@@ -891,17 +889,6 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               <span className="es-mobile-tab-label">Analytics</span>
             </NavLink>
 
-            <NavLink
-              to={ROUTES.MILESTONES}
-              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Milestone"
-            >
-              <span className="es-mobile-tab-pill">
-                <Award size={18} strokeWidth={2} />
-              </span>
-              <span className="es-mobile-tab-label">Milestone</span>
-            </NavLink>
-
             <button
               type="button"
               className="es-mobile-tab es-mobile-tab-ecoguide"
@@ -962,14 +949,14 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
             </button>
 
             <NavLink
-              to={ROUTES.MILESTONES}
+              to={ROUTES.FEEDBACK}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Milestone"
+              aria-label="Feedback"
             >
               <span className="es-mobile-tab-pill">
-                <Award size={18} strokeWidth={2} />
+                <MessageSquareHeart size={18} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Milestone</span>
+              <span className="es-mobile-tab-label">Feedback</span>
             </NavLink>
 
             <NavLink
@@ -1034,15 +1021,6 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               >
                 <TrendingUp size={20} strokeWidth={1.8} />
                 <span>Analytics</span>
-              </NavLink>
-
-              <NavLink
-                to={ROUTES.MILESTONES}
-                className={({ isActive }) => `es-sheet-item ${isActive ? 'is-active' : ''}`}
-                onClick={() => setMobileUserSheetOpen(false)}
-              >
-                <Award size={20} strokeWidth={1.8} />
-                <span>Milestone</span>
               </NavLink>
 
               <NavLink

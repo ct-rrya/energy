@@ -15,9 +15,21 @@ import {
 } from 'lucide-react';
 import type {
   DiagnosticInsights,
+  FaultSignatureCode,
   PipelineStage,
   PipelineStageStatus,
 } from '@/types/diagnostic.types';
+
+const FAULT_BADGE_LABELS: Record<FaultSignatureCode, string> = {
+  NOMINAL: 'All Clear',
+  NO_RECENT_TELEMETRY: 'Tile Idle',
+  WEAK_PIEZO_OUTPUT: 'Check Tile Wiring',
+  OPEN_LOAD_LOW_CURRENT: 'Loose Terminal / Open Circuit',
+  STEP_COUNTER_MISMATCH: 'Step Counter Issue',
+  EFFICIENCY_DRIFT: 'Tile Wear Notice',
+  UNSTABLE_TELEMETRY: 'Weak Wi-Fi',
+  ELEVATED_SPIKE: 'High Spike',
+};
 
 interface HardwarePipelineCardProps {
   insights?: DiagnosticInsights;
@@ -119,12 +131,12 @@ export function HardwarePipelineCard({
 
   const statusBadge =
     status === 'healthy'
-      ? { label: 'Tile Healthy', cls: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' }
+      ? { label: 'Working Normally', cls: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' }
       : status === 'degraded'
-        ? { label: 'Needs Attention', cls: 'bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25' }
+        ? { label: 'Needs Checkup', cls: 'bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25' }
         : status === 'attention'
-          ? { label: 'Fault Detected', cls: 'bg-rose-500/12 text-rose-600 dark:text-rose-400 border-rose-500/25' }
-          : { label: 'Standby', cls: 'bg-[var(--soft)] text-[var(--mu)] border-[var(--line)]' };
+          ? { label: 'Check Hardware', cls: 'bg-rose-500/12 text-rose-600 dark:text-rose-400 border-rose-500/25' }
+          : { label: 'Idle / Standby', cls: 'bg-[var(--soft)] text-[var(--mu)] border-[var(--line)]' };
 
   const diagStyles =
     diagnosis?.severity === 'critical'
@@ -202,7 +214,7 @@ export function HardwarePipelineCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-[17px] sm:text-[18px] font-bold tracking-tight text-[var(--t)] m-0">
-                Hardware Pipeline & Fault Fingerprint
+                Tile Health Overview
               </h2>
               <span
                 className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${statusBadge.cls}`}
@@ -211,7 +223,7 @@ export function HardwarePipelineCard({
               </span>
             </div>
             <p className="text-xs sm:text-[13px] text-[var(--mu)] mt-1 m-0">
-              Live stage-by-stage telemetry analysis from piezoelectric tile impact to cloud sync.
+              Follow power step-by-step from the floor tile to the online dashboard to spot loose wires or weak output.
             </p>
           </div>
         </div>
@@ -219,9 +231,9 @@ export function HardwarePipelineCard({
         {/* 3 Sub-score Indicators */}
         <div className="flex flex-wrap items-center gap-2">
           {[
-            { label: 'Harvesting', val: breakdown.harvesting },
-            { label: 'Consistency', val: breakdown.consistency },
-            { label: 'Telemetry', val: breakdown.telemetry },
+            { label: 'Power Output', val: breakdown.harvesting },
+            { label: 'Steadiness', val: breakdown.consistency },
+            { label: 'Connection', val: breakdown.telemetry },
           ].map((item) => (
             <div
               key={item.label}
@@ -238,12 +250,12 @@ export function HardwarePipelineCard({
         </div>
       </div>
 
-      {/* Interactive 5-Stage Hardware Pipeline Schematic */}
+      {/* Interactive 5-Stage Power Path */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mu)] flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-[var(--acc)]" />
-            Signal Pipeline Schematic (Click a stage to inspect)
+            Power Path (Click any step for details)
           </span>
           {onJumpToBench && (
             <button
@@ -251,7 +263,7 @@ export function HardwarePipelineCard({
               onClick={onJumpToBench}
               className="text-xs font-semibold text-[var(--acc)] hover:underline cursor-pointer"
             >
-              Run live bench test →
+              Run step test →
             </button>
           )}
         </div>
@@ -347,14 +359,14 @@ export function HardwarePipelineCard({
                     {diagnosis.title}
                   </span>
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${diagStyles.badge}`}>
-                    {diagnosis.code.replace(/_/g, ' ')}
+                    {FAULT_BADGE_LABELS[diagnosis.code] ?? 'Status'}
                   </span>
                 </div>
                 <p className="text-xs sm:text-[13px] text-[var(--t)]/90 mt-1 mb-1.5 leading-relaxed">
                   {diagnosis.summary}
                 </p>
                 <p className="text-xs text-[var(--mu)] m-0">
-                  <strong className="text-[var(--t)]">Probable cause:</strong> {diagnosis.probableCause}
+                  <strong className="text-[var(--t)]">Likely reason:</strong> {diagnosis.probableCause}
                 </p>
               </div>
             </div>
@@ -363,7 +375,7 @@ export function HardwarePipelineCard({
               <div className="md:w-[42%] shrink-0 rounded-xl bg-[var(--panel)]/80 border border-[var(--line)] p-3">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--mu)] flex items-center gap-1.5 mb-2">
                   <Wrench className="w-3.5 h-3.5 text-[var(--acc)]" />
-                  Technician Checks
+                  What to Check
                 </div>
                 <ul className="m-0 pl-4 space-y-1 text-xs text-[var(--t)]">
                   {diagnosis.recommendedChecks.map((check, i) => (

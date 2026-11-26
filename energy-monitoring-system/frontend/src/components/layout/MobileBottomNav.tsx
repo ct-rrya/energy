@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Activity, MessageSquare, Stethoscope, FileText, Award } from 'lucide-react';
+import { Home, Activity, MessageSquare, Stethoscope, FileText } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROUTES } from '@/routes/routes.config';
@@ -38,7 +38,6 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
 
   const isCentral = location.pathname === ROUTES.DASHBOARD || location.pathname === '/';
   const isAnalytics = location.pathname.startsWith(ROUTES.ANALYTICS);
-  const isMilestones = location.pathname.startsWith(ROUTES.MILESTONES);
   const isDiagnostics = location.pathname.startsWith(ROUTES.ADMIN_DIAGNOSTICS);
   const isReports = location.pathname.startsWith(ROUTES.REPORTS);
 
@@ -60,13 +59,6 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       icon: Activity,
       isActive: isAnalytics,
       onClick: () => navigate(ROUTES.ANALYTICS),
-    },
-    {
-      id: 'milestone',
-      label: 'Milestone',
-      icon: Award,
-      isActive: isMilestones,
-      onClick: () => navigate(ROUTES.MILESTONES),
     },
     {
       id: 'health',
@@ -100,11 +92,11 @@ export function MobileBottomNav({ className = '', onOpenMenu: _onOpenMenu }: Mob
       onClick: () => navigate(ROUTES.ANALYTICS),
     },
     {
-      id: 'milestone',
-      label: 'Milestone',
-      icon: Award,
-      isActive: isMilestones,
-      onClick: () => navigate(ROUTES.MILESTONES),
+      id: 'ledger',
+      label: 'Ledger',
+      icon: FileText,
+      isActive: isReports,
+      onClick: () => navigate(ROUTES.REPORTS),
     },
     {
       id: 'ecoguide',

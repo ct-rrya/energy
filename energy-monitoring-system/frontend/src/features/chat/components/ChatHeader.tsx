@@ -15,6 +15,8 @@ interface ChatHeaderProps {
   isExpanded?: boolean;
   isFloating?: boolean;
   isMobile?: boolean;
+  subtitle?: string;
+  showNewChat?: boolean;
 }
 
 export function ChatHeader({
@@ -24,6 +26,8 @@ export function ChatHeader({
   isExpanded = true,
   isFloating = false,
   isMobile = false,
+  subtitle = 'Learning assistant',
+  showNewChat = true,
 }: ChatHeaderProps) {
   const handleToggleOrClose = () => {
     if (isMobile && onClose) {
@@ -51,19 +55,21 @@ export function ChatHeader({
     <div className="chat-header row">
       <div>
         <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--t)' }}>EcoGuide</h2>
-        <div className="sub text-[13px] text-[var(--mu)]">Learning assistant</div>
+        <div className="sub text-[13px] text-[var(--mu)]">{subtitle}</div>
       </div>
       
       <div className="ibs flex items-center gap-2">
-        <button
-          className="ib"
-          onClick={onNewChat}
-          aria-label="Start new chat"
-          type="button"
-          title="New conversation"
-        >
-          <RotateCcw size={16} strokeWidth={1.8} />
-        </button>
+        {showNewChat && (
+          <button
+            className="ib"
+            onClick={onNewChat}
+            aria-label="Start new chat"
+            type="button"
+            title="New conversation"
+          >
+            <RotateCcw size={16} strokeWidth={1.8} />
+          </button>
+        )}
         <button
           className="ib"
           onClick={handleToggleOrClose}

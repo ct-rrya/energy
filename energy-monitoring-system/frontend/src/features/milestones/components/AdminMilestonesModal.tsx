@@ -62,8 +62,6 @@ export function AdminMilestonesModal({
   // Month-locking evaluation
   const isMonthSelectedActive = selectedMonth === activeMonth;
   const isLocked = Boolean(isMonthSelectedActive && configurationPolicy?.isLocked);
-  const isOverdue = Boolean(isMonthSelectedActive && configurationPolicy?.status === 'OVERDUE');
-  const isPending = Boolean(isMonthSelectedActive && configurationPolicy?.status === 'PENDING');
   const isReadOnly = isLocked && !isSuperAdmin;
 
   // Lock body scrolling when modal is open
@@ -249,27 +247,15 @@ export function AdminMilestonesModal({
             </div>
           )}
 
-          {!isLocked && isOverdue && (
-            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
-              <div>
-                <div className="font-bold">Configuration Overdue</div>
-                <div className="text-[11px] opacity-90 mt-0.5">
-                  The configuration deadline for {formatMonthLabel(selectedMonth)} was{' '}
-                  {configurationPolicy?.deadlineLabel || 'the 2nd day of the month (Asia/Manila)'}.
-                  Submitting targets now will lock the goals for this month and resolve the overdue status.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!isLocked && isPending && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+          {!isLocked && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
               <Calendar className="w-4 h-4 shrink-0 text-[var(--acc)]" />
               <div className="text-[11px]">
-                <span className="font-semibold">Goal Policy:</span> Deadline is{' '}
-                {configurationPolicy?.deadlineLabel || 'the 2nd day of the month, 11:59 PM (Asia/Manila)'}.
-                Once submitted, targets lock against ordinary modifications.
+                <span className="font-semibold">Auto-Calculated Goal:</span>{' '}
+                {configurationPolicy?.autoCalculatedFromLabel
+                  ? `Automatically set from ${configurationPolicy.autoCalculatedFromLabel} (${configurationPolicy.previousMonthMWh ?? 0} mWh + ${configurationPolicy.growthPercent ?? 10}% growth).`
+                  : 'Automatically calculated from the previous active month (+10% growth).'}
+                {' '}Save a custom target below anytime to override it.
               </div>
             </div>
           )}

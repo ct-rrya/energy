@@ -43,6 +43,8 @@ export interface HeroPowerCardProps {
   powerValue: number | undefined;
   /** Previous power value for trend comparison (undefined if unavailable) */
   previousPower?: number | undefined;
+  /** Compact above-the-fold layout when paired next to 2x2 metrics */
+  compact?: boolean;
   /** AI-generated insight text (undefined if unavailable) */
   aiInsight: string | undefined;
   /** Loading state indicator */
@@ -67,17 +69,16 @@ export const HeroPowerCard = React.memo(
     isLoading,
     todaySteps,
     connectionStatus,
+    compact = false,
   }: HeroPowerCardProps) {
     const hardwareStatus = useHardwareStatus();
     const effectiveConnectionStatus = connectionStatus ?? hardwareStatus.status;
     const isDisconnected = effectiveConnectionStatus === 'disconnected';
 
-    // Memoize formatted value with clean, reader-friendly decimals
+    // Memoize formatted value at 5 decimal places for micro-harvesting precision
     const formattedPower = useMemo(() => {
-      if (powerValue === undefined || powerValue === 0) return '0.00';
-      if (Math.abs(powerValue) < 0.01) return powerValue.toFixed(4);
-      if (Math.abs(powerValue) < 1) return powerValue.toFixed(3);
-      return powerValue.toFixed(2);
+      if (powerValue === undefined || powerValue === 0) return '0.00000';
+      return powerValue.toFixed(5);
     }, [powerValue]);
 
     // Show loading skeleton when isLoading is true
@@ -91,7 +92,7 @@ export const HeroPowerCard = React.memo(
     const isLive = !isDisconnected && !hasNoActivityToday;
 
     return (
-      <div className="cd flex flex-col justify-between">
+      <div className={`cd flex flex-col justify-between h-full ${compact ? '!py-3.5 !px-4' : ''}`}>
         {/* Power Value Display Section */}
         <div className="flex flex-col">
           {/* Label "Power Output" with plain-language description & InfoTooltip */}
@@ -113,10 +114,14 @@ export const HeroPowerCard = React.memo(
             </span>
           </div>
 
-          {/* Hero number: 56px/500, letter-spacing -.03em, margin-top 6px; unit <small> 20px muted, margin-left 6px */}
-          <div className="n text-[40px] sm:text-[56px] font-[500] tracking-[-0.03em] mt-1.5 flex items-baseline leading-none text-[var(--t)]">
+          {/* Hero number */}
+          <div
+            className={`n ${
+              compact ? 'text-[30px] sm:text-[36px]' : 'text-[40px] sm:text-[56px]'
+            } font-[500] tracking-[-0.03em] mt-1.5 flex items-baseline leading-none text-[var(--t)] tabular-nums`}
+          >
             <span>{formattedPower}</span>
-            <small className="text-[16px] sm:text-[20px] text-[var(--mu)] ml-1.5 font-normal">
+            <small className={`${compact ? 'text-[14px]' : 'text-[16px] sm:text-[20px]'} text-[var(--mu)] ml-1.5 font-normal`}>
               mW
             </small>
           </div>

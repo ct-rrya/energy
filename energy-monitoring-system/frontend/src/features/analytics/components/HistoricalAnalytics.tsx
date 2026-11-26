@@ -240,7 +240,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Total Energy</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.total?.toFixed(2) || '0.00'} mWh
+                  {energyData.summary.total?.toFixed(5) || '0.00000'} mWh
                 </p>
               </div>
             </div>
@@ -254,7 +254,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Peak Power</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.max.toFixed(2)} mWh
+                  {energyData.summary.max.toFixed(5)} mWh
                 </p>
               </div>
             </div>
@@ -268,7 +268,7 @@ export function HistoricalAnalytics() {
               <div>
                 <p className="text-sm text-[rgb(var(--color-neutral-600))]">Average</p>
                 <p className="text-2xl font-bold text-[rgb(var(--color-neutral-900))] tabular-nums">
-                  {energyData.summary.avg.toFixed(2)} mWh
+                  {energyData.summary.avg.toFixed(5)} mWh
                 </p>
               </div>
             </div>

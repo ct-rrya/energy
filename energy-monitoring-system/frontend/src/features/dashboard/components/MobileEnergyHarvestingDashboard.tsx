@@ -119,27 +119,27 @@ export function MobileEnergyHarvestingDashboard({
   const powerValNum = isActive
     ? (rawPower !== undefined && rawPower > 0 ? rawPower : 0.508)
     : 0;
-  const formattedPower = powerValNum > 0 ? powerValNum.toFixed(4) : '0.0000';
+  const formattedPower = powerValNum > 0 ? powerValNum.toFixed(5) : '0.00000';
 
   // Voltage
   const voltageValue = isActive
     ? (displayReading?.voltage !== undefined && displayReading.voltage > 0
-        ? displayReading.voltage.toFixed(2)
-        : '3.42')
-    : '0.00';
+        ? displayReading.voltage.toFixed(5)
+        : '3.42000')
+    : '0.00000';
   const peakVoltage = displayMetrics?.todayMaxVoltage !== undefined && displayMetrics.todayMaxVoltage > 0
-    ? displayMetrics.todayMaxVoltage.toFixed(2)
-    : '4.10';
+    ? displayMetrics.todayMaxVoltage.toFixed(5)
+    : '4.10000';
 
   // Current (in mA)
   const currentValueMA = isActive
     ? (displayReading?.current !== undefined && displayReading.current > 0
-        ? (displayReading.current * 1000).toFixed(1)
-        : '12.8')
-    : '0.0';
+        ? (displayReading.current * 1000).toFixed(5)
+        : '12.80000')
+    : '0.00000';
   const avgCurrentMA = displayMetrics?.todayAvgCurrent !== undefined && displayMetrics.todayAvgCurrent > 0
-    ? (displayMetrics.todayAvgCurrent * 1000).toFixed(1)
-    : '9.6';
+    ? (displayMetrics.todayAvgCurrent * 1000).toFixed(5)
+    : '9.60000';
 
   return (
     <div className="w-full max-w-md mx-auto space-y-4 pb-20">

@@ -130,8 +130,11 @@ export function CustomChartTooltip({
     // Apply multiplier for unit conversion
     const convertedValue = numericValue * valueMultiplier;
 
-    // Format with 1 decimal place for mA, 2 for others
-    const decimals = valueUnit === 'mA' ? 1 : 2;
+    // Format electrical metrics (V, mA, A, mW, W, mWh, Wh, kWh) to 5 decimal places
+    const isElectricalUnit = Boolean(
+      valueUnit && /^(V|mA|A|mW|W|mWh|Wh|kWh|µWh)$/i.test(valueUnit.trim()),
+    );
+    const decimals = isElectricalUnit ? 5 : 2;
     const formatted = convertedValue.toFixed(decimals);
     
     // Append unit if provided
