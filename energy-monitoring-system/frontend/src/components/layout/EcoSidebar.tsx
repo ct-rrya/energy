@@ -20,6 +20,7 @@ import {
   ScrollText,
   Info,
   Pencil,
+  Compass,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -629,6 +630,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 <NavLink
                   to={to}
                   end={end}
+                  data-tour={`nav-desktop-${label.toLowerCase()}`}
                   className={({ isActive }) => `es-nav-item nav-link ${isActive ? 'active on' : ''}`}
                   title={leftVisuallyCollapsed ? label : undefined}
                   aria-label={label}
@@ -751,6 +753,22 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 </button>
               )}
 
+              {/* Replay Onboarding Tour (Public visitor only) */}
+              {!isAnyAdmin && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="um-item es-popover-item it"
+                  onClick={() => {
+                    closeMenu(false);
+                    window.dispatchEvent(new CustomEvent('ecostep:start-tour'));
+                  }}
+                >
+                  <Compass size={18} strokeWidth={1.8} />
+                  <span>Take a Quick Tour</span>
+                </button>
+              )}
+
               {/* Theme Toggle */}
               <button
                 type="button"
@@ -838,6 +856,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
       <nav className={`es-mobile-tabbar ${isAnyAdmin ? 'is-admin' : 'is-public'}`} aria-label="Primary mobile navigation">
         <NavLink
           to={ROUTES.DASHBOARD}
+          data-tour="nav-mobile-central"
           className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
           aria-label="Central"
         >
@@ -862,6 +881,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             <NavLink
               to={ROUTES.REPORTS}
+              data-tour="nav-mobile-reports"
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
               aria-label="Reports"
             >
@@ -920,6 +940,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
           <>
             <NavLink
               to={ROUTES.ANALYTICS}
+              data-tour="nav-mobile-analytics"
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
               aria-label="Analytics"
             >
@@ -931,6 +952,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             <button
               type="button"
+              data-tour="nav-mobile-ecoguide"
               className="es-mobile-tab es-mobile-tab-ecoguide"
               onClick={handleOpenMobileEcoGuide}
               aria-label="Open EcoGuide"
@@ -943,6 +965,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             <NavLink
               to={ROUTES.FEEDBACK}
+              data-tour="nav-mobile-ecommunity"
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
               aria-label="ECommunity"
             >
@@ -954,6 +977,7 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
 
             <NavLink
               to={ROUTES.REPORTS}
+              data-tour="nav-mobile-reports"
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
               aria-label="Reports"
             >
@@ -1099,6 +1123,21 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
                 >
                   <Pencil size={20} strokeWidth={1.8} />
                   <span>Change Nickname</span>
+                </button>
+              )}
+
+              {/* Replay Onboarding Tour (Public visitor only) */}
+              {!isAnyAdmin && (
+                <button
+                  type="button"
+                  className="es-sheet-item"
+                  onClick={() => {
+                    setMobileUserSheetOpen(false);
+                    window.dispatchEvent(new CustomEvent('ecostep:start-tour'));
+                  }}
+                >
+                  <Compass size={20} strokeWidth={1.8} />
+                  <span>Take a Quick Tour</span>
                 </button>
               )}
 

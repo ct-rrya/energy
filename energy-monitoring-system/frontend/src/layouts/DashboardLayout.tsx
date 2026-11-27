@@ -3,6 +3,7 @@ import { Outlet, useSearchParams } from 'react-router-dom';
 import { DesktopDashboardLayout } from './DesktopDashboardLayout';
 import { SplashScreen } from '@/components/common/SplashScreen';
 import { NicknameWelcomeModal } from '@/components/common/NicknameWelcomeModal';
+import { VisitorOnboardingTour } from '@/components/common/VisitorOnboardingTour';
 import { MaintenanceOverlay } from '@/components/common/MaintenanceOverlay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
@@ -52,6 +53,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <>
       <SplashScreen forceShow={forceSplash} />
       {!showPublicMaintenance && <NicknameWelcomeModal />}
+      {!showPublicMaintenance && <VisitorOnboardingTour />}
       <MaintenanceOverlay />
       <DesktopDashboardLayout>{children ?? <Outlet />}</DesktopDashboardLayout>
     </>

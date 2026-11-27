@@ -1,11 +1,15 @@
 {
-  "name": "EcoStep",
+  "id": "/",
+  "name": "EcoStep Energy Monitoring",
   "short_name": "EcoStep",
-  "description": "EcoStep Energy Monitoring System",
+  "description": "EcoStep campus piezoelectric footstep energy harvesting and live monitoring system",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "theme_color": "#1fd566",
   "background_color": "#06120c",
+  "categories": ["utilities", "education"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -27,4 +31,3 @@
     }
   ]
 }
-

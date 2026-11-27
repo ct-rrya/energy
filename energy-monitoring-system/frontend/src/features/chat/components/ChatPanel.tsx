@@ -308,12 +308,17 @@ export function ChatPanel({
           onBlur={() => setRailHovered(false)}
         >
           <span
-            className="mt-4 text-[var(--acc)] opacity-80"
-            aria-hidden="true"
+            data-tour="ecoguide-rail-label"
+            className="mt-3 flex flex-col items-center gap-3 px-2 py-2"
           >
-            <MessageSquare size={18} strokeWidth={2} />
+            <span
+              className="text-[var(--acc)] opacity-80"
+              aria-hidden="true"
+            >
+              <MessageSquare size={18} strokeWidth={2} />
+            </span>
+            <span className="docked-rail-label">EcoGuide</span>
           </span>
-          <span className="docked-rail-label">EcoGuide</span>
         </button>
 
         {isCollapsed && !isMobile && railHovered && typeof document !== 'undefined' && createPortal(

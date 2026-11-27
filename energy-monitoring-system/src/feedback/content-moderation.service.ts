@@ -20,9 +20,9 @@ const PROMO_SPAM_PATTERNS: RegExp[] = [
   /\b(?:free\s+money|earn\s+\$?\d+|crypto\s+signals?|forex\s+signals?|online\s+casino|slot\s+machine|betting\s+site|buy\s+followers|dm\s+for\s+promo|whatsapp\s+me|telegram\s+@)\b/i,
 ];
 
-// Word-boundary profanity / abusive terms (English + Filipino/Tagalog)
+// Word-boundary profanity & explicit sexual terms (English + Tagalog/Filipino + Cebuano/Bisaya)
 const PROFANITY_TERMS: string[] = [
-  // English
+  // English profanity, slurs & explicit sexual terms
   'fuck',
   'fucker',
   'fucking',
@@ -46,6 +46,18 @@ const PROFANITY_TERMS: string[] = [
   'jackass',
   'slut',
   'whore',
+  'porn',
+  'porno',
+  'blowjob',
+  'handjob',
+  'masturbate',
+  'horny',
+  'boobs',
+  'titties',
+  'pussy',
+  'penis',
+  'vagina',
+  'dildo',
   'retard',
   'retarded',
   'faggot',
@@ -53,31 +65,119 @@ const PROFANITY_TERMS: string[] = [
   'nigga',
   'stfu',
   'kys',
-  // Filipino / Tagalog
+  // Tagalog / Filipino profanity & sexual slang
   'putangina',
   'putang ina',
   'tangina',
   'tang ina',
+  'kingina',
+  'puchangina',
   'taena',
   'pota',
   'puta',
+  'putragis',
   'gago',
   'gagu',
   'tanga',
   'bobo',
   'ulol',
   'tarantado',
+  'hinayupak',
+  'siraulo',
   'pakyu',
   'pakyo',
   'kupal',
   'hindot',
   'kantot',
+  'kantutan',
+  'jakol',
+  'chupa',
+  'tsupa',
+  'pekpek',
+  'puke',
+  'puki',
+  'titi',
+  'tite',
+  'burat',
+  'bayag',
+  'libog',
+  'malibog',
+  'pokpok',
   'punyeta',
   'leche',
   'bwisit',
   'hayop ka',
   'inutil',
   'ungas',
+  // Cebuano / Bisaya profanity & sexual slang
+  'yawa',
+  'yawaa',
+  'yawaaa',
+  'yawa ka',
+  'piste',
+  'pisti',
+  'pisteng',
+  'pisting',
+  'piste ka',
+  'atay',
+  'ataya',
+  'atay ka',
+  'giatay',
+  'giataya',
+  'yati',
+  'yatia',
+  'linti',
+  'animala',
+  'buang',
+  'boang',
+  'bogo',
+  'bogoa',
+  'bugo',
+  'bugoa',
+  'amaw',
+  'amawa',
+  'bilat',
+  'bilata',
+  'oten',
+  'otin',
+  'iyot',
+  'iyota',
+  'iyotay',
+  'kayat',
+  'kayata',
+  'kayatay',
+  'bisong',
+  'bisonga',
+  'bigaon',
+  'uwagan',
+  'jerjer',
+  'esmeringhoy',
+  'esmiringhoy',
+  'pakyuha',
+];
+
+// Unambiguous longer terms also checked with spaces/punctuation stripped (catches "y.a.w.a", "p u t a n g i n a", "e s m e r i n g h o y")
+const COMPACT_PROFANITY_TERMS: string[] = [
+  'putangina',
+  'tangina',
+  'motherfucker',
+  'esmeringhoy',
+  'esmiringhoy',
+  'giatay',
+  'kantutan',
+  'tarantado',
+  'hinayupak',
+  'pisteng',
+  'pisting',
+  'yawaa',
+];
+
+const MASKED_PROFANITY_PATTERNS: RegExp[] = [
+  /\bf[\W_]*[u@a*]+[\W_]*c[\W_]*k/i,
+  /\by[\W_]*[a@*]+[\W_]*w[\W_]*[a@*]+/i,
+  /\bp[\W_]*[u*]+[\W_]*t[\W_]*[a@*]+/i,
+  /\bs[\W_]*h[\W_]*[i1!*]+[\W_]*t\b/i,
+  /\bb[\W_]*[i1!*]+[\W_]*t[\W_]*c[\W_]*h/i,
 ];
 
 const KEYBOARD_SMASH_SEQUENCES = [
@@ -90,7 +190,7 @@ const KEYBOARD_SMASH_SEQUENCES = [
   'mnbvcxz',
 ];
 
-const AI_MODERATION_TIMEOUT_MS = 4500;
+const AI_MODERATION_TIMEOUT_MS = 6500;
 
 @Injectable()
 export class ContentModerationService {
@@ -154,15 +254,29 @@ export class ContentModerationService {
   }
 
   containsProfanity(text: string): boolean {
+    if (MASKED_PROFANITY_PATTERNS.some((pattern) => pattern.test(text))) {
+      return true;
+    }
+
     const normalized = this.normalizeForProfanity(text);
     const collapsed = normalized.replace(/(.)\1{2,}/g, '$1$1');
     const singleCollapsed = normalized.replace(/(.)\1+/g, '$1');
 
-    return this.profanityRegexes.some(
-      (regex) =>
-        regex.test(normalized) ||
-        regex.test(collapsed) ||
-        regex.test(singleCollapsed),
+    if (
+      this.profanityRegexes.some(
+        (regex) =>
+          regex.test(normalized) ||
+          regex.test(collapsed) ||
+          regex.test(singleCollapsed),
+      )
+    ) {
+      return true;
+    }
+
+    const compact = normalized.replace(/\s+/g, '');
+    const compactCollapsed = compact.replace(/(.)\1{2,}/g, '$1$1');
+    return COMPACT_PROFANITY_TERMS.some(
+      (term) => compact.includes(term) || compactCollapsed.includes(term),
     );
   }
 
@@ -226,6 +340,9 @@ export class ContentModerationService {
     }
 
     if (!this.geminiAI.isAvailable()) {
+      this.logger.warn(
+        'AI topic moderation skipped: no Gemini or Groq API provider is configured/available.',
+      );
       return;
     }
 
@@ -233,19 +350,21 @@ export class ContentModerationService {
     const message = (ctx.message || '').slice(0, 800);
     const category = ctx.category || 'general';
 
-    const prompt = `You are a content moderator for ECommunity, the public feedback and Q&A board of EcoStep — a campus piezoelectric footstep energy harvesting and monitoring web application.
+    const prompt = `You are a strict but fair content moderator for ECommunity, the public feedback and Q&A board of EcoStep — a Philippine campus piezoelectric footstep energy harvesting and monitoring web application.
+
+You MUST understand English, Tagalog/Filipino, Taglish, AND Cebuano/Bisaya (including Philippine campus slang, profanity, and sexual innuendo).
 
 Decide if this user post should be ALLOWED or REJECTED.
 
 ALLOW posts that are:
 - Questions, bug reports, issues, suggestions, or reviews about EcoStep, the website, dashboard, analytics, reports, EcoGuide chatbot, admin chat, or user experience
 - Reports or discussions about the physical floor tiles, piezo sensors, ESP32 hardware, power/voltage/energy readings, milestones, or campus sustainability
-- Genuine greetings, compliments, or constructive campus feedback related to EcoStep (even if casual or written in Taglish/Filipino)
+- Genuine, respectful campus feedback or questions related to EcoStep (in English, Tagalog, or Cebuano/Bisaya)
 
 REJECT posts that are:
-- Completely unrelated nonsense, memes, song lyrics, random jokes, or test gibberish (e.g., "The quick brown fox", "What does the fox say", random movie quotes)
-- Unrelated homework, coding questions, ads, scams, or spam
-- Harassment, hate speech, threats, or abusive content
+- Profanity, curses, insults, vulgarities, or sexual/NSFW content or slang in ANY language — especially English, Tagalog, or Cebuano/Bisaya (e.g., "yawa", "atay", "piste", "iyot", "bilat", "oten", "kayat", "esmeringhoy", coded sexual slang, or suggestive double-entendres)
+- Single-word or meaningless low-effort posts, random names/words with no actual EcoStep question or feedback (e.g., Title: "Esme" / Message: "Esmeringhoy", or Title: "Test" / Message: "Hello")
+- Unrelated memes, jokes, song lyrics, random quotes, unrelated homework, ads, scams, spam, trolling, or harassment
 
 Post Category: ${category}
 Post Title: ${title}
@@ -254,7 +373,7 @@ Post Message: ${message}
 Reply with ONLY valid JSON and no markdown fences:
 {"allowed": true, "reason": ""}
 or
-{"allowed": false, "reason": "Brief polite 1-sentence reason why it is off-topic or not allowed"}`;
+{"allowed": false, "reason": "Brief polite 1-sentence reason why it is not allowed"}`;
 
     let timeoutHandle: NodeJS.Timeout | undefined;
     try {
@@ -266,7 +385,9 @@ or
       ]);
 
       if (!raw) {
-        // Fail open when AI times out or is unavailable
+        this.logger.warn(
+          `AI moderation timed out or returned empty for post "${title.slice(0, 60)}" — failing open.`,
+        );
         return;
       }
 
@@ -275,11 +396,19 @@ or
         const reason =
           parsed.reason && parsed.reason.trim().length > 0
             ? parsed.reason.trim()
-            : 'This post appears unrelated to EcoStep. Please share questions, feedback, bug reports, or suggestions about EcoStep.';
+            : 'This post is not allowed on ECommunity. Please keep posts respectful and related to EcoStep.';
         this.logger.warn(
-          `AI moderation rejected post "${title.slice(0, 60)}": ${reason}`,
+          `AI moderation REJECTED post "${title.slice(0, 60)}": ${reason}`,
         );
         throw new BadRequestException(reason);
+      }
+
+      if (parsed && parsed.allowed === true) {
+        this.logger.log(`AI moderation ALLOWED post "${title.slice(0, 60)}"`);
+      } else {
+        this.logger.warn(
+          `AI moderation returned unparseable response for "${title.slice(0, 60)}" — failing open.`,
+        );
       }
     } catch (error) {
       if (error instanceof BadRequestException) {

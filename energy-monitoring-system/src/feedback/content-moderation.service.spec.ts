@@ -67,6 +67,31 @@ describe('ContentModerationService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('blocks Cebuano/Bisaya profanity, sexual slang, and masked evasions', async () => {
+    await expect(
+      service.assertAllowed({
+        kind: 'post',
+        title: 'Yawa',
+        message: 'Yawa',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      service.assertAllowed({
+        kind: 'post',
+        title: 'Esme',
+        message: 'Esmeringhoy',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    await expect(
+      service.assertAllowed({
+        kind: 'reply',
+        message: 'giatay y.a.w.a piste ni',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
   it('does not false-positive on normal words like class or assess', async () => {
     await expect(
       service.assertAllowed({

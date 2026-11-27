@@ -258,6 +258,7 @@ export function ReportsPage() {
 
           <button
             type="button"
+            data-tour="reports-generate-btn"
             onClick={() => setIsGenerateDialogOpen(true)}
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer hover:opacity-90 active:scale-[0.99] shrink-0"
             style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}

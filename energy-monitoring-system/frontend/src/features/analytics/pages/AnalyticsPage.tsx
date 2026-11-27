@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense, useTransition } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useTransition } from 'react';
 import { BarChart3, Table } from 'lucide-react';
 import { subDays, subHours, startOfDay, endOfDay, format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,6 +69,18 @@ export function AnalyticsPage() {
       setActiveView(view);
     });
   };
+
+  // Allow the visitor onboarding tour to open Chart View / Historical View live
+  useEffect(() => {
+    const handleTourView = (e: Event) => {
+      const detail = (e as CustomEvent<{ view?: ViewType }>).detail;
+      if (detail?.view === 'charts' || detail?.view === 'historical') {
+        setActiveView(detail.view);
+      }
+    };
+    window.addEventListener('ecostep:analytics-view', handleTourView);
+    return () => window.removeEventListener('ecostep:analytics-view', handleTourView);
+  }, []);
 
   const handlePeriodChange = (period: Period) => {
     startTransition(() => {
@@ -217,6 +229,7 @@ export function AnalyticsPage() {
           <button
             type="button"
             role="tab"
+            data-tour="analytics-chart-tab"
             aria-selected={activeView === 'charts'}
             onClick={() => handleViewChange('charts')}
             className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-[13px] font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap ${
@@ -238,6 +251,7 @@ export function AnalyticsPage() {
           <button
             type="button"
             role="tab"
+            data-tour="analytics-historical-tab"
             aria-selected={activeView === 'historical'}
             onClick={() => handleViewChange('historical')}
             className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-[13px] font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap ${
@@ -299,7 +313,7 @@ export function AnalyticsPage() {
         <div className="pt-3 flex flex-col" style={{ gap: 'var(--page-gap)' }}>
           {/* 1. Power Generation | Steps - Equal 2-Column Row */}
           <div className="analytics-charts-grid">
-            <div className="min-w-0 h-full flex flex-col">
+            <div className="min-w-0 h-full flex flex-col" data-tour="analytics-first-chart">
               <Suspense fallback={<ChartCardSkeleton title="Power Generation" height={280} />}>
                 <PowerGenerationChart
                   defaultTimeFilter="7days"
@@ -370,7 +384,10 @@ export function AnalyticsPage() {
         </div>
       ) : (
         /* Historical View — Connected Folder Sheet with table directly on container */
-        <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
+        <section
+          data-tour="analytics-historical-table"
+          className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden"
+        >
           <HistoricalDataView
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}

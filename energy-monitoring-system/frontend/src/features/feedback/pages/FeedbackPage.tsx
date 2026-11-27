@@ -259,6 +259,7 @@ export function FeedbackPage() {
         {/* Top-Right Stack Overflow–style Primary Button */}
         <button
           type="button"
+          data-tour="ecommunity-new-post-btn"
           onClick={() => {
             setSubmitNotice(null);
             setComposerOpen(true);

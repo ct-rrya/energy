@@ -1,4 +1,6 @@
-import { Info, Cpu, Activity, Zap, PlayCircle, Users } from 'lucide-react';
+import { Info, Cpu, Activity, Zap, PlayCircle, Users, Scale } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/routes/routes.config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
 import { isAdmin } from '@/lib/permissions';
@@ -211,6 +213,33 @@ export function AboutPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* 4. Legal & Community Policies */}
+        <section className="py-7 space-y-3">
+          <div className="flex items-center gap-2 text-[var(--acc)]">
+            <Scale className="w-4 h-4 shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold text-[var(--t)] m-0">
+              Policies &amp; Transparency
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[var(--mu)] m-0">
+            Review how EcoStep protects visitor privacy, uses browser storage, and moderates community discussions.
+          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs sm:text-sm font-medium">
+            <Link to={`${ROUTES.LEGAL}?tab=privacy`} className="text-[var(--acc)] hover:underline no-underline">
+              Privacy Policy
+            </Link>
+            <Link to={`${ROUTES.LEGAL}?tab=terms`} className="text-[var(--acc)] hover:underline no-underline">
+              Terms &amp; Conditions
+            </Link>
+            <Link to={`${ROUTES.LEGAL}?tab=cookies`} className="text-[var(--acc)] hover:underline no-underline">
+              Cookies &amp; Storage
+            </Link>
+            <Link to={`${ROUTES.LEGAL}?tab=community`} className="text-[var(--acc)] hover:underline no-underline">
+              Community Guidelines
+            </Link>
           </div>
         </section>
       </div>

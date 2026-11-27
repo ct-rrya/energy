@@ -18,6 +18,7 @@ export const ROUTES = {
   MILESTONES: '/milestones',
   FEEDBACK: '/feedback',
   ABOUT: '/about',
+  LEGAL: '/legal',
 
   // Admin-only routes (auth required)
   SENSORS: '/sensors',

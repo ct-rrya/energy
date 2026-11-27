@@ -18,6 +18,7 @@ import { NotFoundPage } from '@/features/auth/pages/NotFoundPage';
 // Lazy-loaded pages
 const AnalyticsPage = lazy(() => import('@/features/analytics/pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const AboutPage = lazy(() => import('@/features/about/pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const LegalPage = lazy(() => import('@/features/legal/pages/LegalPage').then(m => ({ default: m.LegalPage })));
 const EnergyMonitoringPage = lazy(() => import('@/features/energy/pages/EnergyMonitoringPage').then(m => ({ default: m.EnergyMonitoringPage })));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const SensorMonitoringPage = lazy(() => import('@/features/sensors/pages/SensorMonitoringPage').then(m => ({ default: m.SensorMonitoringPage })));
@@ -128,6 +129,24 @@ export const router = createBrowserRouter([
             <AboutPage />
           </LazyRoute>
         ),
+      },
+
+      // Legal & Community Policies - Public access
+      {
+        path: ROUTES.LEGAL,
+        element: (
+          <LazyRoute>
+            <LegalPage />
+          </LazyRoute>
+        ),
+      },
+      {
+        path: '/privacy',
+        element: <Navigate to={`${ROUTES.LEGAL}?tab=privacy`} replace />,
+      },
+      {
+        path: '/terms',
+        element: <Navigate to={`${ROUTES.LEGAL}?tab=terms`} replace />,
       },
 
       // Energy Monitoring - Public access

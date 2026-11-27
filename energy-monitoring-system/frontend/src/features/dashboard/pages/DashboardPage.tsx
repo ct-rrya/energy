@@ -232,7 +232,7 @@ function DashboardPageContent() {
       <div className="dashboard-metrics-grid">
 
         {/* Main Hero Card: Current Month Energy Milestone Journey */}
-        <div className="w-full min-w-0 space-y-2.5">
+        <div className="w-full min-w-0 space-y-2.5" data-tour="central-milestone">
           {(isAutoCalculated || isAdminUser) && (
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center flex-wrap gap-2">

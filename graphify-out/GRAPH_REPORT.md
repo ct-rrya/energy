@@ -1,26 +1,26 @@
 # Graph Report - another - antigrav  (2026-11-27)
 
 ## Corpus Check
-- 743 files · ~2,511,741 words
+- 746 files · ~2,516,438 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 6, .css 4, .example 3)
 
 ## Summary
-- 5860 nodes · 11312 edges · 440 communities (235 shown, 205 thin omitted)
+- 5881 nodes · 11345 edges · 454 communities (234 shown, 220 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 491 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `869e98c3`
+- Built from commit: `3a3a5d07`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - energy-monitoring-system/package.json
 - CurrentUser
-- AlertType
+- ref_components
 - feedback.controller.ts
-- Roles
+- AuditService
 - @tanstack/react-query
 - ReportsService
 - useDiagnostics.ts
@@ -29,13 +29,13 @@
 - MilestonesService
 - analytics/analytics.service.ts
 - @nestjs/common
-- uptime-health.spec.ts
-- DiagnosticsService
 - ref_react
-- @tanstack/react-query
+- @nestjs/config
+- react-router-dom
+- HardwareStatusContext.tsx
 - frontend/package.json
 - mobile/package.json
-- dependencies
+- ref_types
 - Phase 3 Mobile Synchronization - Implementation Summary
 - Dashboard Component Structure - Task 1 Complete
 - useMediaQuery Hook Usage Examples
@@ -48,17 +48,17 @@
 - ChatPanel.tsx
 - Status Components Implementation
 - SensorMonitoringCard.tsx
-- ref_routes
+- ref_contexts
 - Task 12 Implementation Verification
 - Stage 1: Backend Architecture Audit Report
-- app.module.ts
+- dependencies
 - frontend/src/api/client.ts
 - EcoStep Phase 3 Mobile Synchronization Plan
 - CumulativeEnergyChart.tsx
 - EnergyService
-- EcoSidebar.tsx
+- DiagnosticsService
 - .sendMessage
-- HardwareStatusContext.tsx
+- Details
 - analytics/types/analytics.types.ts
 - Responsive Layout Implementation - Task 10.1
 - AIInsightSection
@@ -74,7 +74,7 @@
 - react-native
 - health-monitor.service.ts
 - .changePassword
-- CreateAlertDto
+- Task 1 Completion: Core Component Structure and Type Definitions
 - Dashboard Components - EcoStep Central Redesign
 - Task 12.1 Completion Report: Add Loading Skeletons for All Components
 - Expo SDK 57 Upgrade — Completion Report
@@ -102,22 +102,22 @@
 - AnalyticsService
 - CumulativeEnergyChart Component
 - Recharts Tooltip Positioning Configuration
-- DashboardService
-- Get
+- AnalyticsQueryDto
+- .delete
 - PublicController
 - Design Review: ESP32 Piezoelectric Footstep Energy Harvesting Integration
 - StatusIndicator
 - EnergyController
-- diagnostics/diagnostics.service.ts
+- knowledge-rag.service.ts
 - 1. Hardware Integration API Contract
 - EcoStep Monitoring Pages Redesign - Implementation Plan
-- AdminManagementService
+- AdminManagementController
 - DiagnosticsService
 - Diagnostics E2E Test Suite Summary
 - VisitorContext.tsx
 - Smart Footstep Energy Harvesting Monitoring System
 - AnalyticsController
-- TrendIndicator.tsx
+- components/HeroEnergyCard.tsx
 - date-intent.parser.ts
 - IotController
 - MiniTrendGraph Lazy Loading Implementation
@@ -131,7 +131,7 @@
 - Stage 3 Live Energy Dashboard Implementation
 - DashboardController
 - 1. ESP32 Firmware Changes
-- BroadcastMessageDto
+- NotificationQueryDto
 - reports/reports.service.ts
 - Phase 2 Implementation Verification
 - Cross-FEAT Integration Verification Results
@@ -139,29 +139,29 @@
 - frontend/src/hooks/index.ts
 - AlertType
 - ref_axios
-- .getHistoricalAnalysis
+- AdminManagementService
 - services/feedback.service.ts
-- common/index.ts
+- CustomDropdown
 - energy.controller.ts
-- AlertsService
-- accessibility-utils.ts
+- ApiOperation
+- @nestjs/testing
 - analytics.controller.ts
-- AlertQueryDto
+- DashboardService
 - Commands Executed & Results
 - Development Roadmap
 - dashboard-analytics.dto.ts
 - RateLimitGuard
 - vite.config.ts
-- CustomDropdown
-- dashboard.module.ts
+- EcoSidebar.tsx
+- app.module.ts
 - Phase 2: EcoStep Mobile Authentication and Authorization
 - TelemetryDisplay.tsx
 - DateRangeLimitQueryDto
 - BleContext.tsx
-- ref_components
+- AlertsService
 - GeminiAIService
 - frontend/src/api/services/analytics.service.ts
-- MetricType
+- alerts.module.ts
 - frontend/src/api/services/alerts.service.ts
 - services/maintenance.service.ts
 - dashboard-events.dto.ts
@@ -170,37 +170,37 @@
 - permissions.test.ts
 - Implementation Plan: Stage 3 - Live Energy Dashboard UI
 - Test Cases
-- AuditService
+- @nestjs/common
 - eslint.config.js
 - api/constants.ts
 - design-tokens.ts
 - frontend/src/types/index.ts
 - report.types.ts
 - GenerateReportDto
-- AnalyticsQueryDto
-- iot.controller.ts
+- BroadcastMessageDto
+- dashboard/types/dashboard.types.ts
 - HourRangeSelector.tsx
-- cleanup-demo-data.ts
+- common/index.ts
 - 7. Documentation
-- reports.controller.ts
+- ProfileCard.tsx
 - Technical Design: ESP32 Piezoelectric Footstep Energy Harvesting Integration
-- HealthMonitorService
-- mobile/src/api/services/sensors.service.ts
+- Button.tsx
+- DashboardHeader.tsx
 - manifest.json
 - ErrorBoundary
-- notifications.service.ts
+- CardSkeleton.tsx
 - lib/constants.ts
 - 5.2 Required Manual Tests
-- energy-response.dto.ts
+- NotificationsController
 - Required Assets (Not Included)
-- diagnostics/dto/index.ts
-- ConfirmDialog.tsx
+- diagnostics/diagnostics.service.ts
+- ContentModerationService
 - Files Created
 - services/reports.service.ts
-- CardSkeleton.tsx
-- scripts
-- ReadingQueryDto
 - EcoCard.tsx
+- scripts
+- CreateFeedbackDto
+- notifications.module.ts
 - TestValidationDto
 - validateSensorData
 - frontend/src/types/alert.types.ts
@@ -209,13 +209,13 @@
 - .loginWithAccessCode
 - EcoStepLogo.tsx
 - AIErrorType
-- ref_contexts
+- vitest
 - 5. Frontend Components
 - .validateApiKey
 - ExcelGeneratorService
 - CreateReadingDto
 - energy-monitoring-report-2026-11-25-1795618222908_9ae57688.md
-- DashboardHeader.tsx
+- AdminManagementService
 - SensorsService
 - UpdateMaintenanceDto
 - frontend/src/types/auth.types.ts
@@ -225,10 +225,10 @@
 - Files Modified
 - Review Findings Addressed
 - mobile/tsconfig.json
-- RecordStepTestDto
+- DiagnosticResultStatus
 - Demo Data Cleanup Script
 - How JWTs Are Stored and Attached
-- @nestjs/swagger
+- class-validator
 - http-exception.filter.ts
 - lib/validateSensorData.ts
 - useKeyboardShortcut.ts
@@ -238,14 +238,14 @@
 - How Roles and Protected Routes Work
 - nest-cli.json
 - SubscribersService
-- SubscriberQueryDto
+- LoadingSpinner.tsx
 - hourly-average.dto.ts
 - 3. **Authentication Architecture**
 - HeroEnergyCard.example.tsx
-- UserRole
+- accessibility-utils.ts
 - Commands Run and Results
 - 10. Remaining Work and Considerations
-- MEDIUM Severity Findings
+- ReadingQueryDto
 - services/admin-management.service.ts
 - Security Compliance Summary
 - 13. Recommendations for Phase 3
@@ -258,54 +258,69 @@
 - 11. Phase 2 Summary
 - 7. Files Created and Modified
 - 9. Commands Executed
-- response.interceptor.ts
+- Badge.tsx
 - Technology Stack
 - Getting Started
-- Badge.tsx
-- AlertEventsListener
-- UpdateSubscriberDto
-- exceljs
-- 5. Testing Status
-- SystemStatusCard.tsx
+- notifications.service.ts
+- NotificationType
+- Navigation.test.tsx
+- SplashScreen.tsx
+- CreateAdminDto
+- response.interceptor.ts
 - frontend/tsconfig.json
-- StatusBadge.tsx
-- EnergyConsumptionChart.tsx
+- acknowledge-alert.dto.ts
+- BatteryAlertEvent
 - Implementation Steps
 - firebase
-- useLiquidNotch.ts
-- src/hooks/useSlidingIndicator.ts
-- @nestjs-modules/mailer@^3.0.2
-- passport@^0.7.0
-- socket.io-client@^4.8.3
+- MEDIUM Severity Findings
+- DashboardErrorBoundary
+- .updateAdministratorStatus
+- .buildDataContext
+- EnergyEventListener
 - 10. Data Flow Summary
-- @nestjs/config
+- 5. Success & Error Responses
+- Review Findings Response
+- FirebaseService
+- 9. Architecture Recommendations
+- Phase 6 - New Analytics Service Methods
 - useDeviceLayout.ts
-- SplashScreen.tsx
+- IsMax6DecimalsConstraint
+- extract.js
+- 9. Troubleshooting Guide
 - 2. Backend Integration
 - 9. Backward Compatibility
+- sw.js
+- firebase-admin
 - time-series.dto.ts
-- EmailService
+- @nestjs/cli@^11.0.0
 - 12. Design Review Findings: Resolution Summary
 - 1. Energy Data Endpoints (Primary API)
 - 4. Alerts Management
 - 4. Dashboard Gateway: WebSocket Events
 - 8. Edge Cases and Error Handling
-- LoadingSpinner.tsx
+- @nestjs/platform-express@^11.0.1
 - services/audit.service.ts
 - sensor-uptime.dto.ts
-- DiagnosticHistoryQueryDto
-- @nestjs/mongoose
+- reflect-metadata@^0.2.2
+- chat.module.ts
+- @nestjs/schematics@^11.0.0
+- prettier@^3.4.2
+- ts-loader@^9.5.2
+- @types/express@^5.0.0
+- @types/jest@^30.0.0
+- energy-monitoring-system/package.json
+- passport-jwt
 
 ## God Nodes (most connected - your core abstractions)
 1. `@nestjs/common` - 113 edges
-2. `lucide-react` - 109 edges
+2. `lucide-react` - 111 edges
 3. `@nestjs/swagger` - 75 edges
 4. `@nestjs/mongoose` - 67 edges
 5. `vitest` - 66 edges
 6. `UserDocument` - 56 edges
 7. `@tanstack/react-query` - 56 edges
 8. `@testing-library/react` - 55 edges
-9. `react-router-dom` - 50 edges
+9. `react-router-dom` - 53 edges
 10. `mongoose` - 49 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -323,39 +338,31 @@
 ## Import Cycles
 - 2-file cycle: `energy-monitoring-system/src/alerts/alerts.module.ts -> energy-monitoring-system/src/diagnostics/diagnostics.module.ts -> energy-monitoring-system/src/alerts/alerts.module.ts`
 
-## Communities (440 total, 205 thin omitted)
+## Communities (454 total, 220 thin omitted)
 
 ### Community 0 - "energy-monitoring-system/package.json"
 Cohesion: 0.05
-Nodes (57): author, description, devDependencies, eslint@^9.18.0, eslint-config-prettier@^10.0.1, @eslint/eslintrc@^3.2.0, @eslint/js@^9.18.0, eslint-plugin-prettier@^5.2.2 (+49 more)
+Nodes (39): devDependencies, eslint@^9.18.0, eslint-config-prettier@^10.0.1, @eslint/eslintrc@^3.2.0, @eslint/js@^9.18.0, eslint-plugin-prettier@^5.2.2, fast-check@^4.9.0, globals@^17.0.0 (+31 more)
 
-### Community 1 - "CurrentUser"
-Cohesion: 0.17
-Nodes (4): CurrentUser, AdminChatController, FeedbackController, UserDocument
-
-### Community 2 - "AlertType"
-Cohesion: 0.15
-Nodes (13): AlertType, BATTERY_CRITICAL, BATTERY_LOW, CURRENT_THRESHOLD, DATABASE_CONNECTION, DEVICE_COMMUNICATION, ENERGY_MILESTONE, OUTPUT_DROP (+5 more)
+### Community 2 - "ref_components"
+Cohesion: 0.10
+Nodes (18): HistoricalDataRecord, HistoricalDataView(), HistoricalDataViewProps, ViewMode, AnalyticsPage(), CumulativeEnergyChart, EnergyPeriodChart, INTERVAL_OPTIONS (+10 more)
 
 ### Community 3 - "feedback.controller.ts"
-Cohesion: 0.09
-Nodes (15): CreateFeedbackDto, CreateAnswerDto, UpdateFeedbackDto, UpvoteFeedbackDto, VoteFeedbackDto, FeedbackListQuery, FeedbackTab, FeedbackCategory (+7 more)
+Cohesion: 0.10
+Nodes (22): CreateAnswerDto, UpdateFeedbackDto, UpvoteFeedbackDto, VoteFeedbackDto, FeedbackListQuery, FeedbackQuotaStatus, FeedbackStats, FeedbackTab (+14 more)
 
-### Community 4 - "Roles"
-Cohesion: 0.23
-Nodes (3): AuditController, AuditLogDocument, Roles()
+### Community 4 - "AuditService"
+Cohesion: 0.12
+Nodes (4): LogsController, AuditService, AuditLogDocument, formatToManilaTime()
 
 ### Community 5 - "@tanstack/react-query"
-Cohesion: 0.08
-Nodes (36): Requirement 9.2: API Endpoint Reuse ✅, DashboardErrorBoundary, DashboardHeader, EcoStepAtAGlance(), EcoStepAtAGlanceProps, HowHarvestingWorksCard(), MobileEnergyHarvestingDashboard(), MobileEnergyHarvestingDashboardProps (+28 more)
-
-### Community 6 - "ReportsService"
-Cohesion: 0.17
-Nodes (5): ReportsService, ReportDocument, ReportFormat, EXCEL, PDF
+Cohesion: 0.13
+Nodes (26): Requirement 9.2: API Endpoint Reuse ✅, DashboardHeader, EcoStepAtAGlance(), EcoStepAtAGlanceProps, HeroPowerCard, HowHarvestingWorksCard(), MobileEnergyHarvestingDashboard(), useDashboardMetrics() (+18 more)
 
 ### Community 7 - "useDiagnostics.ts"
-Cohesion: 0.05
-Nodes (56): @hookform/resolvers@^5.4.0, react-hook-form@^7.82.0, zod@^4.4.3, DiagnosticHistoryTable(), GroupedDailyTask, mockLinkClick, mockUseDiagnosticHistory, renderDiagnosticHistoryTable() (+48 more)
+Cohesion: 0.07
+Nodes (45): DiagnosticHistoryTable(), GroupedDailyTask, DiagnosticTestForm(), diagnosticTestSchema, BenchEvaluation, BenchMode, BenchSample, DiagnosticWorkbenchCard() (+37 more)
 
 ### Community 8 - "hero-dashboard.types.ts"
 Cohesion: 0.13
@@ -367,27 +374,31 @@ Nodes (33): EcoStepBleButton(), EcoStepBleButtonProps, EcoStepBleModal(), EcoSte
 
 ### Community 11 - "MilestonesService"
 Cohesion: 0.08
-Nodes (7): UpdateMilestoneTargetsDto, WeeklyTargetsDto, MilestonesController, MilestonesService, MonthlyMilestonesResponse, round6(), MilestoneTargetDocument
+Nodes (6): UpdateMilestoneTargetsDto, WeeklyTargetsDto, MilestonesController, MilestonesService, round6(), MilestoneTargetDocument
 
 ### Community 12 - "analytics/analytics.service.ts"
-Cohesion: 0.05
-Nodes (20): ChatbotResponse, ChatChannel, MessageContext, QuickReply, RangeStatistics, EnergyReading, EnergyReadingSchema, MilestoneComparison (+12 more)
+Cohesion: 0.04
+Nodes (20): date-fns-tz@^3.2.0, ChatbotResponse, ChatChannel, MessageContext, QuickReply, PROJECT_TIMEZONE, MilestoneComparison, MilestoneComparisonCategory (+12 more)
 
 ### Community 13 - "@nestjs/common"
-Cohesion: 0.09
-Nodes (14): AdminManagementModule, AuditModule, AuthModule, AuthService, JwtPayload, JwtStrategy, EmailModule, User (+6 more)
-
-### Community 14 - "uptime-health.spec.ts"
-Cohesion: 0.14
-Nodes (7): AppController, AppService, getUptimeHealthPayload(), registerUptimeHealthRoute(), DispatchResult, UptimeHealthResponse, bootstrap()
-
-### Community 16 - "ref_react"
 Cohesion: 0.04
-Nodes (45): EcoEmptyStateProps, formatEstimatedResume(), MaintenanceOverlay(), MOCK_NOTIFICATIONS, Notification, PublicUserBannerProps, MobileHeaderProps, ALL_NAV_ITEMS (+37 more)
+Nodes (26): mongoose, AdminManagementModule, AppModule, AuditModule, AuditLogSchema, AuthModule, AuthService, AuthDataDto (+18 more)
 
-### Community 17 - "@tanstack/react-query"
+### Community 14 - "ref_react"
+Cohesion: 0.05
+Nodes (22): EnergyConsumptionChartProps, EnergyDataPoint, EcoEmptyStateProps, MOCK_NOTIFICATIONS, Notification, PublicUserBannerProps, ChartsLayoutContainer(), DashboardCardProps (+14 more)
+
+### Community 15 - "@nestjs/config"
 Cohesion: 0.06
-Nodes (35): CustomSelect(), CustomSelectOption, formatCategorySubtitle(), formatEventTitle(), formatManilaDateParts(), LogsPage(), AlertCard(), AlertCardProps (+27 more)
+Nodes (20): AIProvider, GEMINI, GROQ, AppController, AppService, envValidationSchema, EmailModule, COMPACT_PROFANITY_TERMS (+12 more)
+
+### Community 16 - "react-router-dom"
+Cohesion: 0.03
+Nodes (48): App(), queryClient, MobileBottomNavProps, NavItem, MobileHeaderProps, ALL_NAV_ITEMS, MobileNavDrawerProps, NavItem (+40 more)
+
+### Community 17 - "HardwareStatusContext.tsx"
+Cohesion: 0.10
+Nodes (21): AuthContext, AuthProvider(), AuthProviderProps, normalizeUser(), useAuth(), DEFAULT_STATUS_CONFIG, HardwareConnectionStatus, HardwareStatusContext (+13 more)
 
 ### Community 18 - "frontend/package.json"
 Cohesion: 0.06
@@ -397,9 +408,9 @@ Nodes (45): devDependencies, axe-core@^4.13.0, @axe-core/react@^4.13.0, eslint@^
 Cohesion: 0.05
 Nodes (48): config, { getDefaultConfig }, dependencies, ajv@^8.20.0, axios@^1.20.0, expo@~57.0.0, expo-constants@~57.0.21, expo-linking@~57.0.12 (+40 more)
 
-### Community 20 - "dependencies"
-Cohesion: 0.04
-Nodes (52): dependencies, axios@^1.18.1, bcrypt@^6.0.0, cache-manager@^7.2.9, class-transformer@^0.5.1, class-validator@^0.15.1, date-fns@^4.4.0, date-fns-tz@^3.2.0 (+44 more)
+### Community 20 - "ref_types"
+Cohesion: 0.12
+Nodes (15): AlertCard(), AlertCardProps, AlertDetailsDialog(), AlertDetailsDialogProps, SeverityBadge(), SeverityBadgeProps, useAlertActions(), useAlerts() (+7 more)
 
 ### Community 21 - "Phase 3 Mobile Synchronization - Implementation Summary"
 Cohesion: 0.04
@@ -414,8 +425,8 @@ Cohesion: 0.12
 Nodes (15): Accessibility Features, Chart Responsive Configuration, Common Breakpoint Examples, DashboardLayout Example, Desktop Detection, Import, Mobile Detection, Orientation Detection (+7 more)
 
 ### Community 24 - "mobile/src/contexts/AuthContext.tsx"
-Cohesion: 0.08
-Nodes (42): Access code validation match, AuthContext navigation effect, Axios interceptor and 401 handling, Backend endpoint contract, Details, EcoStep Mobile Authentication Implementation, Environment configuration, File map (+34 more)
+Cohesion: 0.10
+Nodes (32): Axios interceptor and 401 handling, Logout flow, Secure storage implementation, 2.2 Core Components, API Client (`src/api/client.ts`), Authentication Context (`src/contexts/AuthContext.tsx`), Authentication Service (`src/api/services/auth.service.ts`), Secure Storage (`src/utils/secureStorage.ts`) (+24 more)
 
 ### Community 25 - "Component-by-Component Verification"
 Cohesion: 0.04
@@ -430,12 +441,12 @@ Cohesion: 0.04
 Nodes (45): 1.1 Backend Endpoint Integration, 1.2 JWT Storage Implementation, 1.3 Axios Authorization Interceptor, 1.4 Authentication Context and Session Restoration, 1.5 Route Guards Implementation, 1.6 Logout, Token Expiration, and 401 Handling, 1.7 Role-Based Navigation, 1. Implementation Review ✅ (+37 more)
 
 ### Community 28 - "EcoStep Energy Monitoring System - Comprehensive System Analysis Report"
-Cohesion: 0.04
-Nodes (50): 10. Configuration Summary, 10. Missing Implementation / Unresolved Questions, 11. Next Steps, 11. Proposed ECOSTEP_HARDWARE_API_HANDOFF.md Contents, 12. Support & Contact, 3. Configuration Key Inventory, 4. File Inventory for Hardware Team, 5. Success & Error Responses (+42 more)
+Cohesion: 0.05
+Nodes (36): 10. Configuration Summary, 10. Missing Implementation / Unresolved Questions, 11. Next Steps, 11. Proposed ECOSTEP_HARDWARE_API_HANDOFF.md Contents, 12. Support & Contact, 3. Configuration Key Inventory, 4. File Inventory for Hardware Team, 5. Testing Status (+28 more)
 
 ### Community 29 - "dashboard/components/index.ts"
 Cohesion: 0.08
-Nodes (28): DashboardCard(), DashboardSkeleton(), DataFetchError(), DataFetchErrorProps, EmptyDashboard(), EmptyDashboardProps, MetricsColumn, SensorNodesEmptyState() (+20 more)
+Nodes (29): DashboardCard(), DashboardSkeleton(), DataFetchError(), DataFetchErrorProps, EmptyDashboard(), EmptyDashboardProps, MetricsColumn, SensorNodesEmptyState() (+21 more)
 
 ### Community 30 - "ChatPanel.tsx"
 Cohesion: 0.06
@@ -449,9 +460,9 @@ Nodes (42): Accessibility, Animation, ARIA Labels, Breakpoints, Build Output, Bu
 Cohesion: 0.10
 Nodes (25): DeviceStatusBadge(), DeviceStatusBadgeProps, ReadingDisplay(), ReadingDisplayProps, SignalQualityIndicator(), SignalQualityIndicatorProps, BatteryIndicator(), BatteryIndicatorProps (+17 more)
 
-### Community 33 - "ref_routes"
-Cohesion: 0.07
-Nodes (22): MobileBottomNavProps, NavItem, NAV_ITEMS, NavItem, SidebarNavProps, MaintenanceControlPanel(), deriveInitialEta(), EtaUnit (+14 more)
+### Community 33 - "ref_contexts"
+Cohesion: 0.05
+Nodes (45): formatEstimatedResume(), MaintenanceOverlay(), isTourCompleted(), markTourCompleted(), TargetRect, TourStep, VISITOR_TOUR_STEPS, VisitorOnboardingTour() (+37 more)
 
 ### Community 34 - "Task 12 Implementation Verification"
 Cohesion: 0.05
@@ -461,13 +472,13 @@ Nodes (40): 1. Component Error Flow, 1. DashboardErrorBoundary Component ✅, 1.
 Cohesion: 0.12
 Nodes (15): 11. Authentication & Authorization, 12. API Response Conventions, 15. Next Steps, 2. Dashboard Endpoints, 3. Analytics Endpoints, 5. Sensors Management, 8. Frontend Patterns (Web), 9. Mobile Dependencies (Already Installed) (+7 more)
 
-### Community 36 - "app.module.ts"
-Cohesion: 0.08
-Nodes (15): AlertsModule, AppModule, ChatModule, FeedbackModule, MilestonesModule, PublicModule, bootstrap(), question() (+7 more)
+### Community 36 - "dependencies"
+Cohesion: 0.05
+Nodes (37): dependencies, bcrypt@^6.0.0, date-fns@^4.4.0, exceljs@^4.4.0, joi@^18.2.3, mongoose@^9.7.4, @nestjs/axios@^4.0.1, @nestjs/common@^11.0.1 (+29 more)
 
 ### Community 37 - "frontend/src/api/client.ts"
-Cohesion: 0.14
-Nodes (11): apiClient, authService, dashboardService, EnergyReading, energyService, PaginatedReadingsResponse, DEFAULT_MONTHLY_TARGET_MWH, DEFAULT_WEEKLY_TARGET_MWH (+3 more)
+Cohesion: 0.13
+Nodes (10): apiClient, dashboardService, EnergyReading, energyService, PaginatedReadingsResponse, DEFAULT_MONTHLY_TARGET_MWH, DEFAULT_WEEKLY_TARGET_MWH, milestonesService (+2 more)
 
 ### Community 38 - "EcoStep Phase 3 Mobile Synchronization Plan"
 Cohesion: 0.05
@@ -477,17 +488,13 @@ Nodes (38): 1. Hero Power Card (Primary Change), 2. Steps Metric Added to Dashbo
 Cohesion: 0.11
 Nodes (45): ChartCardSkeleton(), ChartCardSkeletonProps, ChartContainer(), ChartEmptyState(), ChartErrorState(), ChartLoadingState(), BaseChartProps, ChartContainerProps (+37 more)
 
-### Community 41 - "EcoSidebar.tsx"
-Cohesion: 0.13
-Nodes (14): ALL_NAV_ITEMS, canUseDesktopHover(), ChatPanel, EcoSidebar(), EcoSidebarProps, NavItem, EcoStepMat(), EcoStepMatProps (+6 more)
+### Community 41 - "DiagnosticsService"
+Cohesion: 0.17
+Nodes (3): DiagnosticsService, ActiveDiagnosticSession, DailyDiagnosticTask
 
-### Community 42 - ".sendMessage"
-Cohesion: 0.16
-Nodes (5): uuid@^14.0.2, ChatMessage, ChatSession, SessionManager, uuid
-
-### Community 43 - "HardwareStatusContext.tsx"
-Cohesion: 0.10
-Nodes (21): AuthContext, AuthProvider(), AuthProviderProps, normalizeUser(), useAuth(), DEFAULT_STATUS_CONFIG, HardwareConnectionStatus, HardwareStatusContext (+13 more)
+### Community 43 - "Details"
+Cohesion: 0.14
+Nodes (13): Access code validation match, AuthContext navigation effect, Backend endpoint contract, Details, EcoStep Mobile Authentication Implementation, Environment configuration, File map, High-level view (+5 more)
 
 ### Community 44 - "analytics/types/analytics.types.ts"
 Cohesion: 0.07
@@ -510,11 +517,11 @@ Cohesion: 0.06
 Nodes (35): Accessibility Features, Card Container, Component Props Interface, Conclusion, Dependencies (All Existing Components), Empty State, Energy Value Typography, Error State (+27 more)
 
 ### Community 49 - "dashboard.tsx"
-Cohesion: 0.10
-Nodes (28): Stage 2 API service usage, 4. Service Import Verification ✅, AdminDashboardScreen(), formatRelativeTime(), styles, formatRelativeTime(), PublicDashboardScreen(), styles (+20 more)
+Cohesion: 0.11
+Nodes (26): Stage 2 API service usage, 4. Service Import Verification ✅, AdminDashboardScreen(), formatRelativeTime(), styles, formatRelativeTime(), PublicDashboardScreen(), styles (+18 more)
 
 ### Community 50 - "IotService"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (5): 10.2. Backend Testing, 11. Implementation Order, Potential Memory Leaks, IotService, EnergyReadingDocument
 
 ### Community 51 - "Error Handling and Loading States Implementation"
@@ -522,20 +529,20 @@ Cohesion: 0.06
 Nodes (32): Accessibility, Browser Compatibility, Conclusion, Created, Created Components, Created Components, Data Validation Rules, Error Handling and Loading States Implementation (+24 more)
 
 ### Community 54 - "NotificationsService"
-Cohesion: 0.09
-Nodes (10): 7. Notification Infrastructure, BatteryAlertEvent, EnergyMilestoneEvent, SensorOfflineEvent, SensorOnlineEvent, SystemAlertEvent, BatteryEventListener, EnergyEventListener (+2 more)
+Cohesion: 0.14
+Nodes (3): 7. Notification Infrastructure, SensorEventListener, NotificationsService
 
 ### Community 56 - "react-native"
 Cohesion: 0.10
-Nodes (19): styles, AdminLayout(), styles, AdminLoginScreen(), styles, LoginScreen(), styles, styles (+11 more)
+Nodes (21): styles, AdminLayout(), styles, AdminLoginScreen(), styles, LoginScreen(), styles, styles (+13 more)
 
 ### Community 57 - "health-monitor.service.ts"
-Cohesion: 0.23
-Nodes (7): HealthCheckRunSummary, HealthMonitorStatus, AlertSchema, AlertSeverity, CRITICAL, INFO, WARNING
+Cohesion: 0.06
+Nodes (25): AlertQueryDto, CreateAlertDto, HealthCheckRunSummary, HealthMonitorStatus, AlertSeverity, CRITICAL, INFO, WARNING (+17 more)
 
-### Community 58 - ".changePassword"
-Cohesion: 0.08
-Nodes (3): ChangePasswordDto, UpdateProfileDto, UsersController
+### Community 59 - "Task 1 Completion: Core Component Structure and Type Definitions"
+Cohesion: 0.11
+Nodes (17): Component Files (6 files), Component Props, Component Structure, Core Interfaces, Documentation Files (2 files), Files Created, Files Summary, Next Steps (+9 more)
 
 ### Community 60 - "Dashboard Components - EcoStep Central Redesign"
 Cohesion: 0.06
@@ -554,24 +561,28 @@ Cohesion: 0.09
 Nodes (15): AnalyticsQuery, BaseEnergySummary, ComprehensiveAnalytics, CostSavings, DailyEnergySummary, EnvironmentalImpact, HistoricalAnalysisRequest, HistoricalAnalysisResponse (+7 more)
 
 ### Community 64 - "reports/reports.service.ts"
-Cohesion: 0.18
-Nodes (12): ReportResponseDto, ReportsListResponseDto, ReportSummary, ReportType, CUSTOM, DAILY, ENERGY_MONITORING, HISTORICAL_ANALYTICS (+4 more)
+Cohesion: 0.22
+Nodes (9): ReportType, CUSTOM, DAILY, ENERGY_MONITORING, HISTORICAL_ANALYTICS, MONTHLY, SYSTEM_DIAGNOSTICS, SYSTEM_SUMMARY (+1 more)
 
 ### Community 65 - "mobile/src/api/services/energy.service.ts"
+Cohesion: 0.11
+Nodes (16): AnalyticsScreen(), styles, EnergyMonitoringScreen(), styles, getLatestReading(), getReadingsRange(), getRecentReadings(), UseDashboardDataReturn (+8 more)
+
+### Community 66 - "DashboardGateway"
 Cohesion: 0.12
-Nodes (16): AnalyticsScreen(), styles, EnergyMonitoringScreen(), styles, react-native-safe-area-context@~5.7.0, getLatestReading(), getReadingsRange(), getRecentReadings() (+8 more)
+Nodes (5): 7. Performance Analysis, Caching Strategy, Database Query Optimization, WebSocket Connection Management, DashboardGateway
 
 ### Community 67 - "dependencies"
-Cohesion: 0.07
-Nodes (30): dependencies, axios@^1.18.1, date-fns@^4.4.0, dompurify@^3.4.15, focus-trap-react@^12.0.3, katex@^0.18.10, lodash-es@^4.18.1, lucide-react@^1.25.0 (+22 more)
+Cohesion: 0.06
+Nodes (33): dependencies, axios@^1.18.1, date-fns@^4.4.0, dompurify@^3.4.15, focus-trap-react@^12.0.3, @hookform/resolvers@^5.4.0, katex@^0.18.10, lodash-es@^4.18.1 (+25 more)
 
 ### Community 69 - "services/diagnostics.service.ts"
 Cohesion: 0.18
 Nodes (5): createOrUpdateReference(), diagnosticsService, getDiagnosticHistory(), getReferenceConfig(), recordDiagnosticTest()
 
 ### Community 71 - "uptime-health.spec.ts"
-Cohesion: 0.11
-Nodes (11): DatabaseHealthDto, HealthCheckResponseDto, HealthStatus, DEGRADED, HEALTHY, UNHEALTHY, MemoryHealthDto, SystemInfoDto (+3 more)
+Cohesion: 0.12
+Nodes (10): DatabaseHealthDto, HealthCheckResponseDto, HealthStatus, DEGRADED, HEALTHY, UNHEALTHY, MemoryHealthDto, SystemInfoDto (+2 more)
 
 ### Community 72 - "compilerOptions"
 Cohesion: 0.07
@@ -594,8 +605,8 @@ Cohesion: 0.08
 Nodes (25): 1. Install Dependencies, 2. Configure Environment Variables, 3. Start Backend Server (in another terminal), 4. Start Development Server, 🧩 API Integration, API Services, 🔐 Authentication, 👨‍💻 Author (+17 more)
 
 ### Community 78 - "Hero Dashboard Component Structure"
-Cohesion: 0.05
-Nodes (41): calculateTrend.ts, Color System, Component Files, Component Hierarchy, Core Components, Desktop (≥1024px), Existing Components (Reused), Hero Dashboard Component Structure (+33 more)
+Cohesion: 0.08
+Nodes (24): calculateTrend.ts, Color System, Component Files, Component Hierarchy, Core Components, Desktop (≥1024px), Existing Components (Reused), Hero Dashboard Component Structure (+16 more)
 
 ### Community 79 - "Task 4.1 Completion: MiniTrendGraph Component"
 Cohesion: 0.08
@@ -621,25 +632,17 @@ Nodes (23): ActiveDiagnosticSession, CompleteDailyDiagnosticRequest, CompleteDai
 Cohesion: 0.08
 Nodes (23): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, baseUrl, erasableSyntaxOnly, ignoreDeprecations, jsx, lib (+15 more)
 
-### Community 86 - "AnalyticsService"
-Cohesion: 0.13
-Nodes (5): AnalyticsService, Note:, Phase 6 - New Analytics Service Methods, Private Helper Methods to Add:, Public Methods to Add:
-
 ### Community 88 - "CumulativeEnergyChart Component"
 Cohesion: 0.09
-Nodes (21): Accessibility, Build Verification, Color Palette, Component Structure, Core Functionality, Cumulative Calculation Algorithm, CumulativeEnergyChart Component, Dependencies (+13 more)
+Nodes (22): Accessibility, Build Verification, Color Palette, Component Structure, Core Functionality, Cumulative Calculation Algorithm, CumulativeEnergyChart Component, Dependencies (+14 more)
 
 ### Community 89 - "Recharts Tooltip Positioning Configuration"
 Cohesion: 0.09
 Nodes (22): 1. Recharts Tooltip Props, 2. CustomChartTooltip Enhancements, Browser Compatibility, Change Log, Chart-Specific Configurations, Configuration Details, CumulativeEnergyChart (AreaChart), EnergyPeriodChart (BarChart) (+14 more)
 
-### Community 91 - "Get"
-Cohesion: 0.17
-Nodes (5): AlertsController, LogsController, ChatController, MaintenanceController, ReportsController
-
-### Community 92 - "PublicController"
-Cohesion: 0.14
-Nodes (4): @nestjs/cache-manager@^12.0.0, TelemetryDto, PublicController, @nestjs/cache-manager
+### Community 90 - "AnalyticsQueryDto"
+Cohesion: 0.07
+Nodes (20): AnalyticsQueryDto, Granularity, DAY, HOUR, MONTH, WEEK, MetricType, BATTERY (+12 more)
 
 ### Community 93 - "Design Review: ESP32 Piezoelectric Footstep Energy Harvesting Integration"
 Cohesion: 0.11
@@ -649,25 +652,21 @@ Nodes (17): Additional Observations, Areas of Concern, Conclusion, Design Review
 Cohesion: 0.17
 Nodes (18): ActiveWithTimestampExample(), AllStatesExample(), ConnectedExample(), CustomValueExample(), DisconnectedExample(), UnknownExample(), WaitingExample(), StatusIndicator() (+10 more)
 
-### Community 96 - "diagnostics/diagnostics.service.ts"
-Cohesion: 0.10
-Nodes (21): DailyFatiguePointDto, DiagnosticInsightsResponseDto, ElectricalSnapshotDto, FatigueRadarDto, FaultDiagnosisDto, FaultSeverity, FaultSignatureCode, PipelineStageDto (+13 more)
+### Community 96 - "knowledge-rag.service.ts"
+Cohesion: 0.24
+Nodes (5): ECOSTEP_BRAIN_KNOWLEDGE, RetrievedChunk, KnowledgeChunk, KnowledgeChunkDocument, KnowledgeChunkSchema
 
 ### Community 97 - "1. Hardware Integration API Contract"
-Cohesion: 0.10
-Nodes (18): 1. Hardware Integration API Contract, 6. Security Audit, Authentication, Authentication & Authorization, Backend Processing Flow, CORS Configuration, Endpoint Details, Error Responses (+10 more)
+Cohesion: 0.11
+Nodes (17): 1. Hardware Integration API Contract, 6. Security Audit, Authentication, Authentication & Authorization, Backend Processing Flow, CORS Configuration, Endpoint Details, Error Responses (+9 more)
 
 ### Community 98 - "EcoStep Monitoring Pages Redesign - Implementation Plan"
 Cohesion: 0.10
 Nodes (20): Context for Implementer, Current State Analysis, Definition of Done, Design Principles (Reminder), Design System, EcoStep Monitoring Pages Redesign - Implementation Plan, FEAT-001: Shared Design System - Add Missing Tokens & MonitoringNav Component, FEAT-002: DashboardLayout Redesign - Replace Sidebar for Public, Restyle for Admin (+12 more)
 
-### Community 99 - "AdminManagementService"
-Cohesion: 0.07
-Nodes (10): Conclusion, Finding #1: Access code validation edge case (BLOCKING), Finding #2: Expired token handling requires network round-trip (NON-BLOCKING), Finding #3: AuthContext navigation effect has no dependency on token validity (NON-BLOCKING), Review Findings Response, Summary, AdminManagementController, AdminManagementService (+2 more)
-
 ### Community 100 - "DiagnosticsService"
-Cohesion: 0.16
-Nodes (3): DiagnosticsService, ActiveDiagnosticSession, DailyDiagnosticTask
+Cohesion: 0.12
+Nodes (5): DiagnosticsController, DiagnosticBaselineResponseDto, DiagnosticInsightsResponseDto, ReferenceConfigResponseDto, UserDocument
 
 ### Community 101 - "Diagnostics E2E Test Suite Summary"
 Cohesion: 0.10
@@ -681,13 +680,17 @@ Nodes (15): generateRandomNickname(), getOrCreateVisitorId(), getStoredVisitorNi
 Cohesion: 0.10
 Nodes (20): Admin-Only Access, API Documentation, API Endpoints, API Standards, Author, Contributing, Development Principles, Environment Variables (+12 more)
 
-### Community 105 - "TrendIndicator.tsx"
+### Community 105 - "components/HeroEnergyCard.tsx"
 Cohesion: 0.23
-Nodes (9): HeroCardSkeleton, HeroPowerCard, HeroPowerCardProps, TrendIndicatorExample(), TrendIndicator, calculateTrend(), TrendCalculation, TrendDirection (+1 more)
+Nodes (8): HeroCardSkeleton, HeroPowerCardProps, TrendIndicatorExample(), TrendIndicator, calculateTrend(), TrendCalculation, TrendDirection, ValidationResult
 
 ### Community 106 - "date-intent.parser.ts"
-Cohesion: 0.21
-Nodes (11): buildDayIntent(), buildRangeIntent(), DateIntent, isFollowUpQuery(), isValidCalendarDate(), MONTH_MAP, NONE_INTENT, parseDateIntent() (+3 more)
+Cohesion: 0.31
+Nodes (9): buildDayIntent(), buildRangeIntent(), isFollowUpQuery(), isValidCalendarDate(), MONTH_MAP, NONE_INTENT, parseDateIntent(), parseExplicitDateToken() (+1 more)
+
+### Community 107 - "IotController"
+Cohesion: 0.15
+Nodes (3): ApiKey, CreateReadingResponseDto, IotController
 
 ### Community 108 - "MiniTrendGraph Lazy Loading Implementation"
 Cohesion: 0.11
@@ -702,12 +705,12 @@ Cohesion: 0.11
 Nodes (15): Build for Production, Code Quality Standards, Development Workflow, Documentation Standards, Environment Variables, Frontend Architecture Documentation, Next Steps (Phase 3: Authentication), Overview (+7 more)
 
 ### Community 111 - "CompleteDailyDiagnosticDto"
-Cohesion: 0.12
+Cohesion: 0.14
 Nodes (10): ActiveDiagnosticSessionDto, CompleteDailyDiagnosticDto, DailyDiagnosticTaskResponseDto, DailyDiagnosticTaskStatus, COMPLETED, FAILED, IN_PROGRESS, NEEDS_ATTENTION (+2 more)
 
 ### Community 112 - "AlertType"
-Cohesion: 0.18
-Nodes (11): AlertType, BATTERY_CRITICAL, BATTERY_LOW, CURRENT_THRESHOLD, DATABASE_CONNECTION, DEVICE_COMMUNICATION, ENERGY_MILESTONE, SENSOR_OFFLINE (+3 more)
+Cohesion: 0.09
+Nodes (22): Alert, AlertQuery, AlertSeverity, CRITICAL, INFO, WARNING, AlertStatistics, AlertStatus (+14 more)
 
 ### Community 113 - "scripts"
 Cohesion: 0.11
@@ -729,9 +732,13 @@ Nodes (16): Admin dashboard screen, Authentication and access control, Build and
 Cohesion: 0.22
 Nodes (9): 1.1. Hardware Constants (No Changes Needed), 1.2. Global Variables Declaration (Addresses MEDIUM #5), 1.3. WiFi Configuration and Auto-Reconnect, 1.4. NTP Time Synchronization, 1.5. Initialization in setup() (Addresses MEDIUM #5), 1.6. HTTP POST to Backend, 1.7. HTTP Retry Logic (Addresses MEDIUM #8), 1.8. Integration with Existing Piezo Detection (+1 more)
 
+### Community 119 - "NotificationQueryDto"
+Cohesion: 0.12
+Nodes (6): NotificationQueryDto, NotificationStatus, DELIVERED, FAILED, PENDING, SENT
+
 ### Community 120 - "reports/reports.service.ts"
-Cohesion: 0.09
-Nodes (14): AccessibilityIssue, AuditReport, DiagnosticsModule, ReadingSource, HARDWARE, MOCK, ReportsModule, ReportQuotaInfo (+6 more)
+Cohesion: 0.08
+Nodes (11): AccessibilityIssue, AuditReport, args, CleanupStats, options, buildHourRangeExpr(), parseHourParam(), ReportQuotaInfo (+3 more)
 
 ### Community 121 - "Phase 2 Implementation Verification"
 Cohesion: 0.18
@@ -742,48 +749,40 @@ Cohesion: 0.12
 Nodes (15): 10. No Forbidden Features ✅, 1. TypeScript Type Check ✅, 2. Backend Build ✅, 3. Frontend Build ✅, 5. Null Handling Verification ✅, 6. Public Dashboard Access ✅, 7. Admin Dashboard Authentication ✅, 8. Pull-to-Refresh Implementation ✅ (+7 more)
 
 ### Community 123 - "ref_features"
-Cohesion: 0.06
-Nodes (40): Requirement 5: Cumulative Energy Generated Chart, ChartsLayoutContainer(), useChartRealTimeUpdates(), EnergyRangeOverride, PeriodFilter, useEnergyByPeriod(), PowerRangeOverride, TimeFilter (+32 more)
+Cohesion: 0.07
+Nodes (38): Aggregation, ElectricalMetric, Period, EnergyRangeOverride, PeriodFilter, useEnergyByPeriod(), PowerRangeOverride, TimeFilter (+30 more)
 
 ### Community 124 - "frontend/src/hooks/index.ts"
 Cohesion: 0.48
 Nodes (3): useFocusTrap(), useViewportSize(), ViewportSize
 
 ### Community 125 - "AlertType"
-Cohesion: 0.10
-Nodes (15): apiClient, Alert, AlertQuery, AlertSeverity, CRITICAL, INFO, WARNING, AlertStatistics (+7 more)
+Cohesion: 0.08
+Nodes (12): apiClient, unauthorizedListeners, ApiErrorResponse, ApiResponse, PaginatedApiResponse, Sensor, SensorMetadata, SensorStatus (+4 more)
 
 ### Community 126 - "ref_axios"
 Cohesion: 0.14
 Nodes (8): axios, axios, axios, METRICS, runTests(), testEndpoint(), testRawReadings(), axios
 
-### Community 127 - ".getHistoricalAnalysis"
-Cohesion: 0.16
-Nodes (7): HistoricalAnalysisRequestDto, HistoricalAnalysisResponseDto, HistoricalMetricsDto, HistoricalPeriod, LAST_30_DAYS, LAST_7_DAYS, LAST_90_DAYS
-
 ### Community 128 - "services/feedback.service.ts"
 Cohesion: 0.10
 Nodes (21): createFeedback(), createFeedbackAnswer(), CreateFeedbackPayload, FeedbackAnswer, FeedbackCategory, FeedbackItem, FeedbackListResponse, FeedbackQuotaStatus (+13 more)
 
-### Community 129 - "common/index.ts"
-Cohesion: 0.25
-Nodes (3): CustomRadioProps, RadioOption, EcoPageHeaderProps
+### Community 129 - "CustomDropdown"
+Cohesion: 0.22
+Nodes (9): CustomDropdown(), handleKeyDown(), handleSelect(), scrollToOption(), CustomDropdownProps, DropdownOption, MonthDropdown(), MonthDropdownProps (+1 more)
 
-### Community 131 - "AlertsService"
-Cohesion: 0.17
-Nodes (3): AlertsService, Alert, AlertDocument
+### Community 131 - "ApiOperation"
+Cohesion: 0.15
+Nodes (4): AlertsController, AdminChatController, ChatController, MaintenanceController
 
-### Community 133 - "accessibility-utils.ts"
-Cohesion: 0.36
-Nodes (8): AccessibilityAuditOptions, getContrastRatio(), getRelativeLuminance(), hexToRgb(), meetsWCAGAA(), runAccessibilityAudit(), testAccessibility(), jest-axe
+### Community 133 - "@nestjs/testing"
+Cohesion: 0.14
+Nodes (7): @nestjs/cache-manager@^12.0.0, ChatMessage, ChatSession, TelemetryDto, @nestjs/cache-manager, @nestjs/testing, supertest
 
 ### Community 134 - "analytics.controller.ts"
-Cohesion: 0.36
-Nodes (10): Base Path: `/api/analytics`, BaseEnergySummaryDto, ComprehensiveAnalyticsDto, CostSavingsDto, DailyEnergySummaryDto, EnvironmentalImpactDto, MonthlyEnergySummaryDto, PeakGenerationDto (+2 more)
-
-### Community 135 - "AlertQueryDto"
-Cohesion: 0.14
-Nodes (5): AlertQueryDto, AlertStatus, ACKNOWLEDGED, ACTIVE, RESOLVED
+Cohesion: 0.15
+Nodes (17): Base Path: `/api/analytics`, BaseEnergySummaryDto, ComprehensiveAnalyticsDto, CostSavingsDto, DailyEnergySummaryDto, EnvironmentalImpactDto, MonthlyEnergySummaryDto, PeakGenerationDto (+9 more)
 
 ### Community 136 - "Commands Executed & Results"
 Cohesion: 0.14
@@ -805,45 +804,41 @@ Nodes (13): Configuration, Controller-Level, Environment Variables, Error Respon
 Cohesion: 0.15
 Nodes (12): vite@^8.1.1, vite-plugin-svgr@^5.2.0, @vitejs/plugin-react@^6.0.3, execFileAsync, LaptopWifiNetwork, parseLinuxNmcliOutput(), parseMacAirportOutput(), parseWindowsNetshOutput() (+4 more)
 
-### Community 141 - "CustomDropdown"
-Cohesion: 0.22
-Nodes (9): CustomDropdown(), handleKeyDown(), handleSelect(), scrollToOption(), CustomDropdownProps, DropdownOption, MonthDropdown(), MonthDropdownProps (+1 more)
+### Community 141 - "EcoSidebar.tsx"
+Cohesion: 0.13
+Nodes (14): ALL_NAV_ITEMS, canUseDesktopHover(), ChatPanel, EcoSidebar(), EcoSidebarProps, NavItem, EcoStepMat(), EcoStepMatProps (+6 more)
 
-### Community 142 - "dashboard.module.ts"
-Cohesion: 0.07
-Nodes (21): HIGH #3: Ambiguous — AnalyticsService Not Injected in DashboardService, AiModule, AnalyticsModule, DashboardModule, FeedbackQuotaStatus, FeedbackStats, Feedback, FeedbackAnswer (+13 more)
+### Community 142 - "app.module.ts"
+Cohesion: 0.05
+Nodes (27): HIGH #3: Ambiguous — AnalyticsService Not Injected in DashboardService, AiModule, AnalyticsModule, ChatModule, ChatbotModule, DashboardModule, EnergyModule, RangeStatistics (+19 more)
 
 ### Community 143 - "Phase 2: EcoStep Mobile Authentication and Authorization"
 Cohesion: 0.15
 Nodes (12): 12. Next Steps (Phase 3 Preview), 13. Conclusion, 3. Environment Configuration, 6. Backend Changes, 8. Dependencies, `.env.example`, Executive Summary, Expo SDK 57 Compatibility (+4 more)
 
 ### Community 144 - "TelemetryDisplay.tsx"
-Cohesion: 0.15
-Nodes (13): formatTimeAgo(), MetricCard(), MetricCardProps, TelemetryDisplay(), TelemetryDisplayProps, mockTelemetryData, api, ApiError (+5 more)
+Cohesion: 0.13
+Nodes (16): formatTimeAgo(), MetricCard(), MetricCardProps, TelemetryDisplay(), TelemetryDisplayProps, mockTelemetryData, api, ApiError (+8 more)
 
 ### Community 145 - "DateRangeLimitQueryDto"
-Cohesion: 0.20
-Nodes (3): DateRangeLimitQueryDto, DateRangeQueryDto, LimitQueryDto
+Cohesion: 0.14
+Nodes (11): DateRangeLimitQueryDto, DateRangeQueryDto, LimitQueryDto, EnergyRangeResponseDto, EnergyRangeSensorResponseDto, EnergyReadingResponseDto, EnergyStatisticsDto, SensorEnergyDto (+3 more)
 
 ### Community 146 - "BleContext.tsx"
 Cohesion: 0.28
 Nodes (6): BleContext, BleContextValue, BleProvider(), loadSavedBleDevice(), persistSavedBleDevice(), SAVED_BLE_DEVICE_STORAGE_KEY
 
-### Community 147 - "ref_components"
-Cohesion: 0.08
-Nodes (29): HistoricalDataRecord, HistoricalDataView(), HistoricalDataViewProps, ViewMode, AnalyticsPage(), CumulativeEnergyChart, EnergyPeriodChart, INTERVAL_OPTIONS (+21 more)
-
-### Community 148 - "GeminiAIService"
-Cohesion: 0.07
-Nodes (10): AIProvider, GEMINI, GROQ, GeminiAIService, KnowledgeRagService, ContentModerationService, KEYBOARD_SMASH_SEQUENCES, ModerationContext (+2 more)
+### Community 147 - "AlertsService"
+Cohesion: 0.17
+Nodes (3): AlertsService, Alert, AlertDocument
 
 ### Community 150 - "frontend/src/api/services/analytics.service.ts"
 Cohesion: 0.17
 Nodes (4): analyticsService, HistoricalAnalysisRequest, HistoricalAnalysisResponse, HistoricalMetrics
 
-### Community 152 - "MetricType"
-Cohesion: 0.10
-Nodes (19): Granularity, DAY, HOUR, MONTH, WEEK, MetricType, BATTERY, CAPACITOR_VOLTAGE (+11 more)
+### Community 152 - "alerts.module.ts"
+Cohesion: 0.18
+Nodes (4): AlertsModule, AlertEventsListener, AlertSchema, DiagnosticsModule
 
 ### Community 154 - "services/maintenance.service.ts"
 Cohesion: 0.29
@@ -873,17 +868,17 @@ Nodes (10): Cross-FEAT Integration Verification, FEAT-001: Reusable Dashboard Co
 Cohesion: 0.14
 Nodes (14): 10. Public User Login (Optional - If Backend Has Test Account), 1. Valid Admin Access Code Login, 2. Invalid Access Code, 3. Network Failure, 4. Session Restoration After App Restart, 5. Logout, 6. Expired/Invalid Token (401 Response), 7. Role-Based Access Control (+6 more)
 
-### Community 162 - "AuditService"
-Cohesion: 0.10
-Nodes (11): PageViewDto, AuditService, CreateAuditLogDto, LogAuditOptions, QueryAuditLogsDto, formatToManilaTime(), ROLES_KEY, JwtAuthGuard (+3 more)
+### Community 162 - "@nestjs/common"
+Cohesion: 0.08
+Nodes (23): AuditController, PageViewDto, CreateAuditLogDto, LogAuditOptions, QueryAuditLogsDto, AUDIT_ACTIONS, AUDIT_MODULES, AuditLog (+15 more)
 
 ### Community 163 - "eslint.config.js"
 Cohesion: 0.24
 Nodes (4): eslint-plugin-react-hooks@^7.1.1, eslint-plugin-react-refresh@^0.5.3, eslint-plugin-react-hooks, eslint-plugin-react-refresh
 
 ### Community 164 - "api/constants.ts"
-Cohesion: 0.18
-Nodes (10): ANALYTICS_ENDPOINTS, AUTH_ENDPOINTS, DASHBOARD_ENDPOINTS, ENERGY_ENDPOINTS, HEALTH_ENDPOINTS, QUERY_KEYS, REPORTS_ENDPOINTS, SENSOR_ENDPOINTS (+2 more)
+Cohesion: 0.16
+Nodes (11): ANALYTICS_ENDPOINTS, AUTH_ENDPOINTS, DASHBOARD_ENDPOINTS, ENERGY_ENDPOINTS, HEALTH_ENDPOINTS, QUERY_KEYS, REPORTS_ENDPOINTS, SENSOR_ENDPOINTS (+3 more)
 
 ### Community 165 - "design-tokens.ts"
 Cohesion: 0.20
@@ -897,45 +892,53 @@ Nodes (7): ApiError, ApiResponse, PaginatedResponse, ChangePasswordDto, UpdatePr
 Cohesion: 0.20
 Nodes (9): AvailableReportTypesResponse, GenerateReportDto, Report, ReportFormat, ReportFormatInfo, ReportsListResponse, ReportSummary, ReportType (+1 more)
 
-### Community 170 - "iot.controller.ts"
-Cohesion: 0.17
-Nodes (10): ApiKey, CreateReadingResponseDto, PaginatedReadingsResponseDto, ReadingResponseDto, ReadingStatisticsResponseDto, SignalQuality, EXCELLENT, FAIR (+2 more)
+### Community 168 - "GenerateReportDto"
+Cohesion: 0.13
+Nodes (7): GenerateReportDto, ReportResponseDto, ReportsListResponseDto, ReportFormat, EXCEL, PDF, ReportSummary
+
+### Community 170 - "dashboard/types/dashboard.types.ts"
+Cohesion: 0.13
+Nodes (18): ConnectionIndicator(), ConnectionIndicatorProps, MobileEnergyHarvestingDashboardProps, StatCard(), StatCardProps, StatsGrid(), StatsGridProps, StatusBadge() (+10 more)
 
 ### Community 171 - "HourRangeSelector.tsx"
 Cohesion: 0.32
 Nodes (7): formatHourRangeLabel(), formatHourShort(), HOUR_OPTIONS, HourRange, HourRangeSelector(), HourRangeSelectorProps, PRESETS
 
-### Community 172 - "cleanup-demo-data.ts"
-Cohesion: 0.22
-Nodes (3): args, CleanupStats, options
+### Community 172 - "common/index.ts"
+Cohesion: 0.25
+Nodes (3): CustomRadioProps, RadioOption, EcoPageHeaderProps
 
 ### Community 173 - "7. Documentation"
 Cohesion: 0.40
 Nodes (5): 7.1. Piezoelectric Setup Guide, 7.2. ESP32 Piezo Guide, 7.3. API Piezo Endpoints, 7.4. Architecture Overview Update, 7. Documentation
 
-### Community 174 - "reports.controller.ts"
-Cohesion: 0.07
-Nodes (11): AUDIT_ACTIONS, AUDIT_MODULES, AuditLog, AuditLogSchema, OptionalJwtAuthGuard, ChatResponseDto, SendMessageDto, RateLimitGuard (+3 more)
+### Community 174 - "ProfileCard.tsx"
+Cohesion: 0.35
+Nodes (8): ChangePasswordCard(), ProfileCard(), ProfileCardProps, PROFILE_QUERY_KEY, useChangePassword(), useProfile(), useUpdateProfile(), ProfilePage()
 
 ### Community 175 - "Technical Design: ESP32 Piezoelectric Footstep Energy Harvesting Integration"
 Cohesion: 0.22
 Nodes (8): 10.1. ESP32 Firmware Testing, 10.3. Frontend Testing, 10. Testing Strategy, 13. Assumptions, 3. Analytics Service: Piezo Statistics, 6. Configuration (.env), Overview, Technical Design: ESP32 Piezoelectric Footstep Energy Harvesting Integration
 
-### Community 177 - "mobile/src/api/services/sensors.service.ts"
-Cohesion: 0.14
-Nodes (7): Sensor, SensorMetadata, SensorStatus, ACTIVE, INACTIVE, MAINTENANCE, SensorWithApiKey
+### Community 176 - "Button.tsx"
+Cohesion: 0.19
+Nodes (11): ConfirmDialog(), ConfirmDialogProps, ConfirmVariant, EmptyState(), EmptyStateProps, Button, ButtonProps, ButtonSize (+3 more)
+
+### Community 177 - "DashboardHeader.tsx"
+Cohesion: 0.40
+Nodes (5): DashboardHeaderProps, formatLastActivity(), SystemStatusInfo(), SystemStatusInfoProps, SystemStatusType
 
 ### Community 178 - "manifest.json"
-Cohesion: 0.22
-Nodes (8): background_color, description, display, icons, name, short_name, start_url, theme_color
+Cohesion: 0.15
+Nodes (12): background_color, categories, description, display, icons, id, name, orientation (+4 more)
 
 ### Community 179 - "ErrorBoundary"
 Cohesion: 0.22
 Nodes (3): ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState
 
-### Community 180 - "notifications.service.ts"
-Cohesion: 0.07
-Nodes (20): BroadcastResultDto, NotificationQueryDto, NotificationsModule, NotificationLog, NotificationLogDocument, NotificationLogSchema, NotificationStatus, DELIVERED (+12 more)
+### Community 180 - "CardSkeleton.tsx"
+Cohesion: 0.50
+Nodes (4): CardSkeleton(), CardSkeletonProps, GridSkeleton(), GridSkeletonProps
 
 ### Community 181 - "lib/constants.ts"
 Cohesion: 0.22
@@ -945,21 +948,13 @@ Nodes (8): APP_NAME, APP_VERSION, CHART_COLORS, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPT
 Cohesion: 0.22
 Nodes (9): 5.1 TypeScript Type Check, 5.2 Required Manual Tests, 5.3 Accessibility Tests, 5. Testing and Verification, Authentication Tests, Network and Error Handling Tests, Public Access Tests, Role-Based Navigation Tests (+1 more)
 
-### Community 183 - "energy-response.dto.ts"
-Cohesion: 0.44
-Nodes (8): EnergyRangeResponseDto, EnergyRangeSensorResponseDto, EnergyReadingResponseDto, EnergyStatisticsDto, SensorEnergyDto, TodayEnergyResponseDto, TodayEnergySensorResponseDto, TotalStatisticsResponseDto
-
 ### Community 184 - "Required Assets (Not Included)"
 Cohesion: 0.22
 Nodes (8): Android Adaptive Icon, App Icon, Design Guidelines, Mobile App Assets, Placeholder Notice, Required Assets (Not Included), Splash Screen, Web Favicon
 
-### Community 185 - "diagnostics/dto/index.ts"
-Cohesion: 0.08
-Nodes (6): CreateReferenceConfigDto, DiagnosticBaselineResponseDto, DiagnosticHistoryResponseDto, DiagnosticTestResponseDto, RecordDiagnosticTestDto, ReferenceConfigResponseDto
-
-### Community 186 - "ConfirmDialog.tsx"
-Cohesion: 0.16
-Nodes (13): ConfirmDialog(), ConfirmDialogProps, ConfirmVariant, EmptyState(), EmptyStateProps, Button, ButtonProps, ButtonSize (+5 more)
+### Community 185 - "diagnostics/diagnostics.service.ts"
+Cohesion: 0.12
+Nodes (16): DailyFatiguePointDto, ElectricalSnapshotDto, FatigueRadarDto, FaultDiagnosisDto, FaultSeverity, FaultSignatureCode, PipelineStageDto, PipelineStageStatus (+8 more)
 
 ### Community 187 - "Files Created"
 Cohesion: 0.25
@@ -969,17 +964,17 @@ Nodes (8): API Client & Services, Authentication Screens, Configuration, Context
 Cohesion: 0.22
 Nodes (5): generateReport(), getReportQuota(), getVisitorHeaders(), ReportQuota, reportsService
 
-### Community 189 - "CardSkeleton.tsx"
-Cohesion: 0.50
-Nodes (4): CardSkeleton(), CardSkeletonProps, GridSkeleton(), GridSkeletonProps
-
 ### Community 190 - "scripts"
 Cohesion: 0.25
 Nodes (8): scripts, build, dev, lint, preview, test, test:ui, test:watch
 
+### Community 192 - "notifications.module.ts"
+Cohesion: 0.20
+Nodes (4): NotificationsModule, NotificationLog, NotificationLogDocument, NotificationLogSchema
+
 ### Community 193 - "TestValidationDto"
-Cohesion: 0.08
-Nodes (10): AppConfigDto, ConfigResponseDto, ConfigStatusDto, DatabaseConfigDto, IotConfigDto, JwtConfigDto, MessengerConfigDto, NotificationsConfigDto (+2 more)
+Cohesion: 0.07
+Nodes (13): AppConfigDto, ConfigResponseDto, ConfigStatusDto, DatabaseConfigDto, IotConfigDto, JwtConfigDto, MessengerConfigDto, NotificationsConfigDto (+5 more)
 
 ### Community 194 - "validateSensorData"
 Cohesion: 0.25
@@ -997,10 +992,6 @@ Nodes (8): 2.1 File Structure, 2.3 Login Screens, 2.4 Route Protection, 2. Imple
 Cohesion: 0.29
 Nodes (6): AdminChatMessage, adminChatService, AdminChatSettings, AdminChatThread, AdminThreadsListResponse, CannedReplyItem
 
-### Community 198 - ".loginWithAccessCode"
-Cohesion: 0.08
-Nodes (6): AuthController, AccessCodeLoginDto, AuthDataDto, AuthResponseDto, LoginDto, UserResponseDto
-
 ### Community 199 - "EcoStepLogo.tsx"
 Cohesion: 0.36
 Nodes (7): EcoStepBrandLockup(), EcoStepBrandLockupProps, EcoStepLogo(), EcoStepMark(), EcoStepMarkProps, EcoStepWordmark(), EcoStepWordmarkProps
@@ -1009,9 +1000,9 @@ Nodes (7): EcoStepBrandLockup(), EcoStepBrandLockupProps, EcoStepLogo(), EcoStep
 Cohesion: 0.25
 Nodes (8): AIErrorType, AUTH_ERROR, INVALID_REQUEST, QUOTA_EXCEEDED, RATE_LIMIT, SERVER_ERROR, TIMEOUT, UNKNOWN
 
-### Community 201 - "ref_contexts"
-Cohesion: 0.04
-Nodes (35): App(), queryClient, Coords, InfoTooltip(), InfoTooltipProps, MonitoringNav(), Navigation(), mockNavigate (+27 more)
+### Community 201 - "vitest"
+Cohesion: 0.05
+Nodes (29): Coords, InfoTooltip(), InfoTooltipProps, mockUseTheme, mockLinkClick, mockUseDiagnosticHistory, renderDiagnosticHistoryTable(), mockCreateMutateAsync (+21 more)
 
 ### Community 202 - "5. Frontend Components"
 Cohesion: 0.22
@@ -1024,10 +1015,6 @@ Nodes (5): 2. Sensor Auto-Provisioning Status, Current Implementation, Gap Analy
 ### Community 206 - "energy-monitoring-report-2026-11-25-1795618222908_9ae57688.md"
 Cohesion: 0.50
 Nodes (3): Sheet: Diagnostics Audit Log, Sheet: Executive & Hourly Summary, Sheet: Raw ESP32 Telemetry
-
-### Community 207 - "DashboardHeader.tsx"
-Cohesion: 0.40
-Nodes (5): DashboardHeaderProps, formatLastActivity(), SystemStatusInfo(), SystemStatusInfoProps, SystemStatusType
 
 ### Community 208 - "SensorsService"
 Cohesion: 0.06
@@ -1061,6 +1048,10 @@ Nodes (7): Finding #1: Access code validation edge case (BLOCKING) - NOT AN ISSU
 Cohesion: 0.29
 Nodes (6): compilerOptions, paths, strict, extends, include, expo/tsconfig.base
 
+### Community 218 - "DiagnosticResultStatus"
+Cohesion: 0.13
+Nodes (8): DiagnosticHistoryResponseDto, DiagnosticTestResponseDto, RecordStepTestDto, StepTestResponseDto, DiagnosticResultStatus, ABOVE_EXPECTED, BELOW_EXPECTED, WITHIN_RANGE
+
 ### Community 219 - "Demo Data Cleanup Script"
 Cohesion: 0.29
 Nodes (6): Demo Data Cleanup Script, Requirements, Safety Features, Scripts Documentation, Usage, What Gets Deleted
@@ -1069,9 +1060,9 @@ Nodes (6): Demo Data Cleanup Script, Requirements, Safety Features, Scripts Docu
 Cohesion: 0.50
 Nodes (4): How JWTs Are Stored and Attached, Request Attachment (axios interceptor), Storage (expo-secure-store), Token Invalidation (401 handling)
 
-### Community 221 - "@nestjs/swagger"
-Cohesion: 0.08
-Nodes (10): AcknowledgeAlertDto, ResolveAlertDto, TestStatus, ACTIVE, INACTIVE, IsMax6DecimalsConstraint, BlockSubscriberDto, class-transformer (+2 more)
+### Community 221 - "class-validator"
+Cohesion: 0.05
+Nodes (19): class-transformer@^0.5.1, class-validator@^0.15.1, CreateReferenceConfigDto, DiagnosticHistoryQueryDto, RecordDiagnosticTestDto, PaginatedReadingsResponseDto, ReadingResponseDto, ReadingStatisticsResponseDto (+11 more)
 
 ### Community 224 - "lib/validateSensorData.ts"
 Cohesion: 0.40
@@ -1102,8 +1093,12 @@ Cohesion: 0.33
 Nodes (5): collection, compilerOptions, deleteOutDir, $schema, sourceRoot
 
 ### Community 232 - "SubscribersService"
-Cohesion: 0.09
-Nodes (3): SubscriberDocument, SubscribersController, SubscribersService
+Cohesion: 0.05
+Nodes (8): SubscriberQueryDto, UpdateSubscriberDto, Subscriber, SubscriberDocument, SubscriberSchema, SubscribersController, SubscribersModule, SubscribersService
+
+### Community 233 - "LoadingSpinner.tsx"
+Cohesion: 0.67
+Nodes (3): FullPageLoading(), LoadingSpinner(), LoadingSpinnerProps
 
 ### Community 238 - "3. **Authentication Architecture**"
 Cohesion: 0.40
@@ -1113,9 +1108,9 @@ Nodes (5): 3. **Authentication Architecture**, Auth Flow, Protected Routes, Toke
 Cohesion: 0.36
 Nodes (11): HeroEnergyCardAllExamples(), HeroEnergyCardDecreasedExample(), HeroEnergyCardEmptyExample(), HeroEnergyCardErrorExample(), HeroEnergyCardHighValueExample(), HeroEnergyCardLoadingExample(), HeroEnergyCardMinimalTrendExample(), HeroEnergyCardNoComparisonExample() (+3 more)
 
-### Community 240 - "UserRole"
-Cohesion: 0.50
-Nodes (4): UserRole, PUBLIC_USER, SUPER_ADMIN, SYSTEM_ADMIN
+### Community 240 - "accessibility-utils.ts"
+Cohesion: 0.36
+Nodes (8): AccessibilityAuditOptions, getContrastRatio(), getRelativeLuminance(), hexToRgb(), meetsWCAGAA(), runAccessibilityAudit(), testAccessibility(), jest-axe
 
 ### Community 241 - "Commands Run and Results"
 Cohesion: 0.50
@@ -1124,10 +1119,6 @@ Nodes (4): 1. Dependency Installation, 2. TypeScript Type Check, 3. ESLint Check
 ### Community 242 - "10. Remaining Work and Considerations"
 Cohesion: 0.40
 Nodes (5): 10.1 Manual Testing Requirements, 10.2 Future Enhancements (Out of Scope for Phase 2), 10.3 Known Limitations, 10.4 Security Considerations, 10. Remaining Work and Considerations
-
-### Community 244 - "MEDIUM Severity Findings"
-Cohesion: 0.25
-Nodes (7): MEDIUM #4: Unspecified Behavior — Frontend TanStack Query Retry Logic, MEDIUM #5: Missing Specification — ESP32 Global Variables Initialization, MEDIUM #6: Ambiguous Signature — `getPiezoStatistics()` Query Parameters, MEDIUM #7: Unspecified — Power Validation Skip Logic, MEDIUM #8: Missing Error Handling — ESP32 Buffer Overflow, MEDIUM #9: Ambiguous — Step Milestone Cache Key Format, MEDIUM Severity Findings
 
 ### Community 245 - "services/admin-management.service.ts"
 Cohesion: 0.25
@@ -1177,9 +1168,9 @@ Nodes (4): 7. Files Created and Modified, Files Created (Phase 2), Files Modifie
 Cohesion: 0.50
 Nodes (4): 9. Commands Executed, File Structure Inspection, Git Status Check, Type Check
 
-### Community 258 - "response.interceptor.ts"
-Cohesion: 0.25
-Nodes (4): rxjs@^7.8.1, Response, ResponseInterceptor, rxjs
+### Community 258 - "Badge.tsx"
+Cohesion: 0.38
+Nodes (5): Badge(), BadgeProps, BadgeShape, BadgeVariant, BadgeExamples()
 
 ### Community 259 - "Technology Stack"
 Cohesion: 0.50
@@ -1189,25 +1180,25 @@ Nodes (4): Backend, Frontend (Coming Soon), Hardware, Technology Stack
 Cohesion: 0.50
 Nodes (4): Getting Started, Installation, Prerequisites, Running the Application
 
-### Community 261 - "Badge.tsx"
-Cohesion: 0.38
-Nodes (5): Badge(), BadgeProps, BadgeShape, BadgeVariant, BadgeExamples()
+### Community 261 - "notifications.service.ts"
+Cohesion: 0.49
+Nodes (5): EnergyMilestoneEvent, SensorOfflineEvent, SensorOnlineEvent, SystemAlertEvent, @nestjs/event-emitter
 
-### Community 265 - "exceljs"
+### Community 262 - "NotificationType"
 Cohesion: 0.20
-Nodes (6): exceljs@^4.4.0, joi@^18.2.3, @nestjs/cli@^11.0.0, exceljs, joi, @nestjs/cli
+Nodes (8): NotificationType, BATTERY, BROADCAST, DAILY_SUMMARY, MILESTONE, SENSOR, SYSTEM, WEEKLY_SUMMARY
 
-### Community 266 - "5. Testing Status"
-Cohesion: 0.40
-Nodes (5): 5. Testing Status, Critical Untested Modules, Recommended Test Additions, Test Coverage Analysis, Test Files Found
+### Community 263 - "Navigation.test.tsx"
+Cohesion: 0.33
+Nodes (5): MonitoringNav(), Navigation(), mockNavigate, mockUseAuth, renderWithRouter()
 
-### Community 267 - "SystemStatusCard.tsx"
-Cohesion: 0.50
-Nodes (4): StatusIndicator(), StatusIndicatorProps, SystemStatusCard, SystemStatusCardProps
+### Community 265 - "SplashScreen.tsx"
+Cohesion: 0.29
+Nodes (6): CELLS, SplashScreen(), SplashScreenProps, TileConfig, TILES, useSafeIsFetching()
 
-### Community 269 - "StatusBadge.tsx"
-Cohesion: 0.38
-Nodes (5): ConnectionIndicator(), ConnectionIndicatorProps, StatusBadge(), StatusBadgeProps, ConnectionStatus
+### Community 267 - "response.interceptor.ts"
+Cohesion: 0.25
+Nodes (4): rxjs@^7.8.1, Response, ResponseInterceptor, rxjs
 
 ### Community 271 - "Implementation Steps"
 Cohesion: 0.06
@@ -1217,21 +1208,41 @@ Nodes (35): Architecture Decisions, Authentication Endpoints, Decision 1: Admin-
 Cohesion: 0.33
 Nodes (5): firebase@^13.0.0, app, db, firebaseConfig, firebase
 
+### Community 273 - "MEDIUM Severity Findings"
+Cohesion: 0.29
+Nodes (7): MEDIUM #4: Unspecified Behavior — Frontend TanStack Query Retry Logic, MEDIUM #5: Missing Specification — ESP32 Global Variables Initialization, MEDIUM #6: Ambiguous Signature — `getPiezoStatistics()` Query Parameters, MEDIUM #7: Unspecified — Power Validation Skip Logic, MEDIUM #8: Missing Error Handling — ESP32 Buffer Overflow, MEDIUM #9: Ambiguous — Step Milestone Cache Key Format, MEDIUM Severity Findings
+
 ### Community 288 - "10. Data Flow Summary"
 Cohesion: 0.50
 Nodes (4): 10. Data Flow Summary, Analytics Flow:, Historical Data Flow:, New Energy Reading Flow:
 
-### Community 312 - "@nestjs/config"
-Cohesion: 0.08
-Nodes (5): envValidationSchema, FirebaseModule, FirebaseService, @nestjs/config, @nestjs/event-emitter
+### Community 289 - "5. Success & Error Responses"
+Cohesion: 0.40
+Nodes (5): 5. Success & Error Responses, Error Response - Authentication Failed (HTTP 401), Error Response - Server Error (HTTP 500), Error Response - Validation Failed (HTTP 400), Success Response (HTTP 201 Created)
+
+### Community 309 - "Review Findings Response"
+Cohesion: 0.15
+Nodes (7): Conclusion, Finding #1: Access code validation edge case (BLOCKING), Finding #2: Expired token handling requires network round-trip (NON-BLOCKING), Finding #3: AuthContext navigation effect has no dependency on token validity (NON-BLOCKING), Review Findings Response, Summary, AccessCodeLoginDto
+
+### Community 314 - "9. Architecture Recommendations"
+Cohesion: 0.40
+Nodes (5): 9. Architecture Recommendations, Best Practice Violations, Potential Refactoring Needs, Scalability Concerns, Technical Debt Assessment
+
+### Community 317 - "Phase 6 - New Analytics Service Methods"
+Cohesion: 0.50
+Nodes (3): Note:, Phase 6 - New Analytics Service Methods, Public Methods to Add:
 
 ### Community 318 - "useDeviceLayout.ts"
 Cohesion: 0.40
 Nodes (5): BREAKPOINTS, DeviceLayout, DeviceLayoutState, getLayoutFromWidth(), useDeviceLayout()
 
-### Community 327 - "SplashScreen.tsx"
-Cohesion: 0.29
-Nodes (6): CELLS, SplashScreen(), SplashScreenProps, TileConfig, TILES, useSafeIsFetching()
+### Community 328 - "extract.js"
+Cohesion: 0.50
+Nodes (3): fs, html, match
+
+### Community 329 - "9. Troubleshooting Guide"
+Cohesion: 0.33
+Nodes (6): 9. Troubleshooting Guide, Problem: "400 Bad Request - Capacitor voltage is required", Problem: "400 Bad Request - Timestamp cannot be in the future", Problem: "401 Unauthorized", Problem: "500 Internal Server Error", Problem: HTTP Request Times Out
 
 ### Community 349 - "2. Backend Integration"
 Cohesion: 0.40
@@ -1253,37 +1264,37 @@ Nodes (4): 4.1. Dashboard Module: Import AnalyticsModule (Addresses HIGH #3), 4.
 Cohesion: 0.50
 Nodes (4): 8.1. ESP32 Edge Cases, 8.2. Backend Edge Cases, 8.3. Frontend Edge Cases, 8. Edge Cases and Error Handling
 
-### Community 366 - "LoadingSpinner.tsx"
-Cohesion: 0.67
-Nodes (3): FullPageLoading(), LoadingSpinner(), LoadingSpinnerProps
-
 ### Community 368 - "services/audit.service.ts"
 Cohesion: 0.29
 Nodes (6): AuditCategoryCounts, AuditLogItem, AuditLogsResponse, AuditMetaResponse, auditService, QueryAuditLogsParams
 
-### Community 429 - "@nestjs/mongoose"
-Cohesion: 0.07
-Nodes (28): mongoose, PublicAdminChatSettings, UpdateAdminChatSettingsPayload, AdminChatSettings, AdminChatSettingsDocument, AdminChatSettingsSchema, CannedReplyItem, CannedReplySubdoc (+20 more)
+### Community 429 - "chat.module.ts"
+Cohesion: 0.13
+Nodes (15): PublicAdminChatSettings, UpdateAdminChatSettingsPayload, AdminChatSettings, AdminChatSettingsDocument, AdminChatSettingsSchema, CannedReplyItem, CannedReplySubdoc, CannedReplySubdocSchema (+7 more)
+
+### Community 439 - "energy-monitoring-system/package.json"
+Cohesion: 0.08
+Nodes (24): author, axios@^1.18.1, cache-manager@^7.2.9, @google/generative-ai@^0.24.1, groq-sdk@^1.6.0, helmet@^8.3.0, @nestjs/platform-socket.io@^11.1.28, socket.io-client@^4.8.3 (+16 more)
 
 ## Knowledge Gaps
-- **119 isolated node(s):** `BATTERY_CRITICAL`, `BATTERY_LOW`, `CURRENT_THRESHOLD`, `DATABASE_CONNECTION`, `DEVICE_COMMUNICATION` (+114 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2785 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **205 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **119 isolated node(s):** `COMPLETED`, `FAILED`, `IN_PROGRESS`, `NEEDS_ATTENTION`, `OVERDUE` (+114 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2800 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **220 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `@nestjs/common` connect `@nestjs/common` to `energy-monitoring-system/package.json`, `energy.controller.ts`, `response.interceptor.ts`, `feedback.controller.ts`, `analytics.controller.ts`, `analytics/analytics.service.ts`, `dashboard.module.ts`, `uptime-health.spec.ts`, `GeminiAIService`, `dependencies`, `AuditService`, `app.module.ts`, `.sendMessage`, `iot.controller.ts`, `@nestjs/mongoose`, `reports.controller.ts`, `notifications.service.ts`, `NotificationsService`, `@nestjs/config`, `health-monitor.service.ts`, `uptime-health.spec.ts`, `SensorsService`, `PublicController`, `http-exception.filter.ts`, `diagnostics/diagnostics.service.ts`, `1. Hardware Integration API Contract`, `reports/reports.service.ts`?**
-  _High betweenness centrality (0.089) - this node is a cross-community bridge._
-- **What connects `BATTERY_CRITICAL`, `BATTERY_LOW`, `CURRENT_THRESHOLD` to the rest of the system?**
+- **Why does `@nestjs/common` connect `@nestjs/common` to `energy.controller.ts`, `feedback.controller.ts`, `@nestjs/testing`, `analytics.controller.ts`, `notifications.service.ts`, `response.interceptor.ts`, `analytics/analytics.service.ts`, `@nestjs/common`, `app.module.ts`, `@nestjs/config`, `alerts.module.ts`, `dependencies`, `chat.module.ts`, `energy-monitoring-system/package.json`, `diagnostics/diagnostics.service.ts`, `health-monitor.service.ts`, `notifications.module.ts`, `knowledge-rag.service.ts`, `SubscribersService`, `IotController`, `reports/reports.service.ts`?**
+  _High betweenness centrality (0.115) - this node is a cross-community bridge._
+- **What connects `COMPLETED`, `FAILED`, `IN_PROGRESS` to the rest of the system?**
   _119 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `energy-monitoring-system/package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.04900181488203267 - nodes in this community are weakly interconnected._
-- **Why does `@nestjs/swagger` connect `@nestjs/swagger` to `energy-monitoring-system/package.json`, `energy.controller.ts`, `feedback.controller.ts`, `analytics.controller.ts`, `dashboard-analytics.dto.ts`, `@nestjs/common`, `uptime-health.spec.ts`, `DateRangeLimitQueryDto`, `dependencies`, `MetricType`, `AuditService`, `iot.controller.ts`, `reports.controller.ts`, `notifications.service.ts`, `energy-response.dto.ts`, `diagnostics/dto/index.ts`, `health-monitor.service.ts`, `reports/reports.service.ts`, `TestValidationDto`, `.loginWithAccessCode`, `uptime-health.spec.ts`, `CreateReadingDto`, `SensorsService`, `PublicController`, `diagnostics/diagnostics.service.ts`, `time-series.dto.ts`, `hourly-average.dto.ts`, `sensor-uptime.dto.ts`, `.getHistoricalAnalysis`?**
-  _High betweenness centrality (0.049) - this node is a cross-community bridge._
-- **Should `feedback.controller.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08534850640113797 - nodes in this community are weakly interconnected._
-- **Why does `lucide-react` connect `ref_react` to `common/index.ts`, `@tanstack/react-query`, `useDiagnostics.ts`, `EcoStepBleModal.test.tsx`, `CustomDropdown`, `StatusBadge.tsx`, `TelemetryDisplay.tsx`, `@tanstack/react-query`, `frontend/package.json`, `ref_components`, `AdminMilestonesModal.tsx`, `dashboard/components/index.ts`, `Toast.tsx`, `ChatPanel.tsx`, `SensorMonitoringCard.tsx`, `ref_routes`, `CumulativeEnergyChart.tsx`, `EcoSidebar.tsx`, `HourRangeSelector.tsx`, `analytics/types/analytics.types.ts`, `ConfirmDialog.tsx`, `dependencies`, `ref_contexts`, `DashboardHeader.tsx`, `components/MetricCard.tsx`, `TrendIndicator.tsx`, `ref_features`?**
+  _Cohesion score 0.05128205128205128 - nodes in this community are weakly interconnected._
+- **Why does `vitest` connect `vitest` to `ref_components`, `@tanstack/react-query`, `Navigation.test.tsx`, `useDiagnostics.ts`, `EcoStepBleModal.test.tsx`, `vite.config.ts`, `react-router-dom`, `HardwareStatusContext.tsx`, `frontend/package.json`, `TelemetryDisplay.tsx`, `AdminMilestonesModal.tsx`, `dashboard/components/index.ts`, `ChatPanel.tsx`, `permissions.test.ts`, `CumulativeEnergyChart.tsx`, `dashboard/types/dashboard.types.ts`, `services/diagnostics.service.ts`, `utils.ts`, `useMediaQuery`, `lib/validateSensorData.ts`, `components/MetricCard.tsx`, `components/HeroEnergyCard.tsx`, `accessibility-utils.ts`, `frontend/src/hooks/index.ts`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **Should `ref_components` be split into smaller, more focused modules?**
+  _Cohesion score 0.09848484848484848 - nodes in this community are weakly interconnected._
+- **Why does `@nestjs/swagger` connect `@nestjs/common` to `energy.controller.ts`, `feedback.controller.ts`, `@nestjs/testing`, `analytics.controller.ts`, `dashboard-analytics.dto.ts`, `acknowledge-alert.dto.ts`, `@nestjs/common`, `@nestjs/config`, `DateRangeLimitQueryDto`, `dependencies`, `GenerateReportDto`, `energy-monitoring-system/package.json`, `diagnostics/diagnostics.service.ts`, `health-monitor.service.ts`, `TestValidationDto`, `uptime-health.spec.ts`, `SensorsService`, `DiagnosticResultStatus`, `AnalyticsQueryDto`, `class-validator`, `DiagnosticsService`, `time-series.dto.ts`, `hourly-average.dto.ts`, `CompleteDailyDiagnosticDto`, `sensor-uptime.dto.ts`, `NotificationQueryDto`, `reports/reports.service.ts`?**
   _High betweenness centrality (0.037) - this node is a cross-community bridge._
-- **Should `@tanstack/react-query` be split into smaller, more focused modules?**
-  _Cohesion score 0.08145363408521303 - nodes in this community are weakly interconnected._
+- **Should `feedback.controller.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.0960960960960961 - nodes in this community are weakly interconnected._

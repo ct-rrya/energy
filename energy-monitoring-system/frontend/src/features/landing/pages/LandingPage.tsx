@@ -31,12 +31,6 @@ const SECTIONS: ReadonlyArray<{ id: string; label: string; to?: string }> = [
   { id: 'about', label: 'About' },
 ];
 
-/**
- * Replace 'YOUR_YOUTUBE_VIDEO_ID' with your YouTube advertisement video ID
- * (e.g., for https://www.youtube.com/watch?v=dQw4w9WgXcQ, use 'dQw4w9WgXcQ').
- */
-const YOUTUBE_VIDEO_ID = 'YOUR_YOUTUBE_VIDEO_ID';
-
 const RESEARCH_TEAM = [
   { name: 'Lord Jason Riveral', role: 'Project Lead · Hardware Lead', initials: 'LR', lead: true },
   { name: 'Merry Apple Edaño', role: 'Software and Manuscript Lead', initials: 'ME', lead: true },
@@ -487,29 +481,6 @@ export function LandingPage() {
             </div>
 
             <div className="es-abt-block">
-              <h3 className="es-abt-sub">Project Advertisement Video</h3>
-              <div className="es-abt-video">
-                {YOUTUBE_VIDEO_ID && YOUTUBE_VIDEO_ID !== 'YOUR_YOUTUBE_VIDEO_ID' ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
-                    title="EcoStep Advertisement Video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="es-abt-video-placeholder">
-                    <div className="es-abt-play" aria-hidden="true">&#9654;</div>
-                    <strong>Video Coming Soon</strong>
-                    <span>
-                      Our EcoStep overview and hardware demonstration video is currently in production. Check back soon!
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="es-abt-block">
               <h3 className="es-abt-sub">Research Team</h3>
               <div className="es-team-grid">
                 {RESEARCH_TEAM.map((member) => (
@@ -564,6 +535,10 @@ export function LandingPage() {
               <Link to={ROUTES.ANALYTICS} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Analytics</Link>
               <Link to={ROUTES.MILESTONES} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Milestones</Link>
               <Link to={ROUTES.ABOUT} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>About &amp; Team</Link>
+              <Link to={`${ROUTES.LEGAL}?tab=privacy`} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Privacy</Link>
+              <Link to={`${ROUTES.LEGAL}?tab=terms`} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Terms</Link>
+              <Link to={`${ROUTES.LEGAL}?tab=cookies`} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Cookies</Link>
+              <Link to={`${ROUTES.LEGAL}?tab=community`} style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>Guidelines</Link>
               <a href="#faq" style={{ color: 'var(--t)', textDecoration: 'none', fontWeight: 500 }}>FAQ</a>
             </div>
             <span>Questions or feedback? Reach out to the EcoStep Research Team or ask EcoGuide inside the dashboard.</span>
