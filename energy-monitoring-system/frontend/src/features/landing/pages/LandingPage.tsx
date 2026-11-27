@@ -7,20 +7,51 @@ import { MaintenanceOverlay } from '@/components/common/MaintenanceOverlay';
 import { EcoStepMat } from '../components/EcoStepMat';
 import '@/styles/landing.css';
 
-const DEMO_VALUES = [12, 18, 14, 25, 21, 30, 17, 26, 15, 32, 24, 19];
-const DEMO_LABELS = [
-  '8:00 AM',
-  '9:00 AM',
-  '10:00 AM',
-  '11:00 AM',
-  '12:00 PM',
-  '1:00 PM',
-  '2:00 PM',
-  '3:00 PM',
-  '4:00 PM',
-  '5:00 PM',
-  '6:00 PM',
-  '7:00 PM',
+const PREVIEW_SLIDES: ReadonlyArray<{
+  id: string;
+  label: string;
+  pathLabel: string;
+  caption: string;
+  to: string;
+  lightSrc: string;
+  darkSrc: string;
+}> = [
+  {
+    id: 'central',
+    label: 'Central',
+    pathLabel: 'ecostep.cebutech.digital/dashboard',
+    caption: 'Live footstep power, today’s harvested energy, and campus milestones',
+    to: ROUTES.DASHBOARD,
+    lightSrc: '/previews/central-light.png',
+    darkSrc: '/previews/central-dark.png',
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    pathLabel: 'ecostep.cebutech.digital/analytics',
+    caption: 'Interactive power, step count, voltage, and hourly trend charts',
+    to: ROUTES.ANALYTICS,
+    lightSrc: '/previews/analytics-light.png',
+    darkSrc: '/previews/analytics-dark.png',
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    pathLabel: 'ecostep.cebutech.digital/reports',
+    caption: 'Generate and download official campus energy reports in PDF or CSV',
+    to: ROUTES.REPORTS,
+    lightSrc: '/previews/reports-light.png',
+    darkSrc: '/previews/reports-dark.png',
+  },
+  {
+    id: 'ecommunity',
+    label: 'ECommunity',
+    pathLabel: 'ecostep.cebutech.digital/feedback',
+    caption: 'Public campus Q&A board for tile issues, reviews, and feature ideas',
+    to: ROUTES.FEEDBACK,
+    lightSrc: '/previews/ecommunity-light.png',
+    darkSrc: '/previews/ecommunity-dark.png',
+  },
 ];
 
 const SECTIONS: ReadonlyArray<{ id: string; label: string; to?: string }> = [
@@ -60,8 +91,17 @@ export function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [previewIdx, setPreviewIdx] = useState(0);
 
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+
+  // Pure automatic slideshow across public EcoStep pages every 4 seconds
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPreviewIdx((idx) => (idx + 1) % PREVIEW_SLIDES.length);
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Enable landing page styling and ensure document scrolling is unlocked while mounted
   useEffect(() => {
@@ -362,65 +402,42 @@ export function LandingPage() {
         >
           <h2>See what others are generating</h2>
           <p className="lead">
-            Energy, electrical measurements, system status and analytics in one
-            live dashboard.
+            Energy, electrical measurements, system status, reports, and
+            community insights in one live platform.
           </p>
-          <div className="lp">
-            <div className="scr">
+
+          <div className="lp" aria-label="EcoStep live page preview slideshow">
+            <div className="scr scr-preview">
               <div className="es-tb">
                 <i style={{ background: '#ff5f57' }} />
                 <i style={{ background: '#febc2e' }} />
                 <i style={{ background: '#28c840' }} />
-                <b>EcoStep Central</b>
-                <span>&middot; Smart Footstep Tile</span>
-                <div className="live">&#9679; DEMO PREVIEW</div>
+                <b>EcoStep {PREVIEW_SLIDES[previewIdx].label}</b>
+                <span>&middot; {PREVIEW_SLIDES[previewIdx].pathLabel}</span>
+                <div className="live">&#9679; LIVE SITE PREVIEW</div>
               </div>
-              <div className="kp">
-                <div>
-                  <small>Voltage</small>
-                  <b>4.85 V</b>
-                </div>
-                <div>
-                  <small>Current</small>
-                  <b>14.2 mA</b>
-                </div>
-                <div>
-                  <small>Power</small>
-                  <b>68.9 mW</b>
-                </div>
-                <div>
-                  <small>System</small>
-                  <b>Active</b>
-                </div>
-              </div>
-              <div className="ch">
-                <b>Energy Generation Over Time</b>{' '}
-                <span style={{ opacity: 0.6 }}>(mWh)</span>
-                <div className="bars" id="bars">
-                  {DEMO_VALUES.map((v, i) => (
-                    <i key={i} style={{ height: `${(v / 32) * 100}%` }} />
-                  ))}
-                </div>
-                <div className="xl" id="xl">
-                  {DEMO_LABELS.map((lbl) => (
-                    <span key={lbl}>{lbl.replace(':00', '')}</span>
-                  ))}
-                </div>
-                <div className="ft">
-                  <span>Illustrative Demo Data &mdash; Not Live Readings</span>
-                  <span>Sample: 0.24 mWh</span>
-                </div>
+              <div className="es-preview-stage">
+                {PREVIEW_SLIDES.map((slide, idx) => (
+                  <img
+                    key={slide.id}
+                    src={theme === 'dark' ? slide.darkSrc : slide.lightSrc}
+                    alt={`EcoStep ${slide.label} page preview (${theme} mode)`}
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                    className={`es-preview-img ${previewIdx === idx ? 'is-active' : ''}`}
+                  />
+                ))}
               </div>
             </div>
             <div className="base" />
           </div>
+
           <div className="es-row" style={{ justifyContent: 'center' }}>
             <Link className="es-btn p" to={ROUTES.DASHBOARD}>
               Open Dashboard &rarr;
             </Link>
           </div>
           <p className="cap" style={{ maxWidth: 'none' }}>
-            Open the live footstep energy dashboard
+            {PREVIEW_SLIDES[previewIdx].caption}
           </p>
         </section>
 

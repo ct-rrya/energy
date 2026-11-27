@@ -1632,9 +1632,9 @@
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/landing/pages/LandingPage.tsx": {
-    "mtime": 1795775102.6807625,
-    "seen": 1795775134.7526057,
-    "ast_hash": "a53c94e1f208bdcdaa87b70424b1b149",
+    "mtime": 1795790076.9018648,
+    "seen": 1795790249.0102153,
+    "ast_hash": "ce30806791b8b96841d9e8c407907203",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/src/features/milestones/MilestonesAccess.test.tsx": {
@@ -4713,6 +4713,54 @@
     "mtime": 1795774561.3902466,
     "seen": 1795774651.0223408,
     "ast_hash": "9e4ddcdb4fb06fe8b18164f84b8f2ad5",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/analytics-dark.png": {
+    "mtime": 1795789249.5202532,
+    "seen": 1795789604.540879,
+    "ast_hash": "3f9dc558a9a563de72f2cc39ed9eafbe",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/analytics-light.png": {
+    "mtime": 1795789358.117189,
+    "seen": 1795789604.5408845,
+    "ast_hash": "2d129ea37362fce9fdc701bf4172f7d5",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/central-dark.png": {
+    "mtime": 1795789214.8013449,
+    "seen": 1795789604.5408888,
+    "ast_hash": "058f7953963afc018e8147c3ba93e345",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/central-light.png": {
+    "mtime": 1795789338.0368512,
+    "seen": 1795789604.540893,
+    "ast_hash": "2c3c6249fde58d0b75b7d5f117acc408",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/ecommunity-dark.png": {
+    "mtime": 1795790137.3402941,
+    "seen": 1795790249.0107534,
+    "ast_hash": "26d59cc475bfd9ff30eddb5c6e986b6c",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/ecommunity-light.png": {
+    "mtime": 1795790174.7353232,
+    "seen": 1795790249.0107543,
+    "ast_hash": "82a66585f8cb2bc84e4ca0c13128b0cd",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/reports-dark.png": {
+    "mtime": 1795789267.1730478,
+    "seen": 1795789604.5409088,
+    "ast_hash": "dd1af9357447c70c31b99b86fa71ad35",
+    "semantic_hash": ""
+  },
+  "energy-monitoring-system/frontend/public/previews/reports-light.png": {
+    "mtime": 1795789375.0866258,
+    "seen": 1795789604.5409126,
+    "ast_hash": "a5ecd130d87924c6a602a6d671a10325",
     "semantic_hash": ""
   },
   "energy-monitoring-system/frontend/package-lock.json": {

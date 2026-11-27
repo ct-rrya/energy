@@ -560,7 +560,7 @@ html:has(.es-lp) #root {
 
 .es-lp .lp {
   container-type: inline-size;
-  width: min(1100px, 88vw, calc((100dvh - var(--hdr) - 250px) * 1.75));
+  width: min(920px, 84vw, calc((100dvh - var(--hdr) - 300px) * 1.48));
   min-width: 300px;
 }
 
@@ -572,6 +572,39 @@ html:has(.es-lp) #root {
   color: #E8F0EC;
   font-size: 1.25cqw;
   text-align: left;
+}
+
+.es-lp .scr.scr-preview {
+  padding: 1.2cqw 1.2cqw 0;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
+}
+
+.es-lp .es-preview-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  margin-top: 1cqw;
+  border-radius: 0.9cqw 0.9cqw 0 0;
+  overflow: hidden;
+  background: #0b1610;
+}
+
+.es-lp .es-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+
+.es-lp .es-preview-img.is-active {
+  opacity: 1;
 }
 
 .es-lp .base {
