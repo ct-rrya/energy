@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Copy,
   Shield,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { auditService, type AuditLogItem } from '@/api/services/audit.service';
 import {
@@ -212,12 +213,17 @@ export function LogsPage() {
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'Authentication' | 'Reports' | 'Milestones' | 'Diagnostics'>('all');
-  const [adminFilter, setAdminFilter] = useState<string>('all');
   const [resultFilter, setResultFilter] = useState<'all' | 'SUCCESS' | 'FAILED' | 'DENIED'>('all');
   const [dateRange, setDateRange] = useState<'all' | 'hourly' | 'today' | '7days' | '30days' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [hourRange, setHourRange] = useState<HourRange | null>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const activeExtraFilterCount =
+    (resultFilter !== 'all' ? 1 : 0) +
+    (dateRange !== 'all' ? 1 : 0) +
+    (hourRange ? 1 : 0);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -297,7 +303,6 @@ export function LogsPage() {
       page,
       pageSize,
       searchTerm,
-      adminFilter,
       categoryFilter,
       resultFilter,
       startDateISO,
@@ -310,7 +315,6 @@ export function LogsPage() {
         limit: pageSize,
         skip: (page - 1) * pageSize,
         search: searchTerm || undefined,
-        administratorId: adminFilter !== 'all' ? adminFilter : undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         result: resultFilter !== 'all' ? resultFilter : undefined,
         startDate: startDateISO,
@@ -341,7 +345,6 @@ export function LogsPage() {
       setIsExporting(true);
       const blob = await auditService.exportCsv({
         search: searchTerm || undefined,
-        administratorId: adminFilter !== 'all' ? adminFilter : undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         result: resultFilter !== 'all' ? resultFilter : undefined,
         startDate: startDateISO,
@@ -361,50 +364,7 @@ export function LogsPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [searchTerm, adminFilter, categoryFilter, resultFilter, startDateISO, endDateISO]);
-
-  // Administrator Options for custom select (strictly deduplicated by identity)
-  const adminOptions: CustomSelectOption[] = useMemo(() => {
-    const list: CustomSelectOption[] = [{ value: 'all', label: 'All Administrators' }];
-    const seen = new Set<string>();
-
-    if (metaData?.administrators) {
-      metaData.administrators.forEach((a) => {
-        const id = a.administratorId || a.id;
-        const rawName = (a.administratorName || a.name || 'Administrator').trim();
-        const name = rawName || 'Administrator';
-        const key = `${name.toLowerCase()}::ADMIN`;
-        if (id && !seen.has(key)) {
-          seen.add(key);
-          list.push({
-            value: id,
-            label: name,
-            badge: 'ADMIN',
-          });
-        }
-      });
-    }
-
-    // Fallback: also include administrators present in the currently loaded logs if not already listed
-    logs.forEach((l) => {
-      const id = l.administratorId;
-      const rawName = (l.administratorName || '').trim();
-      const name = rawName || 'Administrator';
-      if (id && name) {
-        const key = `${name.toLowerCase()}::ADMIN`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          list.push({
-            value: id,
-            label: name,
-            badge: 'ADMIN',
-          });
-        }
-      }
-    });
-
-    return list;
-  }, [metaData, logs]);
+  }, [searchTerm, categoryFilter, resultFilter, startDateISO, endDateISO]);
 
   // Result Options
   const resultOptions: CustomSelectOption[] = [
@@ -445,27 +405,35 @@ export function LogsPage() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-transparent text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            aria-label="Refresh logs"
+            title="Refresh logs"
+            className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full sm:rounded-lg text-xs font-semibold border border-[var(--line)] bg-transparent text-[var(--t)] hover:bg-[var(--soft)] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
-            <span>Refresh</span>
+            <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
           <button
             type="button"
             onClick={handleExportCSV}
             disabled={isExporting}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#19D46A] hover:opacity-90 text-[#0D1B14] transition-opacity cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
+            aria-label="Export CSV"
+            title="Export CSV"
+            className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full sm:rounded-lg text-xs font-bold bg-[#19D46A] hover:opacity-90 text-[#0D1B14] transition-opacity cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
           >
-            <Download size={13} strokeWidth={2.4} className={isExporting ? 'animate-bounce' : ''} />
-            <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+            <Download size={14} strokeWidth={2.4} className={isExporting ? 'animate-bounce' : ''} />
+            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export CSV'}</span>
           </button>
         </div>
       </div>
 
       {/* Connected Record-Folder Tabs + Neutral Sheet */}
       <div>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap items-end gap-1 max-w-full" role="tablist" aria-label="Log categories">
+        <div className="flex items-end justify-between gap-3">
+          <div
+            className="flex flex-nowrap overflow-x-auto items-end gap-1 max-w-full no-scrollbar"
+            role="tablist"
+            aria-label="Log categories"
+          >
             {(
               [
                 { id: 'all', label: 'All Activity', count: counts.all ?? total },
@@ -486,7 +454,7 @@ export function LogsPage() {
                     setCategoryFilter(tab.id);
                     setPage(1);
                   }}
-                  className={`relative px-3.5 py-2 text-xs font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 ${
+                  className={`relative px-3 sm:px-3.5 py-2 text-xs font-semibold rounded-t-xl border-t border-x transition-all cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 ${
                     isActive
                       ? 'bg-[var(--card-bg)] text-[var(--t)] border-[var(--line)] -mb-px z-10 pb-2.5'
                       : 'bg-transparent text-[var(--mu)] border-transparent hover:text-[var(--t)] hover:bg-[var(--card-bg)]/50'
@@ -505,7 +473,7 @@ export function LogsPage() {
             })}
           </div>
 
-          <div className="text-xs text-[var(--mu)] mb-1.5">
+          <div className="hidden sm:block text-xs text-[var(--mu)] mb-1.5 shrink-0">
             Showing <strong className="text-[var(--t)]">{logs.length}</strong> of{' '}
             <strong className="text-[var(--t)]">{total}</strong> records
           </div>
@@ -513,60 +481,75 @@ export function LogsPage() {
 
         {/* Folder Sheet: Filter Bar + Direct Table */}
         <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
-          {/* Flush Filter Bar */}
-          <div className="relative z-30 p-3.5 sm:px-5 border-b border-[var(--line)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 items-center">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mu)]" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Search admin, event, target..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--line)] bg-transparent text-[var(--t)] placeholder:text-[var(--mu)]/70 focus:outline-none focus:border-[var(--acc)]"
-              />
+          {/* Flush Filter Bar (compact collapsible drawer on mobile, 4-col inline on desktop) */}
+          <div className="relative z-30 p-3 sm:px-5 sm:py-3.5 border-b border-[var(--line)] flex flex-col md:grid md:grid-cols-4 gap-2.5 md:items-center">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mu)]" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search event, admin, target..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[var(--line)] bg-transparent text-[var(--t)] placeholder:text-[var(--mu)]/70 focus:outline-none focus:border-[var(--acc)]"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                aria-expanded={mobileFiltersOpen}
+                className={`md:hidden inline-flex items-center gap-1.5 h-[32px] px-2.5 rounded-lg border text-xs font-medium shrink-0 transition-colors cursor-pointer ${
+                  mobileFiltersOpen || activeExtraFilterCount > 0
+                    ? 'border-[var(--acc)] text-[var(--acc)] bg-[var(--acc)]/10'
+                    : 'border-[var(--line)] text-[var(--mu)]'
+                }`}
+              >
+                <SlidersHorizontal size={13} />
+                <span>Filters</span>
+                {activeExtraFilterCount > 0 && (
+                  <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--acc)] text-[#04210f] text-[10px] font-bold inline-flex items-center justify-center">
+                    {activeExtraFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
 
-            <CustomSelect
-              value={adminFilter}
-              onChange={(val) => {
-                setAdminFilter(val);
-                setPage(1);
-              }}
-              options={adminOptions}
-              placeholder="All administrators"
-            />
+            <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} md:contents grid-cols-2 gap-2`}>
+              <CustomSelect
+                value={resultFilter}
+                onChange={(val) => {
+                  setResultFilter(val as any);
+                  setPage(1);
+                }}
+                options={resultOptions}
+                placeholder="All results"
+              />
 
-            <CustomSelect
-              value={resultFilter}
-              onChange={(val) => {
-                setResultFilter(val as any);
-                setPage(1);
-              }}
-              options={resultOptions}
-              placeholder="All results"
-            />
+              <CustomSelect
+                value={dateRange}
+                onChange={(val) => {
+                  setDateRange(val as any);
+                  setPage(1);
+                }}
+                options={dateOptions}
+                placeholder="All time"
+              />
 
-            <CustomSelect
-              value={dateRange}
-              onChange={(val) => {
-                setDateRange(val as any);
-                setPage(1);
-              }}
-              options={dateOptions}
-              placeholder="All time"
-            />
-
-            <HourRangeSelector
-              value={hourRange}
-              onChange={(next) => {
-                setHourRange(next);
-                setPage(1);
-              }}
-              label="Hours"
-            />
+              <div className="col-span-2 md:col-span-1">
+                <HourRangeSelector
+                  value={hourRange}
+                  onChange={(next) => {
+                    setHourRange(next);
+                    setPage(1);
+                  }}
+                  label="Hours"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Custom Date Pickers when 'custom' is active */}
@@ -611,7 +594,59 @@ export function LogsPage() {
             No audit records match your current criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile Flat List View (< md) — no sideways table scrolling */}
+          <div className="md:hidden divide-y divide-[var(--line)]">
+            {logs.map((log) => {
+              const normalizedResult = (log.result || '').toUpperCase();
+              const isSuccess = normalizedResult === 'SUCCESS';
+              const isFailed =
+                normalizedResult === 'FAILED' ||
+                normalizedResult === 'FAILURE' ||
+                normalizedResult === 'DENIED';
+              const { datePart, timePart } = formatManilaDateParts(log.timestamp);
+              const eventTitle = formatEventTitle(log);
+              const adminDisplayName = log.administratorName || 'Admin';
+
+              return (
+                <button
+                  key={log.id || (log as any)._id}
+                  type="button"
+                  onClick={() => setSelectedLog(log)}
+                  className={`w-full text-left px-4 py-3.5 transition-colors cursor-pointer ${
+                    isFailed ? 'bg-rose-500/5' : 'hover:bg-[var(--soft)]/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="text-[13.5px] font-semibold text-[var(--t)] leading-snug min-w-0">
+                      {eventTitle}
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                        isSuccess
+                          ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/25'
+                          : 'bg-rose-500/15 text-rose-500 border border-rose-500/25'
+                      }`}
+                    >
+                      {isSuccess ? <Check size={10} strokeWidth={2.5} /> : <X size={10} strokeWidth={2.5} />}
+                      <span>{isSuccess ? 'Success' : 'Failed'}</span>
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between gap-2 text-[11.5px] text-[var(--mu)]">
+                    <span className="truncate">
+                      <span className="text-[var(--t)]/85 font-medium">{adminDisplayName}</span>
+                      {' · '}
+                      {datePart}, {timePart}
+                    </span>
+                    <ChevronRight size={14} className="shrink-0 opacity-60" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (md+) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[var(--line,rgba(255,255,255,0.1))] text-[11px] font-bold uppercase tracking-wider text-[var(--mu,#87A993)] bg-[var(--soft,rgba(255,255,255,0.02))]">
@@ -714,6 +749,7 @@ export function LogsPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Pagination Bar */}

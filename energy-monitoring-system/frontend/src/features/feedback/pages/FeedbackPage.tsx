@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,12 +15,16 @@ import {
   User,
   Eye,
   ChevronUp,
+  ChevronDown,
   Clock,
+  Search,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOptionalVisitor } from '@/contexts/VisitorContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { Dialog } from '@/components/ui/Dialog';
 import { ROUTES } from '@/routes/routes.config';
@@ -69,6 +73,7 @@ export function FeedbackPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { status: hardwareStatus } = useHardwareStatus();
+  const { socket } = useSocket();
   const queryClient = useQueryClient();
 
   const isAdmin = Boolean(isAuthenticated && user);
@@ -78,6 +83,8 @@ export function FeedbackPage() {
 
   const [activeTab, setActiveTab] = useState<FeedbackTab>('newest');
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
 
   // Composer Modal state
   const [composerOpen, setComposerOpen] = useState(false);
@@ -86,20 +93,59 @@ export function FeedbackPage() {
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [submitNotice, setSubmitNotice] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['feedback', page, activeTab],
+    queryKey: [
+      'feedback',
+      page,
+      activeTab,
+      activeSearch,
+      isAdmin ? user?._id ?? 'admin' : 'visitor',
+    ],
     queryFn: () =>
       feedbackService.getFeedbackList({
         page,
         limit: 15,
         tab: activeTab,
+        ...(activeSearch ? { search: activeSearch } : {}),
       }),
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
+  });
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveSearch(searchInput.trim());
+    setPage(1);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setActiveSearch('');
+    setPage(1);
+  };
+
+  // Real-time Socket.IO sync for posts, votes, comments, and status updates
+  useEffect(() => {
+    if (!socket) return;
+    const handleFeedbackUpdate = () => {
+      void queryClient.invalidateQueries({ queryKey: ['feedback'] });
+    };
+    socket.on('feedback:updated', handleFeedbackUpdate);
+    return () => {
+      socket.off('feedback:updated', handleFeedbackUpdate);
+    };
+  }, [socket, queryClient]);
+
+  const { data: quota } = useQuery({
+    queryKey: ['feedback', 'quota', isAdmin ? user?._id ?? 'admin' : 'visitor'],
+    queryFn: () => feedbackService.getFeedbackQuota(),
+    enabled: composerOpen && !isAdmin,
+    staleTime: 10_000,
   });
 
   const createMutation = useMutation({
@@ -153,6 +199,7 @@ export function FeedbackPage() {
       category,
       rating: category === 'review' && rating > 0 ? rating : undefined,
       message: trimmedMessage,
+      website: honeypot || undefined,
     });
   };
 
@@ -226,6 +273,92 @@ export function FeedbackPage() {
 
       {/* Connected Record-Folder Content Sheet (Clean, Non-Boxy Flat List) */}
       <section className="rounded-b-2xl rounded-tr-2xl border border-[var(--line)] bg-[var(--card-bg)] overflow-hidden">
+        {/* Flush Search Bar */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="px-4 sm:px-6 py-3 border-b border-[var(--line)] flex items-center gap-2"
+        >
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 text-[var(--mu)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchInput(val);
+                if (!val.trim() && activeSearch) {
+                  setActiveSearch('');
+                  setPage(1);
+                }
+              }}
+              placeholder="Search posts by keyword..."
+              aria-label="Search ECommunity posts"
+              className="w-full h-9 pl-8 pr-8 rounded-lg border border-[var(--line)] bg-transparent text-xs sm:text-sm text-[var(--t)] placeholder:text-[var(--mu)]/70 focus:outline-none focus:border-[var(--acc)]"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:border-[var(--acc)] hover:text-[var(--acc)] transition-colors cursor-pointer shrink-0"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Search</span>
+          </button>
+        </form>
+
+        {activeSearch && (
+          <div className="px-4 sm:px-6 py-2 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--mu)]">
+            <span>
+              {meta?.isFuzzyMatch ? (
+                <>
+                  No exact matches for <strong className="text-[var(--t)]">"{activeSearch}"</strong>
+                  {' — '}showing{' '}
+                  <strong className="text-[var(--t)]">{meta.total}</strong> related{' '}
+                  {meta.total === 1 ? 'topic' : 'topics'}
+                  {meta.suggestedTerm && (
+                    <>
+                      {' '}for{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchInput(meta.suggestedTerm!);
+                          setActiveSearch(meta.suggestedTerm!);
+                          setPage(1);
+                        }}
+                        className="font-semibold text-[var(--acc)] hover:underline cursor-pointer"
+                      >
+                        "{meta.suggestedTerm}"
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  Showing <strong className="text-[var(--t)]">{meta?.total ?? items.length}</strong>{' '}
+                  {(meta?.total ?? items.length) === 1 ? 'result' : 'results'} for{' '}
+                  <strong className="text-[var(--t)]">"{activeSearch}"</strong>
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="text-[var(--acc)] hover:underline font-medium cursor-pointer"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="py-16 flex flex-col items-center justify-center text-[var(--mu)] gap-2">
             <Loader2 className="w-5 h-5 animate-spin text-[#19D46A]" />
@@ -249,10 +382,20 @@ export function FeedbackPage() {
           <div className="py-16 text-center space-y-2 px-4">
             <MessageCircle className="w-7 h-7 text-[var(--mu)] opacity-50 mx-auto" />
             <p className="text-sm font-semibold text-[var(--t)] m-0">
-              No posts in this folder yet
+              {activeSearch
+                ? `No related topics found for "${activeSearch}"`
+                : 'No posts in this folder yet'}
             </p>
             <p className="text-xs text-[var(--mu)] m-0">
-              Click <strong>New Post / Ask Question</strong> above to start a topic.
+              {activeSearch ? (
+                <>
+                  Try a different keyword or click <strong>New Post / Ask Question</strong> above to start a topic.
+                </>
+              ) : (
+                <>
+                  Click <strong>New Post / Ask Question</strong> above to start a topic.
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -278,11 +421,15 @@ export function FeedbackPage() {
                       {item.message}
                     </p>
                     <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11.5px] text-[var(--mu)]">
-                      {/* Left: Upvotes, Comments, Views */}
+                      {/* Left: Upvotes, Downvotes, Comments, Views */}
                       <div className="flex items-center gap-3.5 tabular-nums">
                         <span className="inline-flex items-center gap-1">
                           <ChevronUp className="w-3.5 h-3.5 text-[var(--acc)]" />
-                          <span>{voteCount} {voteCount === 1 ? 'vote' : 'votes'}</span>
+                          <span>{item.upvoteCount ?? Math.max(0, voteCount)}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <ChevronDown className="w-3.5 h-3.5 text-red-400/80" />
+                          <span>{item.downvoteCount ?? 0}</span>
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <MessageCircle className="w-3 h-3" />
@@ -507,37 +654,59 @@ export function FeedbackPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setComposerOpen(false)}
-              disabled={createMutation.isPending}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={
-                createMutation.isPending ||
-                title.trim().length < 3 ||
-                message.trim().length < 3
-              }
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:opacity-90"
-              style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
-            >
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Posting...
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5" />
-                  Publish Post
-                </>
-              )}
-            </button>
+          {/* Invisible anti-bot honeypot field */}
+          <input
+            type="text"
+            name="website"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+          />
+
+          <div className="flex items-center justify-between gap-2 pt-2">
+            {!isAdmin && quota && !quota.isUnlimited ? (
+              <span className="text-[11px] text-[var(--mu)] tabular-nums">
+                {quota.postsRemaining} of {quota.postsLimit} posts left today
+              </span>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setComposerOpen(false)}
+                disabled={createMutation.isPending}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--mu)] hover:text-[var(--t)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  createMutation.isPending ||
+                  title.trim().length < 3 ||
+                  message.trim().length < 3 ||
+                  Boolean(!isAdmin && quota && !quota.isUnlimited && quota.postsRemaining <= 0)
+                }
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:opacity-90"
+                style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
+              >
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    Publish Post
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Dialog>

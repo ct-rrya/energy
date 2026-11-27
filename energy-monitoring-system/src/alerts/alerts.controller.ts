@@ -17,6 +17,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AlertsService } from './alerts.service';
+import { HealthMonitorService } from './health-monitor.service';
 import { AlertQueryDto } from './dto';
 
 /**
@@ -38,7 +39,10 @@ import { AlertQueryDto } from './dto';
 @Controller('alerts')
 @UseGuards(JwtAuthGuard)
 export class AlertsController {
-  constructor(private readonly alertsService: AlertsService) {}
+  constructor(
+    private readonly alertsService: AlertsService,
+    private readonly healthMonitorService: HealthMonitorService,
+  ) {}
 
   /**
    * Get Alerts
@@ -87,6 +91,33 @@ export class AlertsController {
   })
   async getAlertStats() {
     return this.alertsService.getAlertStats();
+  }
+
+  /**
+   * Get Automated Health Monitor Status
+   */
+  @Get('monitor-status')
+  @ApiOperation({
+    summary: 'Get automated tile health monitor status',
+    description: 'Returns email delivery status, active admin recipient count, thresholds, and last check summary.',
+  })
+  async getMonitorStatus() {
+    const data = await this.healthMonitorService.getMonitorStatus();
+    return { success: true, data };
+  }
+
+  /**
+   * Trigger Automated Tile Health Check On Demand
+   */
+  @Post('run-health-check')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Run automated tile health check now',
+    description: 'Evaluates offline duration, output drop, and tile health score immediately.',
+  })
+  async runHealthCheck() {
+    const data = await this.healthMonitorService.runHealthCheck({ source: 'manual' });
+    return { success: true, data };
   }
 
   /**

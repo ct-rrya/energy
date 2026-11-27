@@ -3,7 +3,9 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  ServiceUnavailableException,
   Inject,
+  Optional,
   forwardRef,
   Logger,
 } from '@nestjs/common';
@@ -31,6 +33,7 @@ import { NewReadingEventDto, PowerAlertEventDto } from '../dashboard/dto';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FirebaseService } from '../firebase/firebase.service';
+import { MaintenanceService } from '../maintenance/maintenance.service';
 
 /**
  * IoT Service
@@ -78,6 +81,9 @@ export class IotService {
     private configService: ConfigService,
     private eventEmitter: EventEmitter2,
     private firebaseService: FirebaseService,
+    @Optional()
+    @Inject(forwardRef(() => MaintenanceService))
+    private maintenanceService?: MaintenanceService,
   ) {}
 
   /**
@@ -114,6 +120,13 @@ export class IotService {
     apiKey: string,
     readingDto: CreateReadingDto,
   ): Promise<CreateReadingResponseDto> {
+    // Step 0: Reject incoming hardware readings while Maintenance Mode is active
+    if (this.maintenanceService && (await this.maintenanceService.isEnabled())) {
+      throw new ServiceUnavailableException(
+        'EcoStep is currently in Maintenance Mode. Hardware data ingestion is temporarily paused.',
+      );
+    }
+
     // Step 1: Validate API key and get sensor
     const sensor = await this.validateApiKey(apiKey);
 
@@ -1031,6 +1044,13 @@ export class IotService {
     apiKey: string,
     readingDto: CreatePiezoReadingDto,
   ): Promise<CreateReadingResponseDto> {
+    // Step 0: Reject incoming piezo readings while Maintenance Mode is active
+    if (this.maintenanceService && (await this.maintenanceService.isEnabled())) {
+      throw new ServiceUnavailableException(
+        'EcoStep is currently in Maintenance Mode. Hardware data ingestion is temporarily paused.',
+      );
+    }
+
     // Step 1: Validate API key
     const sensor = await this.validateApiKey(apiKey);
 

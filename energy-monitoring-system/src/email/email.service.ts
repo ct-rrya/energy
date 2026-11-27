@@ -271,6 +271,145 @@ export class EmailService {
   }
 
   /**
+   * Send an automated tile health / anomaly alert email to active admins.
+   * Gracefully no-ops when Resend is not configured so in-app alerts still work.
+   */
+  async sendHealthAlertEmail(
+    recipients: string[],
+    payload: {
+      title: string;
+      description: string;
+      severity: 'info' | 'warning' | 'critical';
+      recommendedAction?: string;
+      metrics?: Array<{ label: string; value: string }>;
+      detectedAt?: Date;
+    },
+  ): Promise<{ sent: number; failed: number; skipped: boolean }> {
+    const cleanRecipients = Array.from(
+      new Set(
+        (recipients || [])
+          .map((e) => (e || '').trim().toLowerCase())
+          .filter((e) => e.includes('@')),
+      ),
+    );
+
+    if (!this.isConfigured || !this.resend || cleanRecipients.length === 0) {
+      if (!this.isConfigured) {
+        this.logger.debug('Skipping health alert email: Resend is not configured');
+      }
+      return { sent: 0, failed: 0, skipped: true };
+    }
+
+    const severityLabel =
+      payload.severity === 'critical'
+        ? 'CRITICAL'
+        : payload.severity === 'warning'
+          ? 'WARNING'
+          : 'INFO';
+    const badgeColor =
+      payload.severity === 'critical'
+        ? '#dc2626'
+        : payload.severity === 'warning'
+          ? '#d97706'
+          : '#0284c7';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('CORS_ORIGIN')?.split(',')[0]?.trim() ||
+      '';
+    const detectedStr = (payload.detectedAt || new Date()).toLocaleString('en-PH', {
+      timeZone: 'Asia/Manila',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    const metricsHtml =
+      payload.metrics && payload.metrics.length > 0
+        ? `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;">
+            ${payload.metrics
+              .map(
+                (m) =>
+                  `<tr>
+                    <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-weight:600;">${this.escapeHtml(m.label)}</td>
+                    <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:#111827;text-align:right;font-weight:600;">${this.escapeHtml(m.value)}</td>
+                  </tr>`,
+              )
+              .join('')}
+           </table>`
+        : '';
+
+    const actionHtml = payload.recommendedAction
+      ? `<div style="background:#f0fdf4;border-left:4px solid #19d46a;padding:12px 14px;border-radius:4px;margin:16px 0;font-size:13.5px;color:#14532d;">
+          <strong>Recommended Next Step:</strong><br/>
+          ${this.escapeHtml(payload.recommendedAction)}
+         </div>`
+      : '';
+
+    const linkHtml = frontendUrl
+      ? `<p style="margin:20px 0 0 0;">
+          <a href="${frontendUrl.replace(/\/$/, '')}/diagnostics" style="display:inline-block;background:#19d46a;color:#0d1b14;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;font-size:13.5px;">Open Tile Diagnostics</a>
+         </p>`
+      : '';
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f4f7f5;margin:0;padding:20px;color:#1f2937;">
+  <div style="max-width:580px;margin:0 auto;background:#ffffff;border-radius:10px;padding:28px;border:1px solid #e5e7eb;">
+    <div style="margin-bottom:16px;">
+      <span style="display:inline-block;background:${badgeColor};color:#ffffff;font-size:11px;font-weight:700;letter-spacing:0.06em;padding:4px 10px;border-radius:999px;">${severityLabel} · ECOSTEP HEALTH ALERT</span>
+    </div>
+    <h1 style="margin:0 0 10px 0;font-size:20px;color:#111827;line-height:1.3;">${this.escapeHtml(payload.title)}</h1>
+    <p style="margin:0 0 14px 0;font-size:14.5px;line-height:1.6;color:#374151;">${this.escapeHtml(payload.description)}</p>
+    ${metricsHtml}
+    ${actionHtml}
+    ${linkHtml}
+    <div style="border-top:1px solid #e5e7eb;margin-top:24px;padding-top:14px;font-size:12px;color:#6b7280;">
+      Detected at ${this.escapeHtml(detectedStr)} (PHT) · EcoStep Automated Tile Health Monitor
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const to of cleanRecipients) {
+      try {
+        const result = await this.resend.emails.send({
+          from: `${this.fromName} <${this.fromEmail}>`,
+          to,
+          subject: `[EcoStep ${severityLabel}] ${payload.title}`,
+          html,
+        });
+        if (result.error) {
+          this.logger.warn(`Failed to send health alert email to ${to}: ${result.error.message}`);
+          failed += 1;
+        } else {
+          sent += 1;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Health alert email error for ${to}: ${err?.message || err}`);
+        failed += 1;
+      }
+    }
+
+    this.logger.log(
+      `Health alert email dispatched for "${payload.title}": sent=${sent}, failed=${failed}`,
+    );
+    return { sent, failed, skipped: false };
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
    * Check if email service is configured and ready
    *
    * @returns boolean - true if email can be sent

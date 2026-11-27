@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/routes.config';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EcoStepBrandLockup } from '@/components/common/EcoStepLogo';
+import { MaintenanceOverlay } from '@/components/common/MaintenanceOverlay';
 import { EcoStepMat } from '../components/EcoStepMat';
 import '@/styles/landing.css';
 
@@ -138,6 +139,7 @@ export function LandingPage() {
       <div className="es-bgl" aria-hidden="true" />
       <div className="es-edge-blur-top" aria-hidden="true" />
       <div className="es-edge-blur-bottom" aria-hidden="true" />
+      <MaintenanceOverlay />
 
       <header className="es-hd" id="hd">
         <EcoStepBrandLockup

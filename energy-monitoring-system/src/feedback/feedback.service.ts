@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -13,6 +15,7 @@ import {
 } from './schemas/feedback.schema';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { CreateAnswerDto, UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { ContentModerationService } from './content-moderation.service';
 
 export type FeedbackTab = 'newest' | 'top' | 'unanswered' | 'resolved';
 
@@ -24,6 +27,7 @@ export interface FeedbackListQuery {
   sort?: 'newest' | 'top';
   tab?: FeedbackTab;
   voterId?: string;
+  search?: string;
 }
 
 export interface FeedbackStats {
@@ -34,12 +38,298 @@ export interface FeedbackStats {
   ratingCount: number;
 }
 
+export interface FeedbackQuotaStatus {
+  postsUsed: number;
+  postsLimit: number;
+  postsRemaining: number;
+  commentsUsed: number;
+  commentsLimit: number;
+  commentsRemaining: number;
+  postCooldownSec: number;
+  commentCooldownSec: number;
+  isUnlimited: boolean;
+}
+
+const DAILY_POST_LIMIT = 5;
+const DAILY_COMMENT_LIMIT = 20;
+const POST_COOLDOWN_MS = 30_000;
+const COMMENT_COOLDOWN_MS = 15_000;
+const MAX_ANSWERS_PER_THREAD = 200;
+
 @Injectable()
 export class FeedbackService {
+  private readonly lastPostByVisitor = new Map<string, number>();
+  private readonly lastCommentByVisitor = new Map<string, number>();
+
   constructor(
     @InjectModel(Feedback.name)
     private readonly feedbackModel: Model<FeedbackDocument>,
+    private readonly contentModeration: ContentModerationService,
   ) {}
+
+  private getPhtDayStart(): Date {
+    const now = new Date();
+    const phtOffsetMs = 8 * 60 * 60 * 1000;
+    const phtNow = new Date(now.getTime() + phtOffsetMs);
+    phtNow.setUTCHours(0, 0, 0, 0);
+    return new Date(phtNow.getTime() - phtOffsetMs);
+  }
+
+  private normalizeForDuplicateCheck(value: string): string {
+    return (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  private escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private tokenizeSearchText(value: string): string[] {
+    return (value || '')
+      .toLowerCase()
+      .match(/[a-z0-9]+/g)
+      ?.filter((w) => w.length >= 2) ?? [];
+  }
+
+  private damerauLevenshtein(a: string, b: string, maxDist: number): number {
+    const lenA = a.length;
+    const lenB = b.length;
+    if (Math.abs(lenA - lenB) > maxDist) return maxDist + 1;
+    if (a === b) return 0;
+
+    const dp: number[][] = Array.from({ length: lenA + 1 }, () =>
+      new Array<number>(lenB + 1).fill(0),
+    );
+    for (let i = 0; i <= lenA; i++) dp[i][0] = i;
+    for (let j = 0; j <= lenB; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= lenA; i++) {
+      let rowMin = maxDist + 1;
+      for (let j = 1; j <= lenB; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        let val = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost,
+        );
+        if (
+          i > 1 &&
+          j > 1 &&
+          a[i - 1] === b[j - 2] &&
+          a[i - 2] === b[j - 1]
+        ) {
+          val = Math.min(val, dp[i - 2][j - 2] + 1);
+        }
+        dp[i][j] = val;
+        if (val < rowMin) rowMin = val;
+      }
+      if (rowMin > maxDist) return maxDist + 1;
+    }
+
+    return dp[lenA][lenB];
+  }
+
+  private maxEditDistanceForToken(token: string): number {
+    if (token.length <= 2) return 0;
+    if (token.length <= 4) return 1;
+    if (token.length <= 8) return 2;
+    return 3;
+  }
+
+  private findFuzzyMatches<T extends FeedbackDocument>(
+    candidates: T[],
+    rawSearch: string,
+  ): { matched: T[]; suggestedTerm: string | null } {
+    const queryTokens = this.tokenizeSearchText(rawSearch);
+    if (queryTokens.length === 0) {
+      return { matched: [], suggestedTerm: null };
+    }
+
+    const tokenBestCorrection = new Map<
+      string,
+      { word: string; dist: number; weight: number }
+    >();
+
+    const scored: Array<{ doc: T; score: number }> = [];
+
+    for (const doc of candidates) {
+      const titleWords = this.tokenizeSearchText(doc.title || '');
+      const messageWords = this.tokenizeSearchText(doc.message || '');
+      const authorWords = this.tokenizeSearchText(doc.authorName || '');
+      const answerWords = Array.isArray(doc.answers)
+        ? doc.answers.flatMap((a) => this.tokenizeSearchText(a.body || ''))
+        : [];
+
+      const fieldBuckets: Array<{ words: string[]; weight: number }> = [
+        { words: titleWords, weight: 3 },
+        { words: messageWords, weight: 2 },
+        { words: answerWords, weight: 1.2 },
+        { words: authorWords, weight: 1 },
+      ];
+
+      let docScore = 0;
+      let matchedTokenCount = 0;
+
+      for (const qToken of queryTokens) {
+        const maxDist = this.maxEditDistanceForToken(qToken);
+        let bestDist = maxDist + 1;
+        let bestWord = '';
+        let bestWeight = 0;
+
+        for (const bucket of fieldBuckets) {
+          for (const word of bucket.words) {
+            if (word === qToken) {
+              if (bestDist > 0 || bucket.weight > bestWeight) {
+                bestDist = 0;
+                bestWord = word;
+                bestWeight = bucket.weight;
+              }
+              continue;
+            }
+            if (qToken.length >= 3 && (word.startsWith(qToken) || qToken.startsWith(word))) {
+              const prefixDist = Math.abs(word.length - qToken.length) <= 3 ? 0.5 : 1;
+              if (prefixDist < bestDist || (prefixDist === bestDist && bucket.weight > bestWeight)) {
+                bestDist = prefixDist;
+                bestWord = word;
+                bestWeight = bucket.weight;
+              }
+              continue;
+            }
+            if (maxDist > 0) {
+              const dist = this.damerauLevenshtein(qToken, word, maxDist);
+              if (dist <= maxDist) {
+                if (dist < bestDist || (dist === bestDist && bucket.weight > bestWeight)) {
+                  bestDist = dist;
+                  bestWord = word;
+                  bestWeight = bucket.weight;
+                }
+              }
+            }
+          }
+        }
+
+        if (bestDist <= maxDist && bestWord) {
+          matchedTokenCount += 1;
+          docScore += bestWeight * (maxDist + 1.5 - bestDist);
+
+          const prev = tokenBestCorrection.get(qToken);
+          if (
+            !prev ||
+            bestDist < prev.dist ||
+            (bestDist === prev.dist && bestWeight > prev.weight)
+          ) {
+            tokenBestCorrection.set(qToken, {
+              word: bestWord,
+              dist: bestDist,
+              weight: bestWeight,
+            });
+          }
+        }
+      }
+
+      if (matchedTokenCount > 0) {
+        // Prefer posts that match more of the user's query words
+        const coverageBonus = (matchedTokenCount / queryTokens.length) * 5;
+        scored.push({ doc, score: docScore + coverageBonus });
+      }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+
+    const correctedTokens = queryTokens.map(
+      (t) => tokenBestCorrection.get(t)?.word ?? t,
+    );
+    const correctedPhrase = correctedTokens.join(' ');
+    const normalizedInput = queryTokens.join(' ');
+    const suggestedTerm =
+      scored.length > 0 && correctedPhrase !== normalizedInput
+        ? correctedPhrase
+        : null;
+
+    return {
+      matched: scored.map((s) => s.doc),
+      suggestedTerm,
+    };
+  }
+
+  async getQuotaStatus(
+    visitorId?: string,
+    isAdmin = false,
+  ): Promise<FeedbackQuotaStatus> {
+    if (isAdmin) {
+      return {
+        postsUsed: 0,
+        postsLimit: DAILY_POST_LIMIT,
+        postsRemaining: DAILY_POST_LIMIT,
+        commentsUsed: 0,
+        commentsLimit: DAILY_COMMENT_LIMIT,
+        commentsRemaining: DAILY_COMMENT_LIMIT,
+        postCooldownSec: 0,
+        commentCooldownSec: 0,
+        isUnlimited: true,
+      };
+    }
+
+    const cleanVisitor = visitorId?.trim();
+    if (!cleanVisitor) {
+      return {
+        postsUsed: 0,
+        postsLimit: DAILY_POST_LIMIT,
+        postsRemaining: DAILY_POST_LIMIT,
+        commentsUsed: 0,
+        commentsLimit: DAILY_COMMENT_LIMIT,
+        commentsRemaining: DAILY_COMMENT_LIMIT,
+        postCooldownSec: 0,
+        commentCooldownSec: 0,
+        isUnlimited: false,
+      };
+    }
+
+    const dayStart = this.getPhtDayStart();
+    const [postsUsed, commentAgg] = await Promise.all([
+      this.feedbackModel
+        .countDocuments({
+          visitorId: cleanVisitor,
+          createdAt: { $gte: dayStart },
+        })
+        .exec(),
+      this.feedbackModel
+        .aggregate([
+          { $match: { 'answers.visitorId': cleanVisitor } },
+          { $unwind: '$answers' },
+          {
+            $match: {
+              'answers.visitorId': cleanVisitor,
+              'answers.createdAt': { $gte: dayStart },
+            },
+          },
+          { $count: 'count' },
+        ])
+        .exec(),
+    ]);
+
+    const commentsUsed = commentAgg?.[0]?.count ?? 0;
+    const now = Date.now();
+    const lastPostMs = this.lastPostByVisitor.get(cleanVisitor) ?? 0;
+    const lastCommentMs = this.lastCommentByVisitor.get(cleanVisitor) ?? 0;
+
+    return {
+      postsUsed,
+      postsLimit: DAILY_POST_LIMIT,
+      postsRemaining: Math.max(0, DAILY_POST_LIMIT - postsUsed),
+      commentsUsed,
+      commentsLimit: DAILY_COMMENT_LIMIT,
+      commentsRemaining: Math.max(0, DAILY_COMMENT_LIMIT - commentsUsed),
+      postCooldownSec: Math.max(
+        0,
+        Math.ceil((POST_COOLDOWN_MS - (now - lastPostMs)) / 1000),
+      ),
+      commentCooldownSec: Math.max(
+        0,
+        Math.ceil((COMMENT_COOLDOWN_MS - (now - lastCommentMs)) / 1000),
+      ),
+      isUnlimited: false,
+    };
+  }
 
   private sanitizeText(value: string): string {
     return value.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').trim();
@@ -83,6 +373,8 @@ export class FeedbackService {
           authorRole: ans.authorRole || 'visitor',
           body: ans.body,
           voteScore: ans.voteScore ?? (ansUp.length - ansDown.length),
+          upvoteCount: ansUp.length,
+          downvoteCount: ansDown.length,
           isAccepted: Boolean(ans.isAccepted),
           parentAnswerId: ans.parentAnswerId || null,
           replyToAuthor: ans.replyToAuthor || null,
@@ -104,6 +396,8 @@ export class FeedbackService {
       ...json,
       title: resolvedTitle,
       views: doc.views ?? 0,
+      upvoteCount: upTokens.length,
+      downvoteCount: downTokens.length,
       hasUpvoted: userVote === 'up',
       userVote,
       answers: formattedAnswers,
@@ -161,14 +455,16 @@ export class FeedbackService {
     const skip = (page - 1) * limit;
 
     const filter: Record<string, any> = {};
+    const andConditions: Record<string, any>[] = [];
+
     if (query.tab === 'resolved') {
       filter.status = FeedbackStatus.RESOLVED;
       filter.category = { $in: [FeedbackCategory.ISSUE, FeedbackCategory.SUGGESTION] };
     } else if (query.tab === 'unanswered') {
-      filter.$and = [
+      andConditions.push(
         { $or: [{ answers: { $exists: false } }, { answers: { $size: 0 } }] },
         { $or: [{ adminReply: { $exists: false } }, { adminReply: null }, { adminReply: '' }] },
-      ];
+      );
     } else if (query.status) {
       filter.status = query.status;
     }
@@ -177,16 +473,59 @@ export class FeedbackService {
       filter.category = query.category;
     }
 
+    const baseFilter: Record<string, any> = { ...filter };
+    const baseAndConditions = [...andConditions];
+
+    const cleanSearch = query.search?.trim();
+    if (cleanSearch) {
+      const regex = new RegExp(this.escapeRegex(cleanSearch), 'i');
+      andConditions.push({
+        $or: [
+          { title: regex },
+          { message: regex },
+          { authorName: regex },
+          { 'answers.body': regex },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
+    }
+
     const sortSpec: Record<string, 1 | -1> =
       query.tab === 'top' || query.sort === 'top'
         ? { upvotes: -1, createdAt: -1 }
         : { createdAt: -1 };
 
-    const [items, total, stats] = await Promise.all([
+    let [items, total, stats] = await Promise.all([
       this.feedbackModel.find(filter).sort(sortSpec).skip(skip).limit(limit).exec(),
       this.feedbackModel.countDocuments(filter).exec(),
       this.getStats(),
     ]);
+
+    let isFuzzyMatch = false;
+    let suggestedTerm: string | null = null;
+
+    // Smart typo-tolerant fallback when exact substring search finds nothing
+    if (cleanSearch && total === 0) {
+      if (baseAndConditions.length > 0) {
+        baseFilter.$and = baseAndConditions;
+      }
+      const candidates = await this.feedbackModel
+        .find(baseFilter)
+        .sort(sortSpec)
+        .limit(500)
+        .exec();
+
+      const fuzzy = this.findFuzzyMatches(candidates, cleanSearch);
+      if (fuzzy.matched.length > 0) {
+        isFuzzyMatch = true;
+        suggestedTerm = fuzzy.suggestedTerm;
+        total = fuzzy.matched.length;
+        items = fuzzy.matched.slice(skip, skip + limit);
+      }
+    }
 
     return {
       data: items.map((item) => this.formatPublicItem(item, query.voterId)),
@@ -195,6 +534,7 @@ export class FeedbackService {
         page,
         limit,
         totalPages: Math.max(1, Math.ceil(total / limit)),
+        ...(cleanSearch ? { isFuzzyMatch, suggestedTerm } : {}),
       },
       stats,
     };
@@ -218,18 +558,88 @@ export class FeedbackService {
     return this.formatPublicItem(feedback, voterId);
   }
 
-  async create(dto: CreateFeedbackDto) {
+  async create(dto: CreateFeedbackDto, visitorId?: string, isAdmin = false) {
+    // 1. Hidden honeypot trap for automated spam bots
+    if (dto.website && dto.website.trim().length > 0) {
+      throw new BadRequestException('Submission rejected by spam protection');
+    }
+
     const cleanMessage = this.sanitizeText(dto.message);
     if (cleanMessage.length < 3) {
       throw new BadRequestException('Message must be at least 3 characters');
     }
 
     const cleanTitle = dto.title ? this.sanitizeText(dto.title) : '';
+    const resolvedTitle = cleanTitle || this.deriveTitleFromMessage(cleanMessage);
     const cleanName = dto.authorName ? this.sanitizeText(dto.authorName) : '';
+    const cleanVisitor = visitorId?.trim() || null;
+
+    // 2. Per-visitor 30s cooldown & daily quota (admins bypass)
+    if (!isAdmin && cleanVisitor) {
+      const now = Date.now();
+      const lastPostMs = this.lastPostByVisitor.get(cleanVisitor) ?? 0;
+      const elapsed = now - lastPostMs;
+      if (elapsed < POST_COOLDOWN_MS) {
+        const waitSec = Math.max(1, Math.ceil((POST_COOLDOWN_MS - elapsed) / 1000));
+        throw new HttpException(
+          `Please wait ${waitSec}s before creating another post.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      const dayStart = this.getPhtDayStart();
+      const postsToday = await this.feedbackModel
+        .countDocuments({
+          visitorId: cleanVisitor,
+          createdAt: { $gte: dayStart },
+        })
+        .exec();
+
+      if (postsToday >= DAILY_POST_LIMIT) {
+        throw new HttpException(
+          `Daily posting limit reached (${DAILY_POST_LIMIT} posts/day). Please try again tomorrow.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
+    // 3. All-time duplicate-post detection (matches identical normalized title OR message)
+    const incomingNormMsg = this.normalizeForDuplicateCheck(cleanMessage);
+    const incomingNormTitle = this.normalizeForDuplicateCheck(resolvedTitle);
+    const existingPosts = await this.feedbackModel
+      .find({})
+      .select('title message')
+      .lean()
+      .exec();
+
+    const isDuplicate = existingPosts.some((p) => {
+      const existingTitle = this.normalizeForDuplicateCheck(p.title || '');
+      const existingMsg = this.normalizeForDuplicateCheck(p.message || '');
+      return (
+        (incomingNormTitle.length >= 3 && existingTitle === incomingNormTitle) ||
+        (incomingNormMsg.length >= 3 && existingMsg === incomingNormMsg)
+      );
+    });
+    if (isDuplicate) {
+      throw new BadRequestException(
+        'A post with this same title or message already exists. Try searching ECommunity to join the existing discussion.',
+      );
+    }
+
+    // 4. Content moderation: profanity, external links, gibberish, and optional AI topic check
+    await this.contentModeration.assertAllowed({
+      kind: 'post',
+      title: resolvedTitle,
+      message: cleanMessage,
+      category: dto.category || FeedbackCategory.GENERAL,
+      isAdmin,
+    });
+
     const resolvedCategory = dto.category || FeedbackCategory.GENERAL;
     const feedback = new this.feedbackModel({
-      title: cleanTitle || this.deriveTitleFromMessage(cleanMessage),
+      title: resolvedTitle,
       authorName: cleanName || 'Anonymous',
+      visitorId: cleanVisitor,
       category: resolvedCategory,
       rating: resolvedCategory === FeedbackCategory.REVIEW ? dto.rating : undefined,
       message: cleanMessage,
@@ -242,7 +652,10 @@ export class FeedbackService {
     });
 
     const saved = await feedback.save();
-    return this.formatPublicItem(saved);
+    if (!isAdmin && cleanVisitor) {
+      this.lastPostByVisitor.set(cleanVisitor, Date.now());
+    }
+    return this.formatPublicItem(saved, cleanVisitor || undefined);
   }
 
   async votePost(id: string, direction: 'up' | 'down', voterKey: string) {
@@ -294,6 +707,11 @@ export class FeedbackService {
     adminName?: string,
     voterId?: string,
   ) {
+    // 1. Hidden honeypot trap for automated spam bots
+    if (dto.website && dto.website.trim().length > 0) {
+      throw new BadRequestException('Submission rejected by spam protection');
+    }
+
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid feedback ID');
     }
@@ -303,18 +721,82 @@ export class FeedbackService {
       throw new BadRequestException('Answer must be at least 2 characters');
     }
 
+    const cleanVisitor = !isAdmin && voterId?.trim() ? voterId.trim() : null;
+
+    // 2. Per-visitor 15s cooldown & daily comment quota (admins bypass)
+    if (!isAdmin && cleanVisitor) {
+      const now = Date.now();
+      const lastCommentMs = this.lastCommentByVisitor.get(cleanVisitor) ?? 0;
+      const elapsed = now - lastCommentMs;
+      if (elapsed < COMMENT_COOLDOWN_MS) {
+        const waitSec = Math.max(1, Math.ceil((COMMENT_COOLDOWN_MS - elapsed) / 1000));
+        throw new HttpException(
+          `Please wait ${waitSec}s before posting another reply.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      const dayStart = this.getPhtDayStart();
+      const commentAgg = await this.feedbackModel
+        .aggregate([
+          { $match: { 'answers.visitorId': cleanVisitor } },
+          { $unwind: '$answers' },
+          {
+            $match: {
+              'answers.visitorId': cleanVisitor,
+              'answers.createdAt': { $gte: dayStart },
+            },
+          },
+          { $count: 'count' },
+        ])
+        .exec();
+
+      const commentsToday = commentAgg?.[0]?.count ?? 0;
+      if (commentsToday >= DAILY_COMMENT_LIMIT) {
+        throw new HttpException(
+          `Daily reply limit reached (${DAILY_COMMENT_LIMIT} replies/day). Please try again tomorrow.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
     const feedback = await this.feedbackModel.findById(id).exec();
     if (!feedback) {
       throw new NotFoundException(`Feedback with ID ${id} not found`);
     }
 
-    const authorName = isAdmin
-      ? this.sanitizeText(adminName || 'EcoStep Admin') || 'EcoStep Admin'
-      : this.sanitizeText(dto.authorName || '') || 'Anonymous';
-
     if (!Array.isArray(feedback.answers)) {
       feedback.answers = [];
     }
+
+    // 3. Thread size cap so no single document can be bloated
+    if (feedback.answers.length >= MAX_ANSWERS_PER_THREAD) {
+      throw new BadRequestException(
+        'This discussion has reached the maximum number of replies.',
+      );
+    }
+
+    // 4. All-time duplicate-comment block on the same thread
+    const incomingNormBody = this.normalizeForDuplicateCheck(cleanBody);
+    const isDuplicateComment = feedback.answers.some(
+      (a) => this.normalizeForDuplicateCheck(a.body) === incomingNormBody,
+    );
+    if (isDuplicateComment) {
+      throw new BadRequestException(
+        'This exact reply already exists in this thread. Please avoid duplicate replies.',
+      );
+    }
+
+    // 5. Content moderation: profanity, external links, and gibberish filter
+    await this.contentModeration.assertAllowed({
+      kind: 'reply',
+      message: cleanBody,
+      isAdmin,
+    });
+
+    const authorName = isAdmin
+      ? this.sanitizeText(adminName || 'EcoStep Admin') || 'EcoStep Admin'
+      : this.sanitizeText(dto.authorName || '') || 'Anonymous';
 
     let resolvedParentId: string | null = null;
     let resolvedReplyToAuthor: string | null = null;
@@ -340,10 +822,14 @@ export class FeedbackService {
       isAccepted: false,
       parentAnswerId: resolvedParentId,
       replyToAuthor: resolvedReplyToAuthor,
+      visitorId: cleanVisitor,
       createdAt: new Date(),
     });
 
     const saved = await feedback.save();
+    if (!isAdmin && cleanVisitor) {
+      this.lastCommentByVisitor.set(cleanVisitor, Date.now());
+    }
     return this.formatPublicItem(saved, voterId);
   }
 

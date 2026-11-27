@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -26,6 +26,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useOptionalVisitor } from '@/contexts/VisitorContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { ROUTES } from '@/routes/routes.config';
 import {
   feedbackService,
@@ -79,7 +80,8 @@ function formatRelativeDate(dateStr: string): string {
 }
 
 interface VoteColumnProps {
-  score: number;
+  upvoteCount: number;
+  downvoteCount: number;
   userVote?: VoteDirection | null;
   onVote: (direction: VoteDirection) => void;
   disabled?: boolean;
@@ -89,7 +91,8 @@ interface VoteColumnProps {
 }
 
 function VoteColumn({
-  score,
+  upvoteCount,
+  downvoteCount,
   userVote,
   onVote,
   disabled,
@@ -98,47 +101,39 @@ function VoteColumn({
   onToggleAccept,
 }: VoteColumnProps) {
   return (
-    <div className="flex flex-col items-center gap-1 shrink-0 w-10">
+    <div className="flex flex-col items-stretch gap-1.5 shrink-0 min-w-[54px]">
       <button
         type="button"
         onClick={() => onVote('up')}
         disabled={disabled}
-        aria-label="Upvote"
+        aria-label={`Upvote (${upvoteCount})`}
         aria-pressed={userVote === 'up'}
-        className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 ${
+        title={`Upvote (${upvoteCount})`}
+        className={`h-8 px-2.5 rounded-full border inline-flex items-center justify-center gap-1 text-xs font-semibold tabular-nums transition-all cursor-pointer disabled:opacity-50 ${
           userVote === 'up'
             ? 'bg-emerald-500/20 border-[#19D46A] text-[#19D46A]'
             : 'bg-[var(--soft)] border-[var(--line)] text-[var(--mu)] hover:border-[#19D46A]/60 hover:text-[var(--t)]'
         }`}
       >
-        <ChevronUp className="w-5 h-5 stroke-[2.2]" />
+        <ChevronUp className="w-4 h-4 stroke-[2.4] shrink-0" />
+        <span>{upvoteCount}</span>
       </button>
-
-      <span
-        className={`text-base font-bold tabular-nums leading-none py-0.5 ${
-          score > 0
-            ? 'text-[#19D46A]'
-            : score < 0
-              ? 'text-red-400'
-              : 'text-[var(--t)]'
-        }`}
-      >
-        {score}
-      </span>
 
       <button
         type="button"
         onClick={() => onVote('down')}
         disabled={disabled}
-        aria-label="Downvote"
+        aria-label={`Downvote (${downvoteCount})`}
         aria-pressed={userVote === 'down'}
-        className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 ${
+        title={`Downvote (${downvoteCount})`}
+        className={`h-8 px-2.5 rounded-full border inline-flex items-center justify-center gap-1 text-xs font-semibold tabular-nums transition-all cursor-pointer disabled:opacity-50 ${
           userVote === 'down'
             ? 'bg-red-500/15 border-red-400 text-red-400'
             : 'bg-[var(--soft)] border-[var(--line)] text-[var(--mu)] hover:border-red-400/60 hover:text-[var(--t)]'
         }`}
       >
-        <ChevronDown className="w-5 h-5 stroke-[2.2]" />
+        <ChevronDown className="w-4 h-4 stroke-[2.4] shrink-0" />
+        <span>{downvoteCount}</span>
       </button>
 
       {canAccept ? (
@@ -147,7 +142,7 @@ function VoteColumn({
           onClick={onToggleAccept}
           title={isAccepted ? 'Unmark accepted answer' : 'Mark as accepted answer'}
           aria-label={isAccepted ? 'Unmark accepted answer' : 'Mark as accepted answer'}
-          className={`mt-1.5 w-8 h-8 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+          className={`mt-1 mx-auto w-8 h-8 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
             isAccepted
               ? 'bg-[#19D46A] border-[#19D46A] text-[#0D1B14]'
               : 'border-[var(--line)] text-[var(--mu)] hover:border-[#19D46A] hover:text-[#19D46A]'
@@ -157,7 +152,7 @@ function VoteColumn({
         </button>
       ) : isAccepted ? (
         <div
-          className="mt-1.5 w-8 h-8 rounded-full bg-[#19D46A]/20 border border-[#19D46A] text-[#19D46A] flex items-center justify-center"
+          className="mt-1 mx-auto w-8 h-8 rounded-full bg-[#19D46A]/20 border border-[#19D46A] text-[#19D46A] flex items-center justify-center"
           title="Accepted Answer"
         >
           <Check className="w-4 h-4 stroke-[2.6]" />
@@ -174,6 +169,7 @@ export function FeedbackDetailPage() {
   const { isAuthenticated, user } = useAuth();
   const visitor = useOptionalVisitor();
   const { theme } = useTheme();
+  const { socket } = useSocket();
   const isDark = theme === 'dark';
 
   const isAdmin = Boolean(isAuthenticated && user);
@@ -186,17 +182,44 @@ export function FeedbackDetailPage() {
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState('');
   const [collapsedThreads, setCollapsedThreads] = useState<Record<string, boolean>>({});
   const [confirmDeletePost, setConfirmDeletePost] = useState(false);
+  const countedViewForIdRef = useRef<string | null>(null);
 
-  const detailQueryKey = ['feedback', 'detail', id];
+  const detailQueryKey = ['feedback', 'detail', id, isAdmin ? user?._id ?? 'admin' : 'visitor'];
 
   const { data: post, isLoading, error } = useQuery({
     queryKey: detailQueryKey,
-    queryFn: () => feedbackService.getFeedbackById(id!),
+    queryFn: () => {
+      const alreadyCounted = countedViewForIdRef.current === id;
+      if (!alreadyCounted && id) {
+        countedViewForIdRef.current = id;
+      }
+      return feedbackService.getFeedbackById(id!, { noCount: alreadyCounted });
+    },
     enabled: Boolean(id),
-    staleTime: 10_000,
+    staleTime: 5_000,
+    refetchInterval: 15_000,
   });
+
+  // Real-time Socket.IO sync for live votes, comments, replies, and status changes
+  useEffect(() => {
+    if (!socket || !id) return;
+    const handleFeedbackUpdate = (payload?: { action?: string; feedbackId?: string }) => {
+      if (payload?.feedbackId && payload.feedbackId !== id) return;
+      if (payload?.action === 'deleted') {
+        void queryClient.invalidateQueries({ queryKey: ['feedback'] });
+        navigate(ROUTES.FEEDBACK);
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: ['feedback', 'detail', id] });
+    };
+    socket.on('feedback:updated', handleFeedbackUpdate);
+    return () => {
+      socket.off('feedback:updated', handleFeedbackUpdate);
+    };
+  }, [socket, id, queryClient, navigate]);
 
   const votePostMutation = useMutation({
     mutationFn: (direction: VoteDirection) =>
@@ -213,6 +236,7 @@ export function FeedbackDetailPage() {
         body: payload.body,
         authorName: activeAuthorName,
         ...(payload.parentAnswerId ? { parentAnswerId: payload.parentAnswerId } : {}),
+        ...(honeypot ? { website: honeypot } : {}),
       }),
     onSuccess: (updated, variables) => {
       if (variables.parentAnswerId) {
@@ -464,10 +488,11 @@ export function FeedbackDetailPage() {
           )}
         </div>
 
-        {/* Stack Overflow Vote Column + Full Details */}
+        {/* Stacked Upvote / Downvote Column + Full Details */}
         <div className="flex items-start gap-5 pt-5">
           <VoteColumn
-            score={post.upvotes}
+            upvoteCount={post.upvoteCount ?? Math.max(0, post.upvotes)}
+            downvoteCount={post.downvoteCount ?? 0}
             userVote={post.userVote}
             onVote={(dir) => votePostMutation.mutate(dir)}
             disabled={votePostMutation.isPending}
@@ -575,7 +600,8 @@ export function FeedbackDetailPage() {
                     <div className="flex items-start gap-3.5 sm:gap-5">
                       {!isNested && (
                         <VoteColumn
-                          score={ans.voteScore}
+                          upvoteCount={ans.upvoteCount ?? Math.max(0, ans.voteScore)}
+                          downvoteCount={ans.downvoteCount ?? 0}
                           userVote={ans.userVote}
                           onVote={(direction) =>
                             voteAnswerMutation.mutate({ answerId: ans.id, direction })
@@ -624,43 +650,34 @@ export function FeedbackDetailPage() {
                         {/* Flat Action Bar: Inline Votes (for nested), Reply, Hide/Show Replies, Admin Delete */}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-xs text-[var(--mu)]">
                           {isNested && (
-                            <div className="inline-flex items-center gap-1">
+                            <div className="inline-flex items-center gap-2">
                               <button
                                 type="button"
                                 disabled={voteAnswerMutation.isPending}
                                 onClick={() =>
                                   voteAnswerMutation.mutate({ answerId: ans.id, direction: 'up' })
                                 }
-                                aria-label="Upvote reply"
-                                className={`p-0.5 rounded hover:bg-[var(--soft)] cursor-pointer ${
+                                aria-label={`Upvote reply (${ans.upvoteCount ?? Math.max(0, ans.voteScore)})`}
+                                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-[var(--soft)] tabular-nums font-semibold cursor-pointer ${
                                   ans.userVote === 'up' ? 'text-[#19D46A]' : 'text-[var(--mu)] hover:text-[var(--t)]'
                                 }`}
                               >
-                                <ChevronUp className="w-4 h-4" />
+                                <ChevronUp className="w-3.5 h-3.5" />
+                                <span>{ans.upvoteCount ?? Math.max(0, ans.voteScore)}</span>
                               </button>
-                              <span
-                                className={`text-[11.5px] font-semibold tabular-nums ${
-                                  ans.voteScore > 0
-                                    ? 'text-[#19D46A]'
-                                    : ans.voteScore < 0
-                                      ? 'text-red-400'
-                                      : 'text-[var(--mu)]'
-                                }`}
-                              >
-                                {ans.voteScore}
-                              </span>
                               <button
                                 type="button"
                                 disabled={voteAnswerMutation.isPending}
                                 onClick={() =>
                                   voteAnswerMutation.mutate({ answerId: ans.id, direction: 'down' })
                                 }
-                                aria-label="Downvote reply"
-                                className={`p-0.5 rounded hover:bg-[var(--soft)] cursor-pointer ${
+                                aria-label={`Downvote reply (${ans.downvoteCount ?? 0})`}
+                                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-[var(--soft)] tabular-nums font-semibold cursor-pointer ${
                                   ans.userVote === 'down' ? 'text-red-400' : 'text-[var(--mu)] hover:text-[var(--t)]'
                                 }`}
                               >
-                                <ChevronDown className="w-4 h-4" />
+                                <ChevronDown className="w-3.5 h-3.5" />
+                                <span>{ans.downvoteCount ?? 0}</span>
                               </button>
                             </div>
                           )}
@@ -811,6 +828,17 @@ export function FeedbackDetailPage() {
         </div>
 
         <form onSubmit={handleAnswerSubmit} className="space-y-3">
+          {/* Invisible anti-bot honeypot field */}
+          <input
+            type="text"
+            name="website"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+          />
           <textarea
             rows={4}
             maxLength={2000}

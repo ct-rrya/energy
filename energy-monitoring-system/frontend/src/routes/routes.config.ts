@@ -28,6 +28,7 @@ export const ROUTES = {
   REPORTS: '/reports',
   ADMIN_DIAGNOSTICS: '/admin/diagnostics',
   SETTINGS: '/settings',
+  SETTINGS_MAINTENANCE: '/settings/maintenance',
   PROFILE: '/profile',
 
   // Special routes

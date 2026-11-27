@@ -5,7 +5,22 @@ export interface AdminChatMessage {
   sender: 'visitor' | 'admin';
   senderName: string;
   text: string;
+  isAutoReply?: boolean;
   createdAt: string;
+}
+
+export interface CannedReplyItem {
+  id: string;
+  label: string;
+  text: string;
+}
+
+export interface AdminChatSettings {
+  autoReplyEnabled: boolean;
+  autoReplyMessage: string;
+  autoReplyCooldownMinutes: number;
+  cannedReplies: CannedReplyItem[];
+  updatedBy: string | null;
 }
 
 export interface AdminChatThread {
@@ -15,6 +30,8 @@ export interface AdminChatThread {
   status: 'open' | 'resolved';
   unreadByAdmin?: number;
   unreadByVisitor: number;
+  adminLastReadAt?: string | null;
+  visitorLastReadAt?: string | null;
   messages: AdminChatMessage[];
   lastMessageAt: string | null;
 }
@@ -74,6 +91,24 @@ export const adminChatService = {
     const { data } = await apiClient.patch<AdminChatThread>(
       `/chat/admin/threads/${encodeURIComponent(visitorId)}/status`,
       { status },
+    );
+    return data;
+  },
+
+  async getSettings(): Promise<AdminChatSettings> {
+    const { data } = await apiClient.get<AdminChatSettings>('/chat/admin/settings');
+    return data;
+  },
+
+  async updateSettings(payload: {
+    autoReplyEnabled?: boolean;
+    autoReplyMessage?: string;
+    autoReplyCooldownMinutes?: number;
+    cannedReplies?: Array<{ id?: string; label: string; text: string }>;
+  }): Promise<AdminChatSettings> {
+    const { data } = await apiClient.patch<AdminChatSettings>(
+      '/chat/admin/settings',
+      payload,
     );
     return data;
   },

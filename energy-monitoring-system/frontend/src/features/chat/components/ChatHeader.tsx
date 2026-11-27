@@ -5,7 +5,7 @@
  * and 32x32 circular icon buttons (.ib style).
  */
 
-import { RotateCcw, ChevronRight, ChevronDown, Pin } from 'lucide-react';
+import { RotateCcw, ChevronRight, ChevronDown, Pin, Bell, BellOff } from 'lucide-react';
 import '../chat.css';
 
 interface ChatHeaderProps {
@@ -13,6 +13,8 @@ interface ChatHeaderProps {
   onCollapse?: () => void;
   onTogglePin?: () => void;
   onNewChat: () => void;
+  onToggleAlertsMute?: () => void;
+  isAlertsMuted?: boolean;
   isExpanded?: boolean;
   isPinned?: boolean;
   isFloating?: boolean;
@@ -26,6 +28,8 @@ export function ChatHeader({
   onCollapse,
   onTogglePin,
   onNewChat,
+  onToggleAlertsMute,
+  isAlertsMuted = false,
   isExpanded = true,
   isPinned = false,
   isFloating = false,
@@ -69,6 +73,35 @@ export function ChatHeader({
       </div>
       
       <div className="ibs flex items-center gap-1.5 shrink-0">
+        {onToggleAlertsMute && (
+          <button
+            className="ib"
+            onClick={onToggleAlertsMute}
+            aria-label={isAlertsMuted ? 'Unmute chat notifications' : 'Mute chat notifications'}
+            aria-pressed={isAlertsMuted}
+            type="button"
+            title={
+              isAlertsMuted
+                ? 'Chat alerts muted (click to turn on sound & toast)'
+                : 'Mute chat alerts (sound & toast)'
+            }
+            style={
+              isAlertsMuted
+                ? {
+                    borderColor: 'rgba(245, 158, 11, 0.45)',
+                    color: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                  }
+                : undefined
+            }
+          >
+            {isAlertsMuted ? (
+              <BellOff size={15} strokeWidth={1.8} />
+            ) : (
+              <Bell size={15} strokeWidth={1.8} />
+            )}
+          </button>
+        )}
         {showNewChat && (
           <button
             className="ib"

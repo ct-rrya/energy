@@ -90,4 +90,13 @@ export class CreateAnswerDto {
   @IsString()
   @MaxLength(64)
   parentAnswerId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Hidden anti-bot honeypot field (must remain empty)',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  website?: string;
 }

@@ -12,6 +12,8 @@ export interface FeedbackAnswer {
   authorRole: 'visitor' | 'admin';
   body: string;
   voteScore: number;
+  upvoteCount?: number;
+  downvoteCount?: number;
   isAccepted: boolean;
   parentAnswerId?: string | null;
   replyToAuthor?: string | null;
@@ -28,6 +30,8 @@ export interface FeedbackItem {
   message: string;
   status: FeedbackStatus;
   upvotes: number;
+  upvoteCount?: number;
+  downvoteCount?: number;
   views: number;
   hasUpvoted?: boolean;
   userVote?: VoteDirection | null;
@@ -58,6 +62,8 @@ export interface FeedbackListResponse {
     page: number;
     limit: number;
     totalPages: number;
+    isFuzzyMatch?: boolean;
+    suggestedTerm?: string | null;
   };
   stats: FeedbackStats;
 }
@@ -68,6 +74,19 @@ export interface CreateFeedbackPayload {
   category: FeedbackCategory;
   rating?: number;
   message: string;
+  website?: string;
+}
+
+export interface FeedbackQuotaStatus {
+  postsUsed: number;
+  postsLimit: number;
+  postsRemaining: number;
+  commentsUsed: number;
+  commentsLimit: number;
+  commentsRemaining: number;
+  postCooldownSec: number;
+  commentCooldownSec: number;
+  isUnlimited: boolean;
 }
 
 export interface UpdateFeedbackPayload {
@@ -86,6 +105,7 @@ export const getFeedbackList = async (params?: {
   category?: FeedbackCategory;
   sort?: 'newest' | 'top';
   tab?: FeedbackTab;
+  search?: string;
 }): Promise<FeedbackListResponse> => {
   const response = await apiClient.get<FeedbackListResponse>('/feedback', {
     params: {
@@ -109,10 +129,27 @@ export const getFeedbackById = async (
   return response.data.data;
 };
 
+export const getFeedbackQuota = async (): Promise<FeedbackQuotaStatus> => {
+  const voterId = getFeedbackVoterId();
+  const response = await apiClient.get<{ data: FeedbackQuotaStatus }>('/feedback/quota', {
+    params: { voterId },
+    headers: { 'X-Visitor-Id': voterId },
+  });
+  return response.data.data;
+};
+
 export const createFeedback = async (
   payload: CreateFeedbackPayload,
 ): Promise<FeedbackItem> => {
-  const response = await apiClient.post<{ data: FeedbackItem }>('/feedback', payload);
+  const voterId = getFeedbackVoterId();
+  const response = await apiClient.post<{ data: FeedbackItem }>(
+    '/feedback',
+    payload,
+    {
+      params: { voterId },
+      headers: { 'X-Visitor-Id': voterId },
+    },
+  );
   return response.data.data;
 };
 
@@ -133,12 +170,16 @@ export const toggleFeedbackUpvote = async (id: string): Promise<FeedbackItem> =>
 
 export const createFeedbackAnswer = async (
   id: string,
-  payload: { body: string; authorName?: string; parentAnswerId?: string },
+  payload: { body: string; authorName?: string; parentAnswerId?: string; website?: string },
 ): Promise<FeedbackItem> => {
+  const voterId = getFeedbackVoterId();
   const response = await apiClient.post<{ data: FeedbackItem }>(
     `/feedback/${id}/answers`,
     payload,
-    { params: { voterId: getFeedbackVoterId() } },
+    {
+      params: { voterId },
+      headers: { 'X-Visitor-Id': voterId },
+    },
   );
   return response.data.data;
 };
@@ -193,6 +234,7 @@ export const deleteFeedback = async (id: string): Promise<void> => {
 export const feedbackService = {
   getFeedbackList,
   getFeedbackById,
+  getFeedbackQuota,
   createFeedback,
   voteFeedbackPost,
   toggleFeedbackUpvote,

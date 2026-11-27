@@ -381,6 +381,56 @@ export class DashboardGateway
   }
 
   /**
+   * Broadcast ECommunity / Feedback Update
+   *
+   * Pushes real-time invalidation signals whenever a post, vote, comment,
+   * resolution status, or deletion occurs on the ECommunity board.
+   */
+  broadcastFeedbackUpdated(payload: { action: string; feedbackId?: string }) {
+    this.emitToDashboard('feedback:updated', {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Broadcast Maintenance Mode & Hardware Pause Update
+   *
+   * Immediately notifies all connected public visitors and admins when
+   * Maintenance Mode is enabled, updated, or resumed.
+   */
+  broadcastMaintenanceUpdated(state: {
+    enabled: boolean;
+    message: string;
+    estimatedResumeAt: string | null;
+    updatedBy: string | null;
+    updatedAt: string;
+  }) {
+    this.logger.log(
+      `Broadcasting maintenance mode update: enabled=${state.enabled}`,
+    );
+    this.emitToDashboard('maintenance:updated', state);
+  }
+
+  /**
+   * Broadcast Direct-to-Admin Chat Update (New Message / Read Receipt / Status)
+   *
+   * Enables instant Seen checkmarks, live message updates, and incoming toast/sound alerts.
+   */
+  broadcastAdminChatUpdated(payload: {
+    action: 'visitor_message' | 'admin_reply' | 'visitor_read' | 'admin_read' | 'status_updated';
+    visitorId: string;
+    senderName?: string;
+    preview?: string;
+    readAt?: string;
+  }) {
+    this.emitToDashboard('admin-chat:updated', {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
    * Get Connected Clients Count
    *
    * Returns number of currently connected dashboard clients.

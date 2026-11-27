@@ -9,6 +9,7 @@ import { IotService } from './iot.service';
 import { IotController } from './iot.controller';
 import { SensorsModule } from '../sensors/sensors.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { MaintenanceModule } from '../maintenance/maintenance.module';
 
 /**
  * IoT Module
@@ -69,6 +70,9 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     // Import DashboardModule for real-time broadcasts
     // Use forwardRef to resolve circular dependency
     forwardRef(() => DashboardModule),
+
+    // Import MaintenanceModule to pause hardware ingestion during maintenance
+    forwardRef(() => MaintenanceModule),
   ],
   controllers: [IotController],
   providers: [IotService],

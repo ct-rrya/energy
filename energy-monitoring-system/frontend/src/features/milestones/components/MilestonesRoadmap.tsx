@@ -16,6 +16,47 @@ interface MilestonesRoadmapProps {
   compact?: boolean;
 }
 
+function shouldUseAnimatedEmoji(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    return false;
+  }
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    connection?: { saveData?: boolean; effectiveType?: string };
+  };
+  if (nav.connection?.saveData) return false;
+  if (
+    nav.connection?.effectiveType === 'slow-2g' ||
+    nav.connection?.effectiveType === '2g'
+  ) {
+    return false;
+  }
+  if (typeof nav.hardwareConcurrency === 'number' && nav.hardwareConcurrency <= 4) {
+    return false;
+  }
+  if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4) {
+    return false;
+  }
+  return true;
+}
+
+function getMilestoneEmojiMeta(milestone: MilestoneItem): {
+  code: '1f973' | '1f614' | '26a1' | '23f3';
+  statusText: string;
+} {
+  if (milestone.state === 'UPCOMING') {
+    return { code: '23f3', statusText: 'Upcoming' };
+  }
+  if (milestone.isAchieved) {
+    return { code: '1f973', statusText: 'Goal reached' };
+  }
+  if (milestone.state === 'CURRENT') {
+    return { code: '26a1', statusText: 'In progress' };
+  }
+  return { code: '1f614', statusText: 'Goal not reached' };
+}
+
 function getWeekDisplayLabel(milestone: MilestoneItem): string {
   try {
     if (milestone.startDate && milestone.endDate) {
@@ -60,7 +101,16 @@ export function MilestonesRoadmap({
   // Selected week item ID ('week_1'..'week_6')
   const [selectedItemId, setSelectedItemId] = useState<string>('week_1');
   const [celebratingMilestone, setCelebratingMilestone] = useState<MilestoneItem | null>(null);
+  const [useAnimatedEmoji, setUseAnimatedEmoji] = useState<boolean>(() => shouldUseAnimatedEmoji());
   const lastSyncedMonthRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = () => setUseAnimatedEmoji(shouldUseAnimatedEmoji());
+    mq.addEventListener?.('change', handleChange);
+    return () => mq.removeEventListener?.('change', handleChange);
+  }, []);
 
   // Only reset selected week when switching months (or if the selected ID doesn't exist yet),
   // never overriding a user's clicked week during background refetches.
@@ -392,20 +442,37 @@ export function MilestonesRoadmap({
                 const isSelected = activeMilestone?.id === milestone.id;
                 const isCurrent = milestone.state === 'CURRENT';
                 const isAchieved = milestone.isAchieved;
+                const isPastMissed = milestone.state === 'COMPLETED' && !isAchieved;
+                const emojiMeta = getMilestoneEmojiMeta(milestone);
+                const emojiSrc = `/emojis/${emojiMeta.code}.${useAnimatedEmoji ? 'webp' : 'svg'}`;
+                const nodeRadius = isSelected || isCurrent ? 20 : 18;
+                const emojiSize = isSelected || isCurrent ? 25 : 22;
 
                 const circleFill = isAchieved
-                  ? '#16a34a'
-                  : isSelected || isCurrent
                   ? isDark
-                    ? '#16a34a'
-                    : '#087A3A'
+                    ? '#14532d'
+                    : '#dcfce7'
+                  : isCurrent
+                  ? isDark
+                    ? '#14532d'
+                    : '#dcfce7'
+                  : isPastMissed
+                  ? isDark
+                    ? '#2a1f12'
+                    : '#fef3c7'
                   : isDark
                   ? '#12241a'
                   : '#ffffff';
 
-                const circleStroke = isAchieved
-                  ? '#16a34a'
-                  : isSelected || isCurrent
+                const circleStroke = isAchieved || isCurrent
+                  ? isDark
+                    ? '#22c55e'
+                    : '#16a34a'
+                  : isPastMissed
+                  ? isDark
+                    ? '#d97706'
+                    : '#f59e0b'
+                  : isSelected
                   ? isDark
                     ? '#22c55e'
                     : '#087A3A'
@@ -413,13 +480,7 @@ export function MilestonesRoadmap({
                   ? '#2a543d'
                   : '#9ccdb0';
 
-                const textFill = isAchieved || isSelected || isCurrent
-                  ? '#ffffff'
-                  : isDark
-                  ? '#94a3b8'
-                  : '#50665a';
-
-                const cardY = y + 24;
+                const cardY = y + 26;
 
                 return (
                   <g
@@ -432,7 +493,7 @@ export function MilestonesRoadmap({
                     }}
                     className="group outline-none focus:outline-none focus-visible:outline-none select-none transition-opacity hover:opacity-90"
                     role="button"
-                    aria-label={`Select ${milestone.label}`}
+                    aria-label={`Select ${milestone.label} (${emojiMeta.statusText})`}
                     aria-pressed={isSelected}
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -442,12 +503,13 @@ export function MilestonesRoadmap({
                       }
                     }}
                   >
+                    <title>{`${milestone.label} · ${emojiMeta.statusText}`}</title>
                     {/* Generous transparent hit target covering both node circle and Week label card */}
                     <rect
                       x={x - 42}
                       y={y - 30}
                       width="84"
-                      height="88"
+                      height="90"
                       rx="12"
                       fill="transparent"
                     />
@@ -456,10 +518,18 @@ export function MilestonesRoadmap({
                       <circle
                         cx={x}
                         cy={y}
-                        r="25"
+                        r="26"
                         fill="none"
-                        stroke={isDark ? '#22c55e' : '#087A3A'}
-                        strokeOpacity="0.45"
+                        stroke={
+                          isPastMissed && !isCurrent
+                            ? isDark
+                              ? '#f59e0b'
+                              : '#d97706'
+                            : isDark
+                            ? '#22c55e'
+                            : '#087A3A'
+                        }
+                        strokeOpacity="0.5"
                         strokeWidth="2"
                         strokeDasharray="4 4"
                       />
@@ -469,26 +539,23 @@ export function MilestonesRoadmap({
                     <circle
                       cx={x}
                       cy={y}
-                      r={isSelected || isCurrent ? '18' : '16'}
+                      r={nodeRadius}
                       fill={circleFill}
                       stroke={circleStroke}
-                      strokeWidth={isSelected || isCurrent ? '2.5' : '2.5'}
+                      strokeWidth="2.5"
                       className="transition-all duration-300"
                     />
 
-                    {/* Week Number inside Node Circle */}
-                    <text
-                      x={x}
-                      y={y + 5}
-                      textAnchor="middle"
-                      fontSize={isSelected || isCurrent ? '15' : '13'}
-                      fontWeight="500"
-                      letterSpacing="-0.02em"
-                      fill={textFill}
-                      fontFamily="'DM Sans', sans-serif"
-                    >
-                      {milestone.weekNumber}
-                    </text>
+                    {/* Google Noto Emoji (Animated WebP on high-end devices, static SVG on low-end / reduced-motion) */}
+                    <image
+                      href={emojiSrc}
+                      x={x - emojiSize / 2}
+                      y={y - emojiSize / 2}
+                      width={emojiSize}
+                      height={emojiSize}
+                      preserveAspectRatio="xMidYMid meet"
+                      style={{ pointerEvents: 'none' }}
+                    />
 
                     {/* Tooltip Badge: 'You are here' or 'Selected' */}
                     {(isCurrent || isSelected) && (

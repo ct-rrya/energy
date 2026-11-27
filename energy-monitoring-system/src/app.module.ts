@@ -35,6 +35,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
 import { ChatModule } from './chat/chat.module';
 import { MilestonesModule } from './milestones/milestones.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 
 /**
  * Root Application Module
@@ -142,6 +143,9 @@ import { FeedbackModule } from './feedback/feedback.module';
 
     // Public Feedback & Reviews Board
     FeedbackModule,
+
+    // Maintenance Mode & Hardware Pause Control
+    MaintenanceModule,
   ],
   controllers: [AppController],
   providers: [

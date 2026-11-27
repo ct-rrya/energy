@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Sparkles, Check, CheckCheck } from 'lucide-react';
 import type { AdminChatMessage } from '@/api/services/adminChat.service';
 
 interface AdminChatViewProps {
   messages: AdminChatMessage[];
   visitorName?: string;
+  adminLastReadAt?: string | null;
+  unreadByAdmin?: number;
   isLoading: boolean;
   isSending: boolean;
   error: string | null;
@@ -21,12 +23,22 @@ function formatTime(iso: string): string {
 
 export function AdminChatView({
   messages,
+  adminLastReadAt,
+  unreadByAdmin = 0,
   isLoading,
   isSending,
   error,
   onRefresh,
 }: AdminChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  let lastVisitorMsgIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].sender === 'visitor') {
+      lastVisitorMsgIdx = i;
+      break;
+    }
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,8 +73,10 @@ export function AdminChatView({
                 <div className="flex items-center gap-1.5 mb-0.5 px-1">
                   {!isVisitor && (
                     <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[var(--acc)]">
-                      <ShieldCheck size={11} />
-                      {msg.senderName || 'EcoStep Admin'}
+                      {msg.isAutoReply ? <Sparkles size={11} /> : <ShieldCheck size={11} />}
+                      {msg.isAutoReply
+                        ? 'EcoStep Auto-Reply'
+                        : msg.senderName || 'EcoStep Admin'}
                     </span>
                   )}
                   <span className="text-[10px] text-[var(--mu)]">
@@ -78,6 +92,34 @@ export function AdminChatView({
                 >
                   {msg.text}
                 </div>
+                {isVisitor && idx === lastVisitorMsgIdx && (() => {
+                  const isSeen =
+                    unreadByAdmin === 0 &&
+                    (!adminLastReadAt ||
+                      new Date(adminLastReadAt).getTime() >=
+                        new Date(msg.createdAt).getTime());
+                  return (
+                    <span
+                      className={`mt-1 px-1 inline-flex items-center gap-1 text-[10px] ${
+                        isSeen ? 'text-[var(--acc)] font-medium' : 'text-[var(--mu)]'
+                      }`}
+                    >
+                      {isSeen ? (
+                        <>
+                          <CheckCheck size={12} strokeWidth={2.2} />
+                          <span>
+                            Seen{adminLastReadAt ? ` · ${formatTime(adminLastReadAt)}` : ''}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={11} strokeWidth={2.2} />
+                          <span>Sent</span>
+                        </>
+                      )}
+                    </span>
+                  );
+                })()}
               </div>
             );
           })

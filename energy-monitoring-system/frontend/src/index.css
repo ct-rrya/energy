@@ -1706,9 +1706,16 @@ body::before {
   white-space: nowrap;
 }
 
-.uc span {
+.uc .info span {
   font-size: 11px;
   color: var(--mu);
+}
+
+.uc .av span {
+  color: #062012;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* Icon Buttons (.ib) */

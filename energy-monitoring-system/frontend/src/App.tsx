@@ -5,6 +5,7 @@ import { ToastContainer } from '@/components/common/Toast';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { VisitorProvider } from '@/contexts/VisitorContext';
 import { SocketProvider } from '@/contexts/SocketContext';
+import { MaintenanceProvider } from '@/contexts/MaintenanceContext';
 import { HardwareStatusProvider } from '@/contexts/HardwareStatusContext';
 import { BleProvider } from '@/contexts/BleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -49,12 +50,14 @@ function App() {
           <AuthProvider>
             <VisitorProvider>
               <SocketProvider>
-                <HardwareStatusProvider>
-                  <BleProvider>
-                    <RouterProvider router={router} />
-                    <ToastContainer />
-                  </BleProvider>
-                </HardwareStatusProvider>
+                <MaintenanceProvider>
+                  <HardwareStatusProvider>
+                    <BleProvider>
+                      <RouterProvider router={router} />
+                      <ToastContainer />
+                    </BleProvider>
+                  </HardwareStatusProvider>
+                </MaintenanceProvider>
               </SocketProvider>
             </VisitorProvider>
           </AuthProvider>

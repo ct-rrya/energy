@@ -475,32 +475,32 @@ export function HistoricalDataView({
                     Time
                   </th>
                   <th
-                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-left"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                   >
                     Energy
                   </th>
                   <th
-                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-left"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                   >
                     Voltage
                   </th>
                   <th 
-                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-left"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                     title="Estimated electrical current generated"
                   >
                     Current
                   </th>
                   <th
-                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-left"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                   >
                     Power
                   </th>
                   <th
-                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-right"
+                    className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-left"
                     style={{ color: theme === 'dark' ? '#94A3B8' : '#64748B' }}
                   >
                     Steps
@@ -529,32 +529,32 @@ export function HistoricalDataView({
                       {record.time}
                     </td>
                     <td
-                      className="py-3 px-4 text-sm text-right tabular-nums font-bold"
+                      className="py-3 px-4 text-sm text-left tabular-nums font-bold"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#059669' }}
                     >
                       {record.energy !== undefined ? `${record.energy.toFixed(5)} mWh` : '—'}
                     </td>
                     <td
-                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      className="py-3 px-4 text-sm text-left tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#39FF88' : '#10B981' }}
                     >
                       {record.voltage !== undefined ? `${record.voltage.toFixed(5)} V` : '—'}
                     </td>
                     <td 
-                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      className="py-3 px-4 text-sm text-left tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#60A5FA' : '#2563EB' }}
                       title="Estimated electrical current generated"
                     >
                       {record.current !== undefined ? `${(record.current * 1000).toFixed(5)} mA` : '—'}
                     </td>
                     <td
-                      className="py-3 px-4 text-sm text-right tabular-nums font-medium"
+                      className="py-3 px-4 text-sm text-left tabular-nums font-medium"
                       style={{ color: theme === 'dark' ? '#FBBF24' : '#D97706' }}
                     >
                       {record.power !== undefined ? `${(record.power * 1000).toFixed(5)} mW` : '—'}
                     </td>
                     <td
-                      className="py-3 px-4 text-sm text-right tabular-nums font-semibold"
+                      className="py-3 px-4 text-sm text-left tabular-nums font-semibold"
                       style={{ color: theme === 'dark' ? '#FFFFFF' : '#0F172A' }}
                     >
                       {record.steps !== undefined ? record.steps.toFixed(0) : '—'}

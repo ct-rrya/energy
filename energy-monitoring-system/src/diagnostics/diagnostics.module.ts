@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   ReferenceConfig,
@@ -55,7 +55,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: EnergyReading.name, schema: EnergyReadingSchema },
     ]),
     DashboardModule, // For DashboardGateway WebSocket broadcasting
-    AlertsModule,
+    forwardRef(() => AlertsModule),
     NotificationsModule,
   ],
   controllers: [DiagnosticsController],

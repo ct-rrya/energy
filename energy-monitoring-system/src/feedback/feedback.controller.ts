@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Optional,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -35,6 +36,7 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { AuditService } from '../audit/audit.service';
+import { DashboardGateway } from '../dashboard/dashboard.gateway';
 
 @ApiTags('Feedback')
 @Controller('feedback')
@@ -42,9 +44,21 @@ export class FeedbackController {
   constructor(
     private readonly feedbackService: FeedbackService,
     private readonly auditService: AuditService,
+    @Optional() private readonly dashboardGateway?: DashboardGateway,
   ) {}
 
+  private resolveVoterKey(
+    user: UserDocument | null | undefined,
+    rawVoterId?: string,
+  ): string {
+    if (user?._id) {
+      return `user:${user._id.toString()}`;
+    }
+    return rawVoterId?.trim() || 'anonymous';
+  }
+
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'List public feedback & reviews',
     description:
@@ -57,6 +71,7 @@ export class FeedbackController {
   @ApiQuery({ name: 'sort', required: false, enum: ['newest', 'top'] })
   @ApiQuery({ name: 'tab', required: false, enum: ['newest', 'top', 'unanswered', 'resolved'] })
   @ApiQuery({ name: 'voterId', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Feedback list retrieved successfully' })
   async findAll(
     @Query('page') page?: number,
@@ -66,7 +81,12 @@ export class FeedbackController {
     @Query('sort') sort?: 'newest' | 'top',
     @Query('tab') tab?: FeedbackTab,
     @Query('voterId') voterId?: string,
+    @Query('search') search?: string,
+    @CurrentUser() user?: UserDocument | null,
   ) {
+    const resolvedVoterId = user?._id
+      ? `user:${user._id.toString()}`
+      : voterId?.trim() || undefined;
     const result = await this.feedbackService.findAll({
       page,
       limit,
@@ -74,7 +94,8 @@ export class FeedbackController {
       category,
       sort,
       tab,
-      voterId,
+      voterId: resolvedVoterId,
+      search,
     });
 
     return {
@@ -83,7 +104,32 @@ export class FeedbackController {
     };
   }
 
+  @Get('quota')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get remaining daily ECommunity posting & reply quota',
+  })
+  async getQuota(
+    @Query('voterId') voterId: string | undefined,
+    @Req() req: Request,
+    @CurrentUser() user?: UserDocument | null,
+  ) {
+    const headerVisitor = req.headers['x-visitor-id'];
+    const rawVisitor =
+      (Array.isArray(headerVisitor) ? headerVisitor[0] : headerVisitor) ||
+      voterId;
+    const quota = await this.feedbackService.getQuotaStatus(
+      rawVisitor,
+      Boolean(user),
+    );
+    return {
+      success: true,
+      data: quota,
+    };
+  }
+
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Get single feedback post with full details and answers',
     description: 'Returns full post details, votes, and all community/admin answers. Increments view count.',
@@ -92,10 +138,14 @@ export class FeedbackController {
     @Param('id') id: string,
     @Query('voterId') voterId?: string,
     @Query('noCount') noCount?: string,
+    @CurrentUser() user?: UserDocument | null,
   ) {
+    const resolvedVoterId = user?._id
+      ? `user:${user._id.toString()}`
+      : voterId?.trim() || undefined;
     const item = await this.feedbackService.findOne(
       id,
-      voterId,
+      resolvedVoterId,
       noCount !== 'true',
     );
     return {
@@ -105,7 +155,7 @@ export class FeedbackController {
   }
 
   @Post()
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -114,8 +164,25 @@ export class FeedbackController {
       'Allows any visitor to post a review, suggestion, or tile/bug issue to the public board.',
   })
   @ApiResponse({ status: 201, description: 'Feedback posted successfully' })
-  async create(@Body() dto: CreateFeedbackDto) {
-    const item = await this.feedbackService.create(dto);
+  async create(
+    @Body() dto: CreateFeedbackDto,
+    @Query('voterId') voterId: string | undefined,
+    @Req() req: Request,
+    @CurrentUser() user?: UserDocument | null,
+  ) {
+    const headerVisitor = req.headers['x-visitor-id'];
+    const rawVisitor =
+      (Array.isArray(headerVisitor) ? headerVisitor[0] : headerVisitor) ||
+      voterId;
+    const item = await this.feedbackService.create(
+      dto,
+      rawVisitor,
+      Boolean(user),
+    );
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'created',
+      feedbackId: item?.id || item?._id?.toString(),
+    });
     return {
       success: true,
       message: 'Feedback posted successfully',
@@ -124,7 +191,7 @@ export class FeedbackController {
   }
 
   @Post(':id/vote')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 40, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -134,9 +201,14 @@ export class FeedbackController {
   async votePost(
     @Param('id') id: string,
     @Body() dto: VoteFeedbackDto,
+    @CurrentUser() user: UserDocument | null,
   ) {
-    const voterKey = dto.voterId?.trim() || 'anonymous';
+    const voterKey = this.resolveVoterKey(user, dto.voterId);
     const updated = await this.feedbackService.votePost(id, dto.direction, voterKey);
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'voted',
+      feedbackId: id,
+    });
     return {
       success: true,
       data: updated,
@@ -144,7 +216,7 @@ export class FeedbackController {
   }
 
   @Post(':id/upvote')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -154,9 +226,14 @@ export class FeedbackController {
   async toggleUpvote(
     @Param('id') id: string,
     @Body() dto: UpvoteFeedbackDto,
+    @CurrentUser() user: UserDocument | null,
   ) {
-    const voterKey = dto.voterId?.trim() || 'anonymous';
+    const voterKey = this.resolveVoterKey(user, dto.voterId);
     const updated = await this.feedbackService.toggleUpvote(id, voterKey);
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'voted',
+      feedbackId: id,
+    });
     return {
       success: true,
       data: updated,
@@ -179,13 +256,18 @@ export class FeedbackController {
     @CurrentUser() user: UserDocument | null,
   ) {
     const isAdmin = Boolean(user);
+    const resolvedVoterId = this.resolveVoterKey(user, voterId);
     const updated = await this.feedbackService.addAnswer(
       id,
       dto,
       isAdmin,
       user?.name,
-      voterId,
+      resolvedVoterId,
     );
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'answered',
+      feedbackId: id,
+    });
     return {
       success: true,
       message: 'Answer posted successfully',
@@ -194,7 +276,7 @@ export class FeedbackController {
   }
 
   @Post(':id/answers/:answerId/vote')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 40, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -204,14 +286,19 @@ export class FeedbackController {
     @Param('id') id: string,
     @Param('answerId') answerId: string,
     @Body() dto: VoteFeedbackDto,
+    @CurrentUser() user: UserDocument | null,
   ) {
-    const voterKey = dto.voterId?.trim() || 'anonymous';
+    const voterKey = this.resolveVoterKey(user, dto.voterId);
     const updated = await this.feedbackService.voteAnswer(
       id,
       answerId,
       dto.direction,
       voterKey,
     );
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'answer_voted',
+      feedbackId: id,
+    });
     return {
       success: true,
       data: updated,
@@ -234,6 +321,10 @@ export class FeedbackController {
       answerId,
       user.name || 'Admin',
     );
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'answer_accepted',
+      feedbackId: id,
+    });
     return {
       success: true,
       data: updated,
@@ -252,6 +343,10 @@ export class FeedbackController {
     @Param('answerId') answerId: string,
   ) {
     const updated = await this.feedbackService.deleteAnswer(id, answerId);
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'answer_deleted',
+      feedbackId: id,
+    });
     return {
       success: true,
       data: updated,
@@ -300,6 +395,11 @@ export class FeedbackController {
       },
     });
 
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'updated',
+      feedbackId: id,
+    });
+
     return {
       success: true,
       message: 'Feedback updated successfully',
@@ -336,6 +436,11 @@ export class FeedbackController {
         name: user.name,
         role: user.role,
       },
+    });
+
+    this.dashboardGateway?.broadcastFeedbackUpdated({
+      action: 'deleted',
+      feedbackId: id,
     });
 
     return {

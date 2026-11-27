@@ -26,6 +26,8 @@ export const AlertType = {
   VOLTAGE_THRESHOLD: 'voltage_threshold',
   CURRENT_THRESHOLD: 'current_threshold',
   ENERGY_MILESTONE: 'energy_milestone',
+  TILE_HEALTH_DEGRADED: 'tile_health_degraded',
+  OUTPUT_DROP: 'output_drop',
   SYSTEM_ERROR: 'system_error',
   DATABASE_CONNECTION: 'database_connection',
   DEVICE_COMMUNICATION: 'device_communication',
@@ -131,4 +133,40 @@ export interface AlertStats {
     [key: string]: number;
   };
   recent: Alert[];
+}
+
+export interface HealthCheckRunSummary {
+  checkedAt: string;
+  skippedReason?: string;
+  triggered: Array<{
+    type: AlertType;
+    severity: AlertSeverity;
+    title: string;
+    emailedCount: number;
+  }>;
+  suppressedByCooldown: AlertType[];
+  snapshot?: {
+    healthScore: number;
+    harvesting: number;
+    consistency: number;
+    telemetry: number;
+    driftPercent: number;
+    hoursSinceLastReading: number | null;
+  };
+}
+
+export interface HealthMonitorStatus {
+  enabled: boolean;
+  pausedByMaintenance: boolean;
+  emailConfigured: boolean;
+  activeAdminEmailCount: number;
+  cooldownHours: number;
+  checkIntervalMinutes: number;
+  lastCheckedAt: string | null;
+  lastRunSummary: HealthCheckRunSummary | null;
+  thresholds: {
+    offlineHoursWeekdays: number;
+    outputDropPercent: number;
+    minHealthScore: number;
+  };
 }

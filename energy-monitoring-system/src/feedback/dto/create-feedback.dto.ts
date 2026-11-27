@@ -67,4 +67,13 @@ export class CreateFeedbackDto {
   @MinLength(3, { message: 'Message must be at least 3 characters' })
   @MaxLength(2000, { message: 'Message must not exceed 2000 characters' })
   message: string;
+
+  @ApiPropertyOptional({
+    description: 'Hidden anti-bot honeypot field (must remain empty)',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  website?: string;
 }

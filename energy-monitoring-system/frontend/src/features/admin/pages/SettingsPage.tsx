@@ -2,18 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { useHardwareStatus } from '@/contexts/HardwareStatusContext';
-import { showToast } from '@/components/common/Toast';
 import { healthService } from '@/api/services';
-import { Clock, Calendar, RefreshCw, Bluetooth, Award, ArrowRight } from 'lucide-react';
+import { alertsService } from '@/api/services/alerts.service';
+import type { HealthMonitorStatus } from '@/types/alert.types';
+import { showToast } from '@/components/common/Toast';
+import { Bluetooth, Award, ArrowRight, BellRing, RefreshCw } from 'lucide-react';
 import { EcoStepBleButton } from '@/features/ble';
+import { MaintenanceControlPanel } from '../components/MaintenanceControlPanel';
 import { ROUTES } from '@/routes/routes.config';
-
-interface SystemPreferences {
-  timezone: string;
-  timeFormat: '12-hour' | '24-hour';
-  dateFormat: 'MM/DD/YYYY' | 'DD/MM/YYYY';
-  dashboardRefresh: 5 | 10 | 30 | 60;
-}
 
 interface HealthStatus {
   status: string;
@@ -34,15 +30,10 @@ interface HealthStatus {
  * Visual and typography design strictly follows the EcoStep Central design tokens and DM Sans hierarchy.
  */
 export function SettingsPage() {
-  const [preferences, setPreferences] = useState<SystemPreferences>({
-    timezone: 'Asia/Manila',
-    timeFormat: '12-hour',
-    dateFormat: 'MM/DD/YYYY',
-    dashboardRefresh: 10,
-  });
-  const [isSaving, setIsSaving] = useState(false);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
+  const [monitorStatus, setMonitorStatus] = useState<HealthMonitorStatus | null>(null);
+  const [isRunningCheck, setIsRunningCheck] = useState(false);
 
   // Refined colors using EcoStep design system tokens
   const colors = {
@@ -59,31 +50,53 @@ export function SettingsPage() {
     error: '#EF4444',
   };
 
-  // Load preferences from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('ecostep_preferences');
-    if (saved) {
-      try {
-        setPreferences(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load preferences:', e);
-      }
-    }
-  }, []);
-
   const hardwareStatus = useHardwareStatus();
 
-  // Load health status
+  // Load health status & automated alert monitor status
   useEffect(() => {
     loadHealthStatus();
-    
+    loadMonitorStatus();
+
     // Refresh every 30 seconds
     const interval = setInterval(() => {
       loadHealthStatus();
     }, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
+
+  const loadMonitorStatus = async () => {
+    try {
+      const status = await alertsService.getMonitorStatus();
+      setMonitorStatus(status);
+    } catch {
+      // Non-fatal if endpoint unavailable
+    }
+  };
+
+  const handleRunHealthCheck = async () => {
+    setIsRunningCheck(true);
+    try {
+      const summary = await alertsService.runHealthCheck();
+      await loadMonitorStatus();
+      if (summary.skippedReason) {
+        showToast(summary.skippedReason, 'info');
+      } else if (summary.triggered.length > 0) {
+        showToast(
+          `${summary.triggered.length} health ${summary.triggered.length === 1 ? 'alert' : 'alerts'} created`,
+          'error',
+        );
+      } else if (summary.suppressedByCooldown.length > 0) {
+        showToast('Issue already alerted within the last 12h cooldown window.', 'info');
+      } else {
+        showToast('Tile health check passed — no anomalies detected.', 'success');
+      }
+    } catch {
+      showToast('Could not run health check right now.', 'error');
+    } finally {
+      setIsRunningCheck(false);
+    }
+  };
 
   const loadHealthStatus = async () => {
     try {
@@ -99,19 +112,6 @@ export function SettingsPage() {
       console.error('Failed to load health status:', error);
       setHealthStatus(null);
       setIsLoadingHealth(false);
-    }
-  };
-
-  const handleSavePreferences = async () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem('ecostep_preferences', JSON.stringify(preferences));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      showToast('Preferences saved successfully', 'success');
-    } catch (error) {
-      showToast('Failed to save preferences', 'error');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -159,7 +159,7 @@ export function SettingsPage() {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
+
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
@@ -171,13 +171,64 @@ export function SettingsPage() {
       <DashboardHeader
         greeting="Admin Settings"
         title="Settings"
-        subtitle="Display preferences, tile Wi-Fi setup, and system status"
+        subtitle="Maintenance controls, tile Wi-Fi setup, energy goals, and system status"
         systemStatus={hardwareStatus.status}
       />
 
       {/* Open Editorial Layout — hairline-divided sections, zero nested boxes */}
       <div className="divide-y divide-[var(--line)]">
-        {/* 1. Floor Tile Wi-Fi Setup */}
+        {/* 0. Maintenance Mode & Hardware Pause */}
+        <MaintenanceControlPanel />
+
+        {/* 1. Automated Tile Health Alerts */}
+        <section className="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--acc)] mb-1">
+              <BellRing className="h-3.5 w-3.5" />
+              <span>Automated Health Alerts</span>
+              {monitorStatus && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold normal-case tracking-normal ${monitorStatus.pausedByMaintenance
+                    ? 'bg-amber-500/15 text-amber-400'
+                    : 'bg-emerald-500/15 text-[#19D46A]'
+                    }`}
+                >
+                  {monitorStatus.pausedByMaintenance ? 'Paused (Maintenance)' : 'Active · Every 30m'}
+                </span>
+              )}
+            </div>
+            <h2 className="text-base font-semibold text-[var(--t)] m-0">
+              Tile Offline, Output Drop &amp; Wear Monitoring
+            </h2>
+            <p className="text-xs sm:text-sm text-[var(--mu)] mt-1 mb-0 max-w-xl">
+              Alerts all active admin emails ({monitorStatus?.activeAdminEmailCount ?? '—'}) and in-app if the tile is silent &gt;24h on weekdays, output drops &gt;40%, or health falls below 70/100 (12h cooldown).
+              {monitorStatus && !monitorStatus.emailConfigured && (
+                <span className="text-amber-400"> In-app active; configure Resend in .env to enable email delivery.</span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 sm:self-center">
+            <button
+              type="button"
+              onClick={handleRunHealthCheck}
+              disabled={isRunningCheck}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border border-[var(--line)] bg-[var(--soft)] text-[var(--t)] hover:border-[var(--acc)] hover:text-[var(--acc)] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRunningCheck ? 'animate-spin' : ''}`} />
+              <span>{isRunningCheck ? 'Checking...' : 'Run Check Now'}</span>
+            </button>
+            <Link
+              to={ROUTES.ALERTS}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#19D46A', color: '#0D1B14', textDecoration: 'none' }}
+            >
+              <span>Alerts</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </section>
+
+        {/* 2. Floor Tile Wi-Fi Setup */}
         <section className="py-6 first:pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--acc)] mb-1">
@@ -193,115 +244,6 @@ export function SettingsPage() {
           </div>
           <div className="shrink-0 sm:self-center">
             <EcoStepBleButton label="Connect Tile Wi-Fi" />
-          </div>
-        </section>
-
-        {/* 2. Display & Refresh Preferences */}
-        <section className="py-6">
-          <div className="mb-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--acc)] mb-1">
-              Display Preferences
-            </div>
-            <h2 className="text-base font-semibold tracking-tight text-[var(--t)] m-0">
-              General Display &amp; Refresh Preferences
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--mu)] mt-1 mb-0">
-              Choose how dates, clocks, and live updates appear on this browser.
-            </p>
-          </div>
-
-          <div className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
-            {/* Timezone */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <Clock className="h-4 w-4 text-[var(--acc)] shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-[var(--t)] m-0">Timezone</p>
-                  <p className="text-xs text-[var(--mu)] m-0">Display timezone for timestamps</p>
-                </div>
-              </div>
-              <select
-                value={preferences.timezone}
-                onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                className="sm:w-56 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-[var(--line)] bg-[var(--card-bg)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
-              >
-                <option value="Asia/Manila">Asia/Manila (PHT)</option>
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">America/New York (EST)</option>
-                <option value="Europe/London">Europe/London (GMT)</option>
-              </select>
-            </div>
-
-            {/* Time Format */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <Clock className="h-4 w-4 text-[var(--acc)] shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-[var(--t)] m-0">Time Format</p>
-                  <p className="text-xs text-[var(--mu)] m-0">12-hour or 24-hour display</p>
-                </div>
-              </div>
-              <select
-                value={preferences.timeFormat}
-                onChange={(e) => setPreferences({ ...preferences, timeFormat: e.target.value as '12-hour' | '24-hour' })}
-                className="sm:w-56 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-[var(--line)] bg-[var(--card-bg)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
-              >
-                <option value="12-hour">12-hour</option>
-                <option value="24-hour">24-hour</option>
-              </select>
-            </div>
-
-            {/* Date Format */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <Calendar className="h-4 w-4 text-[var(--acc)] shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-[var(--t)] m-0">Date Format</p>
-                  <p className="text-xs text-[var(--mu)] m-0">Date display preference</p>
-                </div>
-              </div>
-              <select
-                value={preferences.dateFormat}
-                onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value as 'MM/DD/YYYY' | 'DD/MM/YYYY' })}
-                className="sm:w-56 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-[var(--line)] bg-[var(--card-bg)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
-              >
-                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              </select>
-            </div>
-
-            {/* Dashboard Refresh Interval */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <RefreshCw className="h-4 w-4 text-[var(--acc)] shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-[var(--t)] m-0">Dashboard Refresh</p>
-                  <p className="text-xs text-[var(--mu)] m-0">Auto-refresh interval for live data</p>
-                </div>
-              </div>
-              <select
-                value={preferences.dashboardRefresh}
-                onChange={(e) => setPreferences({ ...preferences, dashboardRefresh: Number(e.target.value) as 5 | 10 | 30 | 60 })}
-                className="sm:w-56 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-[var(--line)] bg-[var(--card-bg)] text-[var(--t)] focus:outline-none focus:border-[var(--acc)] cursor-pointer"
-              >
-                <option value="5">5 seconds</option>
-                <option value="10">10 seconds</option>
-                <option value="30">30 seconds</option>
-                <option value="60">60 seconds</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end">
-            <button
-              type="button"
-              onClick={handleSavePreferences}
-              disabled={isSaving}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-opacity cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-              style={{ backgroundColor: '#19D46A', color: '#0D1B14' }}
-            >
-              {isSaving ? 'Saving...' : 'Save Preferences'}
-            </button>
           </div>
         </section>
 

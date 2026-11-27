@@ -227,8 +227,8 @@ export function HardwarePipelineCard({
           </div>
         </div>
 
-        {/* 3 Sub-score Indicators (Flat inline hairline strip) */}
-        <div className="flex flex-wrap items-center divide-x divide-[var(--line)]">
+        {/* 3 Sub-score Indicators (Flat inline hairline strip — always one line) */}
+        <div className="flex flex-nowrap items-center divide-x divide-[var(--line)] shrink-0 overflow-x-auto no-scrollbar">
           {[
             { label: 'Power Output', val: breakdown.harvesting },
             { label: 'Steadiness', val: breakdown.consistency },
@@ -236,12 +236,12 @@ export function HardwarePipelineCard({
           ].map((item) => (
             <div
               key={item.label}
-              className="px-3.5 first:pl-0 last:pr-0 flex items-center gap-2"
+              className="px-2.5 sm:px-3.5 first:pl-0 last:pr-0 flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[var(--mu)]">
                 {item.label}
               </span>
-              <span className="text-[13px] font-bold tabular-nums text-[var(--t)]">
+              <span className="text-xs sm:text-[13px] font-bold tabular-nums text-[var(--t)]">
                 {item.val}%
               </span>
             </div>

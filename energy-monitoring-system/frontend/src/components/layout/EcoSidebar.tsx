@@ -855,9 +855,20 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               aria-label="Analytics"
             >
               <span className="es-mobile-tab-pill">
-                <TrendingUp size={18} strokeWidth={2} />
+                <TrendingUp size={17} strokeWidth={2} />
               </span>
               <span className="es-mobile-tab-label">Analytics</span>
+            </NavLink>
+
+            <NavLink
+              to={ROUTES.REPORTS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Reports"
+            >
+              <span className="es-mobile-tab-pill">
+                <FileText size={17} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Reports</span>
             </NavLink>
 
             <button
@@ -867,10 +878,21 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               aria-label="Open EcoGuide"
             >
               <span className="es-mobile-ecoguide-fab">
-                <MessageSquare size={22} strokeWidth={2} />
+                <MessageSquare size={20} strokeWidth={2} />
               </span>
               <span className="es-mobile-tab-label es-mobile-tab-label-ecoguide">EcoGuide</span>
             </button>
+
+            <NavLink
+              to={ROUTES.ADMIN_LOGS}
+              className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
+              aria-label="Logs"
+            >
+              <span className="es-mobile-tab-pill">
+                <ScrollText size={17} strokeWidth={2} />
+              </span>
+              <span className="es-mobile-tab-label">Logs</span>
+            </NavLink>
 
             <NavLink
               to={ROUTES.ADMIN_DIAGNOSTICS}
@@ -878,20 +900,20 @@ export function EcoSidebar({ children }: EcoSidebarProps) {
               aria-label="Health"
             >
               <span className="es-mobile-tab-pill">
-                <Stethoscope size={18} strokeWidth={2} />
+                <Stethoscope size={17} strokeWidth={2} />
               </span>
               <span className="es-mobile-tab-label">Health</span>
             </NavLink>
 
             <NavLink
-              to={ROUTES.REPORTS}
+              to={ROUTES.SETTINGS}
               className={({ isActive }) => `es-mobile-tab ${isActive ? 'active' : ''}`}
-              aria-label="Reports"
+              aria-label="Settings"
             >
               <span className="es-mobile-tab-pill">
-                <FileText size={18} strokeWidth={2} />
+                <Settings size={17} strokeWidth={2} />
               </span>
-              <span className="es-mobile-tab-label">Reports</span>
+              <span className="es-mobile-tab-label">Settings</span>
             </NavLink>
           </>
         ) : (

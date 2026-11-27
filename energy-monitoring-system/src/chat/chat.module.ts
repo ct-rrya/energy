@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -9,8 +9,13 @@ import {
   AdminChatThread,
   AdminChatThreadSchema,
 } from './schemas/admin-chat-thread.schema';
+import {
+  AdminChatSettings,
+  AdminChatSettingsSchema,
+} from './schemas/admin-chat-settings.schema';
 import { SessionManager } from './session.manager';
 import { ChatbotModule } from '../chatbot/chatbot.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 /**
  * ChatModule
@@ -21,8 +26,10 @@ import { ChatbotModule } from '../chatbot/chatbot.module';
   imports: [
     MongooseModule.forFeature([
       { name: AdminChatThread.name, schema: AdminChatThreadSchema },
+      { name: AdminChatSettings.name, schema: AdminChatSettingsSchema },
     ]),
     ChatbotModule, // For ChatbotCoreService
+    forwardRef(() => DashboardModule), // For real-time admin-chat:updated broadcasts
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

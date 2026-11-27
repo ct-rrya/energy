@@ -14,6 +14,9 @@ export class AdminChatMessage {
   @Prop({ required: true, trim: true, maxlength: 2000 })
   text: string;
 
+  @Prop({ default: false })
+  isAutoReply?: boolean;
+
   @Prop({ type: Date, default: () => new Date() })
   createdAt: Date;
 }
@@ -48,6 +51,15 @@ export class AdminChatThread {
 
   @Prop({ default: 0, min: 0 })
   unreadByVisitor: number;
+
+  @Prop({ type: Date, default: null })
+  adminLastReadAt: Date | null;
+
+  @Prop({ type: Date, default: null })
+  visitorLastReadAt: Date | null;
+
+  @Prop({ type: Date, default: null })
+  lastAutoReplyAt?: Date | null;
 
   @Prop({ type: String, enum: ['open', 'resolved'], default: 'open', index: true })
   status: 'open' | 'resolved';

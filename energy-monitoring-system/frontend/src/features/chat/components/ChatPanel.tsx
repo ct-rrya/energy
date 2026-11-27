@@ -7,12 +7,20 @@
  * - Synchronized with ecostep.rightCollapsed
  */
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { adminChatService } from '@/api/services/adminChat.service';
+import {
+  isChatAlertsMuted,
+  notifyIncomingChatMessage,
+  setChatAlertsMuted,
+  subscribeChatAlertsPref,
+} from '../chatNotifications';
+import { showToast } from '@/components/common/Toast';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { AdminChatView } from './AdminChatView';
@@ -75,12 +83,34 @@ export function ChatPanel({
   const resolvedPinned = isPinned !== undefined ? isPinned : !isCollapsed;
 
   const panelRef = useRef<HTMLElement>(null);
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
   const { isAuthenticated, user } = useAuth();
   const isAdmin = Boolean(isAuthenticated && user);
 
   const [activeMode, setActiveMode] = useState<'bot' | 'admin'>('bot');
+  const [activeInboxVisitorId, setActiveInboxVisitorId] = useState<string | null>(null);
+  const [alertsMuted, setAlertsMuted] = useState<boolean>(() => isChatAlertsMuted());
+
+  useEffect(() => subscribeChatAlertsPref(setAlertsMuted), []);
+
+  const handleToggleAlertsMute = useCallback(() => {
+    const next = !alertsMuted;
+    setChatAlertsMuted(next);
+    setAlertsMuted(next);
+    showToast(
+      next
+        ? 'Chat notifications & sound muted'
+        : 'Chat notifications & sound enabled',
+      'info',
+    );
+  }, [alertsMuted]);
+
+  const isPanelVisible = isMobile ? isMobileOpen : !isCollapsed;
+  const isViewingVisitorAdminChat = !isAdmin && activeMode === 'admin' && isPanelVisible;
+
   const { messages, isLoading, error, sendMessage, retryLastMessage, clearChat } = useChat();
-  const adminChat = useAdminChat(!isAdmin && activeMode === 'admin');
+  const adminChat = useAdminChat(isViewingVisitorAdminChat, !isAdmin);
 
   const { data: adminInboxMeta } = useQuery({
     queryKey: ['admin-chat-threads'],
@@ -88,6 +118,47 @@ export function ChatPanel({
     enabled: isAdmin,
     refetchInterval: 15_000,
   });
+
+  // Real-time Socket.IO listener for Admin Inbox (live updates + toast/sound alerts)
+  const adminStateRef = useRef({
+    activeMode,
+    isPanelVisible,
+    activeInboxVisitorId,
+  });
+  adminStateRef.current = { activeMode, isPanelVisible, activeInboxVisitorId };
+
+  useEffect(() => {
+    if (!isAdmin || !socket) return;
+
+    const handleAdminChatUpdated = (payload?: {
+      action?: string;
+      visitorId?: string;
+      senderName?: string;
+    }) => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-chat-threads'] });
+
+      if (payload?.action === 'visitor_message') {
+        const current = adminStateRef.current;
+        const isViewingSameThread =
+          current.isPanelVisible &&
+          current.activeMode === 'admin' &&
+          current.activeInboxVisitorId === payload.visitorId;
+
+        if (!isViewingSameThread) {
+          notifyIncomingChatMessage({
+            senderName: payload.senderName || 'Campus Visitor',
+            count: 1,
+          });
+        }
+      }
+    };
+
+    socket.on('admin-chat:updated', handleAdminChatUpdated);
+    return () => {
+      socket.off('admin-chat:updated', handleAdminChatUpdated);
+    };
+  }, [isAdmin, socket, queryClient]);
+
   const secondTabUnread = isAdmin
     ? adminInboxMeta?.totalUnread ?? 0
     : adminChat.unreadCount;
@@ -272,6 +343,8 @@ export function ChatPanel({
             onCollapse={onClosePanel ?? handleToggle}
             onTogglePin={onTogglePin}
             onNewChat={clearChat}
+            onToggleAlertsMute={handleToggleAlertsMute}
+            isAlertsMuted={alertsMuted}
             isExpanded={!isCollapsed}
             isPinned={resolvedPinned}
             isFloating={isFloating && !isMobile}
@@ -357,12 +430,14 @@ export function ChatPanel({
               <ChatInput onSend={sendMessage} disabled={isLoading} />
             </>
           ) : isAdmin ? (
-            <AdminQuickInboxView />
+            <AdminQuickInboxView onActiveVisitorChange={setActiveInboxVisitorId} />
           ) : (
             <>
               <AdminChatView
                 messages={adminChat.messages}
                 visitorName={adminChat.visitorName}
+                adminLastReadAt={adminChat.adminLastReadAt}
+                unreadByAdmin={adminChat.unreadByAdmin}
                 isLoading={adminChat.isLoading}
                 isSending={adminChat.isSending}
                 error={adminChat.error}

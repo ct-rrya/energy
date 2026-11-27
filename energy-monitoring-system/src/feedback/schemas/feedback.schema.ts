@@ -28,6 +28,14 @@ export class FeedbackAnswer {
   authorName: string;
 
   @Prop({
+    type: String,
+    default: null,
+    maxlength: 80,
+    index: true,
+  })
+  visitorId?: string | null;
+
+  @Prop({
     required: true,
     enum: ['visitor', 'admin'],
     default: 'visitor',
@@ -130,6 +138,14 @@ export class Feedback {
     maxlength: 60,
   })
   authorName: string;
+
+  @Prop({
+    type: String,
+    default: null,
+    maxlength: 80,
+    index: true,
+  })
+  visitorId?: string | null;
 
   @Prop({
     required: true,

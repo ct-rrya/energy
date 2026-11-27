@@ -26,6 +26,8 @@ export enum AlertType {
   VOLTAGE_THRESHOLD = 'voltage_threshold',
   CURRENT_THRESHOLD = 'current_threshold',
   ENERGY_MILESTONE = 'energy_milestone',
+  TILE_HEALTH_DEGRADED = 'tile_health_degraded',
+  OUTPUT_DROP = 'output_drop',
   SYSTEM_ERROR = 'system_error',
   DATABASE_CONNECTION = 'database_connection',
   DEVICE_COMMUNICATION = 'device_communication',

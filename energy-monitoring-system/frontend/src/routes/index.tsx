@@ -27,6 +27,7 @@ const FeedbackPage = lazy(() => import('@/features/feedback/pages/FeedbackPage')
 const FeedbackDetailPage = lazy(() => import('@/features/feedback/pages/FeedbackDetailPage').then(m => ({ default: m.FeedbackDetailPage })));
 const DiagnosticsPage = lazy(() => import('@/features/admin/pages/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const SettingsPage = lazy(() => import('@/features/admin/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const MaintenancePage = lazy(() => import('@/features/admin/pages/MaintenancePage').then(m => ({ default: m.MaintenancePage })));
 const SensorsManagementPage = lazy(() => import('@/features/sensors/pages/SensorsManagementPage').then(m => ({ default: m.SensorsManagementPage })));
 const LogsPage = lazy(() => import('@/features/admin/pages/LogsPage').then(m => ({ default: m.LogsPage })));
 const SplashPreviewPage = lazy(() => import('@/features/dashboard/pages/SplashPreviewPage').then(m => ({ default: m.SplashPreviewPage })));
@@ -222,6 +223,18 @@ export const router = createBrowserRouter([
           <LazyRoute>
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          </LazyRoute>
+        ),
+      },
+
+      // Maintenance Mode & Hardware Pause Details (Admin only)
+      {
+        path: ROUTES.SETTINGS_MAINTENANCE,
+        element: (
+          <LazyRoute>
+            <ProtectedRoute>
+              <MaintenancePage />
             </ProtectedRoute>
           </LazyRoute>
         ),

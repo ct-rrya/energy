@@ -4,6 +4,8 @@ import type {
   AlertsResponse,
   AlertStats,
   AlertQueryParams,
+  HealthMonitorStatus,
+  HealthCheckRunSummary,
 } from '@/types/alert.types';
 
 /**
@@ -76,6 +78,16 @@ export const resolveAlert = async (id: string): Promise<Alert> => {
   return response.data;
 };
 
+export const getMonitorStatus = async (): Promise<HealthMonitorStatus> => {
+  const response = await apiClient.get<{ data: HealthMonitorStatus }>('/alerts/monitor-status');
+  return response.data.data;
+};
+
+export const runHealthCheck = async (): Promise<HealthCheckRunSummary> => {
+  const response = await apiClient.post<{ data: HealthCheckRunSummary }>('/alerts/run-health-check');
+  return response.data.data;
+};
+
 /**
  * Alerts Service Object
  * 
@@ -87,4 +99,6 @@ export const alertsService = {
   getAlertById,
   acknowledgeAlert,
   resolveAlert,
+  getMonitorStatus,
+  runHealthCheck,
 };
